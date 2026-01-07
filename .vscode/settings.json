@@ -1,4 +1,24 @@
 {
+	"editor.tabSize": 2,
+  "javascript.suggest.enabled": false,
+  "javascript.validate.enable": false,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  "openapi-docs-viewer.defaultRenderer": "swagger",
+  "tailwindCSS.classAttributes": [
+    "class",
+    "className",
+    "ngClass",
+    "class:list",
+    "width",
+    "contentWidth",
+    "classes"
+  ],
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
+  },
 	"files.associations": {
 		"*.css": "tailwindcss"
 	}
