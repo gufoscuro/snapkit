@@ -1,5 +1,5 @@
 {
-	"name": "arke-skeleton",
+	"name": "snapkit",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
@@ -13,7 +13,8 @@
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run"
+		"test": "npm run test:unit -- --run",
+		"generate:components-registry": "node scripts/generate-components-registry.js"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.0",
@@ -58,6 +59,8 @@
 		"vitest-browser-svelte": "^2.0.1"
 	},
 	"dependencies": {
+		"@fontsource-variable/geist": "^5.2.8",
+		"@tabler/icons-svelte": "^3.36.1",
 		"path-to-regexp": "^8.3.0"
 	}
 }
