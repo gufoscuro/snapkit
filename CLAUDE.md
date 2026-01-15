@@ -24,6 +24,57 @@ After completing the code, ask the user if they want a playground link. Only cal
 
 ---
 
+## Using Arke MCP Server for API Discovery
+
+When creating components that need to fetch or interact with backend data, you MUST use the **arke MCP server** to discover available API endpoints and their types.
+
+### Available tool:
+
+- **search_api**: Search for API operations by natural language query. Returns matching endpoints with method, path, and TypeScript types.
+
+### Usage:
+
+```
+search_api(query: "list orders", namespace: "sales-api", include_schemas: true)
+```
+
+**Parameters:**
+- `query`: Natural language description of what you're looking for (e.g., "list orders", "create customer", "update product")
+- `namespace` (optional): Filter by API namespace (e.g., "sales-api", "supply-api", "product-api")
+- `include_schemas`: Set to `true` to get raw JSON schemas in addition to TypeScript types
+
+### Workflow for components that fetch data:
+
+1. **Search for relevant endpoints**: Use `search_api` to find endpoints that match your data needs
+2. **Review the response types**: The tool returns TypeScript type definitions - use these to type your component's data
+3. **Implement the fetch call**: Use `apiRequest` from `$lib/utils/request.ts` to make API calls (NOT raw `fetch`)
+4. **Handle loading and error states**: Always account for async data fetching
+
+### API Request Utility
+
+Always use `apiRequest` from `$lib/utils/request.ts` when fetching data from the API.
+Use `createQueryRequestObject` from `$lib/utils/filters.ts` to format query parameters (search, limit, offset).
+
+```typescript
+import { apiRequest } from '$lib/utils/request'
+import { createQueryRequestObject } from '$lib/utils/filters'
+
+const orders = await apiRequest<OrderSummary[]>({
+  url: 'sales/order',
+  queryParams: createQueryRequestObject(query)
+})
+```
+
+### Example:
+
+When building a component to display shipped orders:
+
+1. Search: `search_api(query: "list orders shipped", namespace: "sales-api")`
+2. Result shows: `GET /order` returns `orderSummary[]` with `shipped?: "completed" | "not shipped" | "partial"`
+3. Use this info to fetch and filter the data in your component
+
+---
+
 ## Component Development Guidelines
 
 ### Using svelte-components MCP Server
@@ -146,6 +197,22 @@ When creating a new component (step 4 of the decision flow):
    ```typescript
    import { SalesOrdersList, SalesOrdersListCompact } from '$lib/components/features/orders/SalesOrdersList';
    ```
+
+### Creating Selector Components
+
+When creating a selector/picker component for an entity (e.g., MaterialSelector, CustomerSelector), you MUST use the existing generic selector components:
+
+- **Single selection**: Use `FormGenericSingleSelector` from `$lib/components/form/FormGenericSingleSelector.svelte`
+- **Multi selection**: Use `FormGenericMultiSelector` from `$lib/components/form/FormGenericMultiSelector.svelte`
+
+**Required implementation pattern:**
+
+1. Define your entity type (from API)
+2. Create an `optionMappingFunction` that maps your entity to `ExtendedOption`
+3. Create a `fetchFunction` that fetches entities from the API
+4. Pass these to the generic selector component
+
+**Example** (see `src/lib/components/features/form/FormSelectorExample.svelte`)
 
 ### Variants vs Props
 
