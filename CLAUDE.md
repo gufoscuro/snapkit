@@ -39,6 +39,7 @@ search_api(query: "list orders", namespace: "sales-api", include_schemas: true)
 ```
 
 **Parameters:**
+
 - `query`: Natural language description of what you're looking for (e.g., "list orders", "create customer", "update product")
 - `namespace` (optional): Filter by API namespace (e.g., "sales-api", "supply-api", "product-api")
 - `include_schemas`: Set to `true` to get raw JSON schemas in addition to TypeScript types
@@ -197,6 +198,14 @@ When creating a new component (step 4 of the decision flow):
    ```typescript
    import { SalesOrdersList, SalesOrdersListCompact } from '$lib/components/features/orders/SalesOrdersList';
    ```
+
+4. **Update the components registry**: After creating new components, run:
+
+   ```bash
+   npm run generate:components-registry
+   ```
+
+   This automatically scans `src/lib/components/features/` and updates `src/generated/components-registry.ts`. Do NOT edit the registry file manually.
 
 ### Creating Selector Components
 
