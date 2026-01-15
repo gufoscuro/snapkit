@@ -2,17 +2,21 @@
   import { browser } from '$app/environment'
   import { getComponent } from '$generated/components-registry'
   import type { SnippetDefinition } from '$utils/page-registry'
-  import type { SnippetProps } from '$utils/runtime'
-  import { type Snippet } from 'svelte'
+  import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetProps, type SnippetPropsGetter } from '$utils/runtime'
+  import { getContext, type Snippet } from 'svelte'
 
   type SnippetResolverProps = {
     snippet: SnippetDefinition
-    props?: SnippetProps & Record<string, any>
+    props?: Record<string, any>
     children?: Snippet
     class?: string
   }
 
   let { props, snippet, children, class: className }: SnippetResolverProps = $props()
+
+  // Get the snippet props getter from context - $derived ensures reactivity
+  const getSnippetProps = getContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY)
+  let snippetProps = $derived(getSnippetProps?.())
   let ComponentFunction = $state<ConstructorOfATypedSvelteComponent | null>(null)
   let loading: boolean = $state(true)
   let error: any = $state(null)
@@ -61,5 +65,5 @@
     </div>
   {/if}
 {:else if ComponentFunction}
-  <ComponentFunction {...props} />
+  <ComponentFunction {...snippetProps} {...props} />
 {:else}{/if}
