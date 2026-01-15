@@ -18,12 +18,12 @@ export async function getTenantInterfaceDetails(tenantVanity: string | null): Pr
         mainMenu: [
           {
             label: 'Orders',
-            href: '/app/orders',
+            href: '/orders',
             visible: true,
           },
           {
             label: 'Products',
-            href: '/app/products',
+            href: '/products',
             visible: true,
           },
         ],
@@ -34,7 +34,7 @@ export async function getTenantInterfaceDetails(tenantVanity: string | null): Pr
         mainMenu: [
           {
             label: 'Pizze',
-            href: '/app/orders',
+            href: '/orders',
             visible: true,
           },
         ],
