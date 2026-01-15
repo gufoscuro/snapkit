@@ -37,6 +37,60 @@ const PAGES: PageConfig[] = [
     },
   },
   {
+    title: 'Orders already shipped',
+    route: '/orders/shipped',
+    layout: {
+      componentKey: 'layouts.List',
+      enabled: true,
+    },
+    snippets: {
+      title: {
+        enabled: true,
+        componentKey: 'globals.PageTitle',
+      },
+      table: {
+        enabled: true,
+        componentKey: 'orders.shippedsalesorderslist.default.ShippedSalesOrdersList',
+      },
+    },
+  },
+  {
+    title: 'Materials Selection',
+    route: '/materials',
+    layout: {
+      componentKey: 'layouts.List',
+      enabled: true,
+    },
+    snippets: {
+      title: {
+        enabled: true,
+        componentKey: 'globals.PageTitle',
+      },
+      table: {
+        enabled: true,
+        componentKey: 'materials.materialselector.default.MaterialSelector',
+      },
+    },
+  },
+  {
+    title: 'Products Selection',
+    route: '/products',
+    layout: {
+      componentKey: 'layouts.List',
+      enabled: true,
+    },
+    snippets: {
+      title: {
+        enabled: true,
+        componentKey: 'globals.PageTitle',
+      },
+      table: {
+        enabled: true,
+        componentKey: 'products.FormProductSelector',
+      },
+    },
+  },
+  {
     title: 'Order Detail',
     route: '/orders/:uuid',
     layout: {
