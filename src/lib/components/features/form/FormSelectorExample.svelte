@@ -1,6 +1,6 @@
 <!--
   @component MaterialSelector
-  @description A single-select dropdown for choosing raw materials from the supply API.
+  @description A single-select dropdown that is intended as an example of a form selector
   Fetches materials from GET /raw-material endpoint with search support.
   Displays material name with supplier information.
   @keywords materials, raw-materials, selector, picker, dropdown, supply, inventory
