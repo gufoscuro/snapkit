@@ -86,7 +86,7 @@ export function createQueryRequestObject({
 	...overrides
 }: FilterQuery): ExtendedFilterQueryObject {
 	return {
-		...(search?.trim() !== '' ? { search } : {}),
+		...(search && search.trim() !== '' ? { search } : {}),
 		...(query ? { query: JSON.stringify(query) } : {}),
 		...(limit ? { limit } : {}),
 		...(offset ? { offset } : {}),
