@@ -13,6 +13,10 @@
 			"env": {
 				"COMPONENTS_DIR": "./src/lib/components"
 			}
+		},
+		"arke": {
+			"type": "http",
+			"url": "https://arke.arkestaging.com/api/mcp-server"
 		}
 	}
 }
