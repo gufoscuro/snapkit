@@ -5,6 +5,14 @@
 			"command": "npx",
 			"env": {},
 			"args": ["-y", "@sveltejs/mcp"]
+		},
+		"svelte-components": {
+			"type": "stdio",
+			"command": "node",
+			"args": ["../svelte-components-mcp/dist/index.js"],
+			"env": {
+				"COMPONENTS_DIR": "./src/lib/components"
+			}
 		}
 	}
 }
