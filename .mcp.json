@@ -1,12 +1,14 @@
 {
 	"mcpServers": {
 		"svelte": {
+			"_comment": "Svelte 5 & SvelteKit official documentation",
 			"type": "stdio",
 			"command": "npx",
 			"env": {},
 			"args": ["-y", "@sveltejs/mcp"]
 		},
 		"svelte-components": {
+			"_comment": "Custom feature components in src/lib/components/features/",
 			"type": "stdio",
 			"command": "node",
 			"args": ["../svelte-components-mcp/dist/index.js"],
@@ -15,16 +17,23 @@
 			}
 		},
 		"arke": {
+			"_comment": "Backend API discovery - endpoints & TypeScript types",
 			"type": "http",
 			"url": "https://arke.arkestaging.com/api/mcp-server"
 		},
 		"shadcn-svelte": {
+			"_comment": "shadcn-svelte base UI components (Button, Dialog, Card, etc.)",
 			"command": "npx",
 			"args": [
 				"-y",
 				"mcp-remote",
 				"https://shadcn-svelte.mastra.cloud/api/mcp/shadcn/mcp"
 			]
+		},
+		"shadcn-svelte-extras": {
+			"_comment": "Extra components via jsrepo - https://www.shadcn-svelte-extras.com/",
+			"command": "npx",
+			"args": ["@jsrepo/mcp"]
 		}
 	}
 }

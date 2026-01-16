@@ -8,6 +8,7 @@ This project uses multiple MCP servers. Use the appropriate one based on your ta
 |------------|---------|-------------|
 | **svelte** | Svelte 5 & SvelteKit documentation | Language features, runes, routing, SvelteKit APIs |
 | **shadcn-svelte** | shadcn-svelte component docs | Using/adding base UI components in `src/lib/components/ui/` |
+| **shadcn-svelte-extras** | Extra components via jsrepo | Advanced components not in core shadcn-svelte (Chat, Code, Emoji Picker, etc.) |
 | **svelte-components** | Feature component discovery | Finding/creating components in `src/lib/components/features/` |
 | **arke** | Backend API discovery | Finding API endpoints and TypeScript types for data fetching |
 
@@ -43,6 +44,26 @@ Use for **base UI components** in `src/lib/components/ui/`. These components sho
 1. Understanding props/usage of base UI components (Button, Dialog, Card, etc.)
 2. Adding a new shadcn component to the project → use `shadcn-svelte-get` for installation instructions
 3. Finding icons → use `shadcn-svelte-icons`
+
+---
+
+## shadcn-svelte-extras MCP (jsrepo)
+
+Use for **extra components** not included in core shadcn-svelte. These are community components from [shadcn-svelte-extras](https://www.shadcn-svelte-extras.com/).
+
+**Available components include:** Avatar Group, Chat, Code Block, Emoji Picker, Field Set, File Tree, Tags Input, Terminal, and more.
+
+**Tools:**
+
+- **search**: Search for available extra components
+- **get_block**: Get component documentation, code, and installation commands
+- **list_blocks**: List all available extra components
+
+**When to use:**
+
+1. Need a component not available in core shadcn-svelte
+2. Looking for advanced/specialized UI components (chat interfaces, code blocks, terminals, etc.)
+3. Adding new extras to the project → use `npx jsrepo add @ieedan/shadcn-svelte-extras/<component>`
 
 ---
 
