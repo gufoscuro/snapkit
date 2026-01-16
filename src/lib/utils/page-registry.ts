@@ -1,4 +1,5 @@
 import type { ComponentKey } from '$generated/components-registry';
+import type { BindingConfig } from '$lib/contexts/page-state';
 import { match } from 'path-to-regexp';
 
 export interface PageConfig {
@@ -11,6 +12,8 @@ export interface PageConfig {
 export interface SnippetDefinition {
   componentKey: ComponentKey
   enabled: boolean
+  /** Optional bindings to map logical names to namespaces. If not specified, defaults are used. */
+  bindings?: BindingConfig
 }
 
 const PAGES: PageConfig[] = [
@@ -91,24 +94,6 @@ const PAGES: PageConfig[] = [
     },
   },
   {
-    title: 'Products Selection',
-    route: '/products',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
-      },
-      table: {
-        enabled: true,
-        componentKey: 'products.FormProductSelector',
-      },
-    },
-  },
-  {
     title: 'Order Detail',
     route: '/orders/:uuid',
     layout: {
@@ -136,6 +121,31 @@ const PAGES: PageConfig[] = [
       table: {
         enabled: true,
         componentKey: 'orders.pagetable.PageTableCustom',
+      },
+    },
+  },
+  // POC: Component State Sharing
+  {
+    title: 'POC: State Sharing',
+    route: '/poc/state-sharing',
+    layout: {
+      componentKey: 'layouts.List',
+      enabled: true,
+    },
+    snippets: {
+      title: {
+        enabled: true,
+        componentKey: 'globals.PageTitle',
+      },
+      filters: {
+        enabled: true,
+        componentKey: '_poc.demofilter.DemoFilter',
+        // Using default bindings: provides.filters -> 'filters'
+      },
+      table: {
+        enabled: true,
+        componentKey: '_poc.demotable.DemoTable',
+        // Using default bindings: consumes.filters -> 'filters', provides.selection -> 'selection'
       },
     },
   }
