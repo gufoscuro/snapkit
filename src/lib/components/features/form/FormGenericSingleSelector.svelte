@@ -2,11 +2,11 @@
   type T = $$Generic
 
   import { browser } from '$app/environment'
-  import { FormFieldClass } from '$components/form/form'
-  import FormFieldMessages from '$components/form/FormFieldMessages.svelte'
-  import FormFieldSkeleton from '$components/form/FormFieldSkeleton.svelte'
-  import MultiSelect from '$components/form/multiselect/MultiSelect.svelte'
-  import ReadOnlyMultiselect from '$components/form/multiselect/ReadOnlyMultiselect.svelte'
+  import { FormFieldClass } from '$components/features/form/form'
+  import FormFieldMessages from '$components/features/form/FormFieldMessages.svelte'
+  import FormFieldSkeleton from '$components/features/form/FormFieldSkeleton.svelte'
+  import MultiSelect from '$components/features/form/multiselect/MultiSelect.svelte'
+  import ReadOnlyMultiselect from '$components/features/form/multiselect/ReadOnlyMultiselect.svelte'
   import Label from '$components/ui/label/label.svelte'
   import { type FilterQuery, type MinimalFilterQuery } from '$utils/filters'
   import type { ExtendedOption } from '$utils/generics'

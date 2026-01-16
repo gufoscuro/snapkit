@@ -2,11 +2,11 @@
 	type T = $$Generic
 
 	import { browser } from '$app/environment'
-	import FormFieldMessages from '$components/form/FormFieldMessages.svelte'
-	import { FormFieldClass, type FormFieldMessagePosition } from '$components/form/form'
-	import MultiSelect from '$components/form/multiselect/MultiSelect.svelte'
-	import FormFieldSkeleton from '$components/skeleton/FormFieldSkeleton.svelte'
-	import Label from '$ds/components/ui/label/label.svelte'
+	import FormFieldMessages from '$components/features/form/FormFieldMessages.svelte'
+	import { FormFieldClass, type FormFieldMessagePosition } from '$components/features/form/form'
+	import MultiSelect from '$components/features/form/multiselect/MultiSelect.svelte'
+	import FormFieldSkeleton from '$components/features/form/FormFieldSkeleton.svelte'
+	import Label from '$components/ui/label/label.svelte'
 	import type { MinimalFilterQuery } from '$utils/filters'
 	import type { BasicOption, ExtendedOption } from '$utils/generics'
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FormFieldClass } from '$components/form/form'
+  import { FormFieldClass } from '$components/features/form/form'
 
   export let showLabel: boolean = true
   export let width: string = ''

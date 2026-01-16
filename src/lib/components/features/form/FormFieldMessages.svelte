@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { FormFieldMessagePosition } from '$components/form/form'
-	import FormFieldWarningMessage from '$components/form/FormFieldWarningMessage.svelte'
+	import type { FormFieldMessagePosition } from '$components/features/form/form'
+	import FormFieldWarningMessage from '$components/features/form/FormFieldWarningMessage.svelte'
 	import FormFieldErrorMessage from './FormFieldErrorMessage.svelte'
 
 	export let id: string

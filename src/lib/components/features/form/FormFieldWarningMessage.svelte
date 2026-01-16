@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { FormFieldMessagePosition } from '$components/form/form'
+  import type { FormFieldMessagePosition } from '$components/features/form/form'
 
   export let id: string
   export let message: string | undefined = undefined

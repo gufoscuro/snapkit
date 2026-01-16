@@ -4,14 +4,12 @@
   @keywords product, selector, picker, form, dropdown, catalog
   @uses FormGenericSingleSelector
 -->
-<svelte:options runes={false} />
-
 <script lang="ts">
-  import { FormFieldClass } from '$components/form/form'
-  import FormGenericSingleSelector from '$components/form/FormGenericSingleSelector.svelte'
+  import { FormFieldClass } from '$components/features/form/form'
   import { createQueryRequestObject, type FilterQuery } from '$utils/filters'
   import type { ExtendedOption } from '$utils/generics'
   import { apiRequest } from '$utils/request'
+  import FormGenericSingleSelector from '../form/FormGenericSingleSelector.svelte'
 
   export let formAPI: any = null
   export let attr: ProductSummary | undefined = undefined

@@ -9,8 +9,8 @@
 -->
 
 <script lang="ts">
-  import { FormFieldClass } from '$lib/components/form/form'
-  import FormGenericSingleSelector from '$lib/components/form/FormGenericSingleSelector.svelte'
+  import { FormFieldClass } from '$components/features/form/form'
+  import FormGenericSingleSelector from '$components/features/form/FormGenericSingleSelector.svelte'
   import { createQueryRequestObject, type FilterQuery } from '$lib/utils/filters'
   import type { ExtendedOption } from '$lib/utils/generics'
   import { apiRequest } from '$lib/utils/request'

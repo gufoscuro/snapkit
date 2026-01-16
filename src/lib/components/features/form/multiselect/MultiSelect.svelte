@@ -6,8 +6,8 @@
 
 <script lang="ts">
 	import { browser } from '$app/environment'
-	import DefaultMultiRenderer from '$components/form/multiselect/DefaultMultiRenderer.svelte'
-	import DefaultSingleRenderer from '$components/form/multiselect/DefaultSingleRenderer.svelte'
+	import DefaultMultiRenderer from '$components/features/form/multiselect/DefaultMultiRenderer.svelte'
+	import DefaultSingleRenderer from '$components/features/form/multiselect/DefaultSingleRenderer.svelte'
 	import { Button } from '$components/ui/button'
 	import * as Command from '$components/ui/command'
 	import * as Popover from '$components/ui/popover/'
