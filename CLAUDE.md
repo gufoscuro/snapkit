@@ -4,13 +4,13 @@ This project uses multiple MCP servers. Use the appropriate one based on your ta
 
 ## Quick Reference
 
-| MCP Server | Purpose | When to Use |
-|------------|---------|-------------|
-| **svelte** | Svelte 5 & SvelteKit documentation | Language features, runes, routing, SvelteKit APIs |
-| **shadcn-svelte** | shadcn-svelte component docs | Using/adding base UI components in `src/lib/components/ui/` |
-| **shadcn-svelte-extras** | Extra components via jsrepo | Advanced components not in core shadcn-svelte (Chat, Code, Emoji Picker, etc.) |
-| **svelte-components** | Feature component discovery | Finding/creating components in `src/lib/components/features/` |
-| **arke** | Backend API discovery | Finding API endpoints and TypeScript types for data fetching |
+| MCP Server               | Purpose                            | When to Use                                                                    |
+| ------------------------ | ---------------------------------- | ------------------------------------------------------------------------------ |
+| **svelte**               | Svelte 5 & SvelteKit documentation | Language features, runes, routing, SvelteKit APIs                              |
+| **shadcn-svelte**        | shadcn-svelte component docs       | Using/adding base UI components in `src/lib/components/ui/`                    |
+| **shadcn-svelte-extras** | Extra components via jsrepo        | Advanced components not in core shadcn-svelte (Chat, Code, Emoji Picker, etc.) |
+| **svelte-components**    | Feature component discovery        | Finding/creating components in `src/lib/components/features/`                  |
+| **arke**                 | Backend API discovery              | Finding API endpoints and TypeScript types for data fetching                   |
 
 ---
 
@@ -124,10 +124,10 @@ const orders = await apiRequest<OrderSummary[]>({
 
 ## Component File Locations
 
-| Location | Contains | MCP Server |
-|----------|----------|------------|
-| `src/lib/components/ui/` | Base UI components (shadcn-svelte) | shadcn-svelte |
-| `src/lib/components/features/` | Feature/domain components | svelte-components |
+| Location                       | Contains                           | MCP Server        |
+| ------------------------------ | ---------------------------------- | ----------------- |
+| `src/lib/components/ui/`       | Base UI components (shadcn-svelte) | shadcn-svelte     |
+| `src/lib/components/features/` | Feature/domain components          | svelte-components |
 
 **Note:** Base UI components in `ui/` should NOT be modified directly. Always build feature components by composing them.
 

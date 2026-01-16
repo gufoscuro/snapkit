@@ -1,6 +1,7 @@
 <script lang="ts">
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import { Button } from '$components/ui/button'
+  import { initPageState } from '$lib/contexts/page-state'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import { IconCodeDots } from '@tabler/icons-svelte'
   import { setContext } from 'svelte'
@@ -10,6 +11,8 @@
   let { data }: PageProps = $props()
   let { pageDetails, routeDetails, tenantInterfaceDetails } = $derived(data)
   let debug: boolean = $state(false)
+
+  initPageState()
 
   setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () => ({
     pageDetails,

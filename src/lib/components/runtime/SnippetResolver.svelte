@@ -2,8 +2,10 @@
   import { browser } from '$app/environment'
   import { getComponent } from '$generated/components-registry'
   import type { SnippetDefinition } from '$utils/page-registry'
-  import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetProps, type SnippetPropsGetter } from '$utils/runtime'
+  import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import { getContext, type Snippet } from 'svelte'
+  import type { ComponentContract } from '$lib/contexts/page-state'
+  import SnippetBindingsProvider from './SnippetBindingsProvider.svelte'
 
   type SnippetResolverProps = {
     snippet: SnippetDefinition
@@ -18,6 +20,7 @@
   const getSnippetProps = getContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY)
   let snippetProps = $derived(getSnippetProps?.())
   let ComponentFunction = $state<ConstructorOfATypedSvelteComponent | null>(null)
+  let componentContract = $state<ComponentContract | null>(null)
   let loading: boolean = $state(true)
   let error: any = $state(null)
   let latestKey: string = $state('')
@@ -25,6 +28,7 @@
   async function loadSnippet(s: SnippetDefinition) {
     if (!s || !s.componentKey || !s.enabled) {
       ComponentFunction = null
+      componentContract = null
       latestKey = ''
       loading = false
       return
@@ -34,11 +38,12 @@
     try {
       loading = true
       latestKey = s.componentKey
-      // await new Promise(resolve => setTimeout(resolve, Math.random() * 500)) // Simulate network latency
       const componentDef = getComponent(s.componentKey)
       const customModule = await componentDef.component()
       ComponentFunction = customModule.default
-      console.log(`✓ Loaded custom component: ${s.componentKey}`)
+      // Try to load contract if exported from the module
+      componentContract = customModule.contract ?? null
+      console.log(`✓ Loaded custom component: ${s.componentKey}`, componentContract ? '(with contract)' : '(no contract)')
     } catch (err) {
       console.error(`Failed to load component:`, err)
       error = err
@@ -65,5 +70,11 @@
     </div>
   {/if}
 {:else if ComponentFunction}
-  <ComponentFunction {...snippetProps} {...props} />
+  {#if componentContract}
+    <SnippetBindingsProvider contract={componentContract} bindings={snippet.bindings}>
+      <ComponentFunction {...snippetProps} {...props} />
+    </SnippetBindingsProvider>
+  {:else}
+    <ComponentFunction {...snippetProps} {...props} />
+  {/if}
 {:else}{/if}
