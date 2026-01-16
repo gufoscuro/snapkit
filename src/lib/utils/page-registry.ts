@@ -37,6 +37,24 @@ const PAGES: PageConfig[] = [
     },
   },
   {
+    title: 'Sales Orders',
+    route: '/sales-orders',
+    layout: {
+      componentKey: 'layouts.List',
+      enabled: true,
+    },
+    snippets: {
+      title: {
+        enabled: true,
+        componentKey: 'globals.PageTitle',
+      },
+      table: {
+        enabled: true,
+        componentKey: 'orders.salesorderslist.default.SalesOrdersList',
+      },
+    },
+  },
+  {
     title: 'Orders already shipped',
     route: '/orders/shipped',
     layout: {
