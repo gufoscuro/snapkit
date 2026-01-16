@@ -11,12 +11,20 @@
 			"command": "node",
 			"args": ["../svelte-components-mcp/dist/index.js"],
 			"env": {
-				"COMPONENTS_DIR": "./src/lib/components"
+				"COMPONENTS_DIR": "./src/lib/components/features"
 			}
 		},
 		"arke": {
 			"type": "http",
 			"url": "https://arke.arkestaging.com/api/mcp-server"
+		},
+		"shadcn-svelte": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"mcp-remote",
+				"https://shadcn-svelte.mastra.cloud/api/mcp/shadcn/mcp"
+			]
 		}
 	}
 }
