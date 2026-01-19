@@ -1,12 +1,18 @@
 import type { ComponentKey } from '$generated/components-registry';
 import type { BindingConfig } from '$lib/contexts/page-state';
 import { match } from 'path-to-regexp';
+import { type TObject, Type } from '@sinclair/typebox';
 
 export interface PageConfig {
+  /** Unique identifier for this page, used for route generation */
+  $id: string
+  /** Optional TypeBox schema defining the route parameters */
+  $params?: TObject
   title: string
   route: string; // Now supports patterns like /orders/:uuid or /orders/:uuid/delivery/:delivery_uuid
   layout: SnippetDefinition
   snippets: Record<string, SnippetDefinition>
+  subpages?: PageConfig[]
 }
 
 export interface SnippetDefinition {
@@ -16,8 +22,9 @@ export interface SnippetDefinition {
   bindings?: BindingConfig
 }
 
-const PAGES: PageConfig[] = [
+export const PAGES: PageConfig[] = [
   {
+    $id: 'order-list',
     title: 'Orders',
     route: '/orders',
     layout: {
@@ -40,6 +47,18 @@ const PAGES: PageConfig[] = [
     },
   },
   {
+    $id: 'order-detail',
+    $params: Type.Object({ uuid: Type.String() }),
+    title: 'Order Detail',
+    route: '/orders/:uuid',
+    layout: {
+      componentKey: 'layouts.Detail',
+      enabled: true,
+    },
+    snippets: {},
+  },
+  {
+    $id: 'sales-order-list',
     title: 'Sales Orders',
     route: '/sales-orders',
     layout: {
@@ -58,6 +77,7 @@ const PAGES: PageConfig[] = [
     },
   },
   {
+    $id: 'shipped-order-list',
     title: 'Orders already shipped',
     route: '/orders/shipped',
     layout: {
@@ -76,6 +96,7 @@ const PAGES: PageConfig[] = [
     },
   },
   {
+    $id: 'material-list',
     title: 'Materials Selection',
     route: '/materials',
     layout: {
@@ -94,15 +115,7 @@ const PAGES: PageConfig[] = [
     },
   },
   {
-    title: 'Order Detail',
-    route: '/orders/:uuid',
-    layout: {
-      componentKey: 'layouts.Detail',
-      enabled: true,
-    },
-    snippets: {},
-  },
-  {
+    $id: 'product-list',
     title: 'Products List',
     route: '/products',
     layout: {
@@ -126,6 +139,7 @@ const PAGES: PageConfig[] = [
   },
   // POC: Component State Sharing
   {
+    $id: 'poc-state-sharing',
     title: 'POC: State Sharing',
     route: '/poc/state-sharing',
     layout: {
