@@ -15,10 +15,10 @@ export async function POST(event: RequestEvent) {
     if (!username || !password) return error(400, 'missing username or password')
 
     console.log(`[login] Attempting login for user: ${username}`)
-    console.log(`[login] Gateway URL: ${API_GATEWAY_URL}/iam/login`)
+    console.log(`[login] Gateway URL: ${API_GATEWAY_URL}/login`)
 
     // Call the gateway's login endpoint
-    const response = await fetch(`${API_GATEWAY_URL}/iam/login`, {
+    const response = await fetch(`${API_GATEWAY_URL}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
