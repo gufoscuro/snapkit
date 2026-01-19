@@ -1,4 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { env } from '$env/dynamic/private'
+import { redirect } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
+
+const API_GATEWAY_URL = env?.API_GATEWAY_URL || 'http://localhost:3000'
 
 export type ExtendedFetchOptions = RequestInit & {
   url: string
@@ -6,24 +11,22 @@ export type ExtendedFetchOptions = RequestInit & {
   queryParams?: Record<string, string | number | boolean>
 }
 
-export async function request<T>(options: ExtendedFetchOptions): Promise<T> {
-  const { url, ...requestOptions } = options
-
-  const result: Response = await fetch(url, requestOptions)
-  const data = await result.json()
-
-  if (!result.ok) throw new Error('Request failed')
-
-  return data as T
-}
-
 /**
- * Client-side API request that goes through the SvelteKit proxy
- * Uses cookies for authentication (automatically sent by browser)
+ * Server-side API request to the gateway
+ * @param event - SvelteKit request event (provides auth token from locals)
  * @param options - Request options (url should be the API path, e.g., 'sales/order')
  */
-export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
-  let url = `/api/proxy/${options.url}`
+export async function apiRequest<T>(
+  event: RequestEvent,
+  options: ExtendedFetchOptions
+): Promise<T> {
+  const token = event.locals.token
+
+  if (!token) {
+    throw redirect(302, '/login')
+  }
+
+  let url = `${API_GATEWAY_URL}/${options.url}`
 
   if (options.queryParams) {
     const searchParams = new URLSearchParams()
@@ -36,6 +39,7 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
+    Authorization: `Bearer ${token}`,
   }
 
   const body = options.data
@@ -48,12 +52,10 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
     ...options,
     headers,
     body,
-    credentials: 'include', // Include cookies
   })
 
   if (result.status === 401) {
-    window.location.href = '/login'
-    throw new Error('Unauthorized')
+    throw redirect(302, '/login')
   }
 
   const data = await result.json()
@@ -63,4 +65,11 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
   }
 
   return data as T
+}
+
+/**
+ * Get the API gateway URL (for use in proxy endpoints)
+ */
+export function getApiGatewayUrl(): string {
+  return API_GATEWAY_URL
 }
