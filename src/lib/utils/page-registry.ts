@@ -40,91 +40,18 @@ export const PAGES: PageConfig[] = [
         enabled: true,
         componentKey: 'globals.PageTitle',
       },
-      filters: {
-        enabled: true,
-        componentKey: 'orders.pagefilters.default.PageFilters',
-      },
-      table: {
-        enabled: true,
-        componentKey: 'orders.pagetable.default.PageTable',
-      },
     },
   },
   {
     $id: 'order-detail',
     $params: Type.Object({ uuid: Type.String() }),
     title: 'Order Detail',
-    route: '/orders/:uuid',
+    route: '/orders/upsert/:uuid',
     layout: {
       componentKey: 'layouts.Detail',
       enabled: true,
     },
     snippets: {},
-  },
-  {
-    $id: 'sales-order-list',
-    title: 'Sales Orders',
-    route: '/sales-orders',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      appHeader: {
-        componentKey: 'globals.AppHeader',
-        enabled: true,
-      },
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
-      },
-      table: {
-        enabled: true,
-        componentKey: 'orders.salesorderslist.default.SalesOrdersList',
-      },
-    },
-  },
-  {
-    $id: 'shipped-order-list',
-    title: 'Orders already shipped',
-    route: '/orders/shipped',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      appHeader: {
-        componentKey: 'globals.AppHeader',
-        enabled: true,
-      },
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
-      },
-      table: {
-        enabled: true,
-        componentKey: 'orders.shippedsalesorderslist.default.ShippedSalesOrdersList',
-      },
-    },
-  },
-  {
-    $id: 'material-list',
-    title: 'Materials Selection',
-    route: '/materials',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
-      },
-      table: {
-        enabled: true,
-        componentKey: 'materials.materialselector.default.MaterialSelector',
-      },
-    },
   },
   {
     $id: 'product-list',
@@ -143,17 +70,8 @@ export const PAGES: PageConfig[] = [
         enabled: true,
         componentKey: 'globals.PageTitle',
       },
-      filters: {
-        enabled: true,
-        componentKey: 'orders.pagefilters.PageFiltersWithSearch',
-      },
-      table: {
-        enabled: true,
-        componentKey: 'orders.pagetable.PageTableCustom',
-      },
     },
   },
-  // POC: Component State Sharing
   {
     $id: 'poc-state-sharing',
     title: 'POC: State Sharing',
