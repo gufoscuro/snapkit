@@ -5,7 +5,6 @@
 -->
 
 <script lang="ts">
-  import AppHeader from '$components/features/globals/AppHeader.svelte'
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import type { SnippetProps } from '$utils/runtime'
 
@@ -17,7 +16,7 @@
   // $inspect('list layout', config.snippets)
 </script>
 
-<AppHeader />
+<SnippetResolver snippet={config.snippets.appHeader} />
 
 <main class="flex-1 overflow-y-auto px-4">
   <SnippetResolver snippet={config.snippets.title} class="h-11 w-full" />
