@@ -1,7 +1,7 @@
 import type { ComponentKey } from '$generated/components-registry';
 import type { BindingConfig } from '$lib/contexts/page-state';
-import { match } from 'path-to-regexp';
 import { type TObject, Type } from '@sinclair/typebox';
+import { match } from 'path-to-regexp';
 
 export interface PageConfig {
   /** Unique identifier for this page, used for route generation */
@@ -32,6 +32,10 @@ export const PAGES: PageConfig[] = [
       enabled: true,
     },
     snippets: {
+      appHeader: {
+        componentKey: 'globals.AppHeader',
+        enabled: true,
+      },
       title: {
         enabled: true,
         componentKey: 'globals.PageTitle',
@@ -66,6 +70,10 @@ export const PAGES: PageConfig[] = [
       enabled: true,
     },
     snippets: {
+      appHeader: {
+        componentKey: 'globals.AppHeader',
+        enabled: true,
+      },
       title: {
         enabled: true,
         componentKey: 'globals.PageTitle',
@@ -85,6 +93,10 @@ export const PAGES: PageConfig[] = [
       enabled: true,
     },
     snippets: {
+      appHeader: {
+        componentKey: 'globals.AppHeader',
+        enabled: true,
+      },
       title: {
         enabled: true,
         componentKey: 'globals.PageTitle',
@@ -123,6 +135,10 @@ export const PAGES: PageConfig[] = [
       enabled: true,
     },
     snippets: {
+      appHeader: {
+        componentKey: 'globals.AppHeader',
+        enabled: true,
+      },
       title: {
         enabled: true,
         componentKey: 'globals.PageTitle',
