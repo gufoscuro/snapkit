@@ -1,5 +1,6 @@
 <script lang="ts">
   import favicon from '$lib/assets/favicon.svg'
+  import { initLanguageContext } from '$lib/contexts/language'
   import type { TenantInterfaceDetails } from '$utils/customer-registry'
   import '@fontsource-variable/geist'
   import { setContext } from 'svelte'
@@ -9,6 +10,9 @@
   let { children, data }: LayoutProps = $props()
 
   setContext<TenantInterfaceDetails>('tenantInterfaceDetails', data.tenantInterfaceDetails)
+
+  // Initialize language context for i18n
+  initLanguageContext()
 </script>
 
 <svelte:head>

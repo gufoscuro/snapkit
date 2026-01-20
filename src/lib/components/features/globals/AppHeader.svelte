@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LanguageSwitcher from './LanguageSwitcher.svelte'
   import type { SnippetProps } from '$utils/runtime'
 
   const { tenantInterfaceDetails }: SnippetProps = $props()
@@ -11,5 +12,6 @@
     {#each tenantInterfaceDetails.mainMenu as menuItem}
       <a class="cursor-pointer rounded px-3 py-1 hover:bg-muted/70" href={menuItem.href}>{menuItem.label}</a>
     {/each}
+    <LanguageSwitcher />
   </div>
 </div>

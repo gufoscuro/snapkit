@@ -1,0 +1,18 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "common_save": "Salva",
+  "common_cancel": "Annulla",
+  "common_delete": "Elimina",
+  "common_edit": "Modifica",
+  "common_loading": "Caricamento...",
+  "common_error": "Si è verificato un errore",
+  "common_select_all": "Seleziona tutto",
+  "common_select_row": "Seleziona riga",
+  "common_filter_column": "Filtra colonna",
+  "common_archive": "Archivia",
+  "common_search": "Cerca",
+  "common_no_results": "Nessun risultato trovato",
+  "common_actions": "Azioni",
+  "language_english": "Inglese",
+  "language_italian": "Italiano"
+}

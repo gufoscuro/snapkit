@@ -5,7 +5,6 @@
 -->
 
 <script lang="ts">
-  import AppHeader from '$components/features/globals/AppHeader.svelte'
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import type { SnippetProps } from '$utils/runtime'
 
@@ -15,7 +14,7 @@
   const { config } = $derived(pageDetails)
 </script>
 
-<AppHeader />
+<SnippetResolver snippet={config.snippets.appHeader} />
 
 <main class="flex flex-1 flex-col gap-4 px-4">
   <SnippetResolver snippet={config.snippets.title} class="h-11 w-full" />

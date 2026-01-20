@@ -20,6 +20,7 @@
 		"@emoji-mart/data": "^1.2.1",
 		"@eslint/compat": "^1.4.0",
 		"@eslint/js": "^9.39.1",
+		"@inlang/paraglide-js": "^2.9.0",
 		"@internationalized/date": "^3.10.1",
 		"@lucide/svelte": "^0.562.0",
 		"@shikijs/langs": "^3.21.0",

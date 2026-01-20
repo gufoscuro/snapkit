@@ -1,6 +1,8 @@
 import { AUTH_COOKIE_NAME } from '$lib/fixtures/constants'
+import { paraglideMiddleware } from '$lib/paraglide/server'
 import { decodeToken } from '$lib/server/auth'
 import { redirect, type Handle } from '@sveltejs/kit'
+import { sequence } from '@sveltejs/kit/hooks'
 
 const PUBLIC_ROUTES = ['/login', '/api/login', '/api/logout']
 
@@ -8,7 +10,23 @@ function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
 }
 
-export const handle: Handle = async ({ event, resolve }) => {
+/**
+ * i18n middleware - handles locale detection and HTML lang attribute
+ */
+const i18nHandle: Handle = ({ event, resolve }) => {
+  return paraglideMiddleware(event.request, ({ request: localizedRequest, locale }) => {
+    event.request = localizedRequest
+
+    return resolve(event, {
+      transformPageChunk: ({ html }) => html.replace('%paraglide.lang%', locale)
+    })
+  })
+}
+
+/**
+ * Auth middleware - handles authentication and route protection
+ */
+const authHandle: Handle = async ({ event, resolve }) => {
   const { cookies, url } = event
 
   // Get token from cookie or Authorization header
@@ -18,7 +36,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   // Allow public routes without auth
   if (isPublicRoute(url.pathname)) {
-    return await resolve(event)
+    return resolve(event)
   }
 
   if (authToken) {
@@ -28,13 +46,13 @@ export const handle: Handle = async ({ event, resolve }) => {
       event.locals.user = user
       event.locals.token = authToken
     } else {
-      // Invalid token, redirect to login
       throw redirect(302, '/login')
     }
   } else {
-    // No token, redirect to login
     throw redirect(302, '/login')
   }
 
-  return await resolve(event)
+  return resolve(event)
 }
+
+export const handle = sequence(i18nHandle, authHandle)
