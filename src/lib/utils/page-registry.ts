@@ -125,8 +125,6 @@ export async function getPageByRoute(route: string): Promise<PageDetails | null>
       const matcher = match(page.route, { decode: decodeURIComponent })
       const result = matcher(route)
 
-      console.log('result', result, 'page', page)
-
       if (result) {
         return {
           config: page,
