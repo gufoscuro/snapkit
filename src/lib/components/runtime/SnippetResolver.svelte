@@ -12,7 +12,6 @@
 
 <script lang="ts">
   import { browser } from '$app/environment'
-  import Spinner from '$components/ui/spinner/spinner.svelte'
   import { getComponent } from '$generated/components-registry'
   import type { SnippetDefinition } from '$utils/page-registry'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
@@ -72,10 +71,7 @@
 
       ComponentFunction = customModule.default
       componentContract = contract
-      console.log(
-        `✓ Loaded and cached component: ${s.componentKey}`,
-        contract ? '(with contract)' : '(no contract)',
-      )
+      console.log(`✓ Loaded and cached component: ${s.componentKey}`, contract ? '(with contract)' : '(no contract)')
     } catch (err) {
       console.error(`Failed to load component:`, err)
       error = err
@@ -98,9 +94,7 @@
     {@render children?.()}
   {:else}
     <div class="py-2">
-      <div class="flex animate-pulse items-center justify-center rounded bg-muted {className || 'h-10 w-60'}">
-        <Spinner />
-      </div>
+      <div class="flex animate-pulse items-center justify-center rounded bg-muted {className || 'h-10 w-60'}"></div>
     </div>
   {/if}
 {:else if ComponentFunction}
