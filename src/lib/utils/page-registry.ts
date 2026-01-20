@@ -40,6 +40,10 @@ export const PAGES: PageConfig[] = [
         enabled: true,
         componentKey: 'globals.PageTitle',
       },
+      table: {
+        enabled: true,
+        componentKey: 'supply.supplyorderstable.default.SupplyOrdersTable'
+      },
     },
   },
   {
