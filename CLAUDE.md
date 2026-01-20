@@ -246,3 +246,53 @@ Use the existing generic selector components:
 
 - `size="sm" | "md" | "lg"` → Use a prop (simple styling change)
 - `SalesOrdersListCompact.svelte` → Use a variant (different column layout, omits details section)
+
+---
+
+# Navigation and Routing
+
+## Creating Links to Pages
+
+**IMPORTANT:** When creating links to pages in the application, you MUST ALWAYS use the route-builder utility instead of hardcoded URLs.
+
+Use the `createRoute()` function from `$lib/utils/route-builder` to generate URLs programmatically. This provides:
+
+- Type-safe route generation
+- Centralized route management
+- Prevention of broken links when routes change
+- Automatic parameter interpolation and query string handling
+
+See [@src/lib/utils/ROUTE-BUILDER.md](src/lib/utils/ROUTE-BUILDER.md) for complete documentation and examples.
+
+**Basic usage:**
+
+```svelte
+<script>
+  import { createRoute } from '$lib/utils/route-builder'
+</script>
+
+<!-- Simple link -->
+<a href={createRoute({ $id: 'order-list' })}>Orders</a>
+
+<!-- Link with parameters -->
+<a href={createRoute({ $id: 'order-detail', params: { uuid: orderId } })}>
+  View Order
+</a>
+
+<!-- Link with query params -->
+<a href={createRoute({ $id: 'order-list', query: { status: 'pending' } })}>
+  Pending Orders
+</a>
+```
+
+**Never hardcode URLs like this:**
+
+```svelte
+<!-- ❌ WRONG -->
+<a href="/orders">Orders</a>
+<a href="/orders/{orderId}">View Order</a>
+
+<!-- ✅ CORRECT -->
+<a href={createRoute({ $id: 'order-list' })}>Orders</a>
+<a href={createRoute({ $id: 'order-detail', params: { uuid: orderId } })}>View Order</a>
+```
