@@ -12,6 +12,7 @@
   import { renderSnippet } from '$lib/components/ui/data-table'
   import { createQueryRequestObject, DEFAULT_ITEMS_LIMIT } from '$lib/utils/filters'
   import { apiRequest } from '$lib/utils/request'
+  import { createRoute } from '$lib/utils/route-builder'
   import type { ColumnDef } from '@tanstack/table-core'
   import { createRawSnippet } from 'svelte'
 
@@ -49,7 +50,20 @@
     {
       accessorKey: 'internal_id',
       header: 'ID',
-      cell: ({ row }) => row.original.internal_id ?? row.original.id ?? '-',
+      cell: ({ row }) => {
+        const displayId = row.original.internal_id ?? row.original.id ?? '-'
+        const orderId = row.original.id
+
+        if (!orderId || displayId === '-') {
+          return displayId
+        }
+
+        const url = createRoute({ $id: 'order-detail', params: { uuid: orderId } })
+        const snippet = createRawSnippet<[string, string]>(() => ({
+          render: () => `<a href="${url}" class="text-primary hover:underline">${displayId}</a>`,
+        }))
+        return renderSnippet(snippet, url, displayId)
+      },
     },
     {
       accessorKey: 'supplier_attr',
