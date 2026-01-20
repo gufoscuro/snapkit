@@ -26,7 +26,7 @@ export const PAGES: PageConfig[] = [
   {
     $id: 'order-list',
     title: 'Orders',
-    route: '/orders',
+    route: '/purchase/orders',
     layout: {
       componentKey: 'layouts.List',
       enabled: true,
@@ -45,17 +45,19 @@ export const PAGES: PageConfig[] = [
         componentKey: 'supply.supplyorderstable.default.SupplyOrdersTable'
       },
     },
-  },
-  {
-    $id: 'order-detail',
-    $params: Type.Object({ uuid: Type.String() }),
-    title: 'Order Detail',
-    route: '/orders/upsert/:uuid',
-    layout: {
-      componentKey: 'layouts.Detail',
-      enabled: true,
-    },
-    snippets: {},
+    subpages: [
+      {
+        $id: 'order-detail',
+        $params: Type.Object({ uuid: Type.String() }),
+        title: 'Order Detail',
+        route: '/purchase/orders/upsert/:uuid',
+        layout: {
+          componentKey: 'layouts.Detail',
+          enabled: true,
+        },
+        snippets: {},
+      },
+    ],
   },
   {
     $id: 'product-list',
@@ -117,18 +119,32 @@ export async function getPageByRoute(route: string): Promise<PageDetails | null>
   // Simulate async DB call
   await new Promise(resolve => setTimeout(resolve, 10))
 
-  // Try to match against each page pattern
-  for (const page of PAGES) {
-    const matcher = match(page.route, { decode: decodeURIComponent })
-    const result = matcher(route)
+  // Recursive function to search through pages and subpages
+  function searchPages(pages: PageConfig[]): PageDetails | null {
+    for (const page of pages) {
+      const matcher = match(page.route, { decode: decodeURIComponent })
+      const result = matcher(route)
 
-    if (result) {
-      return {
-        config: page,
-        params: result.params as Record<string, string>
+      console.log('result', result, 'page', page)
+
+      if (result) {
+        return {
+          config: page,
+          params: result.params as Record<string, string>
+        }
+      }
+
+      // Search in subpages if they exist
+      if (page.subpages && page.subpages.length > 0) {
+        const subpageResult = searchPages(page.subpages)
+        if (subpageResult) {
+          return subpageResult
+        }
       }
     }
+
+    return null
   }
 
-  return null
+  return searchPages(PAGES)
 }
