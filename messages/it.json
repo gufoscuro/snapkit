@@ -13,6 +13,8 @@
   "common_search": "Cerca",
   "common_no_results": "Nessun risultato trovato",
   "common_actions": "Azioni",
+  "datatable_no_data": "Nessun dato disponibile",
+  "datatable_load_more": "Carica altri",
   "language_english": "Inglese",
   "language_italian": "Italiano"
 }
