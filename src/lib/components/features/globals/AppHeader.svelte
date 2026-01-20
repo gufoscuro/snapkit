@@ -1,8 +1,7 @@
 <script lang="ts">
-  import type { TenantInterfaceDetails } from '$utils/customer-registry'
-  import { getContext } from 'svelte'
+  import type { SnippetProps } from '$utils/runtime'
 
-  const tenantInterfaceDetails: TenantInterfaceDetails = getContext<TenantInterfaceDetails>('tenantInterfaceDetails')
+  const { tenantInterfaceDetails }: SnippetProps = $props()
 </script>
 
 <div class="sticky top-0 flex h-14 w-full items-center justify-between gap-3 border-b bg-background px-4">
