@@ -18,7 +18,7 @@ export async function getTenantInterfaceDetails(tenantVanity: string | null): Pr
         mainMenu: [
           {
             label: 'Orders',
-            href: '/orders',
+            href: '/purchase/orders',
             visible: true,
           },
           {
