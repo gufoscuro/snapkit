@@ -8,36 +8,17 @@
 -->
 <script lang="ts">
   import { DataTable } from '$lib/components/core/DataTable'
-  import { badgeVariants } from '$lib/components/ui/badge'
-  import { renderSnippet } from '$lib/components/ui/data-table'
+  import { Badge } from '$lib/components/ui/badge'
+  import { renderComponent, renderSnippet } from '$lib/components/ui/data-table'
+  import type { SupplyOrderSummary } from '$lib/types/api-types'
   import { createQueryRequestObject, DEFAULT_ITEMS_LIMIT } from '$lib/utils/filters'
   import { apiRequest } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import type { ColumnDef } from '@tanstack/table-core'
   import { createRawSnippet } from 'svelte'
 
-  // Type from supply-api orderSummary
-  type OrderSummary = {
-    id?: string
-    name: string
-    internal_id?: string
-    status: 'draft' | 'sent' | 'accepted' | 'shipped' | 'rejected'
-    expected_delivery_time: string
-    total_vat_incl: number
-    default_currency?: string
-    supplier_attr?: {
-      id?: string
-      name: string
-      vat: string
-    }
-    warehouse_attr?: {
-      id: string
-      name: string
-    }
-  }
-
   // Status badge variants
-  const statusVariants: Record<OrderSummary['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  const statusVariants: Record<SupplyOrderSummary['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
     draft: 'secondary',
     sent: 'outline',
     accepted: 'default',
@@ -46,7 +27,7 @@
   }
 
   // Column definitions
-  const columns: ColumnDef<OrderSummary>[] = [
+  const columns: ColumnDef<SupplyOrderSummary>[] = [
     {
       accessorKey: 'internal_id',
       header: 'ID',
@@ -59,10 +40,10 @@
         }
 
         const url = createRoute({ $id: 'order-detail', params: { uuid: orderId } })
-        const snippet = createRawSnippet<[string, string]>(() => ({
+        const snippet = createRawSnippet(() => ({
           render: () => `<a href="${url}" class="text-primary hover:underline">${displayId}</a>`,
         }))
-        return renderSnippet(snippet, url, displayId)
+        return renderSnippet(snippet)
       },
     },
     {
@@ -76,11 +57,10 @@
       cell: ({ row }) => {
         const status = row.original.status
         const variant = statusVariants[status]
-        const badgeClass = badgeVariants({ variant })
-        const snippet = createRawSnippet<[string]>(() => ({
-          render: () => `<span class="${badgeClass}">${status}</span>`,
+        const children = createRawSnippet(() => ({
+          render: () => status,
         }))
-        return renderSnippet(snippet, status)
+        return renderComponent(Badge, { variant, children })
       },
     },
     {
@@ -107,14 +87,14 @@
   ]
 
   // State
-  let data = $state<OrderSummary[]>([])
+  let data = $state<SupplyOrderSummary[]>([])
   let loading = $state(true)
   let loadingMore = $state(false)
   let hasMore = $state(true)
 
   // Fetch function
-  async function fetchOrders(offset: number = 0): Promise<OrderSummary[]> {
-    const response = await apiRequest<OrderSummary[]>({
+  async function fetchOrders(offset: number = 0): Promise<SupplyOrderSummary[]> {
+    const response = await apiRequest<SupplyOrderSummary[]>({
       url: 'supply/order',
       queryParams: createQueryRequestObject({
         limit: DEFAULT_ITEMS_LIMIT,

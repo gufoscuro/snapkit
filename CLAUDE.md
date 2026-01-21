@@ -197,6 +197,43 @@ npm run generate:components-registry
 
 This automatically scans `src/lib/components/features/` and updates `src/generated/components-registry.ts`. Do NOT edit the registry file manually.
 
+## API Types Management
+
+**IMPORTANT:** Do NOT define API response types locally within components. All API types must be centralized in `src/lib/types/api-types.ts`.
+
+**Rules:**
+
+1. **Never define API types inline** in components (e.g., `type OrderSummary = {...}`)
+2. **Always add new API types** to `src/lib/types/api-types.ts`
+3. **Import and reuse** types from the centralized location
+
+**Example:**
+
+```typescript
+// ❌ WRONG - Don't define types locally in components
+// src/lib/components/features/supply/SupplyOrdersTable.svelte
+type OrderSummary = {
+  id?: string
+  name: string
+  status: 'draft' | 'sent' | 'accepted'
+  // ...
+}
+
+// ✅ CORRECT - Define in api-types.ts and import
+// src/lib/types/api-types.ts
+export type OrderSummary = {
+  id?: string
+  name: string
+  status: 'draft' | 'sent' | 'accepted'
+  // ...
+}
+
+// src/lib/components/features/supply/SupplyOrdersTable.svelte
+import type { OrderSummary } from '$lib/types/api-types'
+```
+
+**Why:** This ensures type consistency across the application, enables reusability, and makes it easier to update types when the API changes.
+
 ## Component Documentation
 
 When creating a new component, add a descriptive comment block at the top:
