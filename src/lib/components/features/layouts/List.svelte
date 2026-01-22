@@ -8,9 +8,7 @@
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import type { SnippetProps } from '$utils/runtime'
 
-  type ListLayoutProps = SnippetProps & {}
-
-  const { pageDetails }: ListLayoutProps = $props()
+  const { pageDetails }: SnippetProps = $props()
   const { config } = $derived(pageDetails)
 
   // $inspect('list layout', config.snippets)

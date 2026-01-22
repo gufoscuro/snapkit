@@ -55,6 +55,51 @@ export const PAGES: PageConfig[] = [
           componentKey: 'layouts.Detail',
           enabled: true,
         },
+        snippets: {
+          appHeader: {
+            componentKey: 'globals.AppHeaderWithBack',
+            enabled: true,
+          },
+          detail: {
+            enabled: true,
+            componentKey: 'supply.upsertsupplyorder.default.UpsertSupplyOrder',
+          },
+        },
+      },
+    ],
+  },
+  {
+    $id: 'sales-order-list',
+    title: 'Sales Orders',
+    route: '/sales/orders',
+    layout: {
+      componentKey: 'layouts.List',
+      enabled: true,
+    },
+    snippets: {
+      appHeader: {
+        componentKey: 'globals.AppHeader',
+        enabled: true,
+      },
+      title: {
+        enabled: true,
+        componentKey: 'globals.PageTitle',
+      },
+      table: {
+        enabled: true,
+        componentKey: 'sales.salesorderstable.default.SalesOrdersTable'
+      },
+    },
+    subpages: [
+      {
+        $id: 'sales-order-detail',
+        $params: Type.Object({ uuid: Type.String() }),
+        title: 'Sales Order Detail',
+        route: '/sales/orders/upsert/:uuid',
+        layout: {
+          componentKey: 'layouts.Detail',
+          enabled: true,
+        },
         snippets: {},
       },
     ],

@@ -54,6 +54,110 @@ export type SupplyOrderSummary = {
   }
 }
 
+/**
+ * Supply order details from supply-api GET /order/{orderId} endpoint
+ */
+export type SupplyOrderDetails = SupplyOrderSummary & {
+  archived?: boolean
+  created?: {
+    at: string
+    by: {
+      full_name: string
+      id: string
+      username: string
+    }
+  }
+  updated?: {
+    at: string
+    by: {
+      full_name: string
+      id: string
+      username: string
+    }
+  }
+  custom_form_values?: {
+    generation?: number
+    values?: Array<{
+      filters?: Array<{ name: string; value: string }>
+      index: number
+      label: string
+      name: string
+      type: string
+      value?: unknown
+    }>
+  }
+  foreign_ids?: Record<string, unknown>
+  notes?: string
+  version: number
+  buyer_attr?: {
+    address?: string
+    country?: string
+    id?: string
+    name: string
+    vat: string
+  }
+  payment_method: string
+  raw_materials: Array<{
+    external_lot?: string
+    extra_id: string
+    id?: string
+    item_id?: string
+    lot?: string
+    meta?: Record<string, unknown>
+    name: string
+    order_id?: string
+    prices?: {
+      base_price?: number
+      currency: 'EUR' | 'USD' | 'GBP'
+      deals?: Array<{
+        category?: string
+        min_quantity: number
+        unit: number
+      }>
+      discount_percent?: number
+      unit: number
+      vat?: number
+    }
+    quantity: number
+    uom: string
+  }>
+  shipping_address: string
+  supplier_id: string
+  total: number
+}
+
+// ============================================================================
+// Sales API Types
+// ============================================================================
+
+/**
+ * Sales order summary from sales-api GET /order endpoint
+ */
+export type SalesOrderSummary = {
+  id?: string
+  internal_id?: string
+  external_id?: string
+  status: 'draft' | 'accepted' | 'sent'
+  shipped?: 'completed' | 'not shipped' | 'partial'
+  expected_shipping_time: string
+  total_vat_incl: number
+  default_currency?: string
+  time?: string
+  priority?: number
+  customer_attr?: {
+    id?: string
+    name: string
+    vat: string
+    address?: string
+    country?: string
+  }
+  sales_channel_attr?: {
+    id: string
+    name: string
+    extra_id?: string
+  }
+}
+
 // ============================================================================
 // Product API Types
 // ============================================================================
