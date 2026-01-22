@@ -73,13 +73,13 @@ This creates a **living documentation system** where architectural knowledge is 
 
 ### MCP Server Ecosystem
 
-| Server | Purpose |
-|--------|---------|
+| Server                | Purpose                                                               |
+| --------------------- | --------------------------------------------------------------------- |
 | **snapkit-blueprint** | Architectural guidelines and implementation rules from `.blueprints/` |
-| **svelte** | Svelte 5 & SvelteKit documentation, syntax validation, auto-fixing |
-| **svelte-components** | Live component registry discovery and contract exploration |
-| **shadcn-svelte** | Base UI component library documentation |
-| **arke** | Backend API exploration and type generation |
+| **svelte**            | Svelte 5 & SvelteKit documentation, syntax validation, auto-fixing    |
+| **svelte-components** | Live component registry discovery and contract exploration            |
+| **shadcn-svelte**     | Base UI component library documentation                               |
+| **api-mcp**           | Backend API exploration and type generation                           |
 
 ### AI Development Workflow
 
@@ -88,7 +88,7 @@ Developer: "Create a component to display material stock levels"
 
 AI (via MCP servers):
   → Queries snapkit-blueprint for component patterns
-  → Discovers /api/materials/:id/stock endpoint via arke
+  → Discovers /api/materials/:id/stock endpoint via api-mcp
   → Checks existing components via svelte-components
   → Generates component following Snapkit conventions
   → Validates with svelte-autofixer
