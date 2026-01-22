@@ -16,5 +16,16 @@
   "datatable_no_data": "No data available",
   "datatable_load_more": "Load more",
   "language_english": "English",
-  "language_italian": "Italian"
+  "language_italian": "Italian",
+  "enum_supply_status_draft": "Draft",
+  "enum_supply_status_sent": "Sent",
+  "enum_supply_status_accepted": "Accepted",
+  "enum_supply_status_shipped": "Shipped",
+  "enum_supply_status_rejected": "Rejected",
+  "enum_sales_status_draft": "Draft",
+  "enum_sales_status_sent": "Sent",
+  "enum_sales_status_accepted": "Accepted",
+  "enum_sales_shipped_completed": "Completed",
+  "enum_sales_shipped_not_shipped": "Not Shipped",
+  "enum_sales_shipped_partial": "Partial"
 }

@@ -11,25 +11,17 @@
   import { Badge } from '$lib/components/ui/badge'
   import { renderComponent, renderSnippet } from '$lib/components/ui/data-table'
   import type { SalesOrderSummary } from '$lib/types/api-types'
+  import {
+    getSalesShippedLabel,
+    getSalesShippedVariant,
+    getSalesStatusLabel,
+    getSalesStatusVariant,
+  } from '$lib/utils/enum-labels'
   import { createQueryRequestObject, DEFAULT_ITEMS_LIMIT } from '$lib/utils/filters'
   import { apiRequest } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import type { ColumnDef } from '@tanstack/table-core'
   import { createRawSnippet } from 'svelte'
-
-  // Status badge variants
-  const statusVariants: Record<SalesOrderSummary['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    draft: 'secondary',
-    sent: 'outline',
-    accepted: 'default',
-  }
-
-  // Shipped status badge variants
-  const shippedVariants: Record<NonNullable<SalesOrderSummary['shipped']>, 'default' | 'secondary' | 'outline'> = {
-    completed: 'default',
-    partial: 'outline',
-    'not shipped': 'secondary',
-  }
 
   // Column definitions
   const columns: ColumnDef<SalesOrderSummary>[] = [
@@ -66,9 +58,10 @@
       header: 'Status',
       cell: ({ row }) => {
         const status = row.original.status
-        const variant = statusVariants[status]
+        const variant = getSalesStatusVariant(status)
+        const label = getSalesStatusLabel(status)
         const children = createRawSnippet(() => ({
-          render: () => status,
+          render: () => `<span>${label}</span>`,
         }))
         return renderComponent(Badge, { variant, children })
       },
@@ -79,9 +72,10 @@
       cell: ({ row }) => {
         const shipped = row.original.shipped
         if (!shipped) return '-'
-        const variant = shippedVariants[shipped]
+        const variant = getSalesShippedVariant(shipped)
+        const label = getSalesShippedLabel(shipped)
         const children = createRawSnippet(() => ({
-          render: () => shipped,
+          render: () => `<span>${label}</span>`,
         }))
         return renderComponent(Badge, { variant, children })
       },

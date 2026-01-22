@@ -16,5 +16,16 @@
   "datatable_no_data": "Nessun dato disponibile",
   "datatable_load_more": "Carica altri",
   "language_english": "Inglese",
-  "language_italian": "Italiano"
+  "language_italian": "Italiano",
+  "enum_supply_status_draft": "Bozza",
+  "enum_supply_status_sent": "Inviato",
+  "enum_supply_status_accepted": "Accettato",
+  "enum_supply_status_shipped": "Spedito",
+  "enum_supply_status_rejected": "Rifiutato",
+  "enum_sales_status_draft": "Bozza",
+  "enum_sales_status_sent": "Inviato",
+  "enum_sales_status_accepted": "Accettato",
+  "enum_sales_shipped_completed": "Completato",
+  "enum_sales_shipped_not_shipped": "Non spedito",
+  "enum_sales_shipped_partial": "Parziale"
 }

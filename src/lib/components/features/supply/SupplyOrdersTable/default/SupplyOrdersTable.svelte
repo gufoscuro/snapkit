@@ -11,20 +11,12 @@
   import { Badge } from '$lib/components/ui/badge'
   import { renderComponent, renderSnippet } from '$lib/components/ui/data-table'
   import type { SupplyOrderSummary } from '$lib/types/api-types'
+  import { getSupplyStatusLabel, getSupplyStatusVariant } from '$lib/utils/enum-labels'
   import { createQueryRequestObject, DEFAULT_ITEMS_LIMIT } from '$lib/utils/filters'
   import { apiRequest } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import type { ColumnDef } from '@tanstack/table-core'
   import { createRawSnippet } from 'svelte'
-
-  // Status badge variants
-  const statusVariants: Record<SupplyOrderSummary['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    draft: 'secondary',
-    sent: 'outline',
-    accepted: 'default',
-    shipped: 'default',
-    rejected: 'destructive',
-  }
 
   // Column definitions
   const columns: ColumnDef<SupplyOrderSummary>[] = [
@@ -56,9 +48,10 @@
       header: 'Status',
       cell: ({ row }) => {
         const status = row.original.status
-        const variant = statusVariants[status]
+        const variant = getSupplyStatusVariant(status)
+        const label = getSupplyStatusLabel(status)
         const children = createRawSnippet(() => ({
-          render: () => status,
+          render: () => `<span>${label}</span>`,
         }))
         return renderComponent(Badge, { variant, children })
       },
