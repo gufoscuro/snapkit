@@ -1,8 +1,9 @@
-# MCP Servers
+# SnapKit Development Guide
 
-This project uses multiple MCP servers. Use the appropriate one based on your task.
+## MCP Servers
 
-## Quick Reference
+This project uses multiple MCP servers for different purposes.
+No matter what language was used in the prompt, it's important that you **always** use english to query the MCP servers!
 
 | MCP Server               | Purpose                            | When to Use                                                                    |
 | ------------------------ | ---------------------------------- | ------------------------------------------------------------------------------ |
@@ -106,230 +107,19 @@ Use for **backend API discovery** when creating components that fetch or interac
 3. **Implement the fetch call**: Use `apiRequest` from `$lib/utils/request.ts` (NOT raw `fetch`)
 4. **Handle loading and error states**: Always account for async data fetching
 
-**API Request Utility:**
+## snapkit-blueprint-mcp
 
-```typescript
-import { apiRequest } from '$lib/utils/request'
-import { createQueryRequestObject } from '$lib/utils/filters'
+**Primary reference for SnapKit implementation rules and patterns.**
 
-const orders = await apiRequest<OrderSummary[]>({
-  url: 'sales/order',
-  queryParams: createQueryRequestObject(query)
-})
-```
+Use the `search_blueprint` tool to find:
 
----
+- Component development guidelines
+- API integration patterns
+- Routing and navigation rules
+- MCP server usage documentation
 
-# Component Development Guidelines
-
-## Component File Locations
-
-| Location                       | Contains                           | MCP Server        |
-| ------------------------------ | ---------------------------------- | ----------------- |
-| `src/lib/components/ui/`       | Base UI components (shadcn-svelte) | shadcn-svelte     |
-| `src/lib/components/features/` | Feature/domain components          | svelte-components |
-
-**Note:** Base UI components in `ui/` should NOT be modified directly. Always build feature components by composing them.
-
-## Reuse and Composition First
-
-Before creating a new component, you MUST:
-
-1. **Check for existing components**: Use `svelte-components` MCP to search the codebase
-2. **Consider composition**: Evaluate if combining existing components achieves the desired result
-3. **Extend when appropriate**: If an existing component is close, prefer extending it over duplicating logic
-
-**Decision flow:**
-
-1. Can an existing component be used as-is? → Use it
-2. Can existing components be composed together? → Compose them
-3. Can an existing component be extended with new props/slots? → Extend it
-4. Only if none of the above apply → Create a new component
-
-## Creating New Feature Components
-
-All newly created feature components MUST be placed in:
+**Always search the blueprint first** when you need guidance on SnapKit conventions.
 
 ```
-src/lib/components/features/
-```
-
-**Simple composed components** (combining existing UI components with minimal logic):
-
-```
-src/lib/components/features/<domain>/<ComponentName>.svelte
-```
-
-**New standalone components** (step 4 of decision flow - requires extensibility):
-
-```
-src/lib/components/features/<domain>/<ComponentName>/default/<ComponentName>.svelte
-```
-
-Examples:
-
-- `src/lib/components/features/orders/OrderStatusBadge.svelte` - Simple composition of Badge
-- `src/lib/components/features/orders/SalesOrdersList/default/SalesOrdersList.svelte` - Complex standalone component
-
-### Barrel Files for Exports
-
-For standalone components, create an `index.ts` file:
-
-```typescript
-// src/lib/components/features/orders/SalesOrdersList/index.ts
-export { default as SalesOrdersList } from './default/SalesOrdersList.svelte';
-export { default as SalesOrdersListCompact } from './default/SalesOrdersListCompact.svelte';
-```
-
-This enables clean imports:
-
-```typescript
-import { SalesOrdersList } from '$lib/components/features/orders/SalesOrdersList';
-```
-
-### Update the Components Registry
-
-After creating new components, run:
-
-```bash
-npm run generate:components-registry
-```
-
-This automatically scans `src/lib/components/features/` and updates `src/generated/components-registry.ts`. Do NOT edit the registry file manually.
-
-## API Types Management
-
-**IMPORTANT:** Do NOT define API response types locally within components. All API types must be centralized in `src/lib/types/api-types.ts`.
-
-**Rules:**
-
-1. **Never define API types inline** in components (e.g., `type OrderSummary = {...}`)
-2. **Always add new API types** to `src/lib/types/api-types.ts`
-3. **Import and reuse** types from the centralized location
-
-**Example:**
-
-```typescript
-// ❌ WRONG - Don't define types locally in components
-// src/lib/components/features/supply/SupplyOrdersTable.svelte
-type OrderSummary = {
-  id?: string
-  name: string
-  status: 'draft' | 'sent' | 'accepted'
-  // ...
-}
-
-// ✅ CORRECT - Define in api-types.ts and import
-// src/lib/types/api-types.ts
-export type OrderSummary = {
-  id?: string
-  name: string
-  status: 'draft' | 'sent' | 'accepted'
-  // ...
-}
-
-// src/lib/components/features/supply/SupplyOrdersTable.svelte
-import type { OrderSummary } from '$lib/types/api-types'
-```
-
-**Why:** This ensures type consistency across the application, enables reusability, and makes it easier to update types when the API changes.
-
-## Component Documentation
-
-When creating a new component, add a descriptive comment block at the top:
-
-```svelte
-<!--
-  @component OrderSummaryCard
-  @description Displays a summary of an order including items, totals, and status.
-  @keywords order, summary, card, checkout, invoice, receipt
-  @uses Card, Badge, Separator
--->
-```
-
-## Creating Selector Components
-
-Use the existing generic selector components:
-
-- **Single selection**: `FormGenericSingleSelector` from `$lib/components/form/FormGenericSingleSelector.svelte`
-- **Multi selection**: `FormGenericMultiSelector` from `$lib/components/form/FormGenericMultiSelector.svelte`
-
-**Required implementation pattern:**
-
-1. Define your entity type (from API)
-2. Create an `optionMappingFunction` that maps your entity to `ExtendedOption`
-3. Create a `fetchFunction` that fetches entities from the API
-4. Pass these to the generic selector component
-
-**Example**: See `src/lib/components/features/form/FormSelectorExample.svelte`
-
-## Variants vs Props
-
-**Use a prop when:**
-
-- The change is a simple toggle (e.g., `compact`, `bordered`, `disabled`)
-- The variation affects only styling or minor layout adjustments
-- The logic remains essentially the same
-- You want consumers to switch between modes dynamically at runtime
-
-**Use a variant file when:**
-
-- The variation involves significantly different markup structure
-- The variant has different data requirements or props
-- The logic diverges substantially from the base component
-- The variant is a specialized use case that most consumers won't need
-
-**Examples:**
-
-- `size="sm" | "md" | "lg"` → Use a prop (simple styling change)
-- `SalesOrdersListCompact.svelte` → Use a variant (different column layout, omits details section)
-
----
-
-# Navigation and Routing
-
-## Creating Links to Pages
-
-**IMPORTANT:** When creating links to pages in the application, you MUST ALWAYS use the route-builder utility instead of hardcoded URLs.
-
-Use the `createRoute()` function from `$lib/utils/route-builder` to generate URLs programmatically. This provides:
-
-- Type-safe route generation
-- Centralized route management
-- Prevention of broken links when routes change
-- Automatic parameter interpolation and query string handling
-
-See [@src/lib/utils/ROUTE-BUILDER.md](src/lib/utils/ROUTE-BUILDER.md) for complete documentation and examples.
-
-**Basic usage:**
-
-```svelte
-<script>
-  import { createRoute } from '$lib/utils/route-builder'
-</script>
-
-<!-- Simple link -->
-<a href={createRoute({ $id: 'order-list' })}>Orders</a>
-
-<!-- Link with parameters -->
-<a href={createRoute({ $id: 'order-detail', params: { uuid: orderId } })}>
-  View Order
-</a>
-
-<!-- Link with query params -->
-<a href={createRoute({ $id: 'order-list', query: { status: 'pending' } })}>
-  Pending Orders
-</a>
-```
-
-**Never hardcode URLs like this:**
-
-```svelte
-<!-- ❌ WRONG -->
-<a href="/orders">Orders</a>
-<a href="/orders/{orderId}">View Order</a>
-
-<!-- ✅ CORRECT -->
-<a href={createRoute({ $id: 'order-list' })}>Orders</a>
-<a href={createRoute({ $id: 'order-detail', params: { uuid: orderId } })}>View Order</a>
+search_blueprint("MCP servers overview")
 ```
