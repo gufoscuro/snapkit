@@ -256,15 +256,25 @@ class AdminStore {
 
   // ========== Tenant Actions ==========
 
-  addTenant(tenant?: Partial<TenantConfig>): TenantConfig {
-    const newTenant: TenantConfig = {
+  /**
+   * Create a new tenant config object without adding it to the store.
+   * Use this for the "new tenant" form - tenant is only added when user saves.
+   */
+  createTenantConfig(tenant?: Partial<TenantConfig>): TenantConfig {
+    return {
       id: tenant?.id ?? generateId('tenant'),
       vanity: tenant?.vanity ?? 'new-tenant',
       name: tenant?.name ?? 'New Tenant',
     }
-    this.state.tenants.push(newTenant)
+  }
+
+  /**
+   * Add a tenant to the store (used when saving a new tenant)
+   */
+  addTenant(tenant: TenantConfig): TenantConfig {
+    this.state.tenants.push(tenant)
     this.state.isDirty = true
-    return newTenant
+    return tenant
   }
 
   updateTenant(id: string, updates: Partial<TenantConfig>) {
