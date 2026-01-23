@@ -1,3 +1,5 @@
+import { menus as adminMenus, tenants as adminTenants } from '$generated/admin-config'
+
 export type NavItem = {
   label: string
   href: string
@@ -11,35 +13,28 @@ export type TenantInterfaceDetails = {
 }
 
 export async function getTenantInterfaceDetails(tenantVanity: string | null): Promise<TenantInterfaceDetails | null> {
+  // First check admin-configured tenants
+  const adminTenant = adminTenants.find(t => t.vanity === tenantVanity)
+  if (adminTenant) {
+    // Get menus assigned to this tenant (menus now have tenantId foreign key)
+    const tenantMenus = adminMenus.filter(m => m.tenantId === adminTenant.id)
+    const mainMenu = tenantMenus.flatMap(m => m.items)
+
+    return {
+      name: adminTenant.name,
+      mainMenu,
+    }
+  }
+
+  // Fallback to hardcoded tenants
   switch (tenantVanity) {
-    case 'tenant1':
+    case 'admin':
       return {
-        name: 'Tenant 1',
+        name: 'Admin',
         mainMenu: [
           {
-            label: 'supply_orders',
-            href: '/purchase/orders',
-            visible: true,
-          },
-          {
-            label: 'sales_orders',
-            href: '/sales/orders',
-            visible: true,
-          },
-          {
-            label: 'production',
-            href: '/production',
-            visible: true,
-          },
-        ],
-      }
-    case 'tenant2':
-      return {
-        name: 'Tenant 2',
-        mainMenu: [
-          {
-            label: 'purchase_orders',
-            href: '/purchase/orders',
+            label: 'Admin Dashboard',
+            href: '/admin',
             visible: true,
           },
         ],

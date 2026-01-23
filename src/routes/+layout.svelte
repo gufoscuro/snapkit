@@ -5,6 +5,7 @@
   import '@fontsource-variable/geist'
   import { setContext } from 'svelte'
   import type { LayoutProps } from './$types'
+  import { Toaster } from '$lib/components/ui/sonner'
   import './layout.css'
 
   let { children, data }: LayoutProps = $props()
@@ -22,3 +23,5 @@
 <div class="flex h-screen flex-col">
   {@render children()}
 </div>
+
+<Toaster />

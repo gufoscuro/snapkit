@@ -1,3 +1,9 @@
+<script lang="ts" module>
+  import type { LayoutSlotDefinition } from '$lib/admin/types'
+
+  export const slots: LayoutSlotDefinition[] = []
+</script>
+
 <script lang="ts">
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import type { SnippetProps } from '$utils/runtime'

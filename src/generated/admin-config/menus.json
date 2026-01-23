@@ -1,0 +1,28 @@
+[
+  {
+    "id": "menu-1769165084758-iwpfu",
+    "tenantId": "tenant-1769164947433-0029w",
+    "name": "Menu del tentant 1",
+    "items": [
+      {
+        "label": "Home di tenant 1",
+        "href": "/",
+        "visible": true,
+        "disabled": false
+      }
+    ]
+  },
+  {
+    "id": "menu-1769165615074-5mq37",
+    "tenantId": "tenant-1769165583406-a0t8t",
+    "name": "Menu del tenant 2",
+    "items": [
+      {
+        "label": "Home del tenant 2",
+        "href": "/home-tenant2",
+        "visible": true,
+        "disabled": false
+      }
+    ]
+  }
+]
