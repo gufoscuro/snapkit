@@ -1,7 +1,8 @@
+import { pages as adminPages } from '$generated/admin-config';
 import type { ComponentKey } from '$generated/components-registry';
 import type { BindingConfig } from '$lib/contexts/page-state';
-import { match } from 'path-to-regexp';
 import { type TObject, Type } from '@sinclair/typebox';
+import { match } from 'path-to-regexp';
 
 export interface PageConfig {
   /** Unique identifier for this page, used for route generation */
@@ -23,6 +24,9 @@ export interface SnippetDefinition {
 }
 
 export const PAGES: PageConfig[] = [
+  ...(adminPages as PageConfig[]),
+
+  // Hardcoded pages for demo purposes
   {
     $id: 'order-list',
     title: 'Orders',

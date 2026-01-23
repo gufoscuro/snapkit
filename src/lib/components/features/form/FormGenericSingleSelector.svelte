@@ -25,6 +25,7 @@
   export let contentWidth: string = width
   export let readonly: boolean = false
   export let allowNewRecord: boolean = false
+  export let allowClear: boolean = true
   export let onChoose: (item: T) => void = () => {}
   export let onChange: (item: ExtendedOption | undefined) => void = () => {}
   export let onClear: () => void = () => {}
@@ -83,7 +84,7 @@
         class="w-full {attentionSeeker ? 'attention-seeker shadow-border' : ''} {$$restProps.class || ''}"
         multiselection={false}
         shouldFilter={false}
-        allowClear
+        {allowClear}
         onChange={onSelectionChange}
         on:change />
     </FormFieldMessages>
