@@ -1,0 +1,60 @@
+{
+	"mcpServers": {
+		"svelte": {
+			"_comment": "Svelte 5 & SvelteKit official documentation",
+			"type": "stdio",
+			"command": "npx",
+			"env": {},
+			"args": [
+				"-y",
+				"@sveltejs/mcp"
+			]
+		},
+		"svelte-components": {
+			"_comment": "Custom feature components in src/lib/components/features/",
+			"type": "stdio",
+			"command": "node",
+			"args": [
+				"../svelte-components-mcp/dist/index.js"
+			],
+			"env": {
+				"COMPONENTS_DIR": "./src/lib/components/features"
+			}
+		},
+		"arke": {
+			"_comment": "Backend API discovery - endpoints & TypeScript types",
+			"type": "http",
+			"url": "https://arke.arkestaging.com/api/mcp-server"
+		},
+		"snapkit-blueprint": {
+			"_comment": "SnapKit implementation rules and patterns",
+			"type": "stdio",
+			"command": "node",
+			"args": [
+				"<PATH_TO_SNAPKIT_BLUEPRINT_MCP>/dist/src/index.js"
+			],
+			"env": {
+				"GOOGLE_API_KEY": "<YOUR_GOOGLE_API_KEY>",
+				"EMBEDDINGS_PATH": "<PATH_TO_SNAPKIT_BLUEPRINT_MCP>/embeddings/embeddings.json"
+			}
+		},
+		"shadcn-svelte": {
+			"_comment": "shadcn-svelte base UI components (Button, Dialog, Card, etc.)",
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"mcp-remote",
+				"https://shadcn-svelte.mastra.cloud/api/mcp/shadcn/mcp"
+			]
+		},
+		"shadcn-svelte-extras": {
+			"_comment": "Extra components via jsrepo - https://www.shadcn-svelte-extras.com/",
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"@jsrepo/mcp"
+			]
+		}
+	}
+}
