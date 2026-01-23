@@ -1,6 +1,7 @@
 <script lang="ts">
-  import LanguageSwitcher from './LanguageSwitcher.svelte'
+  import { getI18nLabel } from '$utils/i18n'
   import type { SnippetProps } from '$utils/runtime'
+  import LanguageSwitcher from './LanguageSwitcher.svelte'
 
   const { tenantInterfaceDetails }: SnippetProps = $props()
 </script>
@@ -10,7 +11,8 @@
 
   <div class="flex items-center gap-2">
     {#each tenantInterfaceDetails.mainMenu as menuItem}
-      <a class="cursor-pointer rounded px-3 py-1 hover:bg-muted/70" href={menuItem.href}>{menuItem.label}</a>
+      <a class="cursor-pointer rounded px-3 py-1 hover:bg-muted/70" href={menuItem.href}
+        >{getI18nLabel(menuItem.label)}</a>
     {/each}
     <LanguageSwitcher />
   </div>

@@ -15,14 +15,15 @@
   import { createQueryRequestObject, DEFAULT_ITEMS_LIMIT } from '$lib/utils/filters'
   import { apiRequest } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
+  import * as m from '$lib/paraglide/messages.js'
   import type { ColumnDef } from '@tanstack/table-core'
   import { createRawSnippet } from 'svelte'
 
   // Column definitions
-  const columns: ColumnDef<SupplyOrderSummary>[] = [
+  const columns: ColumnDef<SupplyOrderSummary>[] = $derived([
     {
       accessorKey: 'internal_id',
-      header: 'ID',
+      header: m.id(),
       cell: ({ row }) => {
         const displayId = row.original.internal_id ?? row.original.id ?? '-'
         const orderId = row.original.id
@@ -40,12 +41,12 @@
     },
     {
       accessorKey: 'supplier_attr',
-      header: 'Supplier',
+      header: m.supplier(),
       cell: ({ row }) => row.original.supplier_attr?.name ?? '-',
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: m.status(),
       cell: ({ row }) => {
         const status = row.original.status
         const variant = getSupplyStatusVariant(status)
@@ -58,7 +59,7 @@
     },
     {
       accessorKey: 'expected_delivery_time',
-      header: 'Expected Delivery',
+      header: m.expected_delivery(),
       cell: ({ row }) => {
         const date = row.original.expected_delivery_time
         if (!date) return '-'
@@ -67,7 +68,7 @@
     },
     {
       accessorKey: 'total_vat_incl',
-      header: 'Total',
+      header: m.total(),
       cell: ({ row }) => {
         const currency = row.original.default_currency ?? 'EUR'
         const formatter = new Intl.NumberFormat('en-US', {
@@ -77,7 +78,7 @@
         return formatter.format(row.original.total_vat_incl)
       },
     },
-  ]
+  ])
 
   // State
   let data = $state<SupplyOrderSummary[]>([])

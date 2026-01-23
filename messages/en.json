@@ -27,5 +27,19 @@
   "enum_sales_status_accepted": "Accepted",
   "enum_sales_shipped_completed": "Completed",
   "enum_sales_shipped_not_shipped": "Not Shipped",
-  "enum_sales_shipped_partial": "Partial"
+  "enum_sales_shipped_partial": "Partial",
+  "sales_orders": "Sales Orders",
+  "supply_orders": "Purchase Orders",
+  "id": "ID",
+  "supplier": "Supplier",
+  "customer": "Customer",
+  "sales_channel": "Sales Channel",
+  "status": "Status",
+  "shipping": "Shipping",
+  "expected_delivery": "Expected Delivery",
+  "expected_shipping": "Expected Shipping",
+  "total": "Total",
+  "production": "Production",
+  "gantt_today": "Today",
+  "gantt_no_items": "No items in this period"
 }

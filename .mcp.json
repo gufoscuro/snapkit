@@ -34,7 +34,7 @@
 				"/Users/lorenzofontana/Documents/js-apps/snapkit-blueprint-mcp/dist/src/index.js"
 			],
 			"env": {
-				"GOOGLE_API_KEY": "AIzaSyDGzvO_JTDeyAkSb1MSfIKEmKEf_MS1ul4",
+				"GOOGLE_API_KEY": "AIzaSyCy7ZDMzApVqaQHxIW0pTkszEYp9rANt9Y",
 				"EMBEDDINGS_PATH": "/Users/lorenzofontana/Documents/js-apps/snapkit-blueprint-mcp/embeddings/embeddings.json"
 			}
 		},

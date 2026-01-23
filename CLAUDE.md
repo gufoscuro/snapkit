@@ -1,5 +1,26 @@
 # SnapKit Development Guide
 
+## MANDATORY: Read Blueprints Before Implementation
+
+**This is a strict rule that MUST be followed before ANY implementation task.**
+
+Before creating or modifying components, features, or any code:
+
+1. **ALWAYS** use `search_blueprint` from `snapkit-blueprint-mcp` to read the relevant development guidelines
+2. Search for the specific domain you're working on (e.g., "component development", "API integration", "routing")
+3. Follow ALL guidelines found, including post-implementation steps like updating registries
+
+**Example queries:**
+```
+search_blueprint("component development guidelines")
+search_blueprint("API integration patterns")
+search_blueprint("creating new feature components")
+```
+
+Skipping this step leads to incomplete implementations and missing required steps (like registry updates).
+
+---
+
 ## MCP Servers
 
 This project uses multiple MCP servers for different purposes.

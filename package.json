@@ -77,9 +77,11 @@
 	},
 	"dependencies": {
 		"@fontsource-variable/geist": "^5.2.8",
+		"@fullcalendar/daygrid": "^6.1.20",
 		"@sinclair/typebox": "^0.34.47",
 		"@tabler/icons-svelte": "^3.36.1",
 		"lucide-svelte": "^0.562.0",
-		"path-to-regexp": "^8.3.0"
+		"path-to-regexp": "^8.3.0",
+		"svelte-fullcalendar": "^3.0.0"
 	}
 }

@@ -20,14 +20,15 @@
   import { createQueryRequestObject, DEFAULT_ITEMS_LIMIT } from '$lib/utils/filters'
   import { apiRequest } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
+  import * as m from '$lib/paraglide/messages.js'
   import type { ColumnDef } from '@tanstack/table-core'
   import { createRawSnippet } from 'svelte'
 
   // Column definitions
-  const columns: ColumnDef<SalesOrderSummary>[] = [
+  const columns: ColumnDef<SalesOrderSummary>[] = $derived([
     {
       accessorKey: 'internal_id',
-      header: 'ID',
+      header: m.id(),
       cell: ({ row }) => {
         const displayId = row.original.internal_id ?? row.original.id ?? '-'
         const orderId = row.original.id
@@ -45,17 +46,17 @@
     },
     {
       accessorKey: 'customer_attr',
-      header: 'Customer',
+      header: m.customer(),
       cell: ({ row }) => row.original.customer_attr?.name ?? '-',
     },
     {
       accessorKey: 'sales_channel_attr',
-      header: 'Sales Channel',
+      header: m.sales_channel(),
       cell: ({ row }) => row.original.sales_channel_attr?.name ?? '-',
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: m.status(),
       cell: ({ row }) => {
         const status = row.original.status
         const variant = getSalesStatusVariant(status)
@@ -68,7 +69,7 @@
     },
     {
       accessorKey: 'shipped',
-      header: 'Shipping',
+      header: m.shipping(),
       cell: ({ row }) => {
         const shipped = row.original.shipped
         if (!shipped) return '-'
@@ -82,7 +83,7 @@
     },
     {
       accessorKey: 'expected_shipping_time',
-      header: 'Expected Shipping',
+      header: m.expected_shipping(),
       cell: ({ row }) => {
         const date = row.original.expected_shipping_time
         if (!date) return '-'
@@ -91,7 +92,7 @@
     },
     {
       accessorKey: 'total_vat_incl',
-      header: 'Total',
+      header: m.total(),
       cell: ({ row }) => {
         const currency = row.original.default_currency ?? 'EUR'
         const formatter = new Intl.NumberFormat('en-US', {
@@ -101,7 +102,7 @@
         return formatter.format(row.original.total_vat_incl)
       },
     },
-  ]
+  ])
 
   // State
   let data = $state<SalesOrderSummary[]>([])

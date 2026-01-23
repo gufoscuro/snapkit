@@ -17,13 +17,18 @@ export async function getTenantInterfaceDetails(tenantVanity: string | null): Pr
         name: 'Tenant 1',
         mainMenu: [
           {
-            label: 'Orders',
+            label: 'supply_orders',
             href: '/purchase/orders',
             visible: true,
           },
           {
-            label: 'Products',
-            href: '/products',
+            label: 'sales_orders',
+            href: '/sales/orders',
+            visible: true,
+          },
+          {
+            label: 'production',
+            href: '/production',
             visible: true,
           },
         ],
@@ -33,8 +38,8 @@ export async function getTenantInterfaceDetails(tenantVanity: string | null): Pr
         name: 'Tenant 2',
         mainMenu: [
           {
-            label: 'Pizze',
-            href: '/orders',
+            label: 'purchase_orders',
+            href: '/purchase/orders',
             visible: true,
           },
         ],

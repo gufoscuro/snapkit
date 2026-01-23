@@ -25,7 +25,7 @@ export interface SnippetDefinition {
 export const PAGES: PageConfig[] = [
   {
     $id: 'order-list',
-    title: 'Orders',
+    title: 'supply_orders',
     route: '/purchase/orders',
     layout: {
       componentKey: 'layouts.List',
@@ -49,7 +49,7 @@ export const PAGES: PageConfig[] = [
       {
         $id: 'order-detail',
         $params: Type.Object({ uuid: Type.String() }),
-        title: 'Order Detail',
+        title: 'purchase_order_detail',
         route: '/purchase/orders/upsert/:uuid',
         layout: {
           componentKey: 'layouts.Detail',
@@ -70,7 +70,7 @@ export const PAGES: PageConfig[] = [
   },
   {
     $id: 'sales-order-list',
-    title: 'Sales Orders',
+    title: 'sales_orders',
     route: '/sales/orders',
     layout: {
       componentKey: 'layouts.List',
@@ -94,7 +94,7 @@ export const PAGES: PageConfig[] = [
       {
         $id: 'sales-order-detail',
         $params: Type.Object({ uuid: Type.String() }),
-        title: 'Sales Order Detail',
+        title: 'sales_order_detail',
         route: '/sales/orders/upsert/:uuid',
         layout: {
           componentKey: 'layouts.Detail',
@@ -106,7 +106,7 @@ export const PAGES: PageConfig[] = [
   },
   {
     $id: 'product-list',
-    title: 'Products List',
+    title: 'products_list',
     route: '/products',
     layout: {
       componentKey: 'layouts.List',
@@ -124,8 +124,31 @@ export const PAGES: PageConfig[] = [
     },
   },
   {
+    $id: 'production',
+    title: 'production',
+    route: '/production',
+    layout: {
+      componentKey: 'layouts.List',
+      enabled: true,
+    },
+    snippets: {
+      appHeader: {
+        componentKey: 'globals.AppHeader',
+        enabled: true,
+      },
+      title: {
+        enabled: true,
+        componentKey: 'globals.PageTitle',
+      },
+      table: {
+        enabled: true,
+        componentKey: 'production.ProductionCalendar',
+      },
+    },
+  },
+  {
     $id: 'poc-state-sharing',
-    title: 'POC: State Sharing',
+    title: 'poc_state_sharing',
     route: '/poc/state-sharing',
     layout: {
       componentKey: 'layouts.List',

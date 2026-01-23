@@ -2,27 +2,66 @@
 
 ## Component File Locations
 
-| Location                       | Contains                           | MCP Server        |
-| ------------------------------ | ---------------------------------- | ----------------- |
-| `src/lib/components/ui/`       | Base UI components (shadcn-svelte) | shadcn-svelte     |
-| `src/lib/components/features/` | Feature/domain components          | svelte-components |
+| Location                       | Contains                                      | MCP Server        |
+| ------------------------------ | --------------------------------------------- | ----------------- |
+| `src/lib/components/ui/`       | Base UI components (shadcn-svelte)            | shadcn-svelte     |
+| `src/lib/components/core/`     | Generic reusable components (DataTable, Gantt, etc.) | -                 |
+| `src/lib/components/features/` | Feature/domain components                     | svelte-components |
 
-**Note:** Base UI components in `ui/` should NOT be modified directly. Always build feature components by composing them.
+**Notes:**
+- Base UI components in `ui/` should NOT be modified directly. Always build feature components by composing them.
+- Core components in `core/` are generic, domain-agnostic components that can be reused across multiple features. They typically wrap complex functionality (charts, tables, calendars) and expose a clean API with callbacks and snippets for customization.
 
 ## Reuse and Composition First
 
 Before creating a new component, you MUST:
 
-1. **Check for existing components**: Use `svelte-components` MCP to search the codebase
-2. **Consider composition**: Evaluate if combining existing components achieves the desired result
-3. **Extend when appropriate**: If an existing component is close, prefer extending it over duplicating logic
+1. **Check for existing feature components**: Use `svelte-components` MCP to search the codebase
+2. **Check for existing core components**: Look in `src/lib/components/core/` for generic components (DataTable, GanttChart, etc.)
+3. **Consider composition**: Evaluate if combining existing components achieves the desired result
+4. **Extend when appropriate**: If an existing component is close, prefer extending it over duplicating logic
 
 **Decision flow:**
 
-1. Can an existing component be used as-is? → Use it
-2. Can existing components be composed together? → Compose them
-3. Can an existing component be extended with new props/slots? → Extend it
-4. Only if none of the above apply → Create a new component
+1. Can an existing feature component be used as-is? → Use it
+2. Can a core component be configured for this use case? → Use it with appropriate props/snippets
+3. Can existing components be composed together? → Compose them
+4. Can an existing component be extended with new props/slots? → Extend it
+5. Only if none of the above apply → Create a new component
+
+## Core Components
+
+Core components live in `src/lib/components/core/` and are **generic, domain-agnostic** components that encapsulate complex functionality.
+
+**When to create a core component:**
+
+- The functionality is reusable across multiple domains (e.g., a data table, chart, calendar)
+- The component requires significant logic that shouldn't be duplicated
+- Multiple feature components would benefit from the same base implementation
+
+**Core component structure:**
+
+```
+src/lib/components/core/<ComponentName>/
+├── <ComponentName>.svelte      # Main component
+├── <ComponentName>Skeleton.svelte  # Loading state (optional)
+├── types.ts                    # TypeScript types
+└── index.ts                    # Exports
+```
+
+**Core component design principles:**
+
+1. **Generic typing**: Use TypeScript generics (`<T extends BaseType>`) for flexibility
+2. **Callbacks for data**: Expose callbacks like `onDateRangeChange`, `onItemClick` for data fetching and interactions
+3. **Snippets for customization**: Use Svelte 5 snippets for custom rendering (tooltips, cells, content)
+4. **Sensible defaults**: Provide good defaults while allowing full customization
+
+**Available core components:**
+
+| Component   | Purpose                                | Usage Example                |
+| ----------- | -------------------------------------- | ---------------------------- |
+| `DataTable` | Generic data table with TanStack Table | Lists, grids, paginated data |
+| `GanttChart`| Generic Gantt chart with timeline      | Scheduling, planning, timelines |
 
 ## Creating New Feature Components
 
@@ -38,7 +77,7 @@ src/lib/components/features/
 src/lib/components/features/<domain>/<ComponentName>.svelte
 ```
 
-**New standalone components** (step 4 of decision flow - requires extensibility):
+**New standalone components** (step 5 of decision flow - requires extensibility):
 
 ```
 src/lib/components/features/<domain>/<ComponentName>/default/<ComponentName>.svelte
@@ -67,7 +106,7 @@ import { SalesOrdersList } from '$lib/components/features/orders/SalesOrdersList
 
 ### Update the Components Registry
 
-After creating new components, run:
+After creating new components, remember to ALWAYS run:
 
 ```bash
 npm run generate:components-registry
