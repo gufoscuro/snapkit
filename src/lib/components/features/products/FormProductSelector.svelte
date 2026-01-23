@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { FormFieldClass } from '$components/features/form/form'
+  import type { ProductSummary } from '$lib/types/api-types'
   import { createQueryRequestObject, type FilterQuery } from '$utils/filters'
   import type { ExtendedOption } from '$utils/generics'
   import { apiRequest } from '$utils/request'
@@ -27,20 +28,6 @@
   export let onChoose: (item: ProductSummary) => void = () => {}
   export let onChange: (item: ExtendedOption | undefined) => void = () => {}
   export let onClear: () => void = () => {}
-
-  type ProductSummary = {
-    id?: string
-    name: string
-    internal_id?: string
-    categories: string[]
-    type: 'producible' | 'purchasable' | 'bundle'
-    uom: string
-    prices: {
-      base_price?: number
-      currency: 'EUR' | 'USD' | 'GBP'
-      unit: number
-    }
-  }
 
   function optionMappingFunction(item: ProductSummary): ExtendedOption {
     return {

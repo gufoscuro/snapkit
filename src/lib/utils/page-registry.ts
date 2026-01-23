@@ -29,122 +29,130 @@ export const PAGES: PageConfig[] = [
   // Hardcoded pages for demo purposes
   {
     $id: 'order-list',
-    title: 'Orders',
-    route: '/orders',
+    title: 'supply_orders',
+    route: '/purchase/orders',
     layout: {
       componentKey: 'layouts.List',
       enabled: true,
     },
     snippets: {
+      appHeader: {
+        componentKey: 'globals.AppHeader',
+        enabled: true,
+      },
       title: {
         enabled: true,
         componentKey: 'globals.PageTitle',
       },
-      filters: {
-        enabled: true,
-        componentKey: 'orders.pagefilters.default.PageFilters',
-      },
       table: {
         enabled: true,
-        componentKey: 'orders.pagetable.default.PageTable',
+        componentKey: 'supply.supplyorderstable.default.SupplyOrdersTable'
       },
     },
-  },
-  {
-    $id: 'order-detail',
-    $params: Type.Object({ uuid: Type.String() }),
-    title: 'Order Detail',
-    route: '/orders/:uuid',
-    layout: {
-      componentKey: 'layouts.Detail',
-      enabled: true,
-    },
-    snippets: {},
+    subpages: [
+      {
+        $id: 'order-detail',
+        $params: Type.Object({ uuid: Type.String() }),
+        title: 'purchase_order_detail',
+        route: '/purchase/orders/upsert/:uuid',
+        layout: {
+          componentKey: 'layouts.Detail',
+          enabled: true,
+        },
+        snippets: {
+          appHeader: {
+            componentKey: 'globals.AppHeaderWithBack',
+            enabled: true,
+          },
+          detail: {
+            enabled: true,
+            componentKey: 'supply.upsertsupplyorder.default.UpsertSupplyOrder',
+          },
+        },
+      },
+    ],
   },
   {
     $id: 'sales-order-list',
-    title: 'Sales Orders',
-    route: '/sales-orders',
+    title: 'sales_orders',
+    route: '/sales/orders',
     layout: {
       componentKey: 'layouts.List',
       enabled: true,
     },
     snippets: {
+      appHeader: {
+        componentKey: 'globals.AppHeader',
+        enabled: true,
+      },
       title: {
         enabled: true,
         componentKey: 'globals.PageTitle',
       },
       table: {
         enabled: true,
-        componentKey: 'orders.salesorderslist.default.SalesOrdersList',
+        componentKey: 'sales.salesorderstable.default.SalesOrdersTable'
       },
     },
-  },
-  {
-    $id: 'shipped-order-list',
-    title: 'Orders already shipped',
-    route: '/orders/shipped',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
+    subpages: [
+      {
+        $id: 'sales-order-detail',
+        $params: Type.Object({ uuid: Type.String() }),
+        title: 'sales_order_detail',
+        route: '/sales/orders/upsert/:uuid',
+        layout: {
+          componentKey: 'layouts.Detail',
+          enabled: true,
+        },
+        snippets: {},
       },
-      table: {
-        enabled: true,
-        componentKey: 'orders.shippedsalesorderslist.default.ShippedSalesOrdersList',
-      },
-    },
-  },
-  {
-    $id: 'material-list',
-    title: 'Materials Selection',
-    route: '/materials',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
-      },
-      table: {
-        enabled: true,
-        componentKey: 'materials.materialselector.default.MaterialSelector',
-      },
-    },
+    ],
   },
   {
     $id: 'product-list',
-    title: 'Products List',
+    title: 'products_list',
     route: '/products',
     layout: {
       componentKey: 'layouts.List',
       enabled: true,
     },
     snippets: {
+      appHeader: {
+        componentKey: 'globals.AppHeader',
+        enabled: true,
+      },
       title: {
         enabled: true,
         componentKey: 'globals.PageTitle',
       },
-      filters: {
+    },
+  },
+  {
+    $id: 'production',
+    title: 'production',
+    route: '/production',
+    layout: {
+      componentKey: 'layouts.List',
+      enabled: true,
+    },
+    snippets: {
+      appHeader: {
+        componentKey: 'globals.AppHeader',
         enabled: true,
-        componentKey: 'orders.pagefilters.PageFiltersWithSearch',
+      },
+      title: {
+        enabled: true,
+        componentKey: 'globals.PageTitle',
       },
       table: {
         enabled: true,
-        componentKey: 'orders.pagetable.PageTableCustom',
+        componentKey: 'production.ProductionCalendar',
       },
     },
   },
-  // POC: Component State Sharing
   {
     $id: 'poc-state-sharing',
-    title: 'POC: State Sharing',
+    title: 'poc_state_sharing',
     route: '/poc/state-sharing',
     layout: {
       componentKey: 'layouts.List',
@@ -214,18 +222,30 @@ export async function getPageByRoute(route: string, tenantId?: string | null): P
 
   const pages = tenantId ? getPagesByTenant(tenantId) : PAGES
 
-  // Try to match against each page pattern
-  for (const page of pages) {
-    const matcher = match(page.route, { decode: decodeURIComponent })
-    const result = matcher(route)
+  // Recursive function to search through pages and subpages
+  function searchPages(pagesToSearch: PageConfig[]): PageDetails | null {
+    for (const page of pagesToSearch) {
+      const matcher = match(page.route, { decode: decodeURIComponent })
+      const result = matcher(route)
 
-    if (result) {
-      return {
-        config: page,
-        params: result.params as Record<string, string>
+      if (result) {
+        return {
+          config: page,
+          params: result.params as Record<string, string>
+        }
+      }
+
+      // Search in subpages if they exist
+      if (page.subpages && page.subpages.length > 0) {
+        const subpageResult = searchPages(page.subpages)
+        if (subpageResult) {
+          return subpageResult
+        }
       }
     }
+
+    return null
   }
 
-  return null
+  return searchPages(pages)
 }

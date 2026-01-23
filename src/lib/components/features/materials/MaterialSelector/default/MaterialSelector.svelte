@@ -11,32 +11,10 @@
 <script lang="ts">
   import { FormFieldClass } from '$components/features/form/form'
   import FormGenericSingleSelector from '$components/features/form/FormGenericSingleSelector.svelte'
+  import type { RawMaterialSummary } from '$lib/types/api-types'
   import { createQueryRequestObject, type FilterQuery } from '$lib/utils/filters'
   import type { ExtendedOption } from '$lib/utils/generics'
   import { apiRequest } from '$lib/utils/request'
-
-  /**
-   * Raw material summary type from supply-api GET /raw-material endpoint
-   */
-  type RawMaterialSummary = {
-    id?: string
-    external_id: string
-    name: string
-    description?: string
-    categories: string[]
-    supplier_id: string
-    supplier_attr?: {
-      address?: string
-      country?: string
-      id?: string
-      name: string
-      vat: string
-    }
-    uom: string
-    minimum_quantity: number
-    lead_time?: string
-    prod_id?: string
-  }
 
   export let formAPI: any = null
   export let attr: RawMaterialSummary | undefined = undefined

@@ -1,10 +1,21 @@
+<script lang="ts" module>
+  import type { ComponentContract } from '$lib/contexts/page-state'
+
+  type CachedComponent = {
+    Component: ConstructorOfATypedSvelteComponent
+    contract: ComponentContract | null
+  }
+
+  // Shared cache at module level - exists once for the entire application
+  const sharedComponentsCache = new Map<string, CachedComponent>()
+</script>
+
 <script lang="ts">
   import { browser } from '$app/environment'
   import { getComponent } from '$generated/components-registry'
   import type { SnippetDefinition } from '$utils/page-registry'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import { getContext, type Snippet } from 'svelte'
-  import type { ComponentContract } from '$lib/contexts/page-state'
   import SnippetBindingsProvider from './SnippetBindingsProvider.svelte'
 
   type SnippetResolverProps = {
@@ -38,12 +49,29 @@
     try {
       loading = true
       latestKey = s.componentKey
+
+      // Check shared cache first
+      const cached = sharedComponentsCache.get(s.componentKey)
+      if (cached) {
+        ComponentFunction = cached.Component
+        componentContract = cached.contract
+        console.log(`✓ Loaded from shared cache: ${s.componentKey}`)
+        return
+      }
+
+      // Load and cache the component
       const componentDef = getComponent(s.componentKey)
       const customModule = await componentDef.component()
+      const contract = customModule.contract ?? null
+
+      sharedComponentsCache.set(s.componentKey, {
+        Component: customModule.default,
+        contract,
+      })
+
       ComponentFunction = customModule.default
-      // Try to load contract if exported from the module
-      componentContract = customModule.contract ?? null
-      console.log(`✓ Loaded custom component: ${s.componentKey}`, componentContract ? '(with contract)' : '(no contract)')
+      componentContract = contract
+      console.log(`✓ Loaded and cached component: ${s.componentKey}`, contract ? '(with contract)' : '(no contract)')
     } catch (err) {
       console.error(`Failed to load component:`, err)
       error = err
@@ -66,7 +94,7 @@
     {@render children?.()}
   {:else}
     <div class="py-2">
-      <div class="animate-pulse rounded bg-muted {className || 'h-10 w-60'}"></div>
+      <div class="flex animate-pulse items-center justify-center rounded bg-muted {className || 'h-10 w-60'}"></div>
     </div>
   {/if}
 {:else if ComponentFunction}
