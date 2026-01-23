@@ -8,7 +8,10 @@
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
 
   const tenantId = $derived(page.params.id)
-  const currentTenant = $derived(adminStore.state.tenants.find(t => t.id === tenantId))
+  const isCreateMode = $derived(tenantId === 'new')
+  const currentTenant = $derived(
+    isCreateMode ? undefined : adminStore.state.tenants.find(t => t.id === tenantId)
+  )
 </script>
 
 <div class="flex h-full flex-col">
@@ -17,13 +20,15 @@
       <ArrowLeft class="size-4" />
     </Button>
     <div>
-      <h1 class="text-2xl font-bold">{currentTenant?.name ?? 'Tenant'}</h1>
-      <p class="text-sm text-muted-foreground">Edit tenant configuration</p>
+      <h1 class="text-2xl font-bold">{isCreateMode ? 'New Tenant' : (currentTenant?.name ?? 'Tenant')}</h1>
+      <p class="text-sm text-muted-foreground">{isCreateMode ? 'Create a new tenant' : 'Edit tenant configuration'}</p>
     </div>
   </div>
 
   <div class="flex-1 overflow-auto p-4">
-    {#if currentTenant}
+    {#if isCreateMode}
+      <TenantEditor />
+    {:else if currentTenant}
       <TenantEditor tenant={currentTenant} />
     {:else}
       <div class="flex h-full items-center justify-center">
