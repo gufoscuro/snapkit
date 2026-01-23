@@ -3,7 +3,7 @@
     "$id": "page-1769165298288-4tcqp",
     "tenantId": "tenant-1769164947433-0029w",
     "title": "Home tenant 1",
-    "route": "/home-tenant1",
+    "route": "/",
     "layout": {
       "componentKey": "layouts.List",
       "enabled": true
@@ -43,6 +43,22 @@
       },
       "table": {
         "componentKey": "orders.salesorderslist.default.SalesOrdersList",
+        "enabled": true
+      }
+    }
+  },
+  {
+    "$id": "page-1769167728136-esn3s",
+    "tenantId": "tenant-1769165583406-a0t8t",
+    "title": "Welcome",
+    "route": "/",
+    "layout": {
+      "componentKey": "layouts.Showoff",
+      "enabled": true
+    },
+    "snippets": {
+      "target": {
+        "componentKey": "globals.PageTitle",
         "enabled": true
       }
     }

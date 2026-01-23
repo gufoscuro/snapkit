@@ -1,4 +1,4 @@
-import { pages as adminPages } from '$generated/admin-config';
+import { pages as adminPages, tenants as adminTenants } from '$generated/admin-config';
 import type { ComponentKey } from '$generated/components-registry';
 import type { BindingConfig } from '$lib/contexts/page-state';
 import { type TObject, Type } from '@sinclair/typebox';
@@ -178,13 +178,44 @@ export interface PageDetails {
   params: Record<string, string>;
 }
 
+/**
+ * Get tenant ID from vanity (subdomain)
+ */
+export function getTenantIdByVanity(vanity: string | null): string | null {
+  if (!vanity) return null
+  const tenant = adminTenants.find(t => t.vanity === vanity)
+  return tenant?.id ?? null
+}
+
+/** PageConfig with optional tenantId for admin-configured pages */
+interface TenantPageConfig extends PageConfig {
+  tenantId?: string
+}
+
+/**
+ * Get pages filtered by tenant
+ */
+function getPagesByTenant(tenantId: string | null): PageConfig[] {
+  // Admin-configured pages filtered by tenant
+  const tenantPages = tenantId
+    ? (adminPages as TenantPageConfig[]).filter(p => p.tenantId === tenantId)
+    : []
+
+  // Hardcoded pages (no tenant, available to all) - for backward compatibility
+  const hardcodedPages = (PAGES as TenantPageConfig[]).filter(p => !p.tenantId)
+
+  return [...tenantPages, ...hardcodedPages]
+}
+
 // Async function (DB-ready interface)
-export async function getPageByRoute(route: string): Promise<PageDetails | null> {
+export async function getPageByRoute(route: string, tenantId?: string | null): Promise<PageDetails | null> {
   // Simulate async DB call
   await new Promise(resolve => setTimeout(resolve, 10))
 
+  const pages = tenantId ? getPagesByTenant(tenantId) : PAGES
+
   // Try to match against each page pattern
-  for (const page of PAGES) {
+  for (const page of pages) {
     const matcher = match(page.route, { decode: decodeURIComponent })
     const result = matcher(route)
 

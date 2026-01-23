@@ -41,6 +41,6 @@ export default defineConfig({
 	},
 
 	server: {
-		allowedHosts: ['tenant1.localhost.me', 'tenant2.localhost.me', 'tenant3.localhost.me', 'tenant4.localhost.me', 'tenant5.localhost.me', 'tenant6.localhost.me', 'tenant7.localhost.me', 'tenant8.localhost.me', 'tenant9.localhost.me', 'tenant10.localhost.me'],
+		allowedHosts: ['admin.localhost.me', 'tenant1.localhost.me', 'tenant2.localhost.me', 'tenant3.localhost.me', 'tenant4.localhost.me', 'tenant5.localhost.me', 'tenant6.localhost.me', 'tenant7.localhost.me', 'tenant8.localhost.me', 'tenant9.localhost.me', 'tenant10.localhost.me'],
 	},
 });

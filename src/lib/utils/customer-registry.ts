@@ -1,4 +1,4 @@
-import { tenants as adminTenants, menus as adminMenus } from '$generated/admin-config'
+import { menus as adminMenus, tenants as adminTenants } from '$generated/admin-config'
 
 export type NavItem = {
   label: string
@@ -28,29 +28,13 @@ export async function getTenantInterfaceDetails(tenantVanity: string | null): Pr
 
   // Fallback to hardcoded tenants
   switch (tenantVanity) {
-    case 'tenant1':
+    case 'admin':
       return {
-        name: 'Tenant 1',
+        name: 'Admin',
         mainMenu: [
           {
-            label: 'Orders',
-            href: '/orders',
-            visible: true,
-          },
-          {
-            label: 'Products',
-            href: '/products',
-            visible: true,
-          },
-        ],
-      }
-    case 'tenant2':
-      return {
-        name: 'Tenant 2',
-        mainMenu: [
-          {
-            label: 'Pizze',
-            href: '/orders',
+            label: 'Admin Dashboard',
+            href: '/admin',
             visible: true,
           },
         ],

@@ -6,7 +6,7 @@
     "items": [
       {
         "label": "Home di tenant 1",
-        "href": "/home-tenant1",
+        "href": "/",
         "visible": true,
         "disabled": false
       }

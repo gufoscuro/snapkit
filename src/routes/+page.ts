@@ -1,10 +1,9 @@
 import { getPageByRoute, getTenantIdByVanity } from '$lib/utils/page-registry'
 import type { RouteDetails } from '$utils/runtime'
-import { error } from '@sveltejs/kit'
 import type { PageLoad } from './$types'
 
-export const load: PageLoad = async ({ params, url, parent }) => {
-  const route = `/${params.path}`
+export const load: PageLoad = async ({ url, parent }) => {
+  const route = '/'
   const routeDetails: RouteDetails = {
     url,
     search: url.searchParams.get('search'),
@@ -14,13 +13,10 @@ export const load: PageLoad = async ({ params, url, parent }) => {
   const { tenantVanity } = await parent()
   const tenantId = getTenantIdByVanity(tenantVanity)
 
-  // Look up page config with pattern matching, filtered by tenant
+  // Look up page config for root route, filtered by tenant
   const pageDetails = await getPageByRoute(route, tenantId)
 
-  if (!pageDetails) {
-    throw error(404, `Page not found: ${route}`)
-  }
-
+  // pageDetails can be null if no home page is configured
   return {
     pageDetails,
     routeDetails,
