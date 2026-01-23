@@ -6,12 +6,10 @@
   import * as Table from '$lib/components/ui/table'
   import Pencil from '@lucide/svelte/icons/pencil'
   import Plus from '@lucide/svelte/icons/plus'
-  import { tick } from 'svelte'
 
-  async function handleAddTenant() {
-    const newTenant = adminStore.addTenant()
-    await tick() // Wait for reactivity to settle
-    await goto(adminTenantUpsertRoute(newTenant.id))
+  function handleAddTenant() {
+    // Navigate to the "new" tenant page - tenant will only be created when user saves
+    goto(adminTenantUpsertRoute('new'))
   }
 
   // Helper function to count pages and menus for a tenant
