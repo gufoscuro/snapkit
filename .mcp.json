@@ -31,11 +31,11 @@
 			"type": "stdio",
 			"command": "node",
 			"args": [
-				"/Users/lorenzofontana/Documents/js-apps/snapkit-blueprint-mcp/dist/src/index.js"
+				"../snapkit-blueprint-mcp/dist/src/index.js"
 			],
 			"env": {
-				"GOOGLE_API_KEY": "AIzaSyCy7ZDMzApVqaQHxIW0pTkszEYp9rANt9Y",
-				"EMBEDDINGS_PATH": "/Users/lorenzofontana/Documents/js-apps/snapkit-blueprint-mcp/embeddings/embeddings.json"
+				"GOOGLE_API_KEY": "AIzaSyArPd6OpUL2RM6i1lmXGlHYfHkxKtq_Mog",
+				"EMBEDDINGS_PATH": "../snapkit-blueprint-mcp/embeddings/embeddings.json"
 			}
 		},
 		"shadcn-svelte": {
