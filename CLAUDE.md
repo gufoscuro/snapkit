@@ -93,17 +93,19 @@ Use for **extra components** not included in core shadcn-svelte. These are commu
 
 Use for **feature components** in `src/lib/components/features/`. This is where all custom project components live.
 
+**MANDATORY**: Before creating ANY new feature component, you MUST use this MCP to check for existing components. See `search_blueprint("component development guidelines")` for the complete workflow.
+
 **Tools:**
 
-- **list_components**: List all available feature components, optionally filtered by category
-- **get_component**: Get detailed information about a specific component including props, types, and usage examples
-- **search_components**: Search components by props, types, or functionality
+- **search_components**: Semantic search using natural language queries (e.g., "customer selector dropdown", "order table with filters"). Returns results ranked by relevance score.
+- **list_components**: List all feature components, optionally filtered by category
+- **get_component**: Get detailed component info including props, types, and usage examples
 
-**When to use:**
+**Required workflow before creating components:**
 
-1. Discovering existing feature components before creating new ones
-2. Understanding props and usage of custom project components
-3. Finding components with specific functionality
+1. `search_components({ query: "description of what you need" })` - Semantic search for similar components
+2. `list_components({ category: "domain" })` - Browse all components in the relevant category
+3. Only create a new component if no suitable one exists
 
 ---
 
