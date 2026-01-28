@@ -13,10 +13,10 @@
 			"path": "../shadcn-svelte-mcp"
 		},
 		{
-			"path": "../arke-gateway"
+			"path": "../../arke-repos"
 		},
 		{
-			"path": "../../arke-repos"
+			"path": "../snapkit-blueprint-mcp"
 		}
 	],
 	"settings": {
