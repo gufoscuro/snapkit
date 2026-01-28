@@ -3,7 +3,7 @@
   import { page } from '$app/state'
   import { adminPagesRoute } from '$lib/admin/routes'
   import { adminStore } from '$lib/admin/store.svelte'
-  import PageEditor from '$lib/components/features/admin/pages/PageEditor.svelte'
+  import PageEditor from '$lib/components/core/admin/pages/PageEditor.svelte'
   import { Button } from '$lib/components/ui/button'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
 
