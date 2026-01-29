@@ -114,6 +114,107 @@ npm run generate:components-registry
 
 This automatically scans `src/lib/components/features/` and updates `src/generated/components-registry.ts`. Do NOT edit the registry file manually.
 
+### Create Mock Data for Preview
+
+**REQUIRED:** When creating a new feature component, you MUST also create a mock data file for admin panel preview.
+
+Create a file named `<ComponentName>.mock.ts` in the same directory as your component:
+
+```
+src/lib/components/features/<domain>/<ComponentName>.mock.ts
+```
+
+**Mock data structure:**
+
+```typescript
+// src/lib/components/features/orders/OrderSummaryCard.mock.ts
+import type { Order } from '$lib/types/orders'
+
+/**
+ * Mock data for OrderSummaryCard component preview
+ */
+export const mockOrderData: Order = {
+  id: 'ORD-2024-0001',
+  customerName: 'Acme Corporation',
+  customerEmail: 'purchasing@acme.com',
+  status: 'confirmed',
+  total: 12500.00,
+  currency: 'USD',
+  items: [
+    {
+      id: 'item-1',
+      productName: 'Industrial Widget A',
+      sku: 'WID-A-001',
+      quantity: 100,
+      unitPrice: 75.00,
+      total: 7500.00
+    },
+    {
+      id: 'item-2',
+      productName: 'Premium Gadget B',
+      sku: 'GAD-B-042',
+      quantity: 50,
+      unitPrice: 100.00,
+      total: 5000.00
+    }
+  ],
+  shippingAddress: {
+    street: '123 Business Park Drive',
+    city: 'Tech Valley',
+    state: 'CA',
+    zipCode: '94025',
+    country: 'USA'
+  },
+  createdAt: '2024-03-15T10:30:00Z',
+  updatedAt: '2024-03-15T14:22:00Z'
+}
+
+// Optional: Multiple scenarios
+export const mockOrderPending: Order = {
+  ...mockOrderData,
+  id: 'ORD-2024-0002',
+  status: 'pending',
+  items: []
+}
+
+export const mockOrderCancelled: Order = {
+  ...mockOrderData,
+  id: 'ORD-2024-0003',
+  status: 'cancelled'
+}
+```
+
+**Mock data guidelines:**
+
+- **Realistic values**: Use plausible data, not "Test Customer" or "foo@bar.com"
+  - Good: `"Acme Corporation"`, `"purchasing@acme.com"`
+  - Bad: `"Test"`, `"foo"`, `"customer1"`
+- **Representative data**: Cover typical use cases (normal state, edge cases, empty states)
+- **Type-safe**: Match your component's prop types exactly
+- **Self-documenting**: Names should explain what they represent
+- **Complete objects**: Include all required fields and realistic optional fields
+- **Realistic numbers**: Use actual business values (1250000, not 123 or 999999)
+- **Valid dates**: Use ISO format with realistic timestamps
+- **Proper enums**: Use actual enum values from your types
+
+**What to avoid:**
+
+- ❌ Generic placeholders: "Item 1", "Product 2", "Test User"
+- ❌ Obviously fake data: "test@test.com", "123 Fake Street"
+- ❌ Magic numbers: 999, 123456, 42 (unless contextually appropriate)
+- ❌ Lorem ipsum text (use realistic business copy instead)
+
+**Export default for simple cases:**
+
+```typescript
+// Simple component with single prop
+export default {
+  customerName: 'Acme Corporation',
+  totalOrders: 342,
+  lastOrderDate: '2024-03-15'
+}
+```
+
 ## Component Documentation
 
 When creating a new component, add a descriptive comment block at the top:
