@@ -27,51 +27,51 @@ export const PAGES: PageConfig[] = [
   ...(adminPages as PageConfig[]),
 
   // Hardcoded pages for demo purposes
-  {
-    $id: 'order-list',
-    title: 'supply_orders',
-    route: '/purchase/orders',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      appHeader: {
-        componentKey: 'globals.AppHeader',
-        enabled: true,
-      },
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
-      },
-      table: {
-        enabled: true,
-        componentKey: 'supply.supplyorderstable.default.SupplyOrdersTable'
-      },
-    },
-    subpages: [
-      {
-        $id: 'order-detail',
-        $params: Type.Object({ uuid: Type.String() }),
-        title: 'purchase_order_detail',
-        route: '/purchase/orders/upsert/:uuid',
-        layout: {
-          componentKey: 'layouts.Detail',
-          enabled: true,
-        },
-        snippets: {
-          appHeader: {
-            componentKey: 'globals.AppHeaderWithBack',
-            enabled: true,
-          },
-          detail: {
-            enabled: true,
-            componentKey: 'supply.upsertsupplyorder.default.UpsertSupplyOrder',
-          },
-        },
-      },
-    ],
-  },
+  // {
+  //   $id: 'order-list',
+  //   title: 'supply_orders',
+  //   route: '/purchase/orders',
+  //   layout: {
+  //     componentKey: 'layouts.List',
+  //     enabled: true,
+  //   },
+  //   snippets: {
+  //     appHeader: {
+  //       componentKey: 'globals.AppHeader',
+  //       enabled: true,
+  //     },
+  //     title: {
+  //       enabled: true,
+  //       componentKey: 'globals.PageTitle',
+  //     },
+  //     table: {
+  //       enabled: true,
+  //       componentKey: 'supply.supplyorderstable.default.SupplyOrdersTable'
+  //     },
+  //   },
+  //   subpages: [
+  //     {
+  //       $id: 'order-detail',
+  //       $params: Type.Object({ uuid: Type.String() }),
+  //       title: 'purchase_order_detail',
+  //       route: '/purchase/orders/upsert/:uuid',
+  //       layout: {
+  //         componentKey: 'layouts.Detail',
+  //         enabled: true,
+  //       },
+  //       snippets: {
+  //         appHeader: {
+  //           componentKey: 'globals.AppHeaderWithBack',
+  //           enabled: true,
+  //         },
+  //         detail: {
+  //           enabled: true,
+  //           componentKey: 'supply.upsertsupplyorder.default.UpsertSupplyOrder',
+  //         },
+  //       },
+  //     },
+  //   ],
+  // },
   {
     $id: 'sales-order-list',
     title: 'sales_orders',
@@ -107,48 +107,6 @@ export const PAGES: PageConfig[] = [
         snippets: {},
       },
     ],
-  },
-  {
-    $id: 'product-list',
-    title: 'products_list',
-    route: '/products',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      appHeader: {
-        componentKey: 'globals.AppHeader',
-        enabled: true,
-      },
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
-      },
-    },
-  },
-  {
-    $id: 'production',
-    title: 'production',
-    route: '/production',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      appHeader: {
-        componentKey: 'globals.AppHeader',
-        enabled: true,
-      },
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
-      },
-      table: {
-        enabled: true,
-        componentKey: 'production.ProductionCalendar',
-      },
-    },
   },
   {
     $id: 'poc-state-sharing',
