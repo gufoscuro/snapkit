@@ -28,8 +28,6 @@
 
   // Access form context - no props needed!
   const form = getFormContext<OrderFormValues>()
-
-  $inspect('Form state', form)
 </script>
 
 <div class="space-y-4">
