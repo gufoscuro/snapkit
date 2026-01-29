@@ -10,7 +10,9 @@ snapkit-content/
 │   └── overview.md       # All available MCP servers and their tools
 ├── components/           # Component development guidelines
 │   ├── development-guidelines.md  # Component creation and organization
-│   └── patterns.md                # Common component patterns (selectors, etc.)
+│   ├── patterns.md                # Common component patterns (selectors, etc.)
+│   ├── state-sharing.md           # Sibling component state sharing architecture
+│   └── forms.md                   # Form system with context API and validation
 ├── api/                  # API integration guidelines
 │   └── integration-guidelines.md  # API types, requests, error handling
 └── routing/              # Navigation and routing patterns
@@ -27,6 +29,8 @@ snapkit-content/
 
 - **development-guidelines.md**: Rules for creating, organizing, and documenting components. Covers file locations, composition patterns, and the decision flow for new components
 - **patterns.md**: Specific patterns like selector components, with implementation examples
+- **state-sharing.md**: Architecture for sharing state between sibling components using contracts and bindings. Covers PageState, useProvides/useConsumes hooks, and database-driven configuration
+- **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, and scaffolding examples
 
 ### API
 
@@ -59,3 +63,6 @@ When updating guidelines:
 - "What MCP server should I use for icons?" → `mcp-servers/overview.md`
 - "How to create links?" → `routing/navigation.md`
 - "How to make a selector component?" → `components/patterns.md`
+- "How do components share state?" → `components/state-sharing.md`
+- "How to create a form?" → `components/forms.md`
+- "How to validate form fields?" → `components/forms.md`

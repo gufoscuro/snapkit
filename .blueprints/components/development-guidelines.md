@@ -35,7 +35,7 @@ Core components live in `src/lib/components/core/` and are **generic, domain-agn
 
 **When to create a core component:**
 
-- The functionality is reusable across multiple domains (e.g., a data table, chart, calendar)
+- The functionality is reusable across multiple domains (e.g., a data table, chart, calendar, form fields)
 - The component requires significant logic that shouldn't be duplicated
 - Multiple feature components would benefit from the same base implementation
 
@@ -58,10 +58,41 @@ src/lib/components/core/<ComponentName>/
 
 **Available core components:**
 
-| Component   | Purpose                                | Usage Example                |
-| ----------- | -------------------------------------- | ---------------------------- |
-| `DataTable` | Generic data table with TanStack Table | Lists, grids, paginated data |
-| `GanttChart`| Generic Gantt chart with timeline      | Scheduling, planning, timelines |
+| Component    | Purpose                                | Usage Example                     |
+| ------------ | -------------------------------------- | --------------------------------- |
+| `DataTable`  | Generic data table with TanStack Table | Lists, grids, paginated data      |
+| `GanttChart` | Generic Gantt chart with timeline      | Scheduling, planning, timelines   |
+| `form/*`     | Context-based form system              | Forms with validation, field sync |
+
+### Core Form System
+
+The `src/lib/components/core/form/` directory contains a complete form system built on Svelte 5 runes and context API.
+
+**Key components:**
+
+| Component                    | Purpose                                      |
+| ---------------------------- | -------------------------------------------- |
+| `FormUtil`                   | Form container that manages state & context  |
+| `TextField`                  | Text input field (autowired)                 |
+| `TextareaField`              | Multiline text field (autowired)             |
+| `QuantityField`              | Numeric quantity input (autowired)           |
+| `PriceField`                 | Price/currency input (autowired)             |
+| `SelectField`                | Dropdown select field (autowired)            |
+| `SwitchField`                | Toggle switch field (autowired)              |
+| `FormGenericSingleSelector`  | Generic single-item selector (autowired)     |
+| `FormGenericMultiSelector`   | Generic multi-item selector (autowired)      |
+| `BusyButton`                 | Submit button with loading state             |
+| `FormFieldMessages`          | Error/warning message display                |
+
+**Supporting modules:**
+
+| File                   | Purpose                                    |
+| ---------------------- | ------------------------------------------ |
+| `form-state.svelte.ts` | Reactive state management with runes       |
+| `form-context.ts`      | Context API (getFormContext, setFormContext) |
+| `validation.ts`        | Declarative validation builder (`v.schema`) |
+
+> **📖 For detailed form documentation, see [forms.md](./forms.md)**
 
 ## Creating New Feature Components
 
