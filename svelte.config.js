@@ -7,6 +7,19 @@ const config = {
 	// for more information about preprocessors
 	preprocess: vitePreprocess(),
 
+	compilerOptions: {
+		dev: process.env.NODE_ENV !== 'production'
+	},
+
+	vitePlugin: {
+		inspector: {
+			toggleKeyCombo: 'control-shift',
+			holdMode: true,
+			showToggleButton: 'always',
+			toggleButtonPos: 'bottom-right'
+		}
+	},
+
 	kit: {
 		adapter: adapter(),
 
