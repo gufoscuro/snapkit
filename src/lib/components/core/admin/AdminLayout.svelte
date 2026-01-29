@@ -35,6 +35,7 @@
       adminStore.clearSelection()
     }
   })
+  // $inspect(adminStore.state)
 </script>
 
 <Sidebar.Provider>

@@ -21,11 +21,11 @@ function generateId(prefix: string): string {
 }
 
 /**
- * Admin Store - Svelte 5 class-based store with runes
+ * Admin Store - Svelte 5 function factory pattern with runes
  */
-class AdminStore {
+function createAdminStore() {
   // Reactive state using $state rune
-  state = $state<AdminBuilderState>({
+  const state = $state<AdminBuilderState>({
     pages: [],
     menus: [],
     tenants: [],
@@ -33,60 +33,106 @@ class AdminStore {
     selection: { type: null, id: null },
     isDirty: false,
     sidebarContext: 'navigation',
+    selectedTenantId: null,
   })
 
-  // Selected tenant ID stored in state (synced with localStorage)
-  private _selectedTenantId = $state<string | null>(null)
-
   // Derived values using $derived rune
-  selectedPage = $derived(
-    this.state.selection.type === 'page'
-      ? this.state.pages.find((p) => p.$id === this.state.selection.id) ?? null
+  const selectedPage = $derived(
+    state.selection.type === 'page'
+      ? state.pages.find((p) => p.$id === state.selection.id) ?? null
       : null
   )
 
-  selectedMenu = $derived(
-    this.state.selection.type === 'menu'
-      ? this.state.menus.find((m) => m.id === this.state.selection.id) ?? null
+  const selectedMenu = $derived(
+    state.selection.type === 'menu'
+      ? state.menus.find((m) => m.id === state.selection.id) ?? null
       : null
   )
 
-  // Tenant selection from state
-  selectedTenantId = $derived(this._selectedTenantId)
-
-  selectedTenant = $derived(
-    this._selectedTenantId
-      ? this.state.tenants.find((t) => t.id === this._selectedTenantId) ?? null
+  const selectedTenant = $derived(
+    state.selectedTenantId
+      ? state.tenants.find((t) => t.id === state.selectedTenantId) ?? null
       : null
   )
 
   // Pages filtered by selected tenant
-  currentTenantPages = $derived(
-    this._selectedTenantId
-      ? this.state.pages.filter((p) => p.tenantId === this._selectedTenantId)
+  const currentTenantPages = $derived(
+    state.selectedTenantId
+      ? state.pages.filter((p) => p.tenantId === state.selectedTenantId)
       : []
   )
 
   // Menus filtered by selected tenant
-  currentTenantMenus = $derived(
-    this._selectedTenantId
-      ? this.state.menus.filter((m) => m.tenantId === this._selectedTenantId)
+  const currentTenantMenus = $derived(
+    state.selectedTenantId
+      ? state.menus.filter((m) => m.tenantId === state.selectedTenantId)
       : []
   )
 
   // Selected block (blocks are global, not tenant-filtered)
-  selectedBlock = $derived(
-    this.state.selection.type === 'block'
-      ? this.state.blocks.find((b) => b.id === this.state.selection.id) ?? null
+  const selectedBlock = $derived(
+    state.selection.type === 'block'
+      ? state.blocks.find((b) => b.id === state.selection.id) ?? null
       : null
   )
 
-  navigationTree = $derived(this.buildNavigationTree())
+  // ========== Tree Building ==========
+
+  function buildNavigationTree(): TreeNode[] {
+    return [
+      {
+        id: 'pages',
+        name: 'Pages',
+        type: 'folder',
+        children: state.pages.map((p) => ({
+          id: p.$id,
+          name: p.title,
+          type: 'page' as const,
+          data: p,
+        })),
+      },
+      {
+        id: 'menus',
+        name: 'Menus',
+        type: 'folder',
+        children: state.menus.map((m) => ({
+          id: m.id,
+          name: m.name,
+          type: 'menu' as const,
+          data: m,
+        })),
+      },
+      {
+        id: 'blocks',
+        name: 'Blocks',
+        type: 'folder',
+        children: state.blocks.map((b) => ({
+          id: b.id,
+          name: b.name,
+          type: 'block' as const,
+          data: b,
+        })),
+      },
+      {
+        id: 'tenants',
+        name: 'Tenants',
+        type: 'folder',
+        children: state.tenants.map((t) => ({
+          id: t.id,
+          name: t.name,
+          type: 'tenant' as const,
+          data: t,
+        })),
+      },
+    ]
+  }
+
+  const navigationTree = $derived(buildNavigationTree())
 
   // ========== Tenant Selection ==========
 
-  setSelectedTenantId(tenantId: string | null) {
-    this._selectedTenantId = tenantId
+  function setSelectedTenantId(tenantId: string | null) {
+    state.selectedTenantId = tenantId
     if (browser) {
       if (tenantId) {
         localStorage.setItem(ADMIN_TENANT_STORAGE_KEY, tenantId)
@@ -100,64 +146,64 @@ class AdminStore {
    * Initialize tenant selection from localStorage
    * Called after tenants are loaded to validate the saved tenant exists
    */
-  initializeTenantFromStorage() {
+  function initializeTenantFromStorage() {
     if (!browser) return
 
     const savedTenantId = localStorage.getItem(ADMIN_TENANT_STORAGE_KEY)
-    if (savedTenantId && this.state.tenants.some((t) => t.id === savedTenantId)) {
-      this._selectedTenantId = savedTenantId
-    } else if (this.state.tenants.length === 1) {
+    if (savedTenantId && state.tenants.some((t) => t.id === savedTenantId)) {
+      state.selectedTenantId = savedTenantId
+    } else if (state.tenants.length === 1) {
       // Auto-select if only one tenant
-      this.setSelectedTenantId(this.state.tenants[0].id)
+      setSelectedTenantId(state.tenants[0].id)
     } else {
       // Clear invalid saved tenant
       localStorage.removeItem(ADMIN_TENANT_STORAGE_KEY)
-      this._selectedTenantId = null
+      state.selectedTenantId = null
     }
   }
 
   // ========== Selection Actions ==========
 
-  select(selection: AdminSelection) {
-    this.state.selection = selection
+  function select(selection: AdminSelection) {
+    state.selection = selection
   }
 
-  selectPage(id: string) {
-    this.state.selection = { type: 'page', id }
+  function selectPage(id: string) {
+    state.selection = { type: 'page', id }
   }
 
-  selectMenu(id: string) {
-    this.state.selection = { type: 'menu', id }
+  function selectMenu(id: string) {
+    state.selection = { type: 'menu', id }
   }
 
-  selectTenant(id: string) {
-    this.state.selection = { type: 'tenant', id }
+  function selectTenant(id: string) {
+    state.selection = { type: 'tenant', id }
   }
 
-  selectBlock(id: string) {
-    this.state.selection = { type: 'block', id }
+  function selectBlock(id: string) {
+    state.selection = { type: 'block', id }
   }
 
-  clearSelection() {
-    this.state.selection = { type: null, id: null }
+  function clearSelection() {
+    state.selection = { type: null, id: null }
   }
 
   // ========== Sidebar Context ==========
 
-  setSidebarContext(context: 'navigation' | 'blocks') {
-    this.state.sidebarContext = context
+  function setSidebarContext(context: 'navigation' | 'blocks') {
+    state.sidebarContext = context
   }
 
   // ========== Page Actions ==========
 
-  addPage(page?: Partial<BuilderPageConfig>): BuilderPageConfig {
-    if (!this.selectedTenantId) {
+  function addPage(page?: Partial<BuilderPageConfig>): BuilderPageConfig {
+    if (!state.selectedTenantId) {
       throw new Error('No tenant selected. Please select a tenant before creating a page.')
     }
 
     const newPage: BuilderPageConfig = {
       $id: page?.$id ?? generateId('page'),
-      tenantId: this.selectedTenantId,
+      tenantId: state.selectedTenantId,
       title: page?.title ?? 'New Page',
       route: page?.route ?? '/new-page',
       layout: page?.layout ?? {
@@ -167,62 +213,62 @@ class AdminStore {
       snippets: page?.snippets ?? {},
       ...page,
     }
-    this.state.pages.push(newPage)
-    this.state.isDirty = true
+    state.pages.push(newPage)
+    state.isDirty = true
     return newPage
   }
 
-  updatePage(id: string, updates: Partial<BuilderPageConfig>) {
-    const index = this.state.pages.findIndex((p) => p.$id === id)
+  function updatePage(id: string, updates: Partial<BuilderPageConfig>) {
+    const index = state.pages.findIndex((p) => p.$id === id)
     if (index !== -1) {
-      this.state.pages[index] = { ...this.state.pages[index], ...updates }
-      this.state.isDirty = true
+      state.pages[index] = { ...state.pages[index], ...updates }
+      state.isDirty = true
     }
   }
 
-  deletePage(id: string) {
-    const index = this.state.pages.findIndex((p) => p.$id === id)
+  function deletePage(id: string) {
+    const index = state.pages.findIndex((p) => p.$id === id)
     if (index !== -1) {
-      this.state.pages.splice(index, 1)
-      if (this.state.selection.type === 'page' && this.state.selection.id === id) {
-        this.clearSelection()
+      state.pages.splice(index, 1)
+      if (state.selection.type === 'page' && state.selection.id === id) {
+        clearSelection()
       }
-      this.state.isDirty = true
+      state.isDirty = true
     }
   }
 
   // ========== Snippet Actions ==========
 
-  addSnippet(pageId: string, slotName: string, snippet: ExtendedSnippetDefinition) {
-    const page = this.state.pages.find((p) => p.$id === pageId)
+  function addSnippet(pageId: string, slotName: string, snippet: ExtendedSnippetDefinition) {
+    const page = state.pages.find((p) => p.$id === pageId)
     if (page) {
       page.snippets[slotName] = snippet
-      this.state.isDirty = true
+      state.isDirty = true
     }
   }
 
-  updateSnippet(
+  function updateSnippet(
     pageId: string,
     slotName: string,
     updates: Partial<ExtendedSnippetDefinition>
   ) {
-    const page = this.state.pages.find((p) => p.$id === pageId)
+    const page = state.pages.find((p) => p.$id === pageId)
     if (page && page.snippets[slotName]) {
       page.snippets[slotName] = { ...page.snippets[slotName], ...updates }
-      this.state.isDirty = true
+      state.isDirty = true
     }
   }
 
-  deleteSnippet(pageId: string, slotName: string) {
-    const page = this.state.pages.find((p) => p.$id === pageId)
+  function deleteSnippet(pageId: string, slotName: string) {
+    const page = state.pages.find((p) => p.$id === pageId)
     if (page && page.snippets[slotName]) {
       delete page.snippets[slotName]
-      this.state.isDirty = true
+      state.isDirty = true
     }
   }
 
-  reorderSnippets(pageId: string, newOrder: string[]) {
-    const page = this.state.pages.find((p) => p.$id === pageId)
+  function reorderSnippets(pageId: string, newOrder: string[]) {
+    const page = state.pages.find((p) => p.$id === pageId)
     if (page) {
       const reordered: Record<string, ExtendedSnippetDefinition> = {}
       for (const slotName of newOrder) {
@@ -231,44 +277,44 @@ class AdminStore {
         }
       }
       page.snippets = reordered
-      this.state.isDirty = true
+      state.isDirty = true
     }
   }
 
   // ========== Menu Actions ==========
 
-  addMenu(menu?: Partial<MenuConfig>): MenuConfig {
-    if (!this.selectedTenantId) {
+  function addMenu(menu?: Partial<MenuConfig>): MenuConfig {
+    if (!state.selectedTenantId) {
       throw new Error('No tenant selected. Please select a tenant before creating a menu.')
     }
 
     const newMenu: MenuConfig = {
       id: menu?.id ?? generateId('menu'),
-      tenantId: menu?.tenantId ?? this.selectedTenantId,
+      tenantId: menu?.tenantId ?? state.selectedTenantId,
       name: menu?.name ?? 'New Menu',
       items: menu?.items ?? [],
     }
-    this.state.menus.push(newMenu)
-    this.state.isDirty = true
+    state.menus.push(newMenu)
+    state.isDirty = true
     return newMenu
   }
 
-  updateMenu(id: string, updates: Partial<MenuConfig>) {
-    const index = this.state.menus.findIndex((m) => m.id === id)
+  function updateMenu(id: string, updates: Partial<MenuConfig>) {
+    const index = state.menus.findIndex((m) => m.id === id)
     if (index !== -1) {
-      this.state.menus[index] = { ...this.state.menus[index], ...updates }
-      this.state.isDirty = true
+      state.menus[index] = { ...state.menus[index], ...updates }
+      state.isDirty = true
     }
   }
 
-  deleteMenu(id: string) {
-    const index = this.state.menus.findIndex((m) => m.id === id)
+  function deleteMenu(id: string) {
+    const index = state.menus.findIndex((m) => m.id === id)
     if (index !== -1) {
-      this.state.menus.splice(index, 1)
-      if (this.state.selection.type === 'menu' && this.state.selection.id === id) {
-        this.clearSelection()
+      state.menus.splice(index, 1)
+      if (state.selection.type === 'menu' && state.selection.id === id) {
+        clearSelection()
       }
-      this.state.isDirty = true
+      state.isDirty = true
     }
   }
 
@@ -278,7 +324,7 @@ class AdminStore {
    * Create a new tenant config object without adding it to the store.
    * Use this for the "new tenant" form - tenant is only added when user saves.
    */
-  createTenantConfig(tenant?: Partial<TenantConfig>): TenantConfig {
+  function createTenantConfig(tenant?: Partial<TenantConfig>): TenantConfig {
     return {
       id: tenant?.id ?? generateId('tenant'),
       vanity: tenant?.vanity ?? 'new-tenant',
@@ -289,130 +335,119 @@ class AdminStore {
   /**
    * Add a tenant to the store (used when saving a new tenant)
    */
-  addTenant(tenant: TenantConfig): TenantConfig {
-    this.state.tenants.push(tenant)
-    this.state.isDirty = true
+  function addTenant(tenant: TenantConfig): TenantConfig {
+    state.tenants.push(tenant)
+    state.isDirty = true
     return tenant
   }
 
-  updateTenant(id: string, updates: Partial<TenantConfig>) {
-    const index = this.state.tenants.findIndex((t) => t.id === id)
+  function updateTenant(id: string, updates: Partial<TenantConfig>) {
+    const index = state.tenants.findIndex((t) => t.id === id)
     if (index !== -1) {
-      this.state.tenants[index] = { ...this.state.tenants[index], ...updates }
-      this.state.isDirty = true
+      state.tenants[index] = { ...state.tenants[index], ...updates }
+      state.isDirty = true
     }
   }
 
-  deleteTenant(id: string) {
-    const index = this.state.tenants.findIndex((t) => t.id === id)
+  function deleteTenant(id: string) {
+    const index = state.tenants.findIndex((t) => t.id === id)
     if (index !== -1) {
-      this.state.tenants.splice(index, 1)
-      if (this.state.selection.type === 'tenant' && this.state.selection.id === id) {
-        this.clearSelection()
+      state.tenants.splice(index, 1)
+      if (state.selection.type === 'tenant' && state.selection.id === id) {
+        clearSelection()
       }
 
       // If deleting the currently selected tenant, clear URL param
       // Note: This requires window access, will be handled in the component layer
-      this.state.isDirty = true
+      state.isDirty = true
     }
   }
 
   // ========== Serialization ==========
 
-  toJSON(): string {
+  function toJSON(): string {
     return JSON.stringify(
       {
-        pages: this.state.pages,
-        menus: this.state.menus,
-        tenants: this.state.tenants,
-        blocks: this.state.blocks,
+        pages: state.pages,
+        menus: state.menus,
+        tenants: state.tenants,
+        blocks: state.blocks,
       },
       null,
       2
     )
   }
 
-  fromJSON(json: string) {
+  function fromJSON(json: string) {
     try {
       const data = JSON.parse(json)
-      this.state.pages = data.pages ?? []
-      this.state.menus = data.menus ?? []
-      this.state.tenants = data.tenants ?? []
-      this.state.blocks = data.blocks ?? []
-      this.state.isDirty = false
-      this.clearSelection()
+      state.pages = data.pages ?? []
+      state.menus = data.menus ?? []
+      state.tenants = data.tenants ?? []
+      state.blocks = data.blocks ?? []
+      state.isDirty = false
+      clearSelection()
     } catch (e) {
       console.error('Failed to parse admin config JSON:', e)
     }
   }
 
-  loadState(state: Pick<AdminBuilderState, 'pages' | 'menus' | 'tenants' | 'blocks'>) {
-    this.state.pages = state.pages ?? []
-    this.state.menus = state.menus ?? []
-    this.state.tenants = state.tenants ?? []
-    this.state.blocks = state.blocks ?? []
-    this.state.isDirty = false
-    this.clearSelection()
+  function loadState(newState: Pick<AdminBuilderState, 'pages' | 'menus' | 'tenants' | 'blocks'>) {
+    state.pages = newState.pages ?? []
+    state.menus = newState.menus ?? []
+    state.tenants = newState.tenants ?? []
+    state.blocks = newState.blocks ?? []
+    state.isDirty = false
+    clearSelection()
   }
 
-  markClean() {
-    this.state.isDirty = false
+  function markClean() {
+    state.isDirty = false
   }
 
-  // ========== Tree Building ==========
+  // Return the store interface
+  return {
+    state,
 
-  private buildNavigationTree(): TreeNode[] {
-    return [
-      {
-        id: 'pages',
-        name: 'Pages',
-        type: 'folder',
-        children: this.state.pages.map((p) => ({
-          id: p.$id,
-          name: p.title,
-          type: 'page' as const,
-          data: p,
-        })),
-      },
-      {
-        id: 'menus',
-        name: 'Menus',
-        type: 'folder',
-        children: this.state.menus.map((m) => ({
-          id: m.id,
-          name: m.name,
-          type: 'menu' as const,
-          data: m,
-        })),
-      },
-      {
-        id: 'blocks',
-        name: 'Blocks',
-        type: 'folder',
-        children: this.state.blocks.map((b) => ({
-          id: b.id,
-          name: b.name,
-          type: 'block' as const,
-          data: b,
-        })),
-      },
-      {
-        id: 'tenants',
-        name: 'Tenants',
-        type: 'folder',
-        children: this.state.tenants.map((t) => ({
-          id: t.id,
-          name: t.name,
-          type: 'tenant' as const,
-          data: t,
-        })),
-      },
-    ]
+    // Expose derived values as getters
+    get selectedPage() { return selectedPage },
+    get selectedMenu() { return selectedMenu },
+    get selectedTenant() { return selectedTenant },
+    get currentTenantPages() { return currentTenantPages },
+    get currentTenantMenus() { return currentTenantMenus },
+    get selectedBlock() { return selectedBlock },
+    get navigationTree() { return navigationTree },
+
+    // Expose methods
+    setSelectedTenantId,
+    initializeTenantFromStorage,
+    select,
+    selectPage,
+    selectMenu,
+    selectTenant,
+    selectBlock,
+    clearSelection,
+    setSidebarContext,
+    addPage,
+    updatePage,
+    deletePage,
+    addSnippet,
+    updateSnippet,
+    deleteSnippet,
+    reorderSnippets,
+    addMenu,
+    updateMenu,
+    deleteMenu,
+    createTenantConfig,
+    addTenant,
+    updateTenant,
+    deleteTenant,
+    toJSON,
+    fromJSON,
+    loadState,
+    markClean,
   }
 }
 
 // Export singleton instance
-export const adminStore = new AdminStore()
-
-// Also export the class for testing
-export { AdminStore }
+export const adminStore = createAdminStore()

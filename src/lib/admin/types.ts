@@ -96,6 +96,7 @@ export interface AdminBuilderState {
   selection: AdminSelection
   isDirty: boolean
   sidebarContext: 'navigation' | 'blocks'
+  selectedTenantId: string | null
 }
 
 /**
@@ -109,6 +110,7 @@ export const DEFAULT_ADMIN_STATE: AdminBuilderState = {
   selection: { type: null, id: null },
   isDirty: false,
   sidebarContext: 'navigation',
+  selectedTenantId: null,
 }
 
 /**
