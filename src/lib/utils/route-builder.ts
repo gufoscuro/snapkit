@@ -1,6 +1,6 @@
-import { PAGES, type PageConfig } from './page-registry'
-import { compile } from 'path-to-regexp'
 import { Value } from '@sinclair/typebox/value'
+import { compile } from 'path-to-regexp'
+import { PAGES, type PageConfig } from './page-registry'
 
 /** Cache of compiled route functions to avoid recompilation on each call */
 const compiledRoutes = new Map<string, (params: Record<string, string>) => string>()
@@ -37,7 +37,8 @@ export function createRoute(options: CreateRouteOptions): string {
 
   const page = findPageById($id)
   if (!page) {
-    throw new Error(`[createRoute] Page with $id "${$id}" not found`)
+    return '/broken-link?link-id=' + encodeURIComponent($id)
+    // throw new Error(`[createRoute] Page with $id "${$id}" not found`)
   }
 
   // Dev-only validation against TypeBox schema
