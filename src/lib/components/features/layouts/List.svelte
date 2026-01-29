@@ -25,7 +25,7 @@
 
 <SnippetResolver snippet={config.snippets.appHeader} />
 
-<main class="flex-1 space-y-8 overflow-y-auto px-4">
+<main class="flex-1 space-y-8 overflow-y-auto px-4 pb-4">
   <SnippetResolver snippet={config.snippets.title} class="h-11 w-full" />
   <SnippetResolver snippet={config.snippets.filters} class="h-10 w-full" />
   <SnippetResolver snippet={config.snippets.table} class="h-dvh w-full" />
