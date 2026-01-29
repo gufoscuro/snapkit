@@ -47,9 +47,24 @@ export interface TenantConfig {
 }
 
 /**
+ * Block configuration
+ */
+export interface BlockConfig {
+	id: string
+	name: string
+	description?: string
+	folder?: string
+	snippet: ExtendedSnippetDefinition
+	previewProps?: Record<string, unknown>
+	tags?: string[]
+	createdAt: string
+	updatedAt: string
+}
+
+/**
  * Tree node types for navigation
  */
-export type TreeNodeType = 'folder' | 'page' | 'menu' | 'tenant' | 'snippet'
+export type TreeNodeType = 'folder' | 'page' | 'menu' | 'tenant' | 'block' | 'snippet'
 
 /**
  * Tree node for admin navigation
@@ -59,14 +74,14 @@ export interface TreeNode {
   name: string
   type: TreeNodeType
   children?: TreeNode[]
-  data?: BuilderPageConfig | MenuConfig | TenantConfig | ExtendedSnippetDefinition
+  data?: BuilderPageConfig | MenuConfig | TenantConfig | BlockConfig | ExtendedSnippetDefinition
 }
 
 /**
  * Selection state for the admin panel
  */
 export interface AdminSelection {
-  type: 'page' | 'menu' | 'tenant' | null
+  type: 'page' | 'menu' | 'tenant' | 'block' | null
   id: string | null
 }
 
@@ -77,8 +92,10 @@ export interface AdminBuilderState {
   pages: BuilderPageConfig[]
   menus: MenuConfig[]
   tenants: TenantConfig[]
+  blocks: BlockConfig[]
   selection: AdminSelection
   isDirty: boolean
+  sidebarContext: 'navigation' | 'blocks'
 }
 
 /**
@@ -88,8 +105,10 @@ export const DEFAULT_ADMIN_STATE: AdminBuilderState = {
   pages: [],
   menus: [],
   tenants: [],
+  blocks: [],
   selection: { type: null, id: null },
   isDirty: false,
+  sidebarContext: 'navigation',
 }
 
 /**

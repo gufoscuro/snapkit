@@ -7,8 +7,7 @@ import type {
   ExtendedSnippetDefinition,
   MenuConfig,
   TenantConfig,
-  TreeNode,
-  DEFAULT_ADMIN_STATE,
+  TreeNode
 } from './types'
 
 /** localStorage key for persisting selected tenant */
@@ -30,8 +29,10 @@ class AdminStore {
     pages: [],
     menus: [],
     tenants: [],
+    blocks: [],
     selection: { type: null, id: null },
     isDirty: false,
+    sidebarContext: 'navigation',
   })
 
   // Selected tenant ID stored in state (synced with localStorage)
@@ -71,6 +72,13 @@ class AdminStore {
     this._selectedTenantId
       ? this.state.menus.filter((m) => m.tenantId === this._selectedTenantId)
       : []
+  )
+
+  // Selected block (blocks are global, not tenant-filtered)
+  selectedBlock = $derived(
+    this.state.selection.type === 'block'
+      ? this.state.blocks.find((b) => b.id === this.state.selection.id) ?? null
+      : null
   )
 
   navigationTree = $derived(this.buildNavigationTree())
@@ -126,8 +134,18 @@ class AdminStore {
     this.state.selection = { type: 'tenant', id }
   }
 
+  selectBlock(id: string) {
+    this.state.selection = { type: 'block', id }
+  }
+
   clearSelection() {
     this.state.selection = { type: null, id: null }
+  }
+
+  // ========== Sidebar Context ==========
+
+  setSidebarContext(context: 'navigation' | 'blocks') {
+    this.state.sidebarContext = context
   }
 
   // ========== Page Actions ==========
@@ -307,6 +325,7 @@ class AdminStore {
         pages: this.state.pages,
         menus: this.state.menus,
         tenants: this.state.tenants,
+        blocks: this.state.blocks,
       },
       null,
       2
@@ -319,6 +338,7 @@ class AdminStore {
       this.state.pages = data.pages ?? []
       this.state.menus = data.menus ?? []
       this.state.tenants = data.tenants ?? []
+      this.state.blocks = data.blocks ?? []
       this.state.isDirty = false
       this.clearSelection()
     } catch (e) {
@@ -326,10 +346,11 @@ class AdminStore {
     }
   }
 
-  loadState(state: Pick<AdminBuilderState, 'pages' | 'menus' | 'tenants'>) {
+  loadState(state: Pick<AdminBuilderState, 'pages' | 'menus' | 'tenants' | 'blocks'>) {
     this.state.pages = state.pages ?? []
     this.state.menus = state.menus ?? []
     this.state.tenants = state.tenants ?? []
+    this.state.blocks = state.blocks ?? []
     this.state.isDirty = false
     this.clearSelection()
   }
@@ -362,6 +383,17 @@ class AdminStore {
           name: m.name,
           type: 'menu' as const,
           data: m,
+        })),
+      },
+      {
+        id: 'blocks',
+        name: 'Blocks',
+        type: 'folder',
+        children: this.state.blocks.map((b) => ({
+          id: b.id,
+          name: b.name,
+          type: 'block' as const,
+          data: b,
         })),
       },
       {

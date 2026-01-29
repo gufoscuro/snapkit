@@ -33,6 +33,13 @@ export const adminTenantsRoute = () => `${ADMIN_BASE}/tenants`
 export const adminTenantUpsertRouteId = () => `${ADMIN_BASE}/tenants/[id]`
 export const adminTenantUpsertRoute = (tenantId: string) => `${ADMIN_BASE}/tenants/${tenantId}`
 
+// Blocks
+export const adminBlocksRouteId = () => `${ADMIN_BASE}/blocks`
+export const adminBlocksRoute = () => `${ADMIN_BASE}/blocks`
+
+export const adminBlockUpsertRouteId = () => `${ADMIN_BASE}/blocks/[id]`
+export const adminBlockUpsertRoute = (blockId: string) => `${ADMIN_BASE}/blocks/${blockId}`
+
 /**
  * Check if the current route matches a given route ID
  */
@@ -48,4 +55,31 @@ export function isRouteActive(currentPath: string, routePath: string): boolean {
 		return currentPath === ADMIN_BASE
 	}
 	return currentPath.startsWith(routePath)
+}
+
+/**
+ * Get the sidebar context for the current route
+ */
+export function getSidebarContextFromRoute(
+	currentPath: string
+): 'navigation' | 'blocks' | null {
+	if (currentPath.startsWith(adminBlocksRoute())) {
+		return 'blocks'
+	}
+	if (
+		currentPath === ADMIN_BASE ||
+		currentPath.startsWith(adminPagesRoute()) ||
+		currentPath.startsWith(adminMenusRoute()) ||
+		currentPath.startsWith(adminTenantsRoute())
+	) {
+		return 'navigation'
+	}
+	return null
+}
+
+/**
+ * Check if current path is a blocks list page
+ */
+export function isBlocksListPage(currentPath: string): boolean {
+	return currentPath === adminBlocksRoute()
 }

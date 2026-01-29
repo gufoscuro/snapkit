@@ -4,31 +4,50 @@
 	@keywords admin, layout, sidebar, navigation, dashboard
 -->
 <script lang="ts">
-	import type { Snippet } from 'svelte'
-	import type { JWTUser } from '$lib/server/auth'
-	import AdminSidebar from './AdminSidebar.svelte'
-	import AdminHeader from './AdminHeader.svelte'
-	import ConfirmDeleteDialog from '$lib/components/ui/confirm-delete-dialog/confirm-delete-dialog.svelte'
+  import { page } from '$app/state'
+  import { getSidebarContextFromRoute, isBlocksListPage } from '$lib/admin/routes'
+  import { adminStore } from '$lib/admin/store.svelte'
+  import ConfirmDeleteDialog from '$lib/components/ui/confirm-delete-dialog/confirm-delete-dialog.svelte'
+  import * as Sidebar from '$lib/components/ui/sidebar'
+  import type { JWTUser } from '$lib/server/auth'
+  import type { Snippet } from 'svelte'
+  import AdminHeader from './AdminHeader.svelte'
+  import AdminSidebar from './AdminSidebar.svelte'
 
-	interface Props {
-		user: JWTUser
-		children: Snippet
-	}
+  interface Props {
+    user: JWTUser
+    children: Snippet
+  }
 
-	const { user, children }: Props = $props()
+  const { user, children }: Props = $props()
+
+  // Sync sidebar context and selection with current route
+  $effect(() => {
+    const path = page.url.pathname
+    const context = getSidebarContextFromRoute(path)
+
+    if (context) {
+      adminStore.setSidebarContext(context)
+    }
+
+    // Clear selection if we're on blocks list page
+    if (isBlocksListPage(path) && adminStore.state.selection.type === 'block') {
+      adminStore.clearSelection()
+    }
+  })
 </script>
 
-<div class="flex h-screen w-full">
-	<AdminSidebar />
-
-	<div class="flex flex-1 flex-col overflow-hidden">
-		<AdminHeader {user} />
-
-		<main class="flex-1 overflow-auto bg-gray-50 p-6">
-			{@render children()}
-		</main>
-	</div>
-</div>
+<Sidebar.Provider>
+  <div class="flex h-screen w-full">
+    <AdminSidebar {user} />
+    <div class="flex flex-1 flex-col overflow-hidden">
+      <AdminHeader {user} />
+      <main class="flex-1 overflow-auto bg-gray-50 p-6">
+        {@render children()}
+      </main>
+    </div>
+  </div>
+</Sidebar.Provider>
 
 <!-- Global confirm delete dialog -->
 <ConfirmDeleteDialog />
