@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export const DEFAULT_ITEMS_LIMIT: number = 50
+export const DEFAULT_ITEMS_LIMIT: number = 100
 
 export type QueryObject = {
 	[key: string]: string
