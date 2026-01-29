@@ -2,14 +2,21 @@
   @component SalesOrdersTable
   @description Displays a paginated table of sales orders with load more functionality.
   Shows order ID, customer, status, expected shipping time, and total.
-  @keywords sales, orders, table, list, pagination, load-more
+  Consumes filter state from page context to filter displayed data.
+  @keywords sales, orders, table, list, pagination, load-more, filters
   @uses DataTable, Badge
   @api GET /order (sales-api) -> orderSummary[]
 -->
+<script lang="ts" module>
+  export { SalesOrdersTableContract as contract } from './SalesOrdersTable.contract.js'
+</script>
+
 <script lang="ts">
   import { DataTable } from '$lib/components/core/DataTable'
   import { Badge } from '$lib/components/ui/badge'
   import { renderComponent, renderSnippet } from '$lib/components/ui/data-table'
+  import { useConsumes } from '$lib/contexts/page-state'
+  import * as m from '$lib/paraglide/messages.js'
   import type { SalesOrderSummary } from '$lib/types/api-types'
   import {
     getSalesShippedLabel,
@@ -17,12 +24,17 @@
     getSalesStatusLabel,
     getSalesStatusVariant,
   } from '$lib/utils/enum-labels'
-  import { createQueryRequestObject, DEFAULT_ITEMS_LIMIT } from '$lib/utils/filters'
+  import { createQueryRequestObject, DEFAULT_ITEMS_LIMIT, type FilterQuery } from '$lib/utils/filters'
   import { apiRequest } from '$lib/utils/request'
-  import { createRoute } from '$lib/utils/route-builder'
-  import * as m from '$lib/paraglide/messages.js'
   import type { ColumnDef } from '@tanstack/table-core'
   import { createRawSnippet } from 'svelte'
+  import { SalesOrdersTableContract } from './SalesOrdersTable.contract.js'
+
+  // Get filter state from page context
+  const filtersHandle = useConsumes(SalesOrdersTableContract, 'filters')
+
+  // Derive current filters (reactive)
+  const filters = $derived(filtersHandle.get())
 
   // Column definitions
   const columns: ColumnDef<SalesOrderSummary>[] = $derived([
@@ -37,9 +49,12 @@
           return displayId
         }
 
-        const url = createRoute({ $id: 'sales-order-detail', params: { uuid: orderId } })
+        // const url = createRoute({ $id: 'sales-order-detail', params: { uuid: orderId } })
+        // const snippet = createRawSnippet(() => ({
+        //   render: () => `<a href="${url}" class="text-primary hover:underline">${displayId}</a>`,
+        // }))
         const snippet = createRawSnippet(() => ({
-          render: () => `<a href="${url}" class="text-primary hover:underline">${displayId}</a>`,
+          render: () => `<span>${displayId}</span>`,
         }))
         return renderSnippet(snippet)
       },
@@ -110,23 +125,25 @@
   let loadingMore = $state(false)
   let hasMore = $state(true)
 
-  // Fetch function
-  async function fetchOrders(offset: number = 0): Promise<SalesOrderSummary[]> {
+  // Fetch function with filter support
+  async function fetchOrders(offset: number = 0, filterParams?: FilterQuery): Promise<SalesOrderSummary[]> {
     const response = await apiRequest<SalesOrderSummary[]>({
       url: 'sales/order',
       queryParams: createQueryRequestObject({
         limit: DEFAULT_ITEMS_LIMIT,
         offset,
+        search: filterParams?.search,
+        query: filterParams?.query,
       }),
     })
     return response ?? []
   }
 
-  // Initial load
+  // Initial load with current filters
   async function loadInitial() {
     loading = true
     try {
-      const items = await fetchOrders(0)
+      const items = await fetchOrders(0, filters)
       data = items
       hasMore = items.length >= DEFAULT_ITEMS_LIMIT
     } catch (err) {
@@ -142,7 +159,7 @@
   async function handleLoadMore() {
     loadingMore = true
     try {
-      const items = await fetchOrders(data.length)
+      const items = await fetchOrders(data.length, filters)
       data = [...data, ...items]
       hasMore = items.length >= DEFAULT_ITEMS_LIMIT
     } catch (err) {
@@ -152,8 +169,10 @@
     }
   }
 
-  // Load on mount
+  // Load on mount and when filters change
   $effect(() => {
+    // Access filters to create dependency
+    const _ = filters
     loadInitial()
   })
 </script>

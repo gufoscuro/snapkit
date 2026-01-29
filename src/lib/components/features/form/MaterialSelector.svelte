@@ -9,29 +9,38 @@
 -->
 
 <script lang="ts">
-  import { FormFieldClass } from '$components/features/form/form'
-  import FormGenericSingleSelector from '$components/features/form/FormGenericSingleSelector.svelte'
+  import { EntitySelectorDefaults, type EntitySelectorProps } from '$components/core/form/form'
+  import FormGenericSingleSelector from '$components/core/form/FormGenericSingleSelector.svelte'
+  import * as m from '$lib/paraglide/messages'
   import type { RawMaterialSummary } from '$lib/types/api-types'
   import { createQueryRequestObject, type FilterQuery } from '$lib/utils/filters'
   import type { ExtendedOption } from '$lib/utils/generics'
   import { apiRequest } from '$lib/utils/request'
 
-  export let formAPI: any = null
-  export let attr: RawMaterialSummary | undefined = undefined
-  export let label: string = 'Material'
-  export let placeholder: string | undefined = 'Select a material...'
-  export let name: string = 'material'
-  export let id: string = name
-  export let error: string | undefined = ''
-  export let showLabel: boolean = true
-  export let showErrorMessage: boolean = true
-  export let width: string = FormFieldClass.SelectorDefaultWidth
-  export let contentWidth: string = width
-  export let readonly: boolean = false
-  export let allowNewRecord: boolean = false
-  export let onChoose: (item: RawMaterialSummary) => void = () => {}
-  export let onChange: (item: ExtendedOption | undefined) => void = () => {}
-  export let onClear: () => void = () => {}
+  type Props = EntitySelectorProps & {
+    attr?: RawMaterialSummary
+    onChoose?: (item: RawMaterialSummary) => void
+    onChange?: (item: ExtendedOption | undefined) => void
+    onClear?: () => void
+  }
+
+  let {
+    attr = undefined,
+    label = m.material(),
+    placeholder = m.select_material_placeholder(),
+    name = 'material',
+    id = name,
+    error = EntitySelectorDefaults.error,
+    showLabel = EntitySelectorDefaults.showLabel,
+    showErrorMessage = EntitySelectorDefaults.showErrorMessage,
+    width = EntitySelectorDefaults.width,
+    contentWidth = width,
+    readonly = EntitySelectorDefaults.readonly,
+    allowNewRecord = EntitySelectorDefaults.allowNewRecord,
+    onChoose = () => {},
+    onChange = () => {},
+    onClear = () => {},
+  }: Props = $props()
 
   function optionMappingFunction(item: RawMaterialSummary): ExtendedOption {
     const supplierInfo = item.supplier_attr?.name ? ` (${item.supplier_attr.name})` : ''
@@ -43,7 +52,6 @@
   }
 
   async function fetchFunction(query: Partial<FilterQuery>): Promise<RawMaterialSummary[]> {
-    console.log('MaterialSelector fetchFunction called with query:', query)
     return apiRequest<RawMaterialSummary[]>({
       url: 'supply/raw-material',
       queryParams: createQueryRequestObject(query),
@@ -52,8 +60,7 @@
 </script>
 
 <FormGenericSingleSelector
-  {formAPI}
-  {attr}
+  selectedValue={attr ? optionMappingFunction(attr) : undefined}
   {label}
   {placeholder}
   {name}

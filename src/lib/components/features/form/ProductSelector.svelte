@@ -5,29 +5,38 @@
   @uses FormGenericSingleSelector
 -->
 <script lang="ts">
-  import { FormFieldClass } from '$components/features/form/form'
+  import { EntitySelectorDefaults, type EntitySelectorProps } from '$components/core/form/form'
+  import FormGenericSingleSelector from '$components/core/form/FormGenericSingleSelector.svelte'
+  import * as m from '$lib/paraglide/messages'
   import type { ProductSummary } from '$lib/types/api-types'
   import { createQueryRequestObject, type FilterQuery } from '$utils/filters'
   import type { ExtendedOption } from '$utils/generics'
   import { apiRequest } from '$utils/request'
-  import FormGenericSingleSelector from '../form/FormGenericSingleSelector.svelte'
 
-  export let formAPI: any = null
-  export let attr: ProductSummary | undefined = undefined
-  export let label: string = 'Product'
-  export let placeholder: string | undefined = 'Select a product...'
-  export let name: string = 'product'
-  export let id: string = name
-  export let error: string | undefined = ''
-  export let showLabel: boolean = true
-  export let showErrorMessage: boolean = true
-  export let width: string = FormFieldClass.SelectorDefaultWidth
-  export let contentWidth: string = width
-  export let readonly: boolean = false
-  export let allowNewRecord: boolean = false
-  export let onChoose: (item: ProductSummary) => void = () => {}
-  export let onChange: (item: ExtendedOption | undefined) => void = () => {}
-  export let onClear: () => void = () => {}
+  type Props = EntitySelectorProps & {
+    attr?: ProductSummary
+    onChoose?: (item: ProductSummary) => void
+    onChange?: (item: ExtendedOption | undefined) => void
+    onClear?: () => void
+  }
+
+  let {
+    attr = undefined,
+    label = m.product(),
+    placeholder = m.select_product_placeholder(),
+    name = 'product',
+    id = name,
+    error = EntitySelectorDefaults.error,
+    showLabel = EntitySelectorDefaults.showLabel,
+    showErrorMessage = EntitySelectorDefaults.showErrorMessage,
+    width = EntitySelectorDefaults.width,
+    contentWidth = width,
+    readonly = EntitySelectorDefaults.readonly,
+    allowNewRecord = EntitySelectorDefaults.allowNewRecord,
+    onChoose = () => {},
+    onChange = () => {},
+    onClear = () => {},
+  }: Props = $props()
 
   function optionMappingFunction(item: ProductSummary): ExtendedOption {
     return {
@@ -46,8 +55,7 @@
 </script>
 
 <FormGenericSingleSelector
-  {formAPI}
-  {attr}
+  selectedValue={attr ? optionMappingFunction(attr) : undefined}
   {label}
   {placeholder}
   {name}
