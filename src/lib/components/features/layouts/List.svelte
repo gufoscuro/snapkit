@@ -8,6 +8,7 @@
   import type { LayoutSlotDefinition } from '$lib/admin/types'
 
   export const slots: LayoutSlotDefinition[] = [
+    { name: 'appHeader', label: 'App Header', description: 'Top application header/navigation' },
     { name: 'title', label: 'Title', description: 'Page title component' },
     { name: 'filters', label: 'Filters', description: 'Filter controls for the list' },
     { name: 'table', label: 'Table', description: 'Main data table/list component' },
