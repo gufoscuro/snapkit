@@ -8,7 +8,7 @@
   import { adminTenantsRoute } from '$lib/admin/routes'
   import { adminStore } from '$lib/admin/store.svelte'
   import type { TenantConfig } from '$lib/admin/types'
-  import FormGenericSingleSelector from '$lib/components/features/form/FormGenericSingleSelector.svelte'
+  import FormGenericSingleSelector from '$lib/components/core/form/FormGenericSingleSelector.svelte'
   import { Button } from '$lib/components/ui/button'
   import type { FilterQuery } from '$lib/utils/filters'
   import type { ExtendedOption } from '$lib/utils/generics'
