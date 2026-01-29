@@ -15,6 +15,7 @@
   import { confirmDelete } from '$lib/components/ui/confirm-delete-dialog/confirm-delete-dialog.svelte'
   import { Input } from '$lib/components/ui/input'
   import { Label } from '$lib/components/ui/label'
+  import ExternalLink from '@lucide/svelte/icons/external-link'
   import Save from '@lucide/svelte/icons/save'
   import Trash2 from '@lucide/svelte/icons/trash-2'
   import { toast } from 'svelte-sonner'
@@ -49,6 +50,25 @@
   $effect(() => {
     loadLayoutSlots(page.layout.componentKey)
   })
+
+  // Build the tenant-based URL for the page
+  function buildTenantPageUrl(): string | null {
+    const tenant = adminStore.state.tenants.find(t => t.id === page.tenantId)
+    if (!tenant) return null
+
+    const protocol = window.location.protocol
+    const hostname = window.location.hostname
+    const port = window.location.port
+
+    const parts = hostname.split('.')
+    const baseDomain = parts.length > 1 ? parts.slice(1).join('.') : hostname
+
+    const portSuffix = port ? `:${port}` : ''
+    const url = `${protocol}//${tenant.vanity}.${baseDomain}${portSuffix}${page.route}`
+    return url
+  }
+
+  const tenantPageUrl = $derived(buildTenantPageUrl())
 
   function handleTitleChange(e: Event) {
     adminStore.updatePage(page.$id, { title: (e.target as HTMLInputElement).value })
@@ -120,6 +140,16 @@
       <div class="flex items-center justify-between">
         <CardTitle>Page Settings</CardTitle>
         <div class="flex gap-2">
+          {#if tenantPageUrl}
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={() => window.open(tenantPageUrl, '_blank')}
+              title="Open page in new tab">
+              <ExternalLink class="mr-2 size-4" />
+              View Page
+            </Button>
+          {/if}
           <Button variant="destructive" size="sm" onclick={handleDeletePage}>
             <Trash2 class="mr-2 size-4" />
             Delete Page
