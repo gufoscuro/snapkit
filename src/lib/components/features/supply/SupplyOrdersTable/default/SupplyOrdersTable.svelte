@@ -6,6 +6,8 @@
   @keywords supply, orders, table, list, pagination, load-more, filters
   @uses DataTable, Badge
   @api GET /order (supply-api) -> orderSummary[]
+  @needs route: order-detail
+  @needs route: supply-orders
 -->
 <script lang="ts" module>
   export { SupplyOrdersTableContract as contract } from './SupplyOrdersTable.contract.js'
@@ -21,6 +23,7 @@
   import { getSupplyStatusLabel, getSupplyStatusVariant } from '$lib/utils/enum-labels'
   import { createQueryRequestObject, DEFAULT_ITEMS_LIMIT, type FilterQuery } from '$lib/utils/filters'
   import { apiRequest } from '$lib/utils/request'
+  import { createRoute } from '$utils/route-builder.js'
   import type { ColumnDef } from '@tanstack/table-core'
   import { createRawSnippet } from 'svelte'
   import { SupplyOrdersTableContract } from './SupplyOrdersTable.contract.js'
@@ -44,12 +47,9 @@
           return displayId
         }
 
-        // const url = createRoute({ $id: 'order-detail', params: { uuid: orderId } })
-        // const snippet = createRawSnippet(() => ({
-        //   render: () => `<a href="${url}" class="text-primary hover:underline">${displayId}</a>`,
-        // }))
+        const url = createRoute({ $id: 'order-details', params: { uuid: orderId } })
         const snippet = createRawSnippet(() => ({
-          render: () => `<span>${displayId}</span>`,
+          render: () => `<a href="${url}" class="text-primary hover:underline">${displayId}</a>`,
         }))
         return renderSnippet(snippet)
       },
