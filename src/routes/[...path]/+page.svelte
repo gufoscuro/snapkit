@@ -26,7 +26,7 @@
   <SnippetResolver snippet={pageDetails.config.layout} />
 {/if}
 
-<div class="fixed right-4 bottom-4">
+<div class="fixed right-2 bottom-12">
   <Button size="icon" variant={debug ? 'default' : 'secondary'} class="relative z-10" onclick={() => (debug = !debug)}>
     <IconCodeDots />
   </Button>
