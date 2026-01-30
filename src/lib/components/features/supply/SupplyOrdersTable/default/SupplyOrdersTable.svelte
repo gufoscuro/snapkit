@@ -6,8 +6,7 @@
   @keywords supply, orders, table, list, pagination, load-more, filters
   @uses DataTable, Badge
   @api GET /order (supply-api) -> orderSummary[]
-  @needs route: order-detail
-  @needs route: supply-orders
+  @route: order-detail
 -->
 <script lang="ts" module>
   export { SupplyOrdersTableContract as contract } from './SupplyOrdersTable.contract.js'

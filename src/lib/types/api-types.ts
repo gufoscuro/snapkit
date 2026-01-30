@@ -30,6 +30,30 @@ export type RawMaterialSummary = {
   minimum_quantity: number
   lead_time?: string
   prod_id?: string
+  /** Pricing information including unit price, currency, VAT, and volume discounts */
+  prices?: {
+    base_price?: number
+    currency: 'EUR' | 'USD' | 'GBP'
+    deals?: Array<{
+      category?: string
+      min_quantity: number
+      unit: number
+    }>
+    discount_percent?: number
+    unit: number
+    vat?: number
+  }
+  aggregate_of_id?: string
+  aggregate_quantity?: number
+  purchasable_product_id?: string
+  created?: {
+    at: string
+    by: {
+      full_name: string
+      id: string
+      username: string
+    }
+  }
 }
 
 /**

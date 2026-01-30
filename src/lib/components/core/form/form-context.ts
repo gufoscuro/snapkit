@@ -52,3 +52,12 @@ export function getFormContextOptional<
 >(): FormAPI<T> | null {
 	return getContext<FormAPI<T> | undefined>(FORM_CONTEXT_KEY) ?? null;
 }
+
+/**
+ * Clear the form context for child components.
+ * Use this in components that manage their own internal state and don't want
+ * their child fields to autowire to the parent form.
+ */
+export function clearFormContext(): void {
+	setContext(FORM_CONTEXT_KEY, null);
+}

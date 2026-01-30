@@ -1,5 +1,19 @@
 # Navigation and Routing
 
+## Why Dynamic Routes?
+
+In SnapKit, routes are **not hardcoded** - they are configured dynamically by administrators. This means:
+
+1. **No fixed paths**: A page like "Order Details" doesn't have a fixed URL like `/orders/123`. The actual path is determined by the admin configuration.
+
+2. **Semantic references**: Instead of paths, we use semantic IDs like `'order-details'` or `'material-details'`. These IDs are resolved at runtime to the actual configured path.
+
+3. **Flexibility**: Admins can reorganize the application structure (e.g., move pages, change URL patterns) without requiring code changes.
+
+4. **Fallback handling**: If a route isn't configured, the system can gracefully handle missing routes.
+
+**The `$id` you pass to `createRoute()` is a semantic identifier, not a file path.** Choose IDs that describe the destination's purpose (e.g., `'customer-list'`, `'product-details'`, `'invoice-create'`).
+
 ## Creating Links to Pages
 
 **IMPORTANT:** When creating links to pages in the application, you MUST ALWAYS use the route-builder utility instead of hardcoded URLs.

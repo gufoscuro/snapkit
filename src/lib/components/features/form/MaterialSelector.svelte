@@ -37,6 +37,7 @@
     contentWidth = width,
     readonly = EntitySelectorDefaults.readonly,
     allowNewRecord = EntitySelectorDefaults.allowNewRecord,
+    class: className = '',
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
@@ -76,4 +77,5 @@
   {fetchFunction}
   {onChoose}
   {onChange}
-  {onClear} />
+  {onClear}
+  class={className} />

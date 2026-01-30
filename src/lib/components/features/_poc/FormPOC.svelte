@@ -6,6 +6,11 @@
 <script lang="ts">
   import FormUtil, { type FailurePayload, type SuccessPayload } from '$components/core/form/FormUtil.svelte'
   import { v } from '$components/core/form/validation'
+  import {
+    rawMaterialsRequired,
+    rawMaterialsValidQuantity,
+    type RawMaterialLineItem,
+  } from '$components/features/supply/RawMaterialsEditor.svelte'
   import * as m from '$lib/paraglide/messages'
   import FormPOCInner from './FormPOCInner.svelte'
 
@@ -17,6 +22,7 @@
     price: number
     notes: string
     urgent: boolean
+    rawMaterials: RawMaterialLineItem[]
   }
 
   // Initial values
@@ -27,6 +33,7 @@
     price: 15.6,
     notes: '',
     urgent: false,
+    rawMaterials: [],
   }
 
   // Validation schema using the builder
@@ -35,6 +42,7 @@
       material: [v.required({ field: m.material() })],
       product: [v.required({ field: m.product() })],
       quantity: [v.required(), v.min(1, { field: m.quantity() })],
+      rawMaterials: [rawMaterialsRequired(), rawMaterialsValidQuantity()],
     })
     .build()
 
