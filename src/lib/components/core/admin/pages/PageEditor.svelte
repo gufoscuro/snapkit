@@ -137,29 +137,7 @@
 <div class="space-y-6">
   <Card>
     <CardHeader>
-      <div class="flex items-center justify-between">
-        <CardTitle>Page Settings</CardTitle>
-        <div class="flex gap-2">
-          {#if tenantPageUrl}
-            <Button
-              variant="outline"
-              size="sm"
-              onclick={() => window.open(tenantPageUrl, '_blank')}
-              title="Open page in new tab">
-              <ExternalLink class="mr-2 size-4" />
-              View Page
-            </Button>
-          {/if}
-          <Button variant="destructive" size="sm" onclick={handleDeletePage}>
-            <Trash2 class="mr-2 size-4" />
-            Delete Page
-          </Button>
-          <Button size="sm" onclick={handleSave} disabled={isSaving}>
-            <Save class="mr-2 size-4" />
-            {isSaving ? 'Saving...' : 'Save'}
-          </Button>
-        </div>
-      </div>
+      <CardTitle>Page Settings</CardTitle>
     </CardHeader>
     <CardContent class="space-y-4">
       <div class="space-y-2">
@@ -183,45 +161,44 @@
 
   <Card>
     <CardHeader>
-      <CardTitle>Layout</CardTitle>
+      <CardTitle>Layout & Snippets</CardTitle>
     </CardHeader>
-    <CardContent>
-      <div class="flex items-center gap-4">
-        <code class="rounded bg-muted px-2 py-1 text-sm">{page.layout.componentKey}</code>
-        <Button variant="outline" size="sm" onclick={() => (showLayoutPicker = true)}>Change Layout</Button>
-      </div>
-    </CardContent>
-  </Card>
-
-  <Card>
-    <CardHeader>
-      <CardTitle>Snippets</CardTitle>
-    </CardHeader>
-    <CardContent>
-      {#if layoutSlots.length === 0}
-        <p class="text-sm text-muted-foreground">This layout has no configurable slots.</p>
-      {:else}
-        <div class="space-y-4">
-          {#each layoutSlots as slot (slot.name)}
-            {@const snippet = page.snippets[slot.name]}
-            <div class="rounded-lg border p-4">
-              <div class="mb-2 flex items-center justify-between">
-                <div>
-                  <h4 class="font-medium">{slot.label}</h4>
-                  <p class="text-xs text-muted-foreground">{slot.description}</p>
-                </div>
-              </div>
-              {#if snippet}
-                <SnippetSlotEditor pageId={page.$id} slotName={slot.name} {snippet} />
-              {:else}
-                <Button variant="outline" size="sm" onclick={() => openSnippetPickerForSlot(slot.name)}>
-                  Select component for {slot.label}
-                </Button>
-              {/if}
-            </div>
-          {/each}
+    <CardContent class="space-y-6">
+      <div>
+        <Label class="mb-2 block text-sm font-medium">Layout Component</Label>
+        <div class="flex items-center gap-4">
+          <code class="rounded bg-muted px-2 py-1 text-sm">{page.layout.componentKey}</code>
+          <Button variant="outline" size="sm" onclick={() => (showLayoutPicker = true)}>Change Layout</Button>
         </div>
-      {/if}
+      </div>
+
+      <div>
+        <Label class="mb-2 block text-sm font-medium">Content Snippets</Label>
+        {#if layoutSlots.length === 0}
+          <p class="text-sm text-muted-foreground">This layout has no configurable slots.</p>
+        {:else}
+          <div class="space-y-4">
+            {#each layoutSlots as slot (slot.name)}
+              {@const snippet = page.snippets[slot.name]}
+              <div class="rounded-lg border p-4">
+                <div class="mb-2 flex items-center justify-between">
+                  <div>
+                    <h4 class="font-medium">{slot.label}</h4>
+                    <p class="text-xs text-muted-foreground">{slot.description}</p>
+                  </div>
+                </div>
+                {#if snippet}
+                  <SnippetSlotEditor pageId={page.$id} slotName={slot.name} {snippet} />
+                {:else}
+                  <Button variant="outline" size="sm" onclick={() => openSnippetPickerForSlot(slot.name)}>
+                    Select component for {slot.label}
+                  </Button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
     </CardContent>
   </Card>
 </div>

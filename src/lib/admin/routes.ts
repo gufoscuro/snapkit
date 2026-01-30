@@ -62,13 +62,15 @@ export function isRouteActive(currentPath: string, routePath: string): boolean {
  */
 export function getSidebarContextFromRoute(
 	currentPath: string
-): 'navigation' | 'blocks' | null {
+): 'navigation' | 'blocks' | 'pages' | null {
 	if (currentPath.startsWith(adminBlocksRoute())) {
 		return 'blocks'
 	}
+	if (currentPath.startsWith(adminPagesRoute())) {
+		return 'pages'
+	}
 	if (
 		currentPath === ADMIN_BASE ||
-		currentPath.startsWith(adminPagesRoute()) ||
 		currentPath.startsWith(adminMenusRoute()) ||
 		currentPath.startsWith(adminTenantsRoute())
 	) {
@@ -82,4 +84,11 @@ export function getSidebarContextFromRoute(
  */
 export function isBlocksListPage(currentPath: string): boolean {
 	return currentPath === adminBlocksRoute()
+}
+
+/**
+ * Check if current path is a pages list page
+ */
+export function isPagesListPage(currentPath: string): boolean {
+	return currentPath === adminPagesRoute()
 }

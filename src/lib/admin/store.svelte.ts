@@ -190,7 +190,7 @@ function createAdminStore() {
 
   // ========== Sidebar Context ==========
 
-  function setSidebarContext(context: 'navigation' | 'blocks') {
+  function setSidebarContext(context: 'navigation' | 'blocks' | 'pages') {
     state.sidebarContext = context
   }
 

@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import { page } from '$app/state'
-  import { getSidebarContextFromRoute, isBlocksListPage } from '$lib/admin/routes'
+  import { getSidebarContextFromRoute, isBlocksListPage, isPagesListPage } from '$lib/admin/routes'
   import { adminStore } from '$lib/admin/store.svelte'
   import ConfirmDeleteDialog from '$lib/components/ui/confirm-delete-dialog/confirm-delete-dialog.svelte'
   import * as Sidebar from '$lib/components/ui/sidebar'
@@ -32,6 +32,11 @@
 
     // Clear selection if we're on blocks list page
     if (isBlocksListPage(path) && adminStore.state.selection.type === 'block') {
+      adminStore.clearSelection()
+    }
+
+    // Clear selection if we're on pages list page
+    if (isPagesListPage(path) && adminStore.state.selection.type === 'page') {
       adminStore.clearSelection()
     }
   })

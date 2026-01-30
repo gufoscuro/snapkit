@@ -95,7 +95,7 @@ export interface AdminBuilderState {
   blocks: BlockConfig[]
   selection: AdminSelection
   isDirty: boolean
-  sidebarContext: 'navigation' | 'blocks'
+  sidebarContext: 'navigation' | 'blocks' | 'pages'
   selectedTenantId: string | null
 }
 

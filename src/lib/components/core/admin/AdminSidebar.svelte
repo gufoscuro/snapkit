@@ -7,6 +7,7 @@
   import { adminStore } from '$lib/admin/store.svelte'
   import * as Sidebar from '$lib/components/ui/sidebar'
   import BlocksMenu from './blocks/BlocksMenu.svelte'
+  import PagesMenu from './pages/PagesMenu.svelte'
   import NavigationMenu from './NavigationMenu.svelte'
   import UserDropdown from './UserDropdown.svelte'
 
@@ -28,6 +29,8 @@
       <NavigationMenu />
     {:else if sidebarContext === 'blocks'}
       <BlocksMenu />
+    {:else if sidebarContext === 'pages'}
+      <PagesMenu />
     {/if}
   </Sidebar.Content>
 
