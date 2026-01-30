@@ -74,5 +74,15 @@
   "uom_pq": "PQ",
   "uom_cq": "CQ",
   "uom_dq": "DQ",
-  "uom_mgl": "MGL"
+  "uom_mgl": "MGL",
+  "uom_label": "UDM",
+  "uom_unset": "Non impostato",
+  "uom_readonly_warning_title": "UDM non modificabile",
+  "uom_readonly_warning": "L'unità di misura non può essere modificata dopo il salvataggio.",
+  "materials": "Materiali",
+  "material_id": "Codice Materiale",
+  "lot": "Lotto",
+  "vat": "IVA",
+  "raw_material_not_in_stock": "Materiale non a magazzino",
+  "quantity_exceeds_available": "Quantità superiore alla disponibilità"
 }
