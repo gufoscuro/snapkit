@@ -1,18 +1,42 @@
 <script lang="ts">
   import { page } from '$app/state'
+  import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import { COMPONENT_REGISTRY } from '$generated/components-registry'
-  import { setSnippetBindings } from '$lib/contexts/page-state/bindings.svelte'
+  import { adminStore } from '$lib/admin/store.svelte'
   import { initPageState } from '$lib/contexts/page-state/page-state.svelte'
+  import type { SnippetDefinition } from '$utils/page-registry'
+  import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
+  import { setContext } from 'svelte'
+
+  const selectedTenant = $derived(adminStore.selectedTenant)
 
   // Initialize context for preview
   initPageState()
-  setSnippetBindings({ provides: {}, consumes: {} })
+
+  setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () => ({
+    pageDetails: {
+      config: {
+        $id: 'preview-component',
+        title: 'Test title',
+        route: '',
+        layout: { componentKey: 'layouts.Showoff', enabled: true },
+        snippets: {},
+      },
+      params: {},
+    },
+    routeDetails: { url: new URL('https://test.url'), search: '' },
+    tenantInterfaceDetails: { name: selectedTenant?.name || '', mainMenu: [{ label: 'Test', href: '/test' }] },
+  }))
 
   const componentKey = $derived(page.params.componentKey)
-  const componentEntry = $derived(COMPONENT_REGISTRY[componentKey as keyof typeof COMPONENT_REGISTRY])
+  const componentDefinition: SnippetDefinition = {
+    componentKey: page.params.componentKey as keyof typeof COMPONENT_REGISTRY,
+    enabled: true,
+  }
 
   // Load mock data client-side using dynamic import
   let mockData = $state<any>({})
+  let contentWrapper = $state<HTMLElement | null>(null)
 
   $effect(() => {
     if (componentKey) {
@@ -35,35 +59,43 @@
       mockData = {}
     }
   }
+
+  // Send height updates to parent window
+  $effect(() => {
+    if (!contentWrapper) return
+
+    let lastSentHeight = 0
+
+    const sendHeight = () => {
+      if (!contentWrapper) return
+
+      // Get the actual height of the content wrapper
+      const height = contentWrapper.offsetHeight
+
+      // Only send if height is valid and changed
+      if (height > 0 && height !== lastSentHeight) {
+        lastSentHeight = height
+        window.parent.postMessage({ type: 'preview-height', height }, '*')
+      }
+    }
+
+    const timeout1 = setTimeout(sendHeight, 100)
+
+    // Observe size changes ONLY on the content wrapper
+    const resizeObserver = new ResizeObserver(sendHeight)
+    resizeObserver.observe(contentWrapper)
+
+    return () => {
+      clearTimeout(timeout1)
+      resizeObserver.disconnect()
+    }
+  })
 </script>
 
 <svelte:head>
   <title>Component Preview: {componentKey}</title>
 </svelte:head>
 
-<div class="preview-container p-4">
-  {#if !componentEntry}
-    <div class="text-center text-red-500">
-      <p>Component not found: {componentKey}</p>
-    </div>
-  {:else}
-    {#await componentEntry.component()}
-      <div class="text-center text-gray-500">Loading component...</div>
-    {:then module}
-      {@const Component = module.default}
-      <Component {...mockData} />
-    {:catch error}
-      <div class="text-center text-red-500">
-        <p>Error loading component:</p>
-        <pre class="mt-2 text-sm">{error.message}</pre>
-      </div>
-    {/await}
-  {/if}
+<div style="min-height:600px" bind:this={contentWrapper}>
+  <SnippetResolver snippet={componentDefinition} />
 </div>
-
-<style>
-  .preview-container {
-    min-height: 100vh;
-    background: white;
-  }
-</style>
