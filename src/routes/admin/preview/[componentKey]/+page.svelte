@@ -9,26 +9,31 @@
   import { setContext } from 'svelte'
 
   const selectedTenant = $derived(adminStore.selectedTenant)
+  const componentKey = $derived(page.params.componentKey)
 
-  // Initialize context for preview
   initPageState()
 
   setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () => ({
     pageDetails: {
       config: {
-        $id: 'preview-component',
-        title: 'Test title',
-        route: '',
+        $id: `${componentKey}`,
+        title: `Preview: ${componentKey}`,
+        route: `/admin/preview/${componentKey}`,
         layout: { componentKey: 'layouts.Showoff', enabled: true },
         snippets: {},
       },
       params: {},
     },
-    routeDetails: { url: new URL('https://test.url'), search: '' },
-    tenantInterfaceDetails: { name: selectedTenant?.name || '', mainMenu: [{ label: 'Test', href: '/test' }] },
+    routeDetails: {
+      url: new URL('http://localhost'),
+      search: page.url.search,
+    },
+    tenantInterfaceDetails: {
+      name: selectedTenant?.name || 'Preview Tenant',
+      mainMenu: adminStore.currentTenantMenus[0]?.items || [],
+    },
   }))
 
-  const componentKey = $derived(page.params.componentKey)
   const componentDefinition: SnippetDefinition = {
     componentKey: page.params.componentKey as keyof typeof COMPONENT_REGISTRY,
     enabled: true,
