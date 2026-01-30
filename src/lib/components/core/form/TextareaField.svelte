@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment'
   import { getFormContextOptional } from './form-context'
-  import { TextareaFieldDefaults, type TextareaFieldProps } from './form'
+  import { FormLabelClass, TextareaFieldDefaults, type TextareaFieldProps } from './form'
   import FormFieldMessages from './FormFieldMessages.svelte'
   import FormFieldSkeleton from './FormFieldSkeleton.svelte'
   import { Textarea } from '$components/ui/textarea'
@@ -83,7 +83,7 @@
 
 {#if browser}
   <div>
-    <Label for={name} id="label-{id}" class={showLabel ? '' : 'sr-only'}>{label}</Label>
+    <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
       {#snippet children({ aria })}
         <Textarea

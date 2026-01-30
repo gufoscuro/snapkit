@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment'
   import { getFormContextOptional } from './form-context'
-  import { InputFieldDefaults, type InputFieldProps } from './form'
+  import { FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
   import FormFieldMessages from './FormFieldMessages.svelte'
   import FormFieldSkeleton from './FormFieldSkeleton.svelte'
   import { Input } from '$components/ui/input'
@@ -100,7 +100,7 @@
 
 {#if browser}
   <div class:numeric={type === 'number'} class:flex-1={autoWidth}>
-    <Label for={name} id="label-{id}" class={showLabel ? '' : 'sr-only'}>{label}</Label>
+    <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
       {#snippet children({ aria })}
         <div class="relative">

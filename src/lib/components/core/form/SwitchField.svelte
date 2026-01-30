@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getFormContextOptional } from './form-context'
-  import { SwitchFieldDefaults, type SwitchFieldProps } from './form'
+  import { FormLabelClass, SwitchFieldDefaults, type SwitchFieldProps } from './form'
   import { Switch } from '$components/ui/switch'
   import Label from '$components/ui/label/label.svelte'
   import * as m from '$lib/paraglide/messages'
@@ -61,7 +61,7 @@
   <Label
     for={name}
     id="label-{id}"
-    class="{showLabel ? '' : 'sr-only'} {labelClass}"
+    class="{showLabel ? FormLabelClass : 'sr-only'} {labelClass}"
   >
     {#if children}
       {@render children()}

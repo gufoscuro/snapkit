@@ -3,7 +3,7 @@
   import Label from '$components/ui/label/label.svelte'
   import { type FilterQuery, type MinimalFilterQuery } from '$utils/filters'
   import type { ExtendedOption } from '$utils/generics'
-  import { EntitySelectorDefaults, FormFieldClass, type EntitySelectorProps } from './form'
+  import { EntitySelectorDefaults, FormFieldClass, FormLabelClass, type EntitySelectorProps } from './form'
   import { getFormContextOptional } from './form-context'
   import FormFieldMessages from './FormFieldMessages.svelte'
   import FormFieldSkeleton from './FormFieldSkeleton.svelte'
@@ -32,11 +32,15 @@
     name,
     id = name,
     error = EntitySelectorDefaults.error,
+    warning = EntitySelectorDefaults.warning,
+    warningPosition = EntitySelectorDefaults.warningPosition,
     showLabel = EntitySelectorDefaults.showLabel,
     showErrorMessage = EntitySelectorDefaults.showErrorMessage,
     width = EntitySelectorDefaults.width,
     contentWidth = width,
+    align = EntitySelectorDefaults.align,
     readonly = EntitySelectorDefaults.readonly,
+    disabled = EntitySelectorDefaults.disabled,
     allowNewRecord = EntitySelectorDefaults.allowNewRecord,
     allowClear = true,
     onChoose = () => {},
@@ -88,14 +92,17 @@
   <ReadOnlyMultiselect {selectedValue} width={FormFieldClass.MinWidth} {label} {placeholder} {name} {id} {showLabel} />
 {:else if browser}
   <div>
-    <Label for={name} id="label-{id}" class="{showLabel ? '' : 'sr-only'} leading-6">{label}</Label>
-    <FormFieldMessages {id} error={errorMessage} {showErrorMessage}>
+    <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
+    <FormFieldMessages {id} error={errorMessage} {warning} {warningPosition} {showErrorMessage}>
       <MultiSelect
         {placeholder}
         {width}
         {contentWidth}
+        {align}
+        {disabled}
         {allowNewRecord}
         {emptyText}
+        {warning}
         fetchFunction={defaultFetchFunction}
         value={selectedValue ? [selectedValue] : []}
         error={errorMessage}

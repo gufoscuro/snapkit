@@ -32,7 +32,9 @@
   "material": "Materiale",
   "select_material_placeholder": "Seleziona un materiale",
   "product": "Prodotto",
+  "product_id": "ID Prodotto",
   "select_product_placeholder": "Seleziona un prodotto",
+  "select_lot_placeholder": "Seleziona un lotto",
   "sales_orders": "Ordini di vendita",
   "supply_orders": "Ordini di acquisto",
   "id": "ID",
@@ -48,6 +50,7 @@
   "price": "Prezzo",
   "unit_price": "Prezzo Unitario",
   "active": "Attivo",
+  "products": "Prodotti",
   "production": "Produzione",
   "gantt_today": "Oggi",
   "gantt_no_items": "Nessun elemento in questo periodo",
@@ -84,5 +87,9 @@
   "lot": "Lotto",
   "vat": "IVA",
   "raw_material_not_in_stock": "Materiale non a magazzino",
-  "quantity_exceeds_available": "Quantità superiore alla disponibilità"
+  "quantity_exceeds_available": "Quantità superiore alla disponibilità",
+  "discount": "Sconto",
+  "final_price": "Prezzo Finale",
+  "margin": "Margine",
+  "product_offer_tooltip": "Prezzo da offerta {offer}"
 }

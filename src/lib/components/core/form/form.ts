@@ -5,12 +5,15 @@
 export const FormFieldClass = Object.freeze({
   MinWidth: 'min-w-64 md:min-w-formfield',
   MaxWidth: 'max-w-full md:max-w-formfield',
-  TableCell: 'h-10 w-full rounded-none border-transparent focus:border-primary',
+  TableCell: 'h-10 w-full rounded-none border-transparent focus:border-primary focus-visible:ring-0',
   SelectorDefaultWidth: 'min-w-40 lg:min-w-[280px]',
   SelectorContentDefaultWidth: 'min-w-[280px]',
   SelectorTableCellWidth: 'w-full max-md:max-w-60 overflow-hidden overflow-ellipsis',
   SelectorContentTableCellWidth: 'w-56 md:w-80 lg:w-[500px]',
 })
+
+/** Default classes for form field labels */
+export const FormLabelClass = 'leading-6'
 
 export type FormFieldMessagePosition = 'top' | 'bottom' | 'floating-top' | 'floating-bottom'
 
@@ -131,6 +134,10 @@ export type EntitySelectorProps = {
   id?: string
   /** Messaggio di errore */
   error?: string
+  /** Messaggio di warning */
+  warning?: string
+  /** Posizione messaggio warning */
+  warningPosition?: FormFieldMessagePosition
   /** Mostra label visibile */
   showLabel?: boolean
   /** Mostra messaggio errore */
@@ -139,8 +146,12 @@ export type EntitySelectorProps = {
   width?: string
   /** Larghezza contenuto dropdown */
   contentWidth?: string
+  /** Allineamento dropdown */
+  align?: 'start' | 'center' | 'end'
   /** Campo in sola lettura */
   readonly?: boolean
+  /** Campo disabilitato (non interagibile) */
+  disabled?: boolean
   /** Permetti creazione nuovo record */
   allowNewRecord?: boolean
   /** Classi CSS aggiuntive */
@@ -200,10 +211,14 @@ export const EntitySelectorDefaults = {
   label: '',
   placeholder: '',
   error: '',
+  warning: undefined,
+  warningPosition: 'bottom' as FormFieldMessagePosition,
   showLabel: true,
   showErrorMessage: true,
   width: FormFieldClass.SelectorDefaultWidth,
+  align: 'end' as const,
   readonly: false,
+  disabled: false,
   allowNewRecord: false,
 } as const
 

@@ -36,6 +36,7 @@
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
+    class: className = '',
   }: Props = $props()
 
   function optionMappingFunction(item: ProductSummary): ExtendedOption {
@@ -71,4 +72,5 @@
   {fetchFunction}
   {onChoose}
   {onChange}
-  {onClear} />
+  {onClear}
+  class={className} />

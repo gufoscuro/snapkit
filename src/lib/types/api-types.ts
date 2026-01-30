@@ -193,12 +193,88 @@ export type ProductSummary = {
   id?: string
   name: string
   internal_id?: string
+  semi_id?: string
+  master_type?: string
   categories: string[]
   type: 'producible' | 'purchasable' | 'bundle'
   uom: string
+  /** Pricing information including unit price, currency, VAT, and volume discounts */
   prices: {
     base_price?: number
     currency: 'EUR' | 'USD' | 'GBP'
+    deals?: Array<{
+      category?: string
+      min_quantity: number
+      unit: number
+    }>
+    discount_percent?: number
     unit: number
+    vat?: number
+  }
+  created?: {
+    at: string
+    by: {
+      full_name: string
+      id: string
+      username: string
+    }
+  }
+}
+
+/**
+ * Product inventory item summary from product-api GET /inventory/product endpoint
+ */
+export type ProductInventoryItemSummary = {
+  id?: string
+  name: string
+  internal_id: string
+  product_id: string
+  lot?: string
+  external_lot?: string
+  order_id?: string
+  order_external_id?: string
+  order_internal_id?: string
+  semi_id?: string
+  uom: string
+  categories: string[]
+  buckets?: {
+    available?: number
+    committed?: number
+    in_stock?: number
+  }
+  warehouse_id?: string
+  warehouse_attr?: {
+    id: string
+    name: string
+    supplier_id?: string
+  }
+  created?: {
+    at: string
+    by: {
+      full_name: string
+      id: string
+      username: string
+    }
+  }
+}
+
+/**
+ * Price calculation result from sales-api POST /customer/{customerId}/products/{productId}/_calculate-price
+ */
+export type CalculatePriceResult = {
+  /** The applicable unit price before discount */
+  applicable_price: number
+  /** The absolute discount amount per unit */
+  discount_amount: number
+  /** The discount percentage applied (0-100) */
+  discount_percent: number
+  /** The final unit price after discount */
+  final_price: number
+  /** Profit margin percentage. Null if no purchase cost is available. */
+  margin_percent?: number
+  /** Applied offer details if any */
+  applied_offer?: {
+    offer_id?: string
+    offer_internal_id?: string
   }
 }

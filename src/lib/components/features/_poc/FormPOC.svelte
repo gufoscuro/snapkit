@@ -10,7 +10,7 @@
     rawMaterialsRequired,
     rawMaterialsValidQuantity,
     type RawMaterialLineItem,
-  } from '$components/features/supply/RawMaterialsEditor.svelte'
+  } from '$components/features/form/RawMaterialsEditor.svelte'
   import * as m from '$lib/paraglide/messages'
   import FormPOCInner from './FormPOCInner.svelte'
 
@@ -68,7 +68,7 @@
   }
 </script>
 
-<div class="mx-auto max-w-2xl p-6">
+<div class="p-6">
   <h1 class="mb-6 text-2xl font-bold">Form POC - New FormUtil System</h1>
 
   <FormUtil

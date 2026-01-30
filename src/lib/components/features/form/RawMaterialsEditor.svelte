@@ -358,7 +358,7 @@
       <Table.Head class="w-36">{m.lot()}</Table.Head>
     {/if}
     {#if showPrice}
-      <Table.Head class="w-28">{m.price()}</Table.Head>
+      <Table.Head class="w-36">{m.price()}</Table.Head>
       <Table.Head class="w-20">{m.vat()}</Table.Head>
     {/if}
   {/snippet}
@@ -369,7 +369,7 @@
       <MaterialSelector
         name="material-{index}"
         attr={item.id ? ({ id: item.id, name: item.name, external_id: item.extraId } as RawMaterialSummary) : undefined}
-        class="h-10 rounded-none border-transparent focus:border-primary"
+        class={FormFieldClass.TableCell}
         showLabel={false}
         showErrorMessage={false}
         width={FormFieldClass.SelectorTableCellWidth}

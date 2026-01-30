@@ -7,7 +7,7 @@
 <script lang="ts" generics="T extends Record<string, unknown>">
   import Label from '$components/ui/label/label.svelte'
   import * as Table from '$components/ui/table'
-  import { ArrowUpLeft } from 'lucide-svelte'
+  import { ArrowUp } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
   import { clearFormContext, getFormContextOptional } from './form-context'
 
@@ -216,7 +216,7 @@
 
   {#if error}
     <div id="error-{id}" class="mt-1 flex items-center gap-1 text-xs font-semibold text-destructive">
-      <ArrowUpLeft class="size-3" />
+      <ArrowUp class="size-3" />
       {error}
     </div>
   {/if}

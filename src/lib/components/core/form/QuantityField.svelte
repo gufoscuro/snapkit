@@ -6,7 +6,7 @@
   import { joinClassnames } from '$utils/classnames'
   import { getUserMessagingClasses } from '$utils/form'
   import { UnitOfMeasures, getUOMDisplayedSymbol, getUOMMinQuantity, getUOMStep } from '$utils/uom'
-  import { InputFieldDefaults, type InputFieldProps } from './form'
+  import { FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
   import { getFormContextOptional } from './form-context'
   import FormFieldMessages from './FormFieldMessages.svelte'
   import FormFieldSkeleton from './FormFieldSkeleton.svelte'
@@ -144,7 +144,7 @@
 
 {#if browser}
   <div class="numeric" class:flex-1={autoWidth}>
-    <Label for={name} id="label-{id}" class={showLabel ? '' : 'sr-only'}>{label}</Label>
+    <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
       {#snippet children({ aria })}
         <div class="relative">

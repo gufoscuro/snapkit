@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment'
   import { getFormContextOptional } from './form-context'
-  import { SelectorFieldDefaults, type SelectorFieldProps } from './form'
+  import { FormLabelClass, SelectorFieldDefaults, type SelectorFieldProps } from './form'
   import FormFieldMessages from './FormFieldMessages.svelte'
   import FormFieldSkeleton from './FormFieldSkeleton.svelte'
   import * as Select from '$components/ui/select'
@@ -118,7 +118,7 @@
 
 {#if browser && !fetching}
   <div>
-    <Label for={name} id="label-{id}" class={showLabel ? '' : 'sr-only'}>{label}</Label>
+    <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
       {#snippet children({ aria })}
         <Select.Root

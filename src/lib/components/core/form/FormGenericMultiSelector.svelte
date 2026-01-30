@@ -1,7 +1,7 @@
 <script lang="ts" generics="T">
 	import { browser } from '$app/environment';
 	import FormFieldMessages from './FormFieldMessages.svelte';
-	import { FormFieldClass, type FormFieldMessagePosition } from './form';
+	import { FormFieldClass, FormLabelClass, type FormFieldMessagePosition } from './form';
 	import MultiSelect from './multiselect/MultiSelect.svelte';
 	import FormFieldSkeleton from './FormFieldSkeleton.svelte';
 	import Label from '$components/ui/label/label.svelte';
@@ -110,7 +110,7 @@
 
 {#if browser}
 	<div>
-		<Label for={name} id="label-{id}" class={showLabel ? '' : 'sr-only'}>{label}</Label>
+		<Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
 		<FormFieldMessages {id} {warning} {showErrorMessage} {warningPosition} error={errorMessage}>
 			<MultiSelect
 				{placeholder}

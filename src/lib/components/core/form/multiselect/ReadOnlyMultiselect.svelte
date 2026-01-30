@@ -3,6 +3,7 @@
   import Label from '$components/ui/label/label.svelte'
   import type { ExtendedOption } from '$utils/generics'
   import ChevronsUpDown from 'lucide-svelte/icons/chevrons-up-down'
+  import { FormLabelClass } from '../form'
 
   type Props = {
     selectedValue?: ExtendedOption
@@ -30,7 +31,7 @@
 </script>
 
 <div>
-  <Label for={nameProp} id="label-{id}" class={showLabel ? '' : 'sr-only'}>{label}</Label>
+  <Label for={nameProp} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
   <div title={displayName}>
     <Button
       disabled
