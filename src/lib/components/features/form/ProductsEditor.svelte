@@ -407,7 +407,7 @@
           const result = await apiRequest<CalculatePriceResult>({
             method: 'POST',
             url: `sales/customer/${customerId}/products/${item.id}/_calculate-price`,
-            body: {
+            data: {
               applicable_price: item.customPrice,
               discount_percent: item.discount || 0,
               quantity: item.quantity,

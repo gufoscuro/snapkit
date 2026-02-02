@@ -169,6 +169,29 @@ export type SupplyOrderDetails = SupplyOrderSummary & {
 // ============================================================================
 
 /**
+ * Customer summary from sales-api GET /customer endpoint
+ */
+export type CustomerSummary = {
+  id?: string
+  name: string
+  vat_no: string
+  categories: string[]
+  default_currency: string
+  emails: Array<{ email: string; name: string }>
+  phones: Array<{ name: string; phone: string }>
+}
+
+/**
+ * Sales channel summary from sales-api GET /sales-channel endpoint
+ */
+export type SalesChannelSummary = {
+  id?: string
+  name: string
+  status: 'active' | 'inactive'
+  type: 'b2b' | 'e-commerce'
+}
+
+/**
  * Sales order summary from sales-api GET /order endpoint
  */
 export type SalesOrderSummary = {
