@@ -10,6 +10,20 @@
 // ============================================================================
 
 /**
+ * Supplier summary from supply-api GET /supplier endpoint
+ */
+export type SupplierSummary = {
+  id?: string
+  name: string
+  vat_no: string
+  categories: string[]
+  default_currency: string
+  emails: Array<{ email: string; name: string }>
+  phones: Array<{ name: string; phone: string }>
+  mode?: 'ordinary' | 'self'
+}
+
+/**
  * Raw material summary from supply-api GET /raw-material endpoint
  */
 export type RawMaterialSummary = {
