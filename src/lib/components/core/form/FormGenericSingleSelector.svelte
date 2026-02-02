@@ -15,10 +15,12 @@
     name: string
     selectedValue?: ExtendedOption
     emptyText?: string
+    newRecordText?: string
     allowClear?: boolean
     onChoose?: (item: T) => void
     onChange?: (item: ExtendedOption | undefined) => void
     onClear?: () => void
+    onCreateNew?: () => void
     fetchFunction?: (query: Partial<FilterQuery>) => Promise<T[]>
     filterFunction?: (item: T, query: Partial<MinimalFilterQuery>) => boolean
     optionMappingFunction?: (item: T) => ExtendedOption
@@ -29,6 +31,7 @@
     label = 'Selector label',
     placeholder = 'Select...',
     emptyText = 'No Results Found',
+    newRecordText = 'Add New',
     name,
     id = name,
     error = EntitySelectorDefaults.error,
@@ -46,6 +49,7 @@
     onChoose = () => {},
     onChange = () => {},
     onClear: onClearCallback = () => {},
+    onCreateNew = () => {},
     fetchFunction = () => Promise.resolve([]),
     filterFunction = () => true,
     optionMappingFunction = item =>
@@ -102,16 +106,17 @@
         {disabled}
         {allowNewRecord}
         {emptyText}
+        {newRecordText}
         {warning}
         fetchFunction={defaultFetchFunction}
         value={selectedValue ? [selectedValue] : []}
         error={errorMessage}
         options={[]}
-        newRecordText={'Add New'}
         class="w-full {className}"
         multiselection={false}
         shouldFilter={false}
         {allowClear}
+        {onCreateNew}
         onChange={onSelectionChange} />
     </FormFieldMessages>
   </div>
