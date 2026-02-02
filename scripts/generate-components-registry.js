@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { readdir, readFile, writeFile, mkdir } from 'fs/promises';
-import { join, dirname, relative } from 'path';
+import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
+import { dirname, join, relative } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -41,15 +41,29 @@ async function findSvelteFiles(dir, fileList = []) {
 
 /**
  * Extract JSDoc description from a Svelte component
+ * Supports both HTML comments and JSDoc comments
  */
 function extractDescription(content) {
-  // Look for JSDoc comment at the start of the file or before the script tag
-  const jsdocPattern = /\/\*\*\s*\n([^*]|\*(?!\/))*\*\//;
-  const match = content.match(jsdocPattern);
+  // First, try to find HTML comment at the start of the file (Svelte style)
+  const htmlCommentPattern = /<!--\s*([\s\S]*?)\s*-->/;
+  const htmlMatch = content.match(htmlCommentPattern);
 
-  if (match) {
-    // Extract description lines (lines that start with * but not */)
-    const jsdocContent = match[0];
+  if (htmlMatch) {
+    const commentContent = htmlMatch[1];
+    // Look for @description tag
+    const descriptionMatch = commentContent.match(/@description\s+(.+?)(?=\n\s*@|\n\s*$)/s);
+
+    if (descriptionMatch) {
+      return descriptionMatch[1].trim().replace(/\s+/g, ' ');
+    }
+  }
+
+  // Fallback: Look for JSDoc comment (/**...*/)
+  const jsdocPattern = /\/\*\*\s*\n([^*]|\*(?!\/))*\*\//;
+  const jsdocMatch = content.match(jsdocPattern);
+
+  if (jsdocMatch) {
+    const jsdocContent = jsdocMatch[0];
     const descriptionMatch = jsdocContent.match(/@description\s+(.+?)(?=\n\s*\*\s*@|\n\s*\*\/)/s);
 
     if (descriptionMatch) {
@@ -111,6 +125,7 @@ async function generateRegistry() {
     const key = generateKey(filePath);
     const importPath = generateImportPath(filePath);
     const description = extractDescription(content) || `${key.split('.').pop()} component`;
+    console.log('description', description);
 
     registryEntries.push({
       key,
