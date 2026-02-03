@@ -1,4 +1,4 @@
-import { TypeGuard, TypeExtends, TypeExtendsResult } from '@sinclair/typebox'
+import { TypeGuard, ExtendsCheck, ExtendsResult } from '@sinclair/typebox'
 import type { TSchema, TObject } from '@sinclair/typebox'
 
 /**
@@ -38,12 +38,12 @@ export function checkSchemaCompatibility(
 ): CompatibilityResult {
 	// Handle non-object schemas with direct type checking
 	if (!TypeGuard.IsObject(providesSchema) || !TypeGuard.IsObject(consumesSchema)) {
-		const result = TypeExtends.Extends(providesSchema, consumesSchema)
+		const result = ExtendsCheck(providesSchema, consumesSchema)
 		return {
-			compatible: result === TypeExtendsResult.True,
+			compatible: result === ExtendsResult.True,
 			details: [],
 			summary:
-				result === TypeExtendsResult.True
+				result === ExtendsResult.True
 					? 'Schemas are compatible'
 					: 'Schemas are not compatible (non-object comparison)'
 		}
@@ -88,8 +88,8 @@ function compareObjectSchemas(
 			continue
 		}
 
-		const extendResult = TypeExtends.Extends(providesProp, consumesProp)
-		if (extendResult === TypeExtendsResult.True) {
+		const extendResult = ExtendsCheck(providesProp, consumesProp)
+		if (extendResult === ExtendsResult.True) {
 			details.push({ property: key, status: 'compatible' })
 		} else {
 			details.push({
