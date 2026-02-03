@@ -1,4 +1,5 @@
-import { pages as adminPages, tenants as adminTenants } from '$generated/admin-config';
+import { pages as adminPages, tenants as adminTenants } from '$generated/admin-config'
+import { tenantConfigStore } from '$lib/stores/tenant-config'
 import type { ComponentKey } from '$generated/components-registry';
 import type { BindingConfig } from '$lib/contexts/page-state';
 import { type TObject, Type } from '@sinclair/typebox';
@@ -27,51 +28,51 @@ export const PAGES: PageConfig[] = [
   ...(adminPages as PageConfig[]),
 
   // Hardcoded pages for demo purposes
-  // {
-  //   $id: 'order-list',
-  //   title: 'supply_orders',
-  //   route: '/purchase/orders',
-  //   layout: {
-  //     componentKey: 'layouts.List',
-  //     enabled: true,
-  //   },
-  //   snippets: {
-  //     appHeader: {
-  //       componentKey: 'globals.AppHeader',
-  //       enabled: true,
-  //     },
-  //     title: {
-  //       enabled: true,
-  //       componentKey: 'globals.PageTitle',
-  //     },
-  //     table: {
-  //       enabled: true,
-  //       componentKey: 'supply.supplyorderstable.default.SupplyOrdersTable'
-  //     },
-  //   },
-  //   subpages: [
-  //     {
-  //       $id: 'order-detail',
-  //       $params: Type.Object({ uuid: Type.String() }),
-  //       title: 'purchase_order_detail',
-  //       route: '/purchase/orders/upsert/:uuid',
-  //       layout: {
-  //         componentKey: 'layouts.Detail',
-  //         enabled: true,
-  //       },
-  //       snippets: {
-  //         appHeader: {
-  //           componentKey: 'globals.AppHeaderWithBack',
-  //           enabled: true,
-  //         },
-  //         detail: {
-  //           enabled: true,
-  //           componentKey: 'supply.upsertsupplyorder.default.UpsertSupplyOrder',
-  //         },
-  //       },
-  //     },
-  //   ],
-  // },
+  {
+    $id: 'order-list',
+    title: 'supply_orders',
+    route: '/purchase/orders',
+    layout: {
+      componentKey: 'layouts.List',
+      enabled: true,
+    },
+    snippets: {
+      appHeader: {
+        componentKey: 'globals.AppHeader',
+        enabled: true,
+      },
+      title: {
+        enabled: true,
+        componentKey: 'globals.PageTitle',
+      },
+      table: {
+        enabled: true,
+        componentKey: 'supply.supplyorderstable.default.SupplyOrdersTable'
+      },
+    },
+    subpages: [
+      {
+        $id: 'order-details',
+        $params: Type.Object({ uuid: Type.String() }),
+        title: 'purchase_order_detail',
+        route: '/purchase/orders/upsert/:uuid',
+        layout: {
+          componentKey: 'layouts.Detail',
+          enabled: true,
+        },
+        snippets: {
+          appHeader: {
+            componentKey: 'globals.AppHeaderWithBack',
+            enabled: true,
+          },
+          detail: {
+            enabled: true,
+            componentKey: 'supply.upsertsupplyorder.default.UpsertSupplyOrder',
+          },
+        },
+      },
+    ],
+  },
   {
     $id: 'sales-order-list',
     title: 'sales_orders',
@@ -132,7 +133,7 @@ export const PAGES: PageConfig[] = [
         // Using default bindings: consumes.filters -> 'filters', provides.selection -> 'selection'
       },
     },
-  }
+  },
   // ... more pages
 ]
 
@@ -146,8 +147,10 @@ export interface PageDetails {
 
 /**
  * Get tenant ID from vanity (subdomain)
+ * @deprecated Use tenantConfigStore.getTenantId() instead
  */
 export function getTenantIdByVanity(vanity: string | null): string | null {
+  console.warn('[DEPRECATED] getTenantIdByVanity() - use tenantConfigStore.getTenantId() instead')
   if (!vanity) return null
   const tenant = adminTenants.find(t => t.vanity === vanity)
   return tenant?.id ?? null
@@ -173,10 +176,14 @@ function getPagesByTenant(tenantId: string | null): PageConfig[] {
   return [...tenantPages, ...hardcodedPages]
 }
 
-// Async function (DB-ready interface)
+/**
+ * @deprecated Use tenantConfigStore.getPageByRoute() instead
+ * Async function (DB-ready interface)
+ */
 export async function getPageByRoute(route: string, tenantId?: string | null): Promise<PageDetails | null> {
+  console.warn('[DEPRECATED] getPageByRoute() - use tenantConfigStore.getPageByRoute() instead')
   // Simulate async DB call
-  await new Promise(resolve => setTimeout(resolve, 10))
+  await new Promise(resolve => setTimeout(resolve, 100))
 
   const pages = tenantId ? getPagesByTenant(tenantId) : PAGES
 

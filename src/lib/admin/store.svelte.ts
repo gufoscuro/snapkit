@@ -1,5 +1,6 @@
 import { browser } from '$app/environment'
 import type { ComponentKey } from '$generated/components-registry'
+import { tenantConfigStore } from '$lib/stores/tenant-config'
 import type {
   AdminBuilderState,
   AdminSelection,
@@ -405,6 +406,14 @@ function createAdminStore() {
     state.isDirty = false
   }
 
+  /**
+   * Call this after exporting/publishing config changes
+   * Invalidates the tenant config cache so end-users see the latest config
+   */
+  function onConfigPublished() {
+    tenantConfigStore.invalidate()
+  }
+
   // Return the store interface
   return {
     state,
@@ -446,6 +455,7 @@ function createAdminStore() {
     fromJSON,
     loadState,
     markClean,
+    onConfigPublished,
   }
 }
 

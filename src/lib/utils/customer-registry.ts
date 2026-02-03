@@ -1,4 +1,4 @@
-import { menus as adminMenus, tenants as adminTenants } from '$generated/admin-config'
+import { tenantConfigStore } from '$lib/stores/tenant-config'
 
 export type NavItem = {
   label: string
@@ -12,35 +12,26 @@ export type TenantInterfaceDetails = {
   mainMenu: Array<NavItem>
 }
 
-export async function getTenantInterfaceDetails(tenantVanity: string | null): Promise<TenantInterfaceDetails | null> {
-  // First check admin-configured tenants
-  const adminTenant = adminTenants.find(t => t.vanity === tenantVanity)
-  if (adminTenant) {
-    // Get menus assigned to this tenant (menus now have tenantId foreign key)
-    const tenantMenus = adminMenus.filter(m => m.tenantId === adminTenant.id)
-    const mainMenu = tenantMenus.flatMap(m => m.items)
+/**
+ * @deprecated Use tenantConfigStore.fetchTenantConfig() instead
+ * This function is kept for backward compatibility during migration.
+ */
+export async function getTenantInterfaceDetails(
+  tenantVanity: string | null
+): Promise<TenantInterfaceDetails | null> {
+  console.warn(
+    '[DEPRECATED] getTenantInterfaceDetails() - use tenantConfigStore.fetchTenantConfig() instead'
+  )
 
+  if (!tenantVanity) return null
+
+  try {
+    const config = await tenantConfigStore.fetchTenantConfig(tenantVanity)
     return {
-      name: adminTenant.name,
-      mainMenu,
+      name: config.name,
+      mainMenu: config.mainMenu,
     }
-  }
-
-  // Fallback to hardcoded tenants
-  switch (tenantVanity) {
-    case 'admin':
-      return {
-        name: 'Admin',
-        mainMenu: [
-          {
-            label: 'Admin Dashboard',
-            href: '/admin',
-            visible: true,
-          },
-        ],
-      }
-
-    default:
-      return null
+  } catch {
+    return null
   }
 }
