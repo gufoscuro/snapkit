@@ -16,6 +16,7 @@
   import type { SnippetDefinition } from '$utils/page-registry'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import { getContext, type Snippet } from 'svelte'
+  import { Skeleton } from '$lib/components/ui/skeleton'
   import SnippetBindingsProvider from './SnippetBindingsProvider.svelte'
 
   type SnippetResolverProps = {
@@ -94,7 +95,7 @@
     {@render children?.()}
   {:else}
     <div class="py-2">
-      <div class="flex animate-pulse items-center justify-center rounded bg-muted {className || 'h-10 w-60'}"></div>
+      <Skeleton class="mx-auto {className || 'h-10 w-60'}" />
     </div>
   {/if}
 {:else if ComponentFunction}

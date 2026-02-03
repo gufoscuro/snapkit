@@ -6,6 +6,7 @@
   import { setContext } from 'svelte'
   import type { LayoutProps } from './$types'
   import { Toaster } from '$lib/components/ui/sonner'
+  import DevtoolsPanel from '$lib/components/runtime/devtools/DevtoolsPanel.svelte'
   import './layout.css'
 
   let { children, data }: LayoutProps = $props()
@@ -25,3 +26,4 @@
 </div>
 
 <Toaster />
+<DevtoolsPanel />
