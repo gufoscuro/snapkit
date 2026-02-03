@@ -106,6 +106,7 @@ function createTenantConfigStore() {
     if (pendingFetch) {
       return pendingFetch
     }
+
     return null
   }
 
@@ -132,11 +133,25 @@ function createTenantConfigStore() {
    * Get page configuration by route (async, waits for data if fetch is in progress)
    *
    * @param route - Route path to match (e.g., '/purchase/orders')
+   * @param vanity - Optional tenant vanity to fetch if not already loaded
    * @returns Page details with matched params, or null if not found
    */
-  async function getPageByRoute(route: string): Promise<PageDetails | null> {
+  async function getPageByRoute(
+    route: string,
+    vanity?: string,
+  ): Promise<PageDetails | null> {
     // Wait for data if fetch is in progress
-    const tenant = await waitForReady()
+    let tenant = await waitForReady()
+
+    // If no tenant data and vanity provided, trigger fetch
+    if (!tenant && vanity) {
+      try {
+        tenant = await fetchTenantConfig(vanity)
+      } catch (e) {
+        console.error('getPageByRoute: failed to fetch tenant config', e)
+        return null
+      }
+    }
 
     if (!tenant) {
       console.warn('getPageByRoute called but no tenant data available')

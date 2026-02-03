@@ -23,6 +23,9 @@
     notes: string
     urgent: boolean
     rawMaterials: RawMaterialLineItem[]
+    deliveryDate: Date | null
+    uom: string
+    currency: string
   }
 
   // Initial values
@@ -34,6 +37,9 @@
     notes: '',
     urgent: false,
     rawMaterials: [],
+    deliveryDate: null,
+    uom: '',
+    currency: 'EUR',
   }
 
   // Validation schema using the builder

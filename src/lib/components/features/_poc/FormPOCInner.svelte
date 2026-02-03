@@ -5,11 +5,14 @@
 -->
 <script lang="ts">
   import BusyButton from '$components/core/form/BusyButton.svelte'
+  import CurrencyField from '$components/core/form/CurrencyField.svelte'
+  import DateField from '$components/core/form/DateField.svelte'
   import { getFormContext } from '$components/core/form/form-context'
   import PriceField from '$components/core/form/PriceField.svelte'
   import QuantityField from '$components/core/form/QuantityField.svelte'
   import SwitchField from '$components/core/form/SwitchField.svelte'
   import TextareaField from '$components/core/form/TextareaField.svelte'
+  import UOMField from '$components/core/form/UOMField.svelte'
   import MaterialSelector from '$components/features/form/MaterialSelector.svelte'
   import ProductsEditor from '$components/features/form/ProductsEditor.svelte'
   import ProductSelector from '$components/features/form/ProductSelector.svelte'
@@ -26,6 +29,9 @@
     notes: string
     urgent: boolean
     rawMaterials: RawMaterialLineItem[]
+    deliveryDate: Date | null
+    uom: string
+    currency: string
   }
 
   // Access form context - no props needed!
@@ -37,9 +43,17 @@
 
   <ProductSelector name="product" />
 
-  <QuantityField name="quantity" />
+  <div class="flex gap-4">
+    <QuantityField name="quantity" />
+    <UOMField name="uom" />
+  </div>
 
-  <PriceField name="price" />
+  <div class="flex gap-4">
+    <PriceField name="price" />
+    <CurrencyField name="currency" />
+  </div>
+
+  <DateField name="deliveryDate" minDaysFromNow={1} allowClear />
 
   <RawMaterialsEditor
     name="rawMaterials"
@@ -51,9 +65,9 @@
 
   <ProductsEditor name="products" showLabel={false} showLot showPrice showQuantity />
 
-  <SwitchField name="urgent" label="Urgent order" />
+  <SwitchField name="urgent" />
 
-  <TextareaField label="Notes" name="notes" />
+  <TextareaField name="notes" />
 
   <!-- Submit Button -->
   <div class="flex gap-2">

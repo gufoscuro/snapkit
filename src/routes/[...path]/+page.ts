@@ -10,8 +10,11 @@ export const load: PageLoad = async ({ params, url }) => {
     search: url.searchParams.get('search'),
   }
 
-  // Use store (waits for data if fetch is still in progress)
-  const pageDetails = await tenantConfigStore.getPageByRoute(route)
+  // Extract vanity from hostname (same as layout does)
+  const tenantVanity = url.hostname.split('.')[0] || null
+
+  // Use store (waits for data if fetch is still in progress, triggers fetch if needed)
+  const pageDetails = await tenantConfigStore.getPageByRoute(route, tenantVanity || undefined)
 
   if (!pageDetails) {
     throw error(404, `Page not found: ${route}`)
