@@ -6,8 +6,8 @@ import type { PageState } from '$lib/contexts/page-state'
  */
 export type FormDataGetter = () => {
 	values: Record<string, unknown>
-	errors: Record<string, string>
-	touched: Record<string, boolean>
+	errors: Record<string, string | undefined>
+	touched: Record<string, boolean | undefined>
 	isValid: boolean
 	isDirty: boolean
 	inflight: boolean
