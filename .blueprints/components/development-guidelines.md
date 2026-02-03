@@ -79,10 +79,17 @@ The `src/lib/components/core/form/` directory contains a complete form system bu
 | `PriceField`                 | Price/currency input (autowired)             |
 | `SelectField`                | Dropdown select field (autowired)            |
 | `SwitchField`                | Toggle switch field (autowired)              |
+| `UOMField`                   | Unit of measure selector (autowired)         |
+| `CurrencyField`              | Currency selector (autowired)                |
+| `DateField`                  | Date picker with calendar (autowired)        |
+| `EditableTableField`         | Editable inline table (autowired)            |
 | `FormGenericSingleSelector`  | Generic single-item selector (autowired)     |
 | `FormGenericMultiSelector`   | Generic multi-item selector (autowired)      |
 | `BusyButton`                 | Submit button with loading state             |
 | `FormFieldMessages`          | Error/warning message display                |
+| `FormFieldErrorMessage`      | Single error message component               |
+| `FormFieldWarningMessage`    | Single warning message component             |
+| `FormFieldSkeleton`          | Loading skeleton for form fields             |
 
 **Supporting modules:**
 
