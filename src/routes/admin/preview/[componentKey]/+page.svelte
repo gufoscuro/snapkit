@@ -80,7 +80,7 @@
       // Only send if height is valid and changed
       if (height > 0 && height !== lastSentHeight) {
         lastSentHeight = height
-        window.parent.postMessage({ type: 'preview-height', height }, '*')
+        window.parent.postMessage({ type: 'preview-height', height }, window.location.origin)
       }
     }
 

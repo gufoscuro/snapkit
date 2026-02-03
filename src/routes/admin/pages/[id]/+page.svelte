@@ -4,7 +4,6 @@
   import { adminPagesRoute } from '$lib/admin/routes'
   import { saveAdminConfig } from '$lib/admin/save'
   import { adminStore } from '$lib/admin/store.svelte'
-  import PageEditor from '$lib/components/core/admin/pages/PageEditor.svelte'
   import { Button } from '$lib/components/ui/button'
   import { confirmDelete } from '$lib/components/ui/confirm-delete-dialog/confirm-delete-dialog.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
@@ -16,6 +15,7 @@
   const pageId = $derived(page.params.id)
   const currentPage = $derived(adminStore.state.pages.find(p => p.$id === pageId))
   let isSaving = $state(false)
+  let iframeHeight = $state(800)
 
   // Select page from URL param
   $effect(() => {
@@ -42,7 +42,18 @@
     return url
   }
 
+  // Build preview URL for iframe
+  function buildPreviewUrl(): string | null {
+    if (!currentPage) return null
+    const protocol = window.location.protocol
+    const hostname = window.location.hostname
+    const port = window.location.port
+    const portSuffix = port ? `:${port}` : ''
+    return `${protocol}//${hostname}${portSuffix}/admin/preview/page/${currentPage.$id}`
+  }
+
   const tenantPageUrl = $derived(buildTenantPageUrl())
+  const previewUrl = $derived(buildPreviewUrl())
 
   async function handleSave() {
     isSaving = true
@@ -71,7 +82,16 @@
       },
     })
   }
+
+  // Listen for height updates from iframe
+  function handleMessage(event: MessageEvent) {
+    if (event.data?.type === 'preview-height' && typeof event.data.height === 'number') {
+      iframeHeight = Math.max(600, event.data.height + 40) // Add some padding
+    }
+  }
 </script>
+
+<svelte:window onmessage={handleMessage} />
 
 {#if !currentPage}
   <div class="flex flex-col items-center justify-center py-12 text-center">
@@ -109,8 +129,20 @@
       </div>
     </div>
 
+    <!-- Preview area -->
     <div class="flex-1 overflow-auto bg-gray-50 p-6">
-      <PageEditor page={currentPage} />
+      <div class="mx-auto">
+        {#if previewUrl}
+          <div class="rounded-lg bg-white">
+            <iframe src={previewUrl} title="Page Preview" class="w-full border-0" style="height: {iframeHeight}px;"
+            ></iframe>
+          </div>
+        {:else}
+          <div class="flex items-center justify-center rounded-lg border bg-white p-12">
+            <p class="text-muted-foreground">Preview not available</p>
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
 {/if}

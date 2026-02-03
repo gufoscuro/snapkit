@@ -44,7 +44,7 @@
 </script>
 
 <Sidebar.Provider>
-  <div class="flex h-screen w-full">
+  <div class="flex h-screen w-full overflow-hidden">
     <AdminSidebar {user} />
     <div class="flex flex-1 flex-col overflow-hidden">
       <AdminHeader {user} />
