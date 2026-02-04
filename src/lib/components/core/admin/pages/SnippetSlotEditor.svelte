@@ -5,8 +5,10 @@
 -->
 <script lang="ts">
   import type { ComponentKey } from '$generated/components-registry'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { autoSave } from '$lib/admin/save'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import type { ExtendedSnippetDefinition } from '$lib/admin/types'
+  import { formatComponentKey } from '$lib/admin/utils'
   import { Button } from '$lib/components/ui/button'
   import { confirmDelete } from '$lib/components/ui/confirm-delete-dialog/confirm-delete-dialog.svelte'
   import { Label } from '$lib/components/ui/label'
@@ -20,9 +22,10 @@
     pageId: string
     slotName: string
     snippet: ExtendedSnippetDefinition
+    pageSnippets?: Record<string, ExtendedSnippetDefinition>
   }
 
-  const { pageId, slotName, snippet }: Props = $props()
+  const { pageId, slotName, snippet, pageSnippets }: Props = $props()
 
   let showComponentPicker = $state(false)
 
@@ -30,9 +33,11 @@
     adminStore.updateSnippet(pageId, slotName, { enabled: !snippet.enabled })
   }
 
-  function handleComponentSelect(componentKey: ComponentKey) {
+  async function handleComponentSelect(componentKey: ComponentKey) {
     adminStore.updateSnippet(pageId, slotName, { componentKey })
     showComponentPicker = false
+
+    await autoSave(true, 'Component changed and saved')
   }
 
   function handleDelete() {
@@ -44,7 +49,7 @@
       },
       onConfirm: async () => {
         adminStore.deleteSnippet(pageId, slotName)
-        toast.success(`Snippet "${slotName}" deleted successfully`)
+        await autoSave(true, `Snippet "${slotName}" deleted successfully`)
       },
     })
   }
@@ -60,8 +65,8 @@
   </div>
 
   <!-- Component key display -->
-  <code class="block truncate rounded bg-muted px-2 py-1 text-xs" title={snippet.componentKey}>
-    {snippet.componentKey}
+  <code class="block truncate rounded bg-muted px-2 py-1 text-xs" title={formatComponentKey(snippet.componentKey)}>
+    {formatComponentKey(snippet.componentKey)}
   </code>
 
   <!-- Action buttons -->
@@ -80,4 +85,5 @@
   open={showComponentPicker}
   title="Select Component for {slotName}"
   onSelect={handleComponentSelect}
-  onClose={() => (showComponentPicker = false)} />
+  onClose={() => (showComponentPicker = false)}
+  {pageSnippets} />

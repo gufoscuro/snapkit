@@ -2,7 +2,7 @@
   import { page } from '$app/state'
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import { pages } from '$generated/admin-config'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import type { BuilderPageConfig } from '$lib/admin/types'
   import { initPageState } from '$lib/contexts/page-state/page-state.svelte'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
@@ -21,7 +21,7 @@
   setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () => ({
     pageDetails: {
       config: pageConfig || {
-        $id: pageId,
+        $id: pageId || 'unknown',
         title: 'Page not found',
         route: '/404',
         layout: { componentKey: 'layouts.Showoff', enabled: true },

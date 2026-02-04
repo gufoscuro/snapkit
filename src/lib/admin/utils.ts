@@ -14,6 +14,27 @@ export function formatBlockName(name: string): string {
 	// Add space before capital letters (except the first one)
 	const withSpaces = name.replace(/([A-Z])/g, ' $1').trim()
 
-	// Lowercase the entire string, then capitalize only the first letter
-	return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1).toLowerCase()
+	// Capitalize the first letter of every word
+	return withSpaces
+		.split(' ')
+		.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+		.join(' ')
+}
+
+/**
+ * Formats a ComponentKey into a human-readable string by extracting the last part
+ * and applying formatBlockName
+ *
+ * @example
+ * formatComponentKey('x.yz.default.ComponentName') // 'Component Name'
+ * formatComponentKey('common.orderssearchfilter.default.OrdersSearchFilter') // 'Orders Search Filter'
+ * formatComponentKey('supply.supplyorderstable.default.SupplyOrdersTable') // 'Supply Orders Table'
+ */
+export function formatComponentKey(componentKey: string): string {
+	// Extract the last part after the last dot
+	const parts = componentKey.split('.')
+	const lastPart = parts[parts.length - 1]
+
+	// Apply the existing formatBlockName function
+	return formatBlockName(lastPart)
 }

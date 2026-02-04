@@ -7,7 +7,8 @@
   import { goto } from '$app/navigation'
   import { getComponent, type ComponentKey } from '$generated/components-registry'
   import { adminPagesRoute } from '$lib/admin/routes'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { autoSave } from '$lib/admin/save'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import type { BuilderPageConfig, LayoutSlotDefinition } from '$lib/admin/types'
   import * as Accordion from '$lib/components/ui/accordion'
   import { Button } from '$lib/components/ui/button'
@@ -72,7 +73,7 @@
     showLayoutPicker = false
   }
 
-  function handleSlotComponentSelect(componentKey: ComponentKey) {
+  async function handleSlotComponentSelect(componentKey: ComponentKey) {
     if (!selectedSlotName) return
     adminStore.addSnippet(page.$id, selectedSlotName, {
       componentKey,
@@ -80,6 +81,9 @@
     })
     selectedSlotName = null
     showSnippetPicker = false
+
+    // Auto-save after adding snippet
+    await autoSave(true, 'Component added and saved')
   }
 
   function openSnippetPickerForSlot(slotName: string) {
@@ -178,7 +182,7 @@
                     <p class="text-xs text-muted-foreground">{slot.description}</p>
                   </div>
                   {#if snippet}
-                    <SnippetSlotEditor pageId={page.$id} slotName={slot.name} {snippet} />
+                    <SnippetSlotEditor pageId={page.$id} slotName={slot.name} {snippet} pageSnippets={page.snippets} />
                   {:else}
                     <Button
                       variant="outline"
@@ -203,10 +207,12 @@
   title="Select Layout"
   filter={key => key.startsWith('layouts.')}
   onSelect={handleLayoutSelect}
-  onClose={() => (showLayoutPicker = false)} />
+  onClose={() => (showLayoutPicker = false)}
+  pageSnippets={page.snippets} />
 
 <ComponentPicker
   open={showSnippetPicker}
   title="Select Component for {selectedSlotName}"
   onSelect={handleSlotComponentSelect}
-  onClose={() => (showSnippetPicker = false)} />
+  onClose={() => (showSnippetPicker = false)}
+  pageSnippets={page.snippets} />
