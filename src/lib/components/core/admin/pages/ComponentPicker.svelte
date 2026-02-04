@@ -200,25 +200,31 @@
       {:else if sortedKeys().length === 0}
         <p class="py-8 text-center text-muted-foreground">No components found</p>
       {:else if !pageSnippets || compatibilityMap.size === 0}
-        <!-- Fallback to original grouped view when no page context -->
-        <div class="space-y-4">
-          {#each groupedKeys() as [domain, keys] (domain)}
-            <div>
-              <h4 class="mb-2 text-sm font-medium text-gray-500 capitalize">{domain}</h4>
-              <div class="space-y-1">
-                {#each keys as key (key)}
-                  <button
-                    type="button"
-                    class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
-                    onclick={() => handleSelect(key)}>
-                    <div class="font-mono text-xs">{key}</div>
-                    <div class="text-xs text-muted-foreground">
-                      {COMPONENT_REGISTRY[key].description}
-                    </div>
-                  </button>
-                {/each}
+        <!-- Fallback view when no page context (same style as compatibility view) -->
+        <div class="space-y-1">
+          {#each sortedKeys() as item (item.key)}
+            {@const domain = item.key.split('.')[0]}
+            <button
+              type="button"
+              class="w-full rounded-md px-3 py-2.5 text-left transition-colors hover:bg-accent"
+              onclick={() => handleSelect(item.key)}>
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0 flex-1 overflow-hidden">
+                  <!-- Component Key -->
+                  <div class="truncate">{formatComponentKey(item.key)}</div>
+
+                  <!-- Original Description -->
+                  <div class="mt-0.5 text-xs text-muted-foreground">
+                    {COMPONENT_REGISTRY[item.key].description}
+                  </div>
+                </div>
+
+                <!-- Category Badge aligned right -->
+                <div class="flex shrink-0 items-center">
+                  <Badge variant="outline" class="py-0 text-[10px] capitalize">{domain}</Badge>
+                </div>
               </div>
-            </div>
+            </button>
           {/each}
         </div>
       {:else}
@@ -226,6 +232,7 @@
         <div class="space-y-1">
           {#each sortedKeys() as item (item.key)}
             {@const description = getCompatibilityDescription(item.key, item.compatibility)}
+            {@const domain = item.key.split('.')[0]}
             <button
               type="button"
               class="w-full rounded-md px-3 py-2.5 text-left transition-colors hover:bg-accent"
@@ -248,12 +255,13 @@
                   {/if}
                 </div>
 
-                <!-- Badge and Icon aligned right (only for recommended) -->
-                {#if item.category === 'recommended'}
-                  <div class="flex shrink-0 items-center gap-2">
+                <!-- Badges aligned right -->
+                <div class="flex shrink-0 items-center gap-2">
+                  <Badge variant="outline" class="py-0 text-[10px] capitalize">{domain}</Badge>
+                  {#if item.category === 'recommended'}
                     <Badge variant="default" class="bg-blue-500 py-0 text-[10px]">Recommended</Badge>
-                  </div>
-                {/if}
+                  {/if}
+                </div>
               </div>
             </button>
           {/each}
