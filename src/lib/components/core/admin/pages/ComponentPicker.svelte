@@ -7,6 +7,7 @@
   import { COMPONENT_REGISTRY, getAllComponentKeys, type ComponentKey } from '$generated/components-registry'
   import { pageStore } from '$lib/admin/stores/page-store.svelte'
   import type { ExtendedSnippetDefinition } from '$lib/admin/types'
+  import { formatBlockName, formatComponentKey } from '$lib/admin/utils'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import * as Dialog from '$lib/components/ui/dialog'
@@ -123,19 +124,33 @@
   function getCompatibilityDescription(key: ComponentKey, compat?: ComponentCompatibility): string | null {
     if (!compat || !pageSnippets) return null
 
-    // Case 1: This component provides what other components need
+    // Case 1: This component provides what other components need (provider)
     if ((compat.canSatisfyConsumes?.length ?? 0) > 0) {
-      const namespaces = compat.canSatisfyConsumes!.map(c => c.namespace).join(', ')
-      const consumers = findComponentsByNamespace(contract =>
-        compat.canSatisfyConsumes!.some(c => Object.keys(contract.consumes).includes(c.namespace)),
+      // Group by unique namespace
+      const uniqueNamespaces = Array.from(
+        new Set(compat.canSatisfyConsumes!.map(c => c.namespace))
       )
 
-      return consumers.length > 0
-        ? `Works with ${consumers.join(', ')} - provides ${namespaces}`
-        : `Provides ${namespaces}`
+      // Build a list of "namespace for component" strings
+      const parts: string[] = []
+
+      for (const ns of uniqueNamespaces) {
+        const namespace = formatBlockName(ns)
+        const consumers = findComponentsByNamespace(contract =>
+          Object.keys(contract.consumes).includes(ns)
+        ).map(formatComponentKey)
+
+        if (consumers.length > 0) {
+          parts.push(`${namespace} for ${consumers.join(', ')}`)
+        }
+      }
+
+      if (parts.length > 0) {
+        return `Enables ${parts.join(' and ')} already in your page`
+      }
     }
 
-    // Case 2: This component can consume from components in page
+    // Case 2: This component can consume from components in page (consumer)
     const satisfiedNamespaces = Object.keys(compat.contract.consumes).filter(
       ns => !compat.consumesUnsatisfied.some(u => u.namespace === ns),
     )
@@ -143,10 +158,10 @@
     if (satisfiedNamespaces.length > 0) {
       const providers = findComponentsByNamespace(contract =>
         satisfiedNamespaces.some(ns => Object.keys(contract.provides).includes(ns)),
-      )
+      ).map(formatComponentKey)
 
       if (providers.length > 0) {
-        return `Can use ${satisfiedNamespaces.join(', ')} from ${providers.join(', ')}`
+        return `Compatible with ${providers.join(', ')} already in your page`
       }
     }
 
@@ -219,7 +234,7 @@
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0 flex-1 overflow-hidden">
                   <!-- Component Key -->
-                  <div class="truncate font-mono text-xs">{item.key}</div>
+                  <div class="truncate">{formatComponentKey(item.key)}</div>
 
                   <!-- Original Description -->
                   <div class="mt-0.5 text-xs text-muted-foreground">

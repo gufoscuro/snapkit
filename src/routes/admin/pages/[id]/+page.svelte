@@ -119,6 +119,41 @@
 
   let pageSuggestions = $state<Suggestion[]>([])
 
+  interface GroupedSuggestion {
+    type: 'provider' | 'consumer'
+    namespace: string
+    components: ComponentKey[]
+    forComponents: ComponentKey[]
+  }
+
+  // Group suggestions by type, namespace, and components
+  const groupedSuggestions = $derived.by((): GroupedSuggestion[] => {
+    const groups = new Map<string, GroupedSuggestion>()
+
+    for (const suggestion of pageSuggestions) {
+      // Create a unique key for grouping
+      const key = `${suggestion.type}:${suggestion.namespace}:${suggestion.components.sort().join(',')}`
+
+      const existing = groups.get(key)
+      if (existing) {
+        // Add forComponent to existing group if not already present
+        if (!existing.forComponents.includes(suggestion.forComponent)) {
+          existing.forComponents.push(suggestion.forComponent)
+        }
+      } else {
+        // Create new group
+        groups.set(key, {
+          type: suggestion.type,
+          namespace: suggestion.namespace,
+          components: suggestion.components,
+          forComponents: [suggestion.forComponent],
+        })
+      }
+    }
+
+    return Array.from(groups.values())
+  })
+
   async function calculatePageSuggestions() {
     if (!currentPage || Object.keys(currentPage.snippets).length === 0) {
       pageSuggestions = []
@@ -227,9 +262,9 @@
     <div class="flex-1 overflow-auto bg-gray-50 p-6">
       <div class="mx-auto space-y-4">
         <!-- Page-level Suggestions -->
-        {#if pageSuggestions.length > 0}
+        {#if groupedSuggestions.length > 0}
           <div class="space-y-2">
-            {#each pageSuggestions as suggestion}
+            {#each groupedSuggestions as suggestion}
               <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm">
                 <div class="flex items-center justify-between gap-3">
                   <div class="flex items-center gap-2 text-blue-700">
@@ -239,11 +274,11 @@
                         Add <span class="font-semibold"
                           >{suggestion.components.map(formatComponentKey).join(' or ')}</span>
                         to enable <span class="font-semibold">{formatBlockName(suggestion.namespace)}</span>
-                        for <span class="font-semibold">{formatComponentKey(suggestion.forComponent)}</span>
+                        for <span class="font-semibold">{suggestion.forComponents.map(formatComponentKey).join(', ')}</span>
                       {:else}
                         <span class="font-semibold">{suggestion.components.map(formatComponentKey).join(', ')}</span>
                         {suggestion.components.length === 1 ? 'is' : 'are'} compatible with
-                        <span class="font-semibold">{formatComponentKey(suggestion.forComponent)}</span>
+                        <span class="font-semibold">{suggestion.forComponents.map(formatComponentKey).join(', ')}</span>
                         already in your page
                       {/if}
                     </span>
