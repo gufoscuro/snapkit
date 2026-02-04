@@ -22,16 +22,6 @@
 <Sidebar.Group>
   <Sidebar.GroupContent>
     <Sidebar.Menu>
-      <!-- Blocks -->
-      <Sidebar.MenuItem>
-        <Sidebar.MenuButton
-          isActive={isRouteActive(page.url.pathname, adminBlocksRoute())}
-          onclick={() => navigateTo(adminBlocksRoute())}>
-          <Cuboid class="size-4" />
-          <span>Blocks</span>
-        </Sidebar.MenuButton>
-      </Sidebar.MenuItem>
-
       <!-- Pages -->
       <Sidebar.MenuItem>
         <Sidebar.MenuButton
@@ -39,6 +29,16 @@
           onclick={() => navigateTo(adminPagesRoute())}>
           <FileText class="size-4" />
           <span>Pages</span>
+        </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+
+      <!-- Blocks -->
+      <Sidebar.MenuItem>
+        <Sidebar.MenuButton
+          isActive={isRouteActive(page.url.pathname, adminBlocksRoute())}
+          onclick={() => navigateTo(adminBlocksRoute())}>
+          <Cuboid class="size-4" />
+          <span>Blocks</span>
         </Sidebar.MenuButton>
       </Sidebar.MenuItem>
 
