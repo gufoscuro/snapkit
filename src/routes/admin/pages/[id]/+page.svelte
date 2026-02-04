@@ -1,13 +1,20 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
   import { page } from '$app/state'
+  import type { ComponentKey } from '$generated/components-registry'
   import { adminPagesRoute } from '$lib/admin/routes'
   import { saveAdminConfig } from '$lib/admin/save'
   import { adminStore } from '$lib/admin/stores/admin-store.svelte'
+  import { pageStore } from '$lib/admin/stores/page-store.svelte'
+  import type { ExtendedSnippetDefinition } from '$lib/admin/types'
+  import { formatBlockName, formatComponentKey } from '$lib/admin/utils'
+  import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import { confirmDelete } from '$lib/components/ui/confirm-delete-dialog/confirm-delete-dialog.svelte'
+  import { getAllContracts, getContract, loadContractRegistry } from '$lib/contracts'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import ExternalLink from '@lucide/svelte/icons/external-link'
+  import Lightbulb from '@lucide/svelte/icons/lightbulb'
   import Save from '@lucide/svelte/icons/save'
   import Trash2 from '@lucide/svelte/icons/trash-2'
   import { toast } from 'svelte-sonner'
@@ -17,10 +24,22 @@
   let isSaving = $state(false)
   let iframeHeight = $state(800)
 
+  // Track snippets changes for deep reactivity
+  const snippetsKey = $derived(currentPage ? JSON.stringify(currentPage.snippets) : null)
+
   // Select page from URL param
   $effect(() => {
     if (pageId && adminStore.state.selection.id !== pageId) {
       adminStore.selectPage(pageId)
+    }
+  })
+
+  // Initialize page store when page changes or snippets change
+  $effect(() => {
+    if (currentPage) {
+      pageStore.setPage(currentPage.$id, currentPage.snippets)
+    } else {
+      pageStore.clear()
     }
   })
 
@@ -89,6 +108,81 @@
       iframeHeight = Math.max(600, event.data.height + 40) // Add some padding
     }
   }
+
+  // Calculate page-level suggestions
+  interface Suggestion {
+    type: 'provider' | 'consumer'
+    namespace: string
+    components: ComponentKey[]
+    forComponent: ComponentKey
+  }
+
+  let pageSuggestions = $state<Suggestion[]>([])
+
+  async function calculatePageSuggestions() {
+    if (!currentPage || Object.keys(currentPage.snippets).length === 0) {
+      pageSuggestions = []
+      return
+    }
+
+    await loadContractRegistry()
+
+    const results: Suggestion[] = []
+    const snippets = Object.values(currentPage.snippets) as ExtendedSnippetDefinition[]
+    const usedComponentKeys = new Set(snippets.map(s => s.componentKey))
+
+    // Iterate through all components in the page
+    snippets.forEach((snippet) => {
+      const contract = getContract(snippet.componentKey)
+      if (!contract) return
+
+      // Case 1: This component CONSUMES - suggest providers not yet in page
+      Object.keys(contract.consumes).forEach(namespace => {
+        const hasProvider = snippets.some(s => {
+          const providerContract = getContract(s.componentKey)
+          return providerContract && Object.keys(providerContract.provides).includes(namespace)
+        })
+
+        if (!hasProvider) {
+          const providers = getAllContracts()
+            .filter(c => Object.keys(c.contract.provides).includes(namespace) && !usedComponentKeys.has(c.componentKey))
+            .map(c => c.componentKey)
+
+          if (providers.length > 0) {
+            results.push({
+              type: 'provider',
+              namespace,
+              components: providers,
+              forComponent: snippet.componentKey,
+            })
+          }
+        }
+      })
+
+      // Case 2: This component PROVIDES - suggest consumers not yet in page
+      Object.keys(contract.provides).forEach(namespace => {
+        const consumers = getAllContracts()
+          .filter(c => Object.keys(c.contract.consumes).includes(namespace) && !usedComponentKeys.has(c.componentKey))
+          .map(c => c.componentKey)
+
+        if (consumers.length > 0) {
+          results.push({
+            type: 'consumer',
+            namespace,
+            components: consumers,
+            forComponent: snippet.componentKey,
+          })
+        }
+      })
+    })
+
+    pageSuggestions = results
+  }
+
+  $effect(() => {
+    snippetsKey // React to snippet changes
+    calculatePageSuggestions()
+  })
 </script>
 
 <svelte:window onmessage={handleMessage} />
@@ -131,7 +225,37 @@
 
     <!-- Preview area -->
     <div class="flex-1 overflow-auto bg-gray-50 p-6">
-      <div class="mx-auto">
+      <div class="mx-auto space-y-4">
+        <!-- Page-level Suggestions -->
+        {#if pageSuggestions.length > 0}
+          <div class="space-y-2">
+            {#each pageSuggestions as suggestion}
+              <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-2 text-blue-700">
+                    <Lightbulb class="size-4 shrink-0" />
+                    <span>
+                      {#if suggestion.type === 'provider'}
+                        Add <span class="font-semibold"
+                          >{suggestion.components.map(formatComponentKey).join(' or ')}</span>
+                        to enable <span class="font-semibold">{formatBlockName(suggestion.namespace)}</span>
+                        for <span class="font-semibold">{formatComponentKey(suggestion.forComponent)}</span>
+                      {:else}
+                        <span class="font-semibold">{suggestion.components.map(formatComponentKey).join(', ')}</span>
+                        {suggestion.components.length === 1 ? 'is' : 'are'} compatible with
+                        <span class="font-semibold">{formatComponentKey(suggestion.forComponent)}</span>
+                        already in your page
+                      {/if}
+                    </span>
+                  </div>
+                  <Badge variant="default" class="shrink-0 bg-blue-500 py-0 text-[10px]">Recommended</Badge>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+
+        <!-- Preview iframe -->
         {#if previewUrl}
           <div class="rounded-lg bg-white p-4">
             <iframe src={previewUrl} title="Page Preview" class="w-full border-0" style="height: {iframeHeight}px;"

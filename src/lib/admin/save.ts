@@ -1,5 +1,5 @@
-import { toast } from 'svelte-sonner'
-import { adminStore } from './store.svelte'
+import { adminStore } from '$lib/admin/stores/admin-store.svelte';
+import { toast } from 'svelte-sonner';
 
 export async function saveAdminConfig(): Promise<{ success: boolean; message: string }> {
   try {

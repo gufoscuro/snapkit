@@ -1,7 +1,6 @@
 export { tenantConfigStore } from './store.svelte'
 export type {
-  TenantConfigData,
   MenuConfigData,
-  NavItem,
-  TenantInterfaceDetails,
+  NavItem, TenantConfigData, TenantInterfaceDetails
 } from './types'
+
