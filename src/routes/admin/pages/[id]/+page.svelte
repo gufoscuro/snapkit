@@ -131,8 +131,8 @@
     const groups = new Map<string, GroupedSuggestion>()
 
     for (const suggestion of pageSuggestions) {
-      // Create a unique key for grouping
-      const key = `${suggestion.type}:${suggestion.namespace}:${suggestion.components.sort().join(',')}`
+      // Create a unique key for grouping (use toSorted to avoid mutation)
+      const key = `${suggestion.type}:${suggestion.namespace}:${[...suggestion.components].sort().join(',')}`
 
       const existing = groups.get(key)
       if (existing) {

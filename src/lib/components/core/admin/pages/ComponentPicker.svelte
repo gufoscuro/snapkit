@@ -87,19 +87,18 @@
 
   // Group keys by domain (for fallback when no page context)
   const groupedKeys = $derived(() => {
-    const groups: Record<string, ComponentKey[]> = {}
-
     const keys = sortedKeys()
       .filter(item => item.category === 'other')
       .map(item => item.key)
 
-    for (const key of keys) {
+    const groups = keys.reduce<Record<string, ComponentKey[]>>((acc, key) => {
       const domain = key.split('.')[0]
-      if (!groups[domain]) {
-        groups[domain] = []
+      if (!acc[domain]) {
+        acc[domain] = []
       }
-      groups[domain].push(key)
-    }
+      acc[domain].push(key)
+      return acc
+    }, {})
 
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
   })
