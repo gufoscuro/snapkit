@@ -1,10 +1,9 @@
-import { menus, pages, tenants } from '$generated/admin-config'
+import { COMPONENT_REGISTRY, getAllComponentKeys } from '$generated/components-registry'
+import type { BlockConfig, BuilderPageConfig, MenuConfig, TenantConfig } from '$lib/admin/types'
 import { redirect } from '@sveltejs/kit'
 import type { LayoutServerLoad } from './$types'
-import { getAllComponentKeys, COMPONENT_REGISTRY } from '$generated/components-registry'
-import type { BlockConfig } from '$lib/admin/types'
 
-export const load: LayoutServerLoad = async ({ locals }) => {
+export const load: LayoutServerLoad = async ({ locals, fetch }) => {
   const { user } = locals
 
   if (!user) {
@@ -15,6 +14,37 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
   if (!isAdmin) {
     throw redirect(302, '/')
+  }
+
+  // Fetch tenants from API
+  let tenants: TenantConfig[] = []
+  try {
+    const response = await fetch('/api/tenants')
+    if (response.ok) {
+      tenants = await response.json()
+    }
+  } catch (e) {
+    console.error('Failed to fetch tenants:', e)
+  }
+
+  // Fetch pages and menus from all tenant configs
+  // TODO: Optimize for scale - currently loads ALL tenants' configs on admin panel load.
+  // Consider: 1) Load only selected tenant's config, 2) Lazy loading on tenant switch,
+  // 3) Pagination/metadata endpoint for large tenant counts
+  const allPages: BuilderPageConfig[] = []
+  const allMenus: MenuConfig[] = []
+
+  for (const tenant of tenants) {
+    try {
+      const configResponse = await fetch(`/api/tenant-config/${tenant.vanity}`)
+      if (configResponse.ok) {
+        const tenantConfig = await configResponse.json()
+        allPages.push(...tenantConfig.pages)
+        allMenus.push(...tenantConfig.menus)
+      }
+    } catch (e) {
+      console.error(`Failed to fetch config for tenant ${tenant.vanity}:`, e)
+    }
   }
 
   // Generate blocks from component registry
@@ -44,8 +74,8 @@ export const load: LayoutServerLoad = async ({ locals }) => {
   return {
     user,
     adminConfig: {
-      pages,
-      menus,
+      pages: allPages,
+      menus: allMenus,
       tenants,
       blocks,
     },

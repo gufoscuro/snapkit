@@ -1,21 +1,75 @@
 import { adminStore } from '$lib/admin/stores/admin-store.svelte';
 import { toast } from 'svelte-sonner';
+import type { TenantConfigData } from '$lib/stores/tenant-config/types';
+import type { TenantConfig } from '$lib/admin/types';
 
-export async function saveAdminConfig(): Promise<{ success: boolean; message: string }> {
+/**
+ * Save tenant configuration to the API
+ * @param tenantId - Optional tenant ID to save. If not provided, uses the currently selected tenant.
+ */
+export async function saveAdminConfig(tenantId?: string): Promise<{ success: boolean; message: string }> {
   try {
-    const response = await fetch('/api/admin/export', {
+    // Determine which tenant to save
+    let targetTenant: TenantConfig | null
+
+    if (tenantId) {
+      // Find tenant by ID if specified
+      targetTenant = adminStore.state.tenants.find(t => t.id === tenantId) ?? null
+      if (!targetTenant) {
+        return { success: false, message: `Tenant with ID ${tenantId} not found` }
+      }
+    } else {
+      // Use currently selected tenant if no ID specified
+      targetTenant = adminStore.selectedTenant
+      if (!targetTenant) {
+        return { success: false, message: 'No tenant selected' }
+      }
+    }
+
+    // Filter pages and menus for the target tenant from state
+    const tenantPages = adminStore.state.pages.filter(p => p.tenantId === targetTenant.id)
+    const tenantMenus = adminStore.state.menus.filter(m => m.tenantId === targetTenant.id)
+
+    // Compute mainMenu by flattening all menu items
+    const mainMenu = tenantMenus.flatMap(m => m.items)
+
+    // Assemble full TenantConfigData
+    const configData: TenantConfigData = {
+      id: targetTenant.id,
+      name: targetTenant.name,
+      vanity: targetTenant.vanity,
+      pages: tenantPages,
+      menus: tenantMenus,
+      mainMenu
+    }
+
+    // POST to new API
+    const response = await fetch(`/api/tenant-config/${targetTenant.vanity}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: adminStore.toJSON(),
+      body: JSON.stringify(configData)
     })
 
-    if (response.ok) {
-      adminStore.markClean()
-      return { success: true, message: 'Configuration saved successfully' }
-    } else {
+    if (!response.ok) {
       const error = await response.json()
       return { success: false, message: error.message || 'Save failed' }
     }
+
+    // Also save the updated tenants list to ensure it's persisted
+    const tenantsResponse = await fetch('/api/tenants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(adminStore.state.tenants)
+    })
+
+    if (!tenantsResponse.ok) {
+      console.error('Failed to save tenants list')
+      // Don't fail the whole operation, just log the error
+    }
+
+    adminStore.markClean()
+    adminStore.onConfigPublished() // Invalidate tenant config cache
+    return { success: true, message: `Configuration saved successfully for ${targetTenant.name}` }
   } catch (e) {
     return { success: false, message: `Save failed: ${e}` }
   }

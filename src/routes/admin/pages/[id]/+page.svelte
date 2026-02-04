@@ -23,6 +23,7 @@
   const currentPage = $derived(adminStore.state.pages.find(p => p.$id === pageId))
   let isSaving = $state(false)
   let iframeHeight = $state(800)
+  let previewIframe = $state<HTMLIFrameElement | null>(null)
 
   // Track snippets changes for deep reactivity
   const snippetsKey = $derived(currentPage ? JSON.stringify(currentPage.snippets) : null)
@@ -40,6 +41,24 @@
       pageStore.setPage(currentPage.$id, currentPage.snippets)
     } else {
       pageStore.clear()
+    }
+  })
+
+  // Expose stores to iframe preview (so preview can access parent data)
+  $effect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).pageStore = pageStore;
+      (window as any).adminStore = adminStore
+    }
+  })
+
+  // Notify iframe when snippets change (reactive live preview)
+  $effect(() => {
+    snippetsKey // React to snippets changes
+    if (previewIframe?.contentWindow) {
+      previewIframe.contentWindow.postMessage({
+        type: 'snippets-changed'
+      }, '*')
     }
   })
 
@@ -79,6 +98,10 @@
     const result = await saveAdminConfig()
     if (result.success) {
       toast.success(result.message)
+      // Notify iframe preview that data was saved
+      if (previewIframe?.contentWindow) {
+        previewIframe.contentWindow.postMessage({ type: 'page-saved' }, '*')
+      }
     } else {
       toast.error(result.message)
     }
@@ -293,7 +316,12 @@
         <!-- Preview iframe -->
         {#if previewUrl}
           <div class="rounded-lg bg-white p-4">
-            <iframe src={previewUrl} title="Page Preview" class="w-full border-0" style="height: {iframeHeight}px;"
+            <iframe
+              bind:this={previewIframe}
+              src={previewUrl}
+              title="Page Preview"
+              class="w-full border-0"
+              style="height: {iframeHeight}px;"
             ></iframe>
           </div>
         {:else}

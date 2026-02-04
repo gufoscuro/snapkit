@@ -1,8 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state'
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
-  import { pages } from '$generated/admin-config'
-  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import type { BuilderPageConfig } from '$lib/admin/types'
   import { initPageState } from '$lib/contexts/page-state/page-state.svelte'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
@@ -10,10 +8,48 @@
 
   const pageId = $derived(page.params.pageId)
 
-  // Find the page configuration from generated files (static)
-  const pageConfig = $derived(pages.find(p => p.$id === pageId) as BuilderPageConfig | undefined)
+  // Get page config from parent window's pageStore (this iframe is embedded in page editor)
+  let pageConfig = $state<BuilderPageConfig | undefined>(undefined)
+  let selectedTenant = $state<{ name: string } | undefined>(undefined)
+  let isStoreLoaded = $state(false)
 
-  const selectedTenant = $derived(adminStore.selectedTenant)
+  // Access parent window's stores if available (iframe context)
+  const updateFromParent = () => {
+    try {
+      const parentAdminStore = (window.parent as any).adminStore
+
+      if (parentAdminStore?.state?.pages) {
+        const pages = parentAdminStore.state.pages
+        const config = pages.find((p: BuilderPageConfig) => p.$id === pageId)
+
+        if (config) {
+          // Create a deep copy to ensure reactivity
+          pageConfig = JSON.parse(JSON.stringify(config))
+          selectedTenant = parentAdminStore?.selectedTenant
+          isStoreLoaded = true
+        }
+      }
+    } catch (e) {
+      // Cross-origin or access error - silently fail
+    }
+  }
+
+  // Initial load from parent on mount
+  $effect(() => {
+    if (window.parent !== window) {
+      updateFromParent()
+    }
+  })
+
+  // Listen for events from parent (event-driven, no polling needed)
+  function handleMessage(event: MessageEvent) {
+    const { type } = event.data || {}
+
+    // Update preview when snippets change or after save
+    if (type === 'snippets-changed' || type === 'page-saved') {
+      updateFromParent()
+    }
+  }
 
   initPageState()
 
@@ -90,6 +126,8 @@
   })
 </script>
 
+<svelte:window onmessage={handleMessage} />
+
 <svelte:head>
   <title>Page Preview: {pageConfig?.title || pageId}</title>
 </svelte:head>
@@ -104,7 +142,9 @@
     <div class="text-center">
       <h1 class="text-2xl font-bold">Page not found</h1>
       <p class="mt-2 text-muted-foreground">No page configuration found for ID: {pageId}</p>
-      <p class="mt-1 text-sm text-muted-foreground">Available pages: {pages.map(p => p.$id).join(', ')}</p>
+      {#if !isStoreLoaded}
+        <p class="mt-1 text-sm text-muted-foreground">Loading preview...</p>
+      {/if}
     </div>
   </div>
 {/if}

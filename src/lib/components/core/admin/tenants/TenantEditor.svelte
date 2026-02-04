@@ -100,7 +100,8 @@
       adminStore.addTenant(newTenant)
     }
 
-    const result = await saveAdminConfig()
+    // Save the specific tenant being edited (not the globally selected one)
+    const result = await saveAdminConfig(localId)
     if (result.success) {
       toast.success(result.message)
       // In create mode, navigate to the newly created tenant's edit page
