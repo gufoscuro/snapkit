@@ -6,7 +6,7 @@
 <script lang="ts">
   import { page } from '$app/state'
   import { getSidebarContextFromRoute, isBlocksListPage, isPagesListPage } from '$lib/admin/routes'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import ConfirmDeleteDialog from '$lib/components/ui/confirm-delete-dialog/confirm-delete-dialog.svelte'
   import * as Sidebar from '$lib/components/ui/sidebar'
   import type { JWTUser } from '$lib/server/auth'

@@ -7,7 +7,7 @@
   import { goto } from '$app/navigation'
   import { page } from '$app/state'
   import { adminBlocksRoute, adminMenusRoute, adminPagesRoute, isRouteActive } from '$lib/admin/routes'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import * as Sidebar from '$lib/components/ui/sidebar'
   import FileText from '@lucide/svelte/icons/file-text'
   import Menu from '@lucide/svelte/icons/menu'

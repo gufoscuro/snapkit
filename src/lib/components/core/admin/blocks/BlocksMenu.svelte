@@ -4,7 +4,7 @@
 	@keywords admin, blocks, sidebar, menu
 -->
 <script lang="ts">
-	import { adminStore } from '$lib/admin/store.svelte'
+	import { adminStore } from '$lib/admin/stores/admin-store.svelte'
 	import BlocksListSidebar from './BlocksListSidebar.svelte'
 	import BlockDetailSidebar from './BlockDetailSidebar.svelte'
 

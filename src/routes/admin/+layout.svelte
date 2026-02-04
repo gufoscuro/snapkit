@@ -3,7 +3,7 @@
 	import type { LayoutData } from './$types'
 	import { untrack } from 'svelte'
 	import AdminLayout from '$lib/components/core/admin/AdminLayout.svelte'
-	import { adminStore } from '$lib/admin/store.svelte'
+	import { adminStore } from '$lib/admin/stores/admin-store.svelte'
 
 	interface Props {
 		data: LayoutData

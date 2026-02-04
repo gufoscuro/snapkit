@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
   import { adminTenantUpsertRoute } from '$lib/admin/routes'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import { Button } from '$lib/components/ui/button'
   import * as Table from '$lib/components/ui/table'
   import Pencil from '@lucide/svelte/icons/pencil'

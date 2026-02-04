@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types'
 	import { page } from '$app/state'
-	import { adminStore } from '$lib/admin/store.svelte'
+	import { adminStore } from '$lib/admin/stores/admin-store.svelte'
 	import { adminBlocksRoute } from '$lib/admin/routes'
 	import { goto } from '$app/navigation'
 	import BlockPreview from '$lib/components/core/admin/blocks/BlockPreview.svelte'

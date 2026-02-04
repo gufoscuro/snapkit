@@ -2,7 +2,7 @@
   import { page } from '$app/state'
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import { COMPONENT_REGISTRY } from '$generated/components-registry'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import { initPageState } from '$lib/contexts/page-state/page-state.svelte'
   import type { SnippetDefinition } from '$utils/page-registry'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'

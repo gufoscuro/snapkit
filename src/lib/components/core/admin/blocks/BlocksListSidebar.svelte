@@ -7,7 +7,7 @@
   import { goto } from '$app/navigation'
   import { page } from '$app/state'
   import { adminBlockUpsertRoute, adminPagesRoute, isRouteActive } from '$lib/admin/routes'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import type { BlockConfig } from '$lib/admin/types'
   import { formatBlockName } from '$lib/admin/utils'
   import { Button } from '$lib/components/ui/button'

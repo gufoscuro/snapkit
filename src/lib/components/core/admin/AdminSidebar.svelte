@@ -4,11 +4,11 @@
 	@keywords admin, sidebar, navigation
 -->
 <script lang="ts">
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import * as Sidebar from '$lib/components/ui/sidebar'
   import BlocksMenu from './blocks/BlocksMenu.svelte'
-  import PagesMenu from './pages/PagesMenu.svelte'
   import NavigationMenu from './NavigationMenu.svelte'
+  import PagesMenu from './pages/PagesMenu.svelte'
   import UserDropdown from './UserDropdown.svelte'
 
   interface Props {

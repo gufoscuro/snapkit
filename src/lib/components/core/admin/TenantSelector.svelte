@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { adminTenantsRoute } from '$lib/admin/routes'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import type { TenantConfig } from '$lib/admin/types'
   import FormGenericSingleSelector from '$lib/components/core/form/FormGenericSingleSelector.svelte'
   import { Button } from '$lib/components/ui/button'

@@ -7,7 +7,7 @@
   import { goto } from '$app/navigation'
   import { page } from '$app/state'
   import { adminDashboardRoute, adminPageUpsertRoute, isRouteActive } from '$lib/admin/routes'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import type { BuilderPageConfig } from '$lib/admin/types'
   import { Button } from '$lib/components/ui/button'
   import * as Sidebar from '$lib/components/ui/sidebar'

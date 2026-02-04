@@ -6,7 +6,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
   import { adminBlocksRoute } from '$lib/admin/routes'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import type { BlockConfig } from '$lib/admin/types'
   import { formatBlockName } from '$lib/admin/utils'
   import { Badge } from '$lib/components/ui/badge'

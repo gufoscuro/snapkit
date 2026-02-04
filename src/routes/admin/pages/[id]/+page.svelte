@@ -3,7 +3,7 @@
   import { page } from '$app/state'
   import { adminPagesRoute } from '$lib/admin/routes'
   import { saveAdminConfig } from '$lib/admin/save'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import { Button } from '$lib/components/ui/button'
   import { confirmDelete } from '$lib/components/ui/confirm-delete-dialog/confirm-delete-dialog.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
@@ -133,7 +133,7 @@
     <div class="flex-1 overflow-auto bg-gray-50 p-6">
       <div class="mx-auto">
         {#if previewUrl}
-          <div class="rounded-lg bg-white">
+          <div class="rounded-lg bg-white p-4">
             <iframe src={previewUrl} title="Page Preview" class="w-full border-0" style="height: {iframeHeight}px;"
             ></iframe>
           </div>

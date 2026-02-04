@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation'
   import { page } from '$app/state'
   import { adminTenantsRoute } from '$lib/admin/routes'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import TenantEditor from '$lib/components/core/admin/tenants/TenantEditor.svelte'
   import { Button } from '$lib/components/ui/button'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { adminMenusRoute, adminPagesRoute } from '$lib/admin/routes'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import FileText from '@lucide/svelte/icons/file-text'
   import Menu from '@lucide/svelte/icons/menu'

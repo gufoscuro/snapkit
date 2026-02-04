@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
   import { adminBlockUpsertRoute } from '$lib/admin/routes'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import { formatBlockName } from '$lib/admin/utils'
   import { Badge } from '$lib/components/ui/badge'
   import * as Card from '$lib/components/ui/card'

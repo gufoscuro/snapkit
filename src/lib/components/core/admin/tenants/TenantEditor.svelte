@@ -7,7 +7,7 @@
   import { goto } from '$app/navigation'
   import { adminTenantsRoute } from '$lib/admin/routes'
   import { saveAdminConfig } from '$lib/admin/save'
-  import { adminStore } from '$lib/admin/store.svelte'
+  import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import type { TenantConfig } from '$lib/admin/types'
   import { Button } from '$lib/components/ui/button'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
