@@ -81,6 +81,7 @@ The `src/lib/components/core/form/` directory contains a complete form system bu
 | `SwitchField`                | Toggle switch field (autowired)              |
 | `UOMField`                   | Unit of measure selector (autowired)         |
 | `CurrencyField`              | Currency selector (autowired)                |
+| `CountryField`               | Country selector (autowired)                 |
 | `DateField`                  | Date picker with calendar (autowired)        |
 | `EditableTableField`         | Editable inline table (autowired)            |
 | `FormGenericSingleSelector`  | Generic single-item selector (autowired)     |
