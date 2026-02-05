@@ -15,6 +15,15 @@ export const FormFieldClass = Object.freeze({
 /** Default classes for form field labels */
 export const FormLabelClass = 'leading-6'
 
+/** Classes for EditableTableField component */
+export const EditableTableFieldClass = Object.freeze({
+  /** Table body wrapper with group class for last-child targeting */
+  Body: 'group',
+  /** Table cell for editable fields - includes padding reset and bottom border on last row */
+  TableHeadCell: '*:bg-muted/50 border-t',
+  TableCell: 'p-0 group-last:border-b border-r border-l last:border-r-0 first:border-l-0',
+})
+
 export type FormFieldMessagePosition = 'top' | 'bottom' | 'floating-top' | 'floating-bottom'
 
 // =============================================================================

@@ -63,7 +63,7 @@
   import PriceField from '$components/core/form/PriceField.svelte'
   import QuantityField from '$components/core/form/QuantityField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
-  import { FormFieldClass } from '$components/core/form/form'
+  import { EditableTableFieldClass, FormFieldClass } from '$components/core/form/form'
   import { getFormContextOptional } from '$components/core/form/form-context'
   import MaterialSelector from '$components/features/form/MaterialSelector.svelte'
   import * as Table from '$components/ui/table'
@@ -365,7 +365,7 @@
 
   {#snippet row({ item, index, updateItem, onFocus, onBlur })}
     <!-- Material Selector -->
-    <Table.Cell class="p-0">
+    <Table.Cell class={EditableTableFieldClass.TableCell}>
       <MaterialSelector
         name="material-{index}"
         attr={item.id ? ({ id: item.id, name: item.name, external_id: item.extraId } as RawMaterialSummary) : undefined}
@@ -380,7 +380,7 @@
     </Table.Cell>
 
     <!-- Material ID (link) -->
-    <Table.Cell>
+    <Table.Cell class="{EditableTableFieldClass.TableCell} px-2">
       {#if item.extraId}
         <a
           tabindex="-1"
@@ -396,7 +396,7 @@
 
     <!-- Quantity -->
     {#if showQuantity}
-      <Table.Cell class="p-0">
+      <Table.Cell class={EditableTableFieldClass.TableCell}>
         <QuantityField
           name="quantity-{index}"
           value={item.quantity}
@@ -416,7 +416,7 @@
 
     <!-- Lot -->
     {#if showLot}
-      <Table.Cell class="p-0">
+      <Table.Cell class={EditableTableFieldClass.TableCell}>
         <TextField
           name="lot-{index}"
           value={item.externalLot}
@@ -434,7 +434,7 @@
 
     <!-- Price -->
     {#if showPrice}
-      <Table.Cell class="p-0">
+      <Table.Cell class={EditableTableFieldClass.TableCell}>
         <PriceField
           name="price-{index}"
           value={item.unitPrice}
@@ -450,7 +450,7 @@
       </Table.Cell>
 
       <!-- VAT -->
-      <Table.Cell class="p-0">
+      <Table.Cell class={EditableTableFieldClass.TableCell}>
         <TextField
           name="vat-{index}"
           value={item.vat.toString()}

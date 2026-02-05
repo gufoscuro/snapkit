@@ -9,6 +9,7 @@
   import * as Table from '$components/ui/table'
   import { ArrowUp } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
+  import { EditableTableFieldClass } from './form'
   import { clearFormContext, getFormContextOptional } from './form-context'
 
   type Props = {
@@ -184,6 +185,28 @@
       items = [createEmptyItem()]
     }
   })
+
+  // Auto-manage empty rows: add when needed, remove extras
+  $effect(() => {
+    if (isDisabled) return
+
+    // Check if there are any empty rows
+    const emptyItems = getEmptyItems()
+
+    // If no empty rows exist and we have at least one item, add a new empty row
+    if (emptyItems.length === 0 && items.length > 0) {
+      items = [...items, createEmptyItem()]
+    }
+    // If there are multiple empty rows, keep only the last one
+    else if (emptyItems.length > 1) {
+      // Find indices of empty items
+      const emptyIndices = items.map((item, idx) => (isEmptyItem(item) ? idx : -1)).filter((idx) => idx !== -1)
+
+      // Keep all non-empty items and only the last empty item
+      const lastEmptyIndex = emptyIndices[emptyIndices.length - 1]
+      items = items.filter((item, idx) => !isEmptyItem(item) || idx === lastEmptyIndex)
+    }
+  })
 </script>
 
 <div class="w-full {className}">
@@ -194,11 +217,11 @@
   <div class="w-full overflow-x-auto">
     <Table.Root class="min-w-[{minWidth}]">
       <Table.Header>
-        <Table.Row>
+        <Table.Row class={EditableTableFieldClass.TableHeadCell}>
           {@render header()}
         </Table.Row>
       </Table.Header>
-      <Table.Body>
+      <Table.Body class={EditableTableFieldClass.Body}>
         {#each items as item, index (index)}
           <Table.Row class="hover:[&,&>svelte-css-wrapper]:[&>th,td]:bg-transparent">
             {@render row({

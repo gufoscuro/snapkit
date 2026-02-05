@@ -72,7 +72,7 @@
   import PriceField from '$components/core/form/PriceField.svelte'
   import QuantityField from '$components/core/form/QuantityField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
-  import { FormFieldClass } from '$components/core/form/form'
+  import { EditableTableFieldClass, FormFieldClass } from '$components/core/form/form'
   import { getFormContextOptional } from '$components/core/form/form-context'
   import ProductLotSelector from '$components/features/form/ProductLotSelector.svelte'
   import ProductSelector from '$components/features/form/ProductSelector.svelte'
@@ -543,7 +543,7 @@
 
   {#snippet row({ item, index, updateItem, onFocus, onBlur })}
     <!-- Product Selector -->
-    <Table.Cell class="p-0">
+    <Table.Cell class={EditableTableFieldClass.TableCell}>
       <ProductSelector
         name="product-{index}"
         attr={item.id ? ({ id: item.id, name: item.name, internal_id: item.extraId } as ProductSummary) : undefined}
@@ -558,7 +558,7 @@
     </Table.Cell>
 
     <!-- Product ID (link) -->
-    <Table.Cell>
+    <Table.Cell class="{EditableTableFieldClass.TableCell} px-2">
       <div class="flex items-center justify-between gap-2">
         {#if item.extraId}
           <a
@@ -591,7 +591,7 @@
 
     <!-- Lot Selector -->
     {#if showLot}
-      <Table.Cell class="p-0">
+      <Table.Cell class={EditableTableFieldClass.TableCell}>
         <ProductLotSelector
           name="lot-{index}"
           productId={item.id}
@@ -617,7 +617,7 @@
 
     <!-- Quantity -->
     {#if showQuantity}
-      <Table.Cell class="p-0">
+      <Table.Cell class={EditableTableFieldClass.TableCell}>
         <QuantityField
           name="quantity-{index}"
           value={item.quantity}
@@ -637,7 +637,7 @@
 
     <!-- Price -->
     {#if showPrice}
-      <Table.Cell class="p-0">
+      <Table.Cell class={EditableTableFieldClass.TableCell}>
         <PriceField
           name="price-{index}"
           value={item.basePrice}
@@ -653,7 +653,7 @@
       </Table.Cell>
 
       <!-- VAT -->
-      <Table.Cell class="p-0">
+      <Table.Cell class={EditableTableFieldClass.TableCell}>
         <TextField
           name="vat-{index}"
           value={item.vat.toString()}
@@ -668,7 +668,7 @@
 
     <!-- Discount + Final Price -->
     {#if showDiscount && showPrice}
-      <Table.Cell class="p-0">
+      <Table.Cell class={EditableTableFieldClass.TableCell}>
         <TextField
           name="discount-{index}"
           value={item.discount.toString()}
