@@ -19,6 +19,9 @@
   import RawMaterialsEditor, { type RawMaterialLineItem } from '$components/features/form/RawMaterialsEditor.svelte'
   import { Button } from '$components/ui/button'
   import * as m from '$lib/paraglide/messages'
+  import AddressesEditor from '../form/AddressesEditor.svelte'
+  import EmailsEditor from '../form/EmailsEditor.svelte'
+  import PricesEditor from '../form/PricesEditor.svelte'
 
   // Define the form shape (should match parent)
   type OrderFormValues = {
@@ -52,6 +55,12 @@
     <PriceField name="price" />
     <CurrencyField name="currency" />
   </div>
+
+  <AddressesEditor name="shippingAddresses" />
+
+  <EmailsEditor name="contactEmails" />
+
+  <PricesEditor name="additionalPrices" />
 
   <DateField name="deliveryDate" minDaysFromNow={1} allowClear />
 

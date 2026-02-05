@@ -7,6 +7,11 @@
   import FormUtil, { type FailurePayload, type SuccessPayload } from '$components/core/form/FormUtil.svelte'
   import { v } from '$components/core/form/validation'
   import {
+    productsRequired,
+    productsValidQuantity,
+    type ProductLineItem,
+  } from '$components/features/form/ProductsEditor.svelte'
+  import {
     rawMaterialsRequired,
     rawMaterialsValidQuantity,
     type RawMaterialLineItem,
@@ -23,6 +28,7 @@
     notes: string
     urgent: boolean
     rawMaterials: RawMaterialLineItem[]
+    products: ProductLineItem[]
     deliveryDate: Date | null
     uom: string
     currency: string
@@ -37,6 +43,7 @@
     notes: '',
     urgent: false,
     rawMaterials: [],
+    products: [],
     deliveryDate: null,
     uom: '',
     currency: 'EUR',
@@ -49,6 +56,7 @@
       product: [v.required({ field: m.product() })],
       quantity: [v.required(), v.min(1, { field: m.quantity() })],
       rawMaterials: [rawMaterialsRequired(), rawMaterialsValidQuantity()],
+      products: [productsRequired(), productsValidQuantity()],
     })
     .build()
 
