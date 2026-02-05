@@ -16,6 +16,7 @@ export const COMPONENT_REGISTRY = {
   '_poc.FormSelectorExample': {
     component: () => import('$lib/components/features/_poc/FormSelectorExample.svelte'),
     description: 'A single-select dropdown that is intended as an example of a form selector. Fetches materials from GET /raw-material endpoint with search support. Displays material name with supplier information.',
+    description: 'A single-select dropdown that is intended as an example of a form selector. Fetches materials from GET /raw-material endpoint with search support. Displays material name with supplier information.',
   },
   'calendar.FullCalendar': {
     component: () => import('$lib/components/features/calendar/FullCalendar.svelte'),
@@ -68,6 +69,27 @@ export const COMPONENT_REGISTRY = {
   'form.SupplyOrderSelector': {
     component: () => import('$lib/components/features/form/SupplyOrderSelector.svelte'),
     description: 'A single-select dropdown for choosing supply/purchase orders. Fetches supply orders from GET /order endpoint with search support. Optionally filters by supplier ID. Displays supply order internal ID as label.',
+    description: 'A selector component for choosing products from the product catalog.',
+  },
+  'form.RawMaterialsEditor': {
+    component: () => import('$lib/components/features/form/RawMaterialsEditor.svelte'),
+    description: 'Multi-line editor for raw materials in purchase orders. Supports material selection, quantity, lot, price with deals-based pricing.',
+  },
+  'form.SalesChannelSelector': {
+    component: () => import('$lib/components/features/form/SalesChannelSelector.svelte'),
+    description: 'A single-select dropdown for choosing sales channels. Fetches sales channels from GET /sales-channel endpoint with search support. Displays only active sales channels by default.',
+  },
+  'form.SalesOrderSelector': {
+    component: () => import('$lib/components/features/form/SalesOrderSelector.svelte'),
+    description: 'A single-select dropdown for choosing sales orders. Fetches sales orders from GET /order endpoint with search support. Displays sales order internal ID as label.',
+  },
+  'form.SupplierSelector': {
+    component: () => import('$lib/components/features/form/SupplierSelector.svelte'),
+    description: 'A single-select dropdown for choosing suppliers. Fetches suppliers from GET /supplier endpoint with search support. Displays supplier name.',
+  },
+  'form.SupplyOrderSelector': {
+    component: () => import('$lib/components/features/form/SupplyOrderSelector.svelte'),
+    description: 'A single-select dropdown for choosing supply/purchase orders. Fetches supply orders from GET /order endpoint with search support. Optionally filters by supplier ID. Displays supply order internal ID as label.',
   },
   'globals.AppHeader': {
     component: () => import('$lib/components/features/globals/AppHeader.svelte'),
@@ -79,6 +101,7 @@ export const COMPONENT_REGISTRY = {
   },
   'globals.LanguageSwitcher': {
     component: () => import('$lib/components/features/globals/LanguageSwitcher.svelte'),
+    description: 'Language switcher that integrates with Paraglide i18n',
     description: 'Language switcher that integrates with Paraglide i18n',
   },
   'globals.PageTitle': {
@@ -104,17 +127,21 @@ export const COMPONENT_REGISTRY = {
   'production.ProductionGantt': {
     component: () => import('$lib/components/features/production/ProductionGantt.svelte'),
     description: 'Gantt chart view of production items showing planned, in-progress, and completed production tasks.',
+    description: 'Gantt chart view of production items showing planned, in-progress, and completed production tasks.',
   },
   'sales.salesorderstable.default.SalesOrdersTable': {
     component: () => import('$lib/components/features/sales/SalesOrdersTable/default/SalesOrdersTable.svelte'),
+    description: 'Displays a paginated table of sales orders with load more functionality. Shows order ID, customer, status, expected shipping time, and total. Consumes filter state from page context to filter displayed data.',
     description: 'Displays a paginated table of sales orders with load more functionality. Shows order ID, customer, status, expected shipping time, and total. Consumes filter state from page context to filter displayed data.',
   },
   'supply.supplyorderstable.default.SupplyOrdersTable': {
     component: () => import('$lib/components/features/supply/SupplyOrdersTable/default/SupplyOrdersTable.svelte'),
     description: 'Displays a paginated table of supply orders with load more functionality. Shows order name, supplier, status, expected delivery, and total. Consumes filter state from page context to filter displayed data.',
+    description: 'Displays a paginated table of supply orders with load more functionality. Shows order name, supplier, status, expected delivery, and total. Consumes filter state from page context to filter displayed data.',
   },
   'supply.upsertsupplyorder.default.UpsertSupplyOrder': {
     component: () => import('$lib/components/features/supply/UpsertSupplyOrder/default/UpsertSupplyOrder.svelte'),
+    description: 'Component for viewing and editing supply order details. Fetches order details by ID from route parameters and displays them.',
     description: 'Component for viewing and editing supply order details. Fetches order details by ID from route parameters and displays them.',
   }
 } as const;
