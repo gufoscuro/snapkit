@@ -117,6 +117,21 @@ const url = createRoute({
 
 Refer to `ROUTE-BUILDER.md` for the complete list of available route IDs and their parameters.
 
+## Menu System
+
+SnapKit provides a powerful menu configuration system that uses the same `pageId`-based routing:
+
+- **Dynamic Menus**: Configure navigation menus using `pageId` instead of hardcoded URLs
+- **Submenu Support**: Nested menus with multiple rendering styles (list, simple, icon, grid)
+- **Automatic URL Resolution**: Menu items automatically use `createRoute()` internally
+- **Type-Safe Configuration**: Menu items validated against page registry
+
+See [Menu System Documentation](./menu-system.md) for complete details on:
+- Menu configuration structure
+- Submenu styles and when to use them
+- Examples and best practices
+- Migration from legacy format
+
 ## Best Practices
 
 1. **Always use `createRoute()`** for internal links
@@ -124,3 +139,4 @@ Refer to `ROUTE-BUILDER.md` for the complete list of available route IDs and the
 3. **Use descriptive route IDs** - they make code more readable
 4. **Validate parameters** - ensure required params are provided
 5. **Keep route definitions centralized** - in the route-builder utility
+6. **Use the menu system** for navigation configuration instead of hardcoding menu items
