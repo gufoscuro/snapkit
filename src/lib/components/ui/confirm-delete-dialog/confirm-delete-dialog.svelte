@@ -82,14 +82,7 @@
 
 <AlertDialog.Root bind:open={dialogState.open}>
 	<AlertDialog.Content>
-		<form
-			method="POST"
-			onsubmit={(e) => {
-				e.preventDefault();
-				dialogState.confirm();
-			}}
-			class="flex flex-col gap-4"
-		>
+		<div class="flex flex-col gap-4">
 			<AlertDialog.Header>
 				<AlertDialog.Title>
 					{dialogState.options?.title}
@@ -104,7 +97,6 @@
 					placeholder={`Enter \"${dialogState.options.input.confirmationText}\" to confirm.`}
 					onkeydown={(e) => {
 						if (e.key === 'Enter') {
-							// for some reason without this the form will submit and the dialog will close immediately
 							e.preventDefault();
 							dialogState.confirm();
 						}
@@ -116,15 +108,16 @@
 					{dialogState.options?.cancel?.text ?? 'Cancel'}
 				</AlertDialog.Cancel>
 				<AlertDialog.Action
-					type="submit"
+					type="button"
 					variant="destructive"
 					loading={dialogState.loading}
 					disabled={dialogState.options?.input &&
 						dialogState.inputText !== dialogState.options.input.confirmationText}
+					onclick={dialogState.confirm}
 				>
 					{dialogState.options?.confirm?.text ?? 'Delete'}
 				</AlertDialog.Action>
 			</AlertDialog.Footer>
-		</form>
+		</div>
 	</AlertDialog.Content>
 </AlertDialog.Root>

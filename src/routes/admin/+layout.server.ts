@@ -1,5 +1,6 @@
 import { COMPONENT_REGISTRY, getAllComponentKeys } from '$generated/components-registry'
-import type { BlockConfig, BuilderPageConfig, MenuConfig, TenantConfig } from '$lib/admin/types'
+import type { BlockConfig, BuilderPageConfig, FlatBuilderPageConfig, MenuConfig, TenantConfig } from '$lib/admin/types'
+import { nestedToFlat } from '$lib/admin/page-hierarchy-utils'
 import { redirect } from '@sveltejs/kit'
 import type { LayoutServerLoad } from './$types'
 
@@ -31,7 +32,7 @@ export const load: LayoutServerLoad = async ({ locals, fetch }) => {
   // TODO: Optimize for scale - currently loads ALL tenants' configs on admin panel load.
   // Consider: 1) Load only selected tenant's config, 2) Lazy loading on tenant switch,
   // 3) Pagination/metadata endpoint for large tenant counts
-  const allPages: BuilderPageConfig[] = []
+  const allPages: FlatBuilderPageConfig[] = []
   const allMenus: MenuConfig[] = []
 
   for (const tenant of tenants) {
@@ -39,7 +40,9 @@ export const load: LayoutServerLoad = async ({ locals, fetch }) => {
       const configResponse = await fetch(`/api/tenant-config/${tenant.vanity}`)
       if (configResponse.ok) {
         const tenantConfig = await configResponse.json()
-        allPages.push(...tenantConfig.pages)
+        // Convert nested pages to flat with parentId tracking
+        const flatPages = nestedToFlat(tenantConfig.pages)
+        allPages.push(...flatPages)
         allMenus.push(...tenantConfig.menus)
       }
     } catch (e) {

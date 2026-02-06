@@ -56,9 +56,6 @@
     adminStore.updatePage(page.$id, { title: (e.target as HTMLInputElement).value })
   }
 
-  function handleIdChange(e: Event) {
-    adminStore.updatePage(page.$id, { $id: (e.target as HTMLInputElement).value })
-  }
 
   function handleRouteChange(e: Event) {
     adminStore.updatePage(page.$id, { route: (e.target as HTMLInputElement).value })
@@ -127,21 +124,6 @@
                 class="h-8 text-sm" />
               <p class="text-xs text-muted-foreground">Dynamic params: :uuid</p>
             </div>
-            <div class="space-y-1.5">
-              <Label for="page-id" class="text-xs">Page ID</Label>
-              <Input
-                id="page-id"
-                value={page.$id}
-                oninput={handleIdChange}
-                placeholder="unique-page-id"
-                class="h-8 text-sm" />
-            </div>
-            {#if tenant}
-              <div class="space-y-1.5">
-                <Label class="text-xs">Tenant</Label>
-                <div class="rounded-md border bg-muted px-2 py-1.5 text-xs">{tenant.name}</div>
-              </div>
-            {/if}
           </div>
         </Accordion.Content>
       </Accordion.Item>

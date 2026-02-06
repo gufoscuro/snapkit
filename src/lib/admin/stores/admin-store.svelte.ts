@@ -5,7 +5,6 @@ import {
   findPageById,
   getAllDescendants,
   getChildPages,
-  nestedToFlat,
   validateNoCircularRefs,
   validateRouteUnique
 } from '../page-hierarchy-utils'
@@ -24,16 +23,29 @@ import type {
 export const ADMIN_TENANT_STORAGE_KEY = 'admin-selected-tenant'
 
 /**
+ * Generate a short alphanumeric ID (6 characters)
+ * Uses base36 encoding for URL-friendly, human-readable IDs
+ */
+function generateAlphanumericId(): string {
+  // Generate a 6-character alphanumeric string
+  // Combines timestamp and random for uniqueness
+  const timestamp = Date.now().toString(36).slice(-3) // Last 3 chars of timestamp
+  const random = Math.random().toString(36).slice(2, 5) // 3 random chars
+  return (timestamp + random).toLowerCase()
+}
+
+/**
  * Generate a unique ID for new entities
  */
 function generateId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+  return `${prefix}-${generateAlphanumericId()}`
 }
 
 /**
  * Admin Store - Svelte 5 function factory pattern with runes
  */
 function createAdminStore() {
+
   // Reactive state using $state rune
   const state = $state<AdminBuilderState>({
     pages: [],
@@ -229,11 +241,15 @@ function createAdminStore() {
       throw new Error('No tenant selected. Please select a tenant before creating a page.')
     }
 
+    // Generate alphanumeric ID for new pages
+    const alphanumericId = generateAlphanumericId()
+    const pageId = page?.$id ?? `page-${alphanumericId}`
+
     const newPage: FlatBuilderPageConfig = {
-      $id: page?.$id ?? generateId('page'),
+      $id: pageId,
       tenantId: state.selectedTenantId,
-      title: page?.title ?? '',
-      route: page?.route ?? '',
+      title: page?.title ?? `New page`,
+      route: page?.route ?? `/page-${alphanumericId}`,
       layout: page?.layout ?? {
         componentKey: 'layouts.List' as ComponentKey,
         enabled: true,
@@ -248,16 +264,22 @@ function createAdminStore() {
   }
 
   function addSubpage(parentId: string, subpage?: Partial<BuilderPageConfig>): FlatBuilderPageConfig {
+
     const parent = findPageById(parentId, state.pages)
+
     if (!parent) {
       throw new Error(`Parent page not found: ${parentId}`)
     }
 
+    // Generate alphanumeric ID for new subpages
+    const alphanumericId = generateAlphanumericId()
+    const subpageId = subpage?.$id ?? `page-${alphanumericId}`
+
     const newSubpage: FlatBuilderPageConfig = {
-      $id: subpage?.$id ?? generateId('page'),
+      $id: subpageId,
       tenantId: parent.tenantId, // Inherit from parent
-      title: subpage?.title ?? '',
-      route: subpage?.route ?? '',
+      title: subpage?.title ?? `New page`,
+      route: subpage?.route ?? `/page-${alphanumericId}`,
       layout: subpage?.layout ?? {
         componentKey: 'layouts.List' as ComponentKey,
         enabled: true,
@@ -491,8 +513,8 @@ function createAdminStore() {
   }
 
   function loadState(newState: Pick<AdminBuilderState, 'pages' | 'menus' | 'tenants' | 'blocks'>) {
-    // Convert nested pages to flat with parentId tracking
-    state.pages = nestedToFlat(newState.pages ?? [])
+    // Pages are already flat with parentId from the server
+    state.pages = newState.pages ?? []
     state.menus = newState.menus ?? []
     state.tenants = newState.tenants ?? []
     state.blocks = newState.blocks ?? []
@@ -558,5 +580,32 @@ function createAdminStore() {
   }
 }
 
+/**
+ * Get or create singleton store instance
+ * In development: Uses window object to persist across HMR updates
+ * In production: Normal singleton pattern
+ */
+function getStoreInstance() {
+  if (browser && import.meta.env.DEV) {
+    // Development: Store in window to survive HMR
+    // @ts-expect-error - Using window.__ADMIN_STORE__ to persist singleton across HMR in development
+    if (!window.__ADMIN_STORE__) {
+      // @ts-expect-error - Assigning to window.__ADMIN_STORE__ for HMR persistence
+      window.__ADMIN_STORE__ = createAdminStore()
+    }
+    // @ts-expect-error - Reading from window.__ADMIN_STORE__ for HMR persistence
+    return window.__ADMIN_STORE__
+  }
+
+  // Production: Normal singleton
+  if (!globalStoreInstance) {
+    globalStoreInstance = createAdminStore()
+  }
+  return globalStoreInstance
+}
+
+// Production singleton instance
+let globalStoreInstance: ReturnType<typeof createAdminStore> | null = null
+
 // Export singleton instance
-export const adminStore = createAdminStore()
+export const adminStore = getStoreInstance()
