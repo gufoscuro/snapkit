@@ -27,6 +27,34 @@ function searchPages(pages: PageConfig[], route: string): PageDetails | null {
   return null
 }
 
+/**
+ * Find a page by its $id, searching recursively through subpages
+ */
+function findPageById(id: string, pages: PageConfig[]): PageConfig | null {
+  for (const page of pages) {
+    if (page.$id === id) return page
+    if (page.subpages) {
+      const found = findPageById(id, page.subpages)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+/**
+ * Collect all page $ids recursively
+ */
+function collectAllPageIds(pages: PageConfig[]): string[] {
+  const ids: string[] = []
+  for (const page of pages) {
+    ids.push(page.$id)
+    if (page.subpages) {
+      ids.push(...collectAllPageIds(page.subpages))
+    }
+  }
+  return ids
+}
+
 function createTenantConfigStore() {
   // In-memory cache: Map<vanity, TenantConfigData>
   const cache = new Map<string, TenantConfigData>()
@@ -168,6 +196,29 @@ function createTenantConfigStore() {
     return currentTenant?.id ?? null
   }
 
+  /**
+   * Get page configuration by $id (synchronous)
+   * Returns null if tenant not loaded or page not found
+   *
+   * @param $id - Page $id to find
+   * @returns Page configuration or null
+   */
+  function getPageById($id: string): PageConfig | null {
+    if (!currentTenant) return null
+    return findPageById($id, currentTenant.pages)
+  }
+
+  /**
+   * Get all page $ids (synchronous)
+   * Returns empty array if tenant not loaded
+   *
+   * @returns Array of all page $ids
+   */
+  function getAllPageIds(): string[] {
+    if (!currentTenant) return []
+    return collectAllPageIds(currentTenant.pages)
+  }
+
   return {
     // Reactive getters
     get currentTenant() {
@@ -189,6 +240,8 @@ function createTenantConfigStore() {
     invalidate,
     getPageByRoute,
     getTenantId,
+    getPageById,
+    getAllPageIds,
   }
 }
 

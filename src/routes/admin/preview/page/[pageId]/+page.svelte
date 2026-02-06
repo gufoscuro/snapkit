@@ -3,6 +3,8 @@
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import type { BuilderPageConfig } from '$lib/admin/types'
   import { initPageState } from '$lib/contexts/page-state/page-state.svelte'
+  import { tenantConfigStore } from '$lib/stores/tenant-config/store.svelte'
+  import { routeTracker } from '$lib/utils/route-tracker'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import { setContext } from 'svelte'
 
@@ -10,7 +12,7 @@
 
   // Get page config from parent window's pageStore (this iframe is embedded in page editor)
   let pageConfig = $state<BuilderPageConfig | undefined>(undefined)
-  let selectedTenant = $state<{ name: string } | undefined>(undefined)
+  let selectedTenant = $state<{ name: string; vanity?: string } | undefined>(undefined)
   let isStoreLoaded = $state(false)
 
   // Access parent window's stores if available (iframe context)
@@ -52,6 +54,28 @@
   }
 
   initPageState()
+
+  // Load tenant config and initialize route tracker
+  $effect(() => {
+    const tenant = selectedTenant
+    if (tenant?.vanity) {
+      tenantConfigStore
+        .fetchTenantConfig(tenant.vanity)
+        .then(() => {
+          // Initialize route tracker with pages from loaded tenant
+          routeTracker.setValidPageIds(tenantConfigStore.getAllPageIds())
+        })
+        .catch(error => {
+          console.error('[Page Preview] Failed to load tenant config:', error)
+        })
+    }
+  })
+
+  $effect(() => {
+    if (pageId) {
+      setTimeout(() => console.log('[Page Preview] Broken links links:', routeTracker.getBrokenLinkIds()), 700)
+    }
+  })
 
   // Set up snippet props context for all components in the page
   setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () => ({

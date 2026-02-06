@@ -1,6 +1,6 @@
 import type { ComponentKey } from '$generated/components-registry';
 import type { BindingConfig } from '$lib/contexts/page-state';
-import { type TObject, Type } from '@sinclair/typebox';
+import { type TObject } from '@sinclair/typebox';
 
 export interface PageConfig {
   /** Unique identifier for this page, used for route generation */
@@ -22,114 +22,7 @@ export interface SnippetDefinition {
 }
 
 export const PAGES: PageConfig[] = [
-  // Hardcoded pages for demo purposes
-  {
-    $id: 'order-list',
-    title: 'supply_orders',
-    route: '/purchase/orders',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      appHeader: {
-        componentKey: 'globals.AppHeader',
-        enabled: true,
-      },
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
-      },
-      table: {
-        enabled: true,
-        componentKey: 'supply.supplyorderstable.default.SupplyOrdersTable'
-      },
-    },
-    subpages: [
-      {
-        $id: 'order-details',
-        $params: Type.Object({ uuid: Type.String() }),
-        title: 'purchase_order_detail',
-        route: '/purchase/orders/upsert/:uuid',
-        layout: {
-          componentKey: 'layouts.Detail',
-          enabled: true,
-        },
-        snippets: {
-          appHeader: {
-            componentKey: 'globals.AppHeaderWithBack',
-            enabled: true,
-          },
-          detail: {
-            enabled: true,
-            componentKey: 'supply.upsertsupplyorder.default.UpsertSupplyOrder',
-          },
-        },
-      },
-    ],
-  },
-  {
-    $id: 'sales-order-list',
-    title: 'sales_orders',
-    route: '/sales/orders',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      appHeader: {
-        componentKey: 'globals.AppHeader',
-        enabled: true,
-      },
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
-      },
-      table: {
-        enabled: true,
-        componentKey: 'sales.salesorderstable.default.SalesOrdersTable'
-      },
-    },
-    subpages: [
-      {
-        $id: 'sales-order-detail',
-        $params: Type.Object({ uuid: Type.String() }),
-        title: 'sales_order_detail',
-        route: '/sales/orders/upsert/:uuid',
-        layout: {
-          componentKey: 'layouts.Detail',
-          enabled: true,
-        },
-        snippets: {},
-      },
-    ],
-  },
-  {
-    $id: 'poc-state-sharing',
-    title: 'poc_state_sharing',
-    route: '/poc/state-sharing',
-    layout: {
-      componentKey: 'layouts.List',
-      enabled: true,
-    },
-    snippets: {
-      title: {
-        enabled: true,
-        componentKey: 'globals.PageTitle',
-      },
-      filters: {
-        enabled: true,
-        componentKey: '_poc.demofilter.DemoFilter',
-        // Using default bindings: provides.filters -> 'filters'
-      },
-      table: {
-        enabled: true,
-        componentKey: '_poc.demotable.DemoTable',
-        // Using default bindings: consumes.filters -> 'filters', provides.selection -> 'selection'
-      },
-    },
-  },
-  // ... more pages
+
 ]
 
 

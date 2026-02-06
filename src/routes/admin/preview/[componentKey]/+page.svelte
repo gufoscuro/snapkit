@@ -4,6 +4,8 @@
   import { COMPONENT_REGISTRY } from '$generated/components-registry'
   import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import { initPageState } from '$lib/contexts/page-state/page-state.svelte'
+  import { tenantConfigStore } from '$lib/stores/tenant-config/store.svelte'
+  import { routeTracker } from '$lib/utils/route-tracker'
   import type { SnippetDefinition } from '$utils/page-registry'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import { setContext } from 'svelte'
@@ -12,6 +14,22 @@
   const componentKey = $derived(page.params.componentKey)
 
   initPageState()
+
+  // Load tenant config and initialize route tracker
+  $effect(() => {
+    const tenant = selectedTenant
+    if (tenant?.vanity) {
+      tenantConfigStore
+        .fetchTenantConfig(tenant.vanity)
+        .then(() => {
+          // Initialize route tracker with pages from loaded tenant
+          routeTracker.setValidPageIds(tenantConfigStore.getAllPageIds())
+        })
+        .catch(error => {
+          console.error('[Preview] Failed to load tenant config:', error)
+        })
+    }
+  })
 
   setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () => ({
     pageDetails: {

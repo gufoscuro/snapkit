@@ -1,6 +1,7 @@
+import { tenantConfigStore } from '$lib/stores/tenant-config/store.svelte'
 import { Value } from '@sinclair/typebox/value'
 import { compile } from 'path-to-regexp'
-import { PAGES, type PageConfig } from './page-registry'
+import { routeTracker } from './route-tracker'
 
 /** Cache of compiled route functions to avoid recompilation on each call */
 const compiledRoutes = new Map<string, (params: Record<string, string>) => string>()
@@ -35,7 +36,14 @@ export interface CreateRouteOptions {
 export function createRoute(options: CreateRouteOptions): string {
   const { $id, params = {}, query } = options
 
-  const page = findPageById($id)
+  const page = tenantConfigStore.getPageById($id)
+
+  // Track in admin panel
+  routeTracker.recordCall($id)
+  // if (isInAdminPanel()) {
+  //   routeTracker.recordCall($id)
+  // }
+
   if (!page) {
     return '/broken-link?link-id=' + encodeURIComponent($id)
     // throw new Error(`[createRoute] Page with $id "${$id}" not found`)
@@ -78,34 +86,4 @@ export function createRoute(options: CreateRouteOptions): string {
   }
 
   return path
-}
-
-/**
- * Finds a page by its $id, searching recursively through subpages.
- */
-function findPageById(id: string, pages: PageConfig[] = PAGES): PageConfig | undefined {
-  for (const page of pages) {
-    if (page.$id === id) return page
-    if (page.subpages) {
-      const found = findPageById(id, page.subpages)
-      if (found) return found
-    }
-  }
-  return undefined
-}
-
-/**
- * Returns all page $ids defined in the registry.
- * Useful for validation or autocomplete features.
- */
-export function getAllPageIds(): string[] {
-  const ids: string[] = []
-  function collect(pages: PageConfig[]) {
-    for (const page of pages) {
-      ids.push(page.$id)
-      if (page.subpages) collect(page.subpages)
-    }
-  }
-  collect(PAGES)
-  return ids
 }
