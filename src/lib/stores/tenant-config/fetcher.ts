@@ -12,8 +12,9 @@ const ADMIN_TENANT_CONFIG: TenantConfigData = {
   menus: [],
   mainMenu: [
     {
+      type: 'link',
       label: 'Admin Dashboard',
-      href: '/admin',
+      pageId: 'admin-dashboard',
       visible: true,
     },
   ],
