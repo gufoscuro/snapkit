@@ -1,15 +1,24 @@
 import { browser } from '$app/environment'
 import type { ComponentKey } from '$generated/components-registry'
 import { tenantConfigStore } from '$lib/stores/tenant-config'
+import {
+  findPageById,
+  getAllDescendants,
+  getChildPages,
+  nestedToFlat,
+  validateNoCircularRefs,
+  validateRouteUnique
+} from '../page-hierarchy-utils'
 import type {
   AdminBuilderState,
   AdminSelection,
   BuilderPageConfig,
   ExtendedSnippetDefinition,
+  FlatBuilderPageConfig,
   MenuConfig,
   TenantConfig,
   TreeNode
-} from './types'
+} from '../types'
 
 /** localStorage key for persisting selected tenant */
 export const ADMIN_TENANT_STORAGE_KEY = 'admin-selected-tenant'
@@ -80,17 +89,35 @@ function createAdminStore() {
   // ========== Tree Building ==========
 
   function buildNavigationTree(): TreeNode[] {
+    // Helper to recursively build page nodes
+    function buildPageNodes(pages: FlatBuilderPageConfig[]): TreeNode[] {
+      return pages.map((p) => {
+        const node: TreeNode = {
+          id: p.$id,
+          name: p.title,
+          type: 'page' as const,
+          data: p,
+        }
+
+        // Add children if page has subpages
+        const children = getChildPages(p.$id, state.pages)
+        if (children.length > 0) {
+          node.children = buildPageNodes(children)
+        }
+
+        return node
+      })
+    }
+
+    // Get only root level pages (no parentId)
+    const rootPages = state.pages.filter((p) => !p.parentId)
+
     return [
       {
         id: 'pages',
         name: 'Pages',
         type: 'folder',
-        children: state.pages.map((p) => ({
-          id: p.$id,
-          name: p.title,
-          type: 'page' as const,
-          data: p,
-        })),
+        children: buildPageNodes(rootPages),
       },
       {
         id: 'menus',
@@ -197,21 +224,22 @@ function createAdminStore() {
 
   // ========== Page Actions ==========
 
-  function addPage(page?: Partial<BuilderPageConfig>): BuilderPageConfig {
+  function addPage(page?: Partial<FlatBuilderPageConfig>): FlatBuilderPageConfig {
     if (!state.selectedTenantId) {
       throw new Error('No tenant selected. Please select a tenant before creating a page.')
     }
 
-    const newPage: BuilderPageConfig = {
+    const newPage: FlatBuilderPageConfig = {
       $id: page?.$id ?? generateId('page'),
       tenantId: state.selectedTenantId,
-      title: page?.title ?? 'New Page',
-      route: page?.route ?? '/new-page',
+      title: page?.title ?? '',
+      route: page?.route ?? '',
       layout: page?.layout ?? {
         componentKey: 'layouts.List' as ComponentKey,
         enabled: true,
       },
       snippets: page?.snippets ?? {},
+      parentId: null, // Root level page by default
       ...page,
     }
     state.pages.push(newPage)
@@ -219,23 +247,92 @@ function createAdminStore() {
     return newPage
   }
 
-  function updatePage(id: string, updates: Partial<BuilderPageConfig>) {
-    const index = state.pages.findIndex((p) => p.$id === id)
-    if (index !== -1) {
-      state.pages[index] = { ...state.pages[index], ...updates }
-      state.isDirty = true
+  function addSubpage(parentId: string, subpage?: Partial<BuilderPageConfig>): FlatBuilderPageConfig {
+    const parent = findPageById(parentId, state.pages)
+    if (!parent) {
+      throw new Error(`Parent page not found: ${parentId}`)
     }
+
+    const newSubpage: FlatBuilderPageConfig = {
+      $id: subpage?.$id ?? generateId('page'),
+      tenantId: parent.tenantId, // Inherit from parent
+      title: subpage?.title ?? '',
+      route: subpage?.route ?? '',
+      layout: subpage?.layout ?? {
+        componentKey: 'layouts.List' as ComponentKey,
+        enabled: true,
+      },
+      snippets: subpage?.snippets ?? {},
+      parentId: parentId, // Set parent relationship
+      ...subpage,
+    }
+
+    // Validate route uniqueness
+    if (!validateRouteUnique(newSubpage.route, newSubpage.tenantId, null, state.pages)) {
+      throw new Error(`Route ${newSubpage.route} already exists in this tenant`)
+    }
+
+    state.pages.push(newSubpage)
+    state.isDirty = true
+    return newSubpage
   }
 
-  function deletePage(id: string) {
+  function updatePage(id: string, updates: Partial<FlatBuilderPageConfig>) {
     const index = state.pages.findIndex((p) => p.$id === id)
-    if (index !== -1) {
+    if (index === -1) return
+
+    // If changing parentId, validate no circular refs
+    if (updates.parentId !== undefined) {
+      if (!validateNoCircularRefs(id, updates.parentId, state.pages)) {
+        throw new Error('Cannot move page: would create circular reference')
+      }
+    }
+
+    // If changing route, validate uniqueness
+    if (updates.route !== undefined) {
+      const page = state.pages[index]
+      if (!validateRouteUnique(updates.route, page.tenantId, id, state.pages)) {
+        throw new Error(`Route ${updates.route} already exists in this tenant`)
+      }
+    }
+
+    state.pages[index] = { ...state.pages[index], ...updates }
+    state.isDirty = true
+  }
+
+  function deletePage(id: string, cascade: boolean = true) {
+    const page = findPageById(id, state.pages)
+    if (!page) return
+
+    if (cascade) {
+      // Get all descendants
+      const descendants = getAllDescendants(id, state.pages)
+      const idsToDelete = [id, ...descendants.map((d) => d.$id)]
+
+      // Remove all at once
+      state.pages = state.pages.filter((p) => !idsToDelete.includes(p.$id))
+
+      // Clear selection if any deleted page was selected
+      if (state.selection.type === 'page' && idsToDelete.includes(state.selection.id!)) {
+        clearSelection()
+      }
+    } else {
+      // Non-cascade: promote children to same level as deleted page
+      const children = getChildPages(id, state.pages)
+      children.forEach((child) => {
+        child.parentId = page.parentId // Move to deleted page's parent
+      })
+
+      // Remove only the page
+      const index = state.pages.findIndex((p) => p.$id === id)
       state.pages.splice(index, 1)
+
       if (state.selection.type === 'page' && state.selection.id === id) {
         clearSelection()
       }
-      state.isDirty = true
     }
+
+    state.isDirty = true
   }
 
   // ========== Snippet Actions ==========
@@ -394,7 +491,8 @@ function createAdminStore() {
   }
 
   function loadState(newState: Pick<AdminBuilderState, 'pages' | 'menus' | 'tenants' | 'blocks'>) {
-    state.pages = newState.pages ?? []
+    // Convert nested pages to flat with parentId tracking
+    state.pages = nestedToFlat(newState.pages ?? [])
     state.menus = newState.menus ?? []
     state.tenants = newState.tenants ?? []
     state.blocks = newState.blocks ?? []
@@ -438,6 +536,7 @@ function createAdminStore() {
     clearSelection,
     setSidebarContext,
     addPage,
+    addSubpage,
     updatePage,
     deletePage,
     addSnippet,

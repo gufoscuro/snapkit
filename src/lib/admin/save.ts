@@ -2,6 +2,7 @@ import { adminStore } from '$lib/admin/stores/admin-store.svelte';
 import { toast } from 'svelte-sonner';
 import type { TenantConfigData } from '$lib/stores/tenant-config/types';
 import type { TenantConfig } from '$lib/admin/types';
+import { flatToNested } from '$lib/admin/page-hierarchy-utils';
 
 /**
  * Save tenant configuration to the API
@@ -30,6 +31,9 @@ export async function saveAdminConfig(tenantId?: string): Promise<{ success: boo
     const tenantPages = adminStore.state.pages.filter(p => p.tenantId === targetTenant.id)
     const tenantMenus = adminStore.state.menus.filter(m => m.tenantId === targetTenant.id)
 
+    // Convert flat pages to nested structure before saving
+    const nestedPages = flatToNested(tenantPages)
+
     // Compute mainMenu by flattening all menu items
     const mainMenu = tenantMenus.flatMap(m => m.items)
 
@@ -38,7 +42,7 @@ export async function saveAdminConfig(tenantId?: string): Promise<{ success: boo
       id: targetTenant.id,
       name: targetTenant.name,
       vanity: targetTenant.vanity,
-      pages: tenantPages,
+      pages: nestedPages,
       menus: tenantMenus,
       mainMenu
     }

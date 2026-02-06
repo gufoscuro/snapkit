@@ -28,6 +28,14 @@ export interface BuilderPageConfig {
 }
 
 /**
+ * Internal representation of page with parent tracking
+ * Used for flat storage in admin store - never serialized
+ */
+export interface FlatBuilderPageConfig extends BuilderPageConfig {
+  parentId?: string | null // null or undefined = root level page
+}
+
+/**
  * Menu configuration
  */
 export interface MenuConfig {
@@ -74,7 +82,7 @@ export interface TreeNode {
   name: string
   type: TreeNodeType
   children?: TreeNode[]
-  data?: BuilderPageConfig | MenuConfig | TenantConfig | BlockConfig | ExtendedSnippetDefinition
+  data?: FlatBuilderPageConfig | MenuConfig | TenantConfig | BlockConfig | ExtendedSnippetDefinition
 }
 
 /**
@@ -89,7 +97,7 @@ export interface AdminSelection {
  * Complete admin builder state
  */
 export interface AdminBuilderState {
-  pages: BuilderPageConfig[]
+  pages: FlatBuilderPageConfig[]
   menus: MenuConfig[]
   tenants: TenantConfig[]
   blocks: BlockConfig[]
