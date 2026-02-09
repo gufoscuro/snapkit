@@ -123,7 +123,7 @@
       // Only send if height changed significantly (avoid micro-changes)
       if (Math.abs(height - lastSentHeight) > 5) {
         lastSentHeight = height
-        window.parent.postMessage({ type: 'preview-height', height }, '*')
+        window.parent.postMessage({ type: 'preview-height', height }, window.location.origin)
       }
 
       // Reset flag after a short delay

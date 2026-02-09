@@ -14,6 +14,7 @@
   import { getAllContracts, getContract, loadContractRegistry } from '$lib/contracts'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import ExternalLink from '@lucide/svelte/icons/external-link'
+  import LayoutTemplate from '@lucide/svelte/icons/layout-template'
   import Lightbulb from '@lucide/svelte/icons/lightbulb'
   import Save from '@lucide/svelte/icons/save'
   import Trash2 from '@lucide/svelte/icons/trash-2'
@@ -58,7 +59,7 @@
     if (previewIframe?.contentWindow) {
       previewIframe.contentWindow.postMessage({
         type: 'snippets-changed'
-      }, '*')
+      }, window.location.origin)
     }
   })
 
@@ -100,7 +101,7 @@
       toast.success(result.message)
       // Notify iframe preview that data was saved
       if (previewIframe?.contentWindow) {
-        previewIframe.contentWindow.postMessage({ type: 'page-saved' }, '*')
+        previewIframe.contentWindow.postMessage({ type: 'page-saved' }, window.location.origin)
       }
     } else {
       toast.error(result.message)
@@ -315,15 +316,33 @@
 
         <!-- Preview iframe -->
         {#if previewUrl}
-          <div class="rounded-lg bg-white p-4">
-            <iframe
-              bind:this={previewIframe}
-              src={previewUrl}
-              title="Page Preview"
-              class="w-full border-0"
-              style="height: {iframeHeight}px;"
-            ></iframe>
-          </div>
+          {#if Object.keys(currentPage.snippets).length === 0}
+            <div
+              class="flex min-h-125 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-gradient-to-br from-muted/30 to-muted/10 p-12">
+              <div class="max-w-md text-center">
+                <div class="mb-4 inline-flex size-20 items-center justify-center rounded-full bg-muted-foreground/5">
+                  <LayoutTemplate class="size-10 text-muted-foreground/40" />
+                </div>
+                <h3 class="mb-3 text-2xl font-bold text-muted-foreground/60">Empty page</h3>
+                <p class="mb-2 text-base text-muted-foreground/50">
+                  Get started by adding components to the <strong class="font-semibold text-muted-foreground/70"
+                    >Snippets</strong> section in the sidebar.
+                </p>
+                <p class="text-sm text-muted-foreground/40">
+                  Your page preview will appear here once you add at least one component.
+                </p>
+              </div>
+            </div>
+          {:else}
+            <div class="rounded-lg bg-white p-4">
+              <iframe
+                bind:this={previewIframe}
+                src={previewUrl}
+                title="Page Preview"
+                class="w-full border-0"
+                style="height: {iframeHeight}px;"></iframe>
+            </div>
+          {/if}
         {:else}
           <div class="flex items-center justify-center rounded-lg border bg-white p-12">
             <p class="text-muted-foreground">Preview not available</p>

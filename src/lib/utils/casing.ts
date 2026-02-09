@@ -331,3 +331,68 @@ export function kebabToCamel(str: string): string {
 
 	return newStr;
 }
+
+/** Converts any text to a URL-friendly slug
+ *
+ * @param text
+ * @returns
+ *
+ * ## Usage
+ * ```ts
+ * slugify('Hello World'); // hello-world
+ * slugify('My Cool Page!'); // my-cool-page
+ * slugify('  Spaced   Out  '); // spaced-out
+ * slugify('Über Café'); // uber-cafe
+ * ```
+ */
+export function slugify(text: string): string {
+	return text
+		.normalize('NFD') // Decompose accented characters
+		.replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+		.toLowerCase()
+		.trim()
+		// Replace spaces and underscores with hyphens
+		.replace(/[\s_]+/g, '-')
+		// Remove special characters except hyphens
+		.replace(/[^\w\-]+/g, '')
+		// Replace multiple consecutive hyphens with single hyphen
+		.replace(/\-\-+/g, '-')
+		// Remove leading/trailing hyphens
+		.replace(/^-+|-+$/g, '');
+}
+
+/** Normalizes a route path to ensure it's valid
+ *
+ * @param route - The route path to normalize
+ * @returns Normalized route path
+ *
+ * ## Usage
+ * ```ts
+ * normalizeRoute('about'); // /about
+ * normalizeRoute('//products///items'); // /products/items
+ * normalizeRoute('  /contact  '); // /contact
+ * normalizeRoute(':id/edit'); // /:id/edit
+ * ```
+ */
+export function normalizeRoute(route: string): string {
+	// Trim whitespace
+	let normalized = route.trim();
+
+	// If empty, return root
+	if (!normalized) return '/';
+
+	// Ensure starts with /
+	if (!normalized.startsWith('/')) {
+		normalized = `/${normalized}`;
+	}
+
+	// Replace multiple consecutive slashes with single slash
+	normalized = normalized.replace(/\/+/g, '/');
+
+	// Remove trailing slash (except for root)
+	if (normalized.length > 1 && normalized.endsWith('/')) {
+		normalized = normalized.slice(0, -1);
+	}
+
+	return normalized;
+}
