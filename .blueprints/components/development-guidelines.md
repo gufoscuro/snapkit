@@ -58,11 +58,14 @@ src/lib/components/core/<ComponentName>/
 
 **Available core components:**
 
-| Component    | Purpose                                | Usage Example                     |
-| ------------ | -------------------------------------- | --------------------------------- |
-| `DataTable`  | Generic data table with TanStack Table | Lists, grids, paginated data      |
-| `GanttChart` | Generic Gantt chart with timeline      | Scheduling, planning, timelines   |
-| `form/*`     | Context-based form system              | Forms with validation, field sync |
+| Component       | Purpose                                        | Usage Example                                  |
+| --------------- | ---------------------------------------------- | ---------------------------------------------- |
+| `ResourceTable` | Declarative data table with built-in renderers | CRUD tables with pagination, filters, actions  |
+| `DataTable`     | Generic data table with TanStack Table         | Lists, grids, paginated data                   |
+| `GanttChart`    | Generic Gantt chart with timeline              | Scheduling, planning, timelines                |
+| `form/*`        | Context-based form system                      | Forms with validation, field sync              |
+
+> **💡 Tip:** For new data tables, prefer `ResourceTable` over `DataTable` to reduce boilerplate. See [resource-table.md](./resource-table.md) for full documentation.
 
 ### Core Form System
 
@@ -265,6 +268,251 @@ When creating a new component, add a descriptive comment block at the top:
   @keywords order, summary, card, checkout, invoice, receipt
   @uses Card, Badge, Separator
 -->
+```
+
+## Antipatterns to Avoid
+
+**NEVER use these approaches in component development:**
+
+### ❌ Global Window Functions
+
+```typescript
+// NEVER DO THIS
+if (typeof window !== 'undefined') {
+  ;(window as any).__handleSomething = handleSomething
+}
+
+// Or in HTML:
+onclick="window.__handleSomething('id')"
+```
+
+**Why it's bad:**
+- Pollutes global namespace
+- Breaks component encapsulation
+- Not reusable or composable
+- Difficult to test
+- Can cause memory leaks
+- Tight coupling between components
+
+**Use instead:** Proper Svelte event handlers, component composition, or context API.
+
+### ❌ Inline HTML/SVG Strings
+
+```typescript
+// NEVER DO THIS
+const snippet = createRawSnippet(() => ({
+  render: () => `
+    <button onclick="window.something()">
+      <svg xmlns="..." width="16" height="16">
+        <path d="..."></path>
+      </svg>
+    </button>
+  `
+}))
+```
+
+**Why it's bad:**
+- Not reusable
+- Bypasses type safety
+- Hard to maintain
+- No component composition
+- Loses Svelte reactivity
+- No proper icon management
+
+**Use instead:**
+- Proper Svelte components
+- Component composition with imports
+- Icon libraries: `lucide-svelte` for icons
+- `renderComponent` for proper component rendering
+
+### ✅ Correct Patterns
+
+**For icons:**
+```typescript
+import { Trash } from 'lucide-svelte'
+
+// Use as component
+<Trash size={16} />
+```
+
+**For event handlers:**
+```typescript
+// Direct function binding
+<button onclick={() => handleClick(id)}>Click</button>
+
+// Or via renderComponent with proper event binding
+return renderComponent(Button, {
+  onclick: () => handleClick(id),
+  children: iconSnippet
+})
+```
+
+## Component Quality Checklist
+
+Before considering a component complete, you MUST verify all of the following:
+
+### 1. Internationalization (i18n)
+
+**All user-facing text MUST use Paraglide translation keys.**
+
+**✅ Correct:**
+```svelte
+<script>
+  import * as m from '$lib/paraglide/messages.js'
+</script>
+
+<button>{m.common_save()}</button>
+<h1>{m.customer()}</h1>
+<AlertDialog.Title>{m.confirm_action()}</AlertDialog.Title>
+```
+
+**❌ Incorrect:**
+```svelte
+<button>Save</button>
+<h1>Customer</h1>
+<AlertDialog.Title>Are you sure?</AlertDialog.Title>
+```
+
+**Translation key naming conventions:**
+
+- **Common actions**: Use `common_*` prefix (e.g., `common_save`, `common_cancel`, `common_delete`)
+- **Domain-specific**: Use descriptive names (e.g., `supplier`, `customer`, `product`)
+- **Parameterized messages**: Use `{param}` syntax (e.g., `archive_supplier_confirmation` with `{name}`)
+
+**Adding new translations:**
+
+1. Add keys to both `messages/en.json` and `messages/it.json`
+2. Use consistent naming with existing patterns
+3. Provide clear, contextual translations (not literal word-for-word)
+
+**Example:**
+```json
+// messages/en.json
+{
+  "phone": "Phone",
+  "confirm_action": "Are you sure?",
+  "archive_supplier_confirmation": "Are you sure you want to archive the supplier \"{name}\"? This action cannot be undone.",
+  "archiving": "Archiving..."
+}
+
+// messages/it.json
+{
+  "phone": "Telefono",
+  "confirm_action": "Sei sicuro?",
+  "archive_supplier_confirmation": "Sei sicuro di voler archiviare il fornitore \"{name}\"? Questa azione non può essere annullata.",
+  "archiving": "Archiviando..."
+}
+```
+
+### 2. Svelte 5 Validation with svelte-autofixer
+
+**ALWAYS validate your Svelte components using the `svelte-autofixer` tool from the `svelte` MCP server.**
+
+This tool catches common Svelte 5 issues like:
+- Missing keys in `#each` blocks
+- Incorrect rune usage
+- Component API violations
+- Reactivity issues
+
+**Required workflow:**
+
+1. After writing/modifying a Svelte component, run `svelte-autofixer`
+2. Fix all issues reported by the tool
+3. Run `svelte-autofixer` again until no issues remain
+4. Only then is the component considered complete
+
+**Example usage:**
+```
+mcp__svelte__svelte-autofixer({
+  code: "<component source code>",
+  desired_svelte_version: 5,
+  filename: "ComponentName.svelte"
+})
+```
+
+The tool will return:
+- `issues`: Critical problems that MUST be fixed
+- `suggestions`: Optional improvements (evaluate case-by-case)
+- `require_another_tool_call_after_fixing`: Whether to run again after fixes
+
+**Keep iterating until `issues` is empty.**
+
+### 3. Archive/Delete Operations
+
+**If your component includes archive or delete functionality, you MUST use the standard utility.**
+
+**✅ Correct:**
+```typescript
+import { confirmArchive } from '$lib/components/ui/confirm-archive-dialog'
+
+confirmArchive({
+  title: m.confirm_action(),
+  description: m.archive_entity_confirmation({ name: entity.name }),
+  confirmText: m.common_archive(),
+  cancelText: m.common_cancel(),
+  onArchive: async () => {
+    await apiRequest({ url: `domain/entity/${id}`, method: 'DELETE' })
+  },
+  successMessage: m.entity_archived_success({ name: entity.name }),
+  errorMessage: m.entity_archive_error(),
+  onSuccess: () => {
+    data = data.filter(d => d.id !== id)
+  },
+})
+```
+
+**❌ Incorrect:**
+```typescript
+// Don't manage dialog state manually
+let dialogOpen = $state(false)
+let archiving = $state(false)
+
+async function handleArchive() {
+  archiving = true
+  try {
+    await apiRequest(...)
+    dialogOpen = false
+    toast.success(...)
+  } catch (err) {
+    toast.error(...)
+  }
+  archiving = false
+}
+```
+
+**See [patterns.md](./patterns.md#archivingdeleting-records) for complete documentation.**
+
+### 4. Component Completeness
+
+Ensure your component includes:
+
+- ✅ Proper TypeScript types for all props
+- ✅ Component documentation comment block
+- ✅ Mock data file (`<ComponentName>.mock.ts`)
+- ✅ Barrel export file (`index.ts`) for standalone components
+- ✅ Updated components registry (`npm run generate:components-registry`)
+- ✅ All required translations in both `en.json` and `it.json`
+- ✅ No hardcoded user-facing strings
+- ✅ Validated with `svelte-autofixer` (zero issues)
+- ✅ Uses `confirmArchive` utility for delete/archive operations (if applicable)
+
+**Pre-completion checklist:**
+
+```bash
+# 1. Validate Svelte code
+# Use svelte-autofixer MCP tool
+
+# 2. Check for hardcoded strings
+grep -r "hardcoded text" src/lib/components/features/YourComponent/
+
+# 3. Verify translations exist
+# Check messages/en.json and messages/it.json
+
+# 4. Update registry
+npm run generate:components-registry
+
+# 5. Test the component
+# Run the app and verify visually
 ```
 
 ## Variants vs Props

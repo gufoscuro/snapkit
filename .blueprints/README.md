@@ -1,6 +1,6 @@
-# SnapKit Blueprint Content Structure
+# Snapkit Blueprint Content Structure
 
-This directory contains the implementation rules and guidelines for SnapKit, organized by domain for optimal semantic search.
+This directory contains the implementation rules and guidelines for Snapkit, organized by domain for optimal semantic search.
 
 ## Directory Structure
 
@@ -31,6 +31,7 @@ snapkit-content/
 - **patterns.md**: Specific patterns like selector components, with implementation examples
 - **state-sharing.md**: Architecture for sharing state between sibling components using contracts and bindings. Covers PageState, useProvides/useConsumes hooks, and database-driven configuration
 - **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, and scaffolding examples
+- **resource-table.md**: Generic ResourceTable component for data tables. Covers declarative column configuration, 11 built-in renderers, utilities (createApiFetcher, createArchiveAction), table variants, and best practices
 
 ### API
 
@@ -66,3 +67,6 @@ When updating guidelines:
 - "How do components share state?" → `components/state-sharing.md`
 - "How to create a form?" → `components/forms.md`
 - "How to validate form fields?" → `components/forms.md`
+- "How to create a data table?" → `components/resource-table.md`
+- "How to use ResourceTable?" → `components/resource-table.md`
+- "What renderers are available for tables?" → `components/resource-table.md`

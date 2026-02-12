@@ -1,5 +1,113 @@
 # Component Patterns
 
+## Archiving/Deleting Records
+
+**Standard utility**: `confirmArchive` from `$lib/components/ui/confirm-archive-dialog`
+
+Use this utility for all archive/delete operations to ensure consistent UX across the app. The utility automatically handles:
+- Dialog state management
+- Loading state
+- Success/error toast notifications
+- Data array updates
+- Error handling
+
+### Basic Usage
+
+```typescript
+import { confirmArchive } from '$lib/components/ui/confirm-archive-dialog'
+import { apiRequest } from '$lib/utils/request'
+import * as m from '$lib/paraglide/messages.js'
+
+function handleArchiveClick(itemId: string) {
+  const item = data.find(d => d.id === itemId)
+  if (!item) return
+
+  confirmArchive({
+    // Dialog content
+    title: m.confirm_action(),
+    description: m.archive_supplier_confirmation({ name: item.name || '' }),
+    confirmText: m.common_archive(),
+    cancelText: m.common_cancel(),
+
+    // Archive operation
+    onArchive: async () => {
+      await apiRequest({
+        url: `domain/entity/${itemId}`,
+        method: 'DELETE',
+      })
+    },
+
+    // User feedback
+    successMessage: m.supplier_archived_success({ name: item.name || '' }),
+    errorMessage: m.supplier_archive_error(),
+
+    // Update UI
+    onSuccess: () => {
+      data = data.filter(d => d.id !== itemId)
+    },
+  })
+}
+```
+
+### Required Translations
+
+Add these i18n keys for each archivable entity:
+
+```json
+// messages/en.json
+{
+  "archive_<entity>_confirmation": "Are you sure you want to archive \"{name}\"? This action cannot be undone.",
+  "<entity>_archived_success": "<Entity> \"{name}\" archived successfully",
+  "<entity>_archive_error": "Failed to archive <entity>"
+}
+
+// messages/it.json
+{
+  "archive_<entity>_confirmation": "Sei sicuro di voler archiviare \"{name}\"? Questa azione non può essere annullata.",
+  "<entity>_archived_success": "<Entity> \"{name}\" archiviato con successo",
+  "<entity>_archive_error": "Impossibile archiviare <entity>"
+}
+```
+
+### Integration with DataTable
+
+When using with DataTable, add an archive action column:
+
+```typescript
+import ArchiveButton from '$lib/components/features/supply/ArchiveButton.svelte'
+
+const columns: ColumnDef<YourEntity>[] = [
+  // ... other columns
+  {
+    id: 'actions',
+    header: '',
+    cell: ({ row }) => {
+      return renderComponent(ArchiveButton, {
+        onclick: () => handleArchiveClick(row.original.id!),
+        class: 'p-0 h-8 w-8',
+      })
+    },
+    meta: {
+      cellClassName: 'p-0 w-12',
+    },
+  },
+]
+```
+
+### Best Practices
+
+- ✅ Always use `confirmArchive` for delete/archive operations (never manage dialog state manually)
+- ✅ Include the entity name in success messages for clarity
+- ✅ Update the data array in `onSuccess` callback to reflect the change immediately
+- ✅ Use consistent translation key naming: `archive_<entity>_*`
+- ✅ Handle API errors gracefully (the utility shows error toast automatically)
+- ❌ Don't create custom archive dialogs - use the standard utility
+- ❌ Don't forget to add all required translation keys
+
+### Example: Real Implementation
+
+See `src/lib/components/features/supply/SuppliersTable/default/SuppliersTable.svelte` for a complete working example.
+
 ## Creating Selector Components
 
 Use the existing generic selector components:

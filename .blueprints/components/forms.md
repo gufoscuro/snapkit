@@ -1,6 +1,6 @@
 # Form System
 
-SnapKit uses a context-based form system built on Svelte 5 runes. This architecture eliminates prop drilling and enables seamless communication between form containers and field components.
+Snapkit uses a context-based form system built on Svelte 5 runes. This architecture eliminates prop drilling and enables seamless communication between form containers and field components.
 
 ## Architecture Overview
 
@@ -33,16 +33,17 @@ SnapKit uses a context-based form system built on Svelte 5 runes. This architect
 
 ## Core Files
 
-| File | Purpose |
-|------|---------|
-| `$components/core/form/FormUtil.svelte` | Form container component |
+| File                                         | Purpose                              |
+| -------------------------------------------- | ------------------------------------ |
+| `$components/core/form/FormUtil.svelte`      | Form container component             |
 | `$components/core/form/form-state.svelte.ts` | Reactive state management with runes |
-| `$components/core/form/form-context.ts` | Context API (get/set) |
-| `$components/core/form/validation.ts` | Validation builder |
+| `$components/core/form/form-context.ts`      | Context API (get/set)                |
+| `$components/core/form/validation.ts`        | Validation builder                   |
 
 ## FormUtil Component
 
 `FormUtil` is the form container that:
+
 - Creates and manages form state
 - Exposes the FormAPI via Svelte context
 - Handles form submission, success, and failure callbacks
@@ -66,29 +67,31 @@ type Props = {
 
 ```svelte
 <script lang="ts">
-  import FormUtil from '$components/core/form/FormUtil.svelte';
-  import { v } from '$components/core/form/validation';
+  import FormUtil from '$components/core/form/FormUtil.svelte'
+  import { v } from '$components/core/form/validation'
 
   type MyFormValues = {
-    name: string;
-    email: string;
-    quantity: number;
-  };
+    name: string
+    email: string
+    quantity: number
+  }
 
   const initialValues: MyFormValues = {
     name: '',
     email: '',
-    quantity: 1
-  };
+    quantity: 1,
+  }
 
-  const validate = v.schema<MyFormValues>({
-    name: [v.required({ field: 'Name' })],
-    email: [v.required(), v.email()],
-    quantity: [v.min(1)]
-  }).build();
+  const validate = v
+    .schema<MyFormValues>({
+      name: [v.required({ field: 'Name' })],
+      email: [v.required(), v.email()],
+      quantity: [v.min(1)],
+    })
+    .build()
 
   async function handleSubmit(values: MyFormValues) {
-    await apiRequest({ method: 'POST', url: '/api/items', body: values });
+    await apiRequest({ method: 'POST', url: '/api/items', body: values })
   }
 </script>
 
@@ -143,42 +146,36 @@ Field components should **autowire** to the form context. This means they automa
 
 ```svelte
 <script lang="ts">
-  import { getFormContextOptional } from '$components/core/form/form-context';
-  import FormFieldMessages from '$components/features/form/FormFieldMessages.svelte';
-  import Label from '$components/ui/label/label.svelte';
-  import Input from '$components/ui/input/input.svelte';
+  import { getFormContextOptional } from '$components/core/form/form-context'
+  import FormFieldMessages from '$components/features/form/FormFieldMessages.svelte'
+  import Label from '$components/ui/label/label.svelte'
+  import Input from '$components/ui/input/input.svelte'
 
   type Props = {
-    name: string;              // Field name (required for context binding)
-    label?: string;
-    showLabel?: boolean;
-    showErrorMessage?: boolean;
-    placeholder?: string;
+    name: string // Field name (required for context binding)
+    label?: string
+    showLabel?: boolean
+    showErrorMessage?: boolean
+    placeholder?: string
     // ... other field-specific props
-  };
+  }
 
-  let {
-    name,
-    label = '',
-    showLabel = true,
-    showErrorMessage = true,
-    placeholder = ''
-  }: Props = $props();
+  let { name, label = '', showLabel = true, showErrorMessage = true, placeholder = '' }: Props = $props()
 
   // Autowire to form context (optional = works standalone too)
-  const form = getFormContextOptional();
+  const form = getFormContextOptional()
 
   // Derive value and error from context
-  const value = $derived((form?.values[name] as string) ?? '');
-  const error = $derived((form?.errors[name] as string) ?? undefined);
+  const value = $derived((form?.values[name] as string) ?? '')
+  const error = $derived((form?.errors[name] as string) ?? undefined)
 
   function handleInput(e: Event) {
-    const target = e.target as HTMLInputElement;
-    form?.updateField(name, target.value);
+    const target = e.target as HTMLInputElement
+    form?.updateField(name, target.value)
   }
 
   function handleBlur() {
-    form?.touchField(name);
+    form?.touchField(name)
   }
 </script>
 
@@ -192,8 +189,7 @@ Field components should **autowire** to the form context. This means they automa
       oninput={handleInput}
       onblur={handleBlur}
       {placeholder}
-      class={error ? 'border-destructive' : ''}
-    />
+      class={error ? 'border-destructive' : ''} />
   </FormFieldMessages>
 </div>
 ```
@@ -211,37 +207,32 @@ Field components should **autowire** to the form context. This means they automa
 
 ```svelte
 <script lang="ts">
-  import { getFormContextOptional } from '$components/core/form/form-context';
-  import FormGenericSingleSelector from '$components/features/form/FormGenericSingleSelector.svelte';
+  import { getFormContextOptional } from '$components/core/form/form-context'
+  import FormGenericSingleSelector from '$components/features/form/FormGenericSingleSelector.svelte'
 
   type Props = {
-    name: string;
-    label?: string;
-  };
+    name: string
+    label?: string
+  }
 
-  let { name, label = 'Material' }: Props = $props();
+  let { name, label = 'Material' }: Props = $props()
 
-  const form = getFormContextOptional();
+  const form = getFormContextOptional()
 
   // Get selected value from form context
   const selectedValue = $derived.by(() => {
-    const id = form?.values[name] as string;
-    if (!id) return undefined;
+    const id = form?.values[name] as string
+    if (!id) return undefined
     // Map ID to ExtendedOption format
-    return { value: id, label: '...' };
-  });
+    return { value: id, label: '...' }
+  })
 
   async function fetchMaterials(query) {
-    return await apiRequest({ url: '/materials', queryParams: query });
+    return await apiRequest({ url: '/materials', queryParams: query })
   }
 </script>
 
-<FormGenericSingleSelector
-  {name}
-  {label}
-  {selectedValue}
-  fetchFunction={fetchMaterials}
-/>
+<FormGenericSingleSelector {name} {label} {selectedValue} fetchFunction={fetchMaterials} />
 ```
 
 ## Validation Builder
@@ -263,16 +254,16 @@ const validate = v.schema<MyFormValues>({
 
 ### Available Validators
 
-| Validator | Description |
-|-----------|-------------|
-| `v.required(opts?)` | Field must have a value |
-| `v.min(n, opts?)` | Number must be >= n |
-| `v.max(n, opts?)` | Number must be <= n |
-| `v.minLength(n, opts?)` | String must have >= n characters |
-| `v.maxLength(n, opts?)` | String must have <= n characters |
-| `v.email(opts?)` | Must be valid email format |
-| `v.pattern(regex, opts?)` | Must match regex pattern |
-| `v.custom(fn, opts)` | Custom validation function |
+| Validator                 | Description                      |
+| ------------------------- | -------------------------------- |
+| `v.required(opts?)`       | Field must have a value          |
+| `v.min(n, opts?)`         | Number must be >= n              |
+| `v.max(n, opts?)`         | Number must be <= n              |
+| `v.minLength(n, opts?)`   | String must have >= n characters |
+| `v.maxLength(n, opts?)`   | String must have <= n characters |
+| `v.email(opts?)`          | Must be valid email format       |
+| `v.pattern(regex, opts?)` | Must match regex pattern         |
+| `v.custom(fn, opts)`      | Custom validation function       |
 
 ### Options
 
@@ -337,35 +328,37 @@ When all your fields are autowired components (they call `getFormContext()` inte
 
 ```svelte
 <script lang="ts">
-  import FormUtil from '$components/core/form/FormUtil.svelte';
-  import { v } from '$components/core/form/validation';
-  import { apiRequest } from '$lib/utils/request';
-  import * as m from '$lib/paraglide/messages';
-  import MaterialSelector from '$components/features/materials/MaterialSelector/default/MaterialSelector.svelte';
-  import ProductSelector from '$components/features/products/FormProductSelector.svelte';
-  import QuantityField from '$components/features/form/QuantityField.svelte';
-  import { Button } from '$components/ui/button';
+  import FormUtil from '$components/core/form/FormUtil.svelte'
+  import { v } from '$components/core/form/validation'
+  import { apiRequest } from '$lib/utils/request'
+  import * as m from '$lib/paraglide/messages'
+  import MaterialSelector from '$components/features/materials/MaterialSelector/default/MaterialSelector.svelte'
+  import ProductSelector from '$components/features/products/FormProductSelector.svelte'
+  import QuantityField from '$components/features/form/QuantityField.svelte'
+  import { Button } from '$components/ui/button'
 
   type OrderFormValues = {
-    material: string;
-    product: string;
-    quantity: number;
-  };
+    material: string
+    product: string
+    quantity: number
+  }
 
   const initialValues: OrderFormValues = {
     material: '',
     product: '',
-    quantity: 1
-  };
+    quantity: 1,
+  }
 
-  const validate = v.schema<OrderFormValues>({
-    material: [v.required({ field: m.material() })],
-    product: [v.required({ field: m.product() })],
-    quantity: [v.required(), v.min(1, { field: m.quantity() })]
-  }).build();
+  const validate = v
+    .schema<OrderFormValues>({
+      material: [v.required({ field: m.material() })],
+      product: [v.required({ field: m.product() })],
+      quantity: [v.required(), v.min(1, { field: m.quantity() })],
+    })
+    .build()
 
   async function handleSubmit(values: OrderFormValues) {
-    await apiRequest({ method: 'POST', url: '/orders', body: values });
+    await apiRequest({ method: 'POST', url: '/orders', body: values })
   }
 </script>
 
@@ -386,20 +379,20 @@ Instead of accessing `form.values` directly, create a reusable autowired compone
 
 ```svelte
 <script lang="ts">
-  import { getFormContextOptional } from '$components/core/form/form-context';
-  import { Textarea } from '$components/ui/textarea';
-  import Label from '$components/ui/label/label.svelte';
+  import { getFormContextOptional } from '$components/core/form/form-context'
+  import { Textarea } from '$components/ui/textarea'
+  import Label from '$components/ui/label/label.svelte'
 
   type Props = {
-    name: string;
-    label?: string;
-  };
+    name: string
+    label?: string
+  }
 
-  let { name, label = 'Notes' }: Props = $props();
+  let { name, label = 'Notes' }: Props = $props()
 
-  const form = getFormContextOptional();
-  const value = $derived((form?.values[name] as string) ?? '');
-  const error = $derived(form?.errors[name] as string | undefined);
+  const form = getFormContextOptional()
+  const value = $derived((form?.values[name] as string) ?? '')
+  const error = $derived(form?.errors[name] as string | undefined)
 </script>
 
 <div>
@@ -408,8 +401,7 @@ Instead of accessing `form.values` directly, create a reusable autowired compone
     id={name}
     {value}
     oninput={e => form?.updateField(name, e.currentTarget.value)}
-    class={error ? 'border-destructive' : ''}
-  />
+    class={error ? 'border-destructive' : ''} />
   {#if error}
     <p class="text-sm text-destructive">{error}</p>
   {/if}
@@ -421,7 +413,8 @@ Now you can use it in any form:
 ```svelte
 <FormUtil ...>
   <MaterialSelector name="material" />
-  <NotesField name="notes" />  <!-- Autowired! -->
+  <NotesField name="notes" />
+  <!-- Autowired! -->
 </FormUtil>
 ```
 

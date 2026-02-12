@@ -2,7 +2,7 @@
 
 ## Why Dynamic Routes?
 
-In SnapKit, routes are **not hardcoded** - they are configured dynamically by administrators. This means:
+In Snapkit, routes are **not hardcoded** - they are configured dynamically by administrators. This means:
 
 1. **No fixed paths**: A page like "Order Details" doesn't have a fixed URL like `/orders/123`. The actual path is determined by the admin configuration.
 
@@ -38,14 +38,10 @@ See `@src/lib/utils/ROUTE-BUILDER.md` for complete documentation and examples.
 <a href={createRoute({ $id: 'order-list' })}>Orders</a>
 
 <!-- Link with parameters -->
-<a href={createRoute({ $id: 'order-detail', params: { uuid: orderId } })}>
-  View Order
-</a>
+<a href={createRoute({ $id: 'order-detail', params: { uuid: orderId } })}> View Order </a>
 
 <!-- Link with query params -->
-<a href={createRoute({ $id: 'order-list', query: { status: 'pending' } })}>
-  Pending Orders
-</a>
+<a href={createRoute({ $id: 'order-list', query: { status: 'pending' } })}> Pending Orders </a>
 ```
 
 ## What NOT to Do
@@ -119,7 +115,7 @@ Refer to `ROUTE-BUILDER.md` for the complete list of available route IDs and the
 
 ## Menu System
 
-SnapKit provides a powerful menu configuration system that uses the same `pageId`-based routing:
+Snapkit provides a powerful menu configuration system that uses the same `pageId`-based routing:
 
 - **Dynamic Menus**: Configure navigation menus using `pageId` instead of hardcoded URLs
 - **Submenu Support**: Nested menus with multiple rendering styles (list, simple, icon, grid)
@@ -127,6 +123,7 @@ SnapKit provides a powerful menu configuration system that uses the same `pageId
 - **Type-Safe Configuration**: Menu items validated against page registry
 
 See [Menu System Documentation](./menu-system.md) for complete details on:
+
 - Menu configuration structure
 - Submenu styles and when to use them
 - Examples and best practices

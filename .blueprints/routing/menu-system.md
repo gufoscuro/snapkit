@@ -1,12 +1,13 @@
 # Menu System
 
-This document describes SnapKit's dynamic menu system, which provides flexible navigation configuration with support for simple links and nested submenus.
+This document describes Snapkit's dynamic menu system, which provides flexible navigation configuration with support for simple links and nested submenus.
 
 ## Overview
 
-The menu system is built on top of SnapKit's dynamic routing system (see [navigation.md](./navigation.md)) and uses the same `pageId`-based approach for generating URLs. This ensures that menus automatically update when routes change, eliminating the need for hardcoded URLs.
+The menu system is built on top of Snapkit's dynamic routing system (see [navigation.md](./navigation.md)) and uses the same `pageId`-based approach for generating URLs. This ensures that menus automatically update when routes change, eliminating the need for hardcoded URLs.
 
 **Key Features:**
+
 - ✅ Type-safe menu configuration using `pageId` from page registry
 - ✅ Support for nested submenus with multiple rendering styles
 - ✅ Integration with shadcn-svelte Navigation Menu component
@@ -90,6 +91,7 @@ A menu item with nested children, rendered using shadcn-svelte Navigation Menu.
 The `submenuStyle` property controls how submenu children are rendered:
 
 ### 1. List Style (`'list'`)
+
 **Best for:** Feature sections with descriptions
 
 Shows title + description for each item. Ideal for explaining what each section does.
@@ -117,6 +119,7 @@ Shows title + description for each item. Ideal for explaining what each section 
 ```
 
 **Renders as:**
+
 ```
 ┌─────────────────────────────┐
 │ Customers                   │
@@ -128,6 +131,7 @@ Shows title + description for each item. Ideal for explaining what each section 
 ```
 
 ### 2. Simple Style (`'simple'`)
+
 **Best for:** Compact menus with short lists
 
 Minimal style with just link text. Most compact option.
@@ -146,6 +150,7 @@ Minimal style with just link text. Most compact option.
 ```
 
 **Renders as:**
+
 ```
 ┌──────────────┐
 │ Profile      │
@@ -155,6 +160,7 @@ Minimal style with just link text. Most compact option.
 ```
 
 ### 3. Icon Style (`'icon'`)
+
 **Best for:** Visual workflow states or categories
 
 Shows icon + label for each item. Great for status-based navigation.
@@ -173,6 +179,7 @@ Shows icon + label for each item. Great for status-based navigation.
 ```
 
 **Renders as:**
+
 ```
 ┌──────────────────┐
 │ ◔ Backlog        │
@@ -182,6 +189,7 @@ Shows icon + label for each item. Great for status-based navigation.
 ```
 
 ### 4. Grid Style (`'grid'`)
+
 **Best for:** Many items (6+) that need organization
 
 Displays items in a multi-column grid. Best for component showcases or large catalogs.
@@ -203,6 +211,7 @@ Displays items in a multi-column grid. Best for component showcases or large cat
 ```
 
 **Renders as:**
+
 ```
 ┌──────────────┬──────────────┬──────────────┐
 │ Raw Materials│ Components   │ Finished Goods│
@@ -343,6 +352,7 @@ The `AppHeader` component automatically resolves and renders menu items:
 ```
 
 The component handles:
+
 - ✅ URL generation via `createRoute()`
 - ✅ Submenu rendering with Navigation Menu
 - ✅ Visibility filtering
@@ -353,24 +363,25 @@ The component handles:
 
 Icons use Lucide icon names. Common examples:
 
-| Icon Name | Visual | Use Case |
-|-----------|--------|----------|
-| `home` | 🏠 | Dashboard, Home |
-| `package` | 📦 | Orders, Inventory |
-| `users` | 👥 | Customers, Team |
-| `settings` | ⚙️ | Configuration |
-| `bar-chart` | 📊 | Reports, Analytics |
-| `shopping-cart` | 🛒 | Sales, Commerce |
-| `truck` | 🚚 | Shipping, Delivery |
-| `circle-help` | ◔ | Backlog, Help |
-| `circle` | ○ | In Progress |
-| `circle-check` | ◉ | Completed |
+| Icon Name       | Visual | Use Case           |
+| --------------- | ------ | ------------------ |
+| `home`          | 🏠     | Dashboard, Home    |
+| `package`       | 📦     | Orders, Inventory  |
+| `users`         | 👥     | Customers, Team    |
+| `settings`      | ⚙️     | Configuration      |
+| `bar-chart`     | 📊     | Reports, Analytics |
+| `shopping-cart` | 🛒     | Sales, Commerce    |
+| `truck`         | 🚚     | Shipping, Delivery |
+| `circle-help`   | ◔      | Backlog, Help      |
+| `circle`        | ○      | In Progress        |
+| `circle-check`  | ◉      | Completed          |
 
 See [Lucide Icons](https://lucide.dev/) for full list.
 
 ## Best Practices
 
 ### 1. Use Descriptive Labels
+
 ```typescript
 // ❌ Bad
 { type: 'link', label: 'List', pageId: 'order-list' }
@@ -380,6 +391,7 @@ See [Lucide Icons](https://lucide.dev/) for full list.
 ```
 
 ### 2. Add Descriptions for List-Style Submenus
+
 ```typescript
 // ❌ Bad
 {
@@ -406,12 +418,14 @@ See [Lucide Icons](https://lucide.dev/) for full list.
 ```
 
 ### 3. Choose Appropriate Submenu Style
+
 - **2-4 items**: Use `simple`
 - **With descriptions**: Use `list`
 - **Visual categories**: Use `icon`
 - **6+ items**: Use `grid`
 
 ### 4. Keep Menu Hierarchy Shallow
+
 ```typescript
 // ❌ Bad - Too deep
 {
@@ -435,6 +449,7 @@ See [Lucide Icons](https://lucide.dev/) for full list.
 ```
 
 ### 5. Use Icons Consistently
+
 ```typescript
 // ✅ Good - Icons used consistently
 mainMenu: [
@@ -456,6 +471,7 @@ mainMenu: [
 The system supports backward compatibility with the old `NavItem` format (with `href`), but you should migrate to the new `MenuItem` format:
 
 ### Legacy Format (Deprecated)
+
 ```typescript
 mainMenu: [
   {
@@ -467,6 +483,7 @@ mainMenu: [
 ```
 
 ### New Format (Recommended)
+
 ```typescript
 mainMenu: [
   {
@@ -479,6 +496,7 @@ mainMenu: [
 ```
 
 **Why migrate?**
+
 - ✅ **Type-safe**: PageId validated against page registry
 - ✅ **Maintainable**: URLs update automatically when routes change
 - ✅ **Flexible**: Support for parameters, query strings, and submenus
@@ -493,27 +511,33 @@ mainMenu: [
 ## Troubleshooting
 
 ### Menu items not appearing
+
 **Cause:** `visible: false` or missing `pageId` in page registry
 
 **Solution:**
+
 1. Check that `visible` is not set to `false`
 2. Verify that `pageId` exists in page registry
 3. Check browser console for warnings about broken links
 
 ### "Cannot read properties of undefined" error
+
 **Cause:** Menu configuration in old format or malformed
 
 **Solution:**
+
 1. Check that all menu items have `type` field
 2. Verify `children` array exists for submenu items
 3. Check browser console for migration warnings
 
 ### URLs not updating when routes change
+
 **Cause:** Still using legacy `href` format
 
 **Solution:** Migrate to new `MenuItem` format with `pageId`
 
 ### Submenu not rendering correctly
+
 **Cause:** Missing or invalid `submenuStyle`
 
 **Solution:** Add `submenuStyle: 'list' | 'simple' | 'icon' | 'grid'` to submenu items
