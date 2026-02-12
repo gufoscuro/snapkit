@@ -114,6 +114,7 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    --view-transition-duration: 150ms;
   }
   body {
     @apply bg-background text-foreground;
@@ -130,5 +131,60 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-stone-300 dark:bg-stone-400;
+  }
+
+  [style*='slide-in']::view-transition-old(root),
+  [style*='slide-in']::view-transition-new(root) {
+    animation: var(--view-transition-duration) ease-out both slide-in;
+  }
+
+  [style*='slide-out']::view-transition-old(root),
+  [style*='slide-out']::view-transition-new(root) {
+    animation: var(--view-transition-duration) ease-out both slide-out;
+  }
+
+  [style*='slide-in-y']::view-transition-old(root),
+  [style*='slide-in-y']::view-transition-new(root) {
+    animation: var(--view-transition-duration) ease-out both slide-in-y;
+  }
+
+  [style*='slide-out-y']::view-transition-old(root),
+  [style*='slide-out-y']::view-transition-new(root) {
+    animation: var(--view-transition-duration) ease-out both slide-out-y;
+  }
+
+  [style*='normal']::view-transition-old(root),
+  [style*='normal']::view-transition-new(root) {
+    animation: 100ms ease-out both fade;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(10%);
+  }
+}
+
+@keyframes slide-out {
+  from {
+    transform: translateX(-10%);
+  }
+}
+
+@keyframes slide-in-y {
+  from {
+    transform: translateY(5%);
+  }
+}
+
+@keyframes slide-out-y {
+  from {
+    transform: translateY(5%);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0.6;
   }
 }

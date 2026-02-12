@@ -56,7 +56,12 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
     throw new Error('Unauthorized')
   }
 
-  const data = await result.json()
+  // Only parse JSON if response has content (e.g., DELETE requests may return empty body)
+  let data = null
+  const text = await result.text()
+  if (text) {
+    data = JSON.parse(text)
+  }
 
   if (!result.ok) {
     throw new Error(data?.message || 'Request failed')

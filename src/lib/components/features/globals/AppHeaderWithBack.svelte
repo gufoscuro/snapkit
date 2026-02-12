@@ -5,6 +5,13 @@
   const { tenantInterfaceDetails }: SnippetProps = $props()
 </script>
 
-<div class="sticky top-0 flex h-14 w-full items-center justify-between gap-3 border-b bg-background px-4">
+<header
+  class="sticky top-0 z-10 flex h-14 w-full shrink-0 items-center justify-between gap-3 border-b bg-background px-4">
   <Button variant="ghost" href="javascript:history.back()" class="px-2">← Back</Button>
-</div>
+</header>
+
+<style>
+  header {
+    view-transition-name: header;
+  }
+</style>

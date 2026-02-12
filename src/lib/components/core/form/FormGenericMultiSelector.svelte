@@ -75,8 +75,16 @@
   const selectedValues = $derived.by(() => {
     const valuesArray = (form?.values[name] as Array<string> | undefined) || value
 
-    if (!valuesArray || !valuesArray.length || !itemsList.length) {
+    if (!valuesArray || !valuesArray.length) {
       return []
+    }
+
+    // If itemsList is empty, treat values as both value and label (for simple string items like categories)
+    if (!itemsList.length) {
+      return valuesArray.map(selectedValue => ({
+        label: selectedValue,
+        value: selectedValue,
+      }))
     }
 
     const mappedItems = itemsList.map(optionMappingFunction)

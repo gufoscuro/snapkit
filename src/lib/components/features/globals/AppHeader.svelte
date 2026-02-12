@@ -1,17 +1,15 @@
 <script lang="ts">
-  import { getI18nLabel } from '$utils/i18n'
-  import type { SnippetProps } from '$utils/runtime'
-  import { resolveMenuItems, type ResolvedMenuItem } from '$utils/menu-resolver'
   import * as NavigationMenu from '$lib/components/ui/navigation-menu'
   import { cn } from '$lib/utils'
+  import { getI18nLabel } from '$utils/i18n'
+  import { resolveMenuItems, type ResolvedMenuItem } from '$utils/menu-resolver'
+  import type { SnippetProps } from '$utils/runtime'
   import LanguageSwitcher from './LanguageSwitcher.svelte'
 
   const { tenantInterfaceDetails }: SnippetProps = $props()
 
   // Resolve menu items to include computed hrefs
-  const resolvedMenu = $derived(
-    resolveMenuItems(tenantInterfaceDetails.mainMenu ?? [])
-  )
+  const resolvedMenu = $derived(resolveMenuItems(tenantInterfaceDetails.mainMenu ?? []))
 
   // Filter visible items
   const visibleItems = $derived(resolvedMenu.filter(item => item.visible))
@@ -26,7 +24,7 @@
       label: getI18nLabel(item.label),
       href: item.href,
       disabled: item.disabled,
-      icon: item.icon
+      icon: item.icon,
     }
   }
 
@@ -49,7 +47,7 @@
   }
 </script>
 
-<div class="sticky top-0 flex h-14 w-full items-center justify-between gap-3 border-b bg-background px-4">
+<header class="sticky top-0 flex h-14 w-full shrink-0 items-center justify-between gap-3 border-b bg-background px-4">
   <div class="font-semibold">{tenantInterfaceDetails.name}</div>
 
   <div class="flex items-center gap-2">
@@ -64,10 +62,9 @@
                   <a
                     href={item.href}
                     class={cn(
-                      "cursor-pointer rounded px-3 py-1 hover:bg-muted/70",
-                      item.disabled && "opacity-50 pointer-events-none"
-                    )}
-                  >
+                      'cursor-pointer rounded px-3 py-1 hover:bg-muted/70',
+                      item.disabled && 'pointer-events-none opacity-50',
+                    )}>
                     {#if item.icon}
                       <span class="flex items-center gap-2">
                         <!-- Icon placeholder - integrate with lucide-svelte if needed -->
@@ -83,10 +80,7 @@
               <!-- Submenu item -->
               <NavigationMenu.Trigger
                 disabled={item.disabled}
-                class={cn(
-                  "cursor-pointer rounded px-3 py-1 hover:bg-muted/70"
-                )}
-              >
+                class={cn('cursor-pointer rounded px-3 py-1 hover:bg-muted/70')}>
                 {getI18nLabel(item.label)}
               </NavigationMenu.Trigger>
               <NavigationMenu.Content>
@@ -99,18 +93,17 @@
                             <a
                               href={child.href}
                               class={cn(
-                                "block space-y-1 rounded-md p-3 leading-none no-underline transition-colors outline-none select-none",
-                                "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                                child.disabled && "opacity-50 pointer-events-none"
-                              )}
-                            >
+                                'block space-y-1 rounded-md p-3 leading-none no-underline transition-colors outline-none select-none',
+                                'hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground',
+                                child.disabled && 'pointer-events-none opacity-50',
+                              )}>
                               {#if item.submenuStyle === 'list'}
                                 <!-- List style with title + description -->
                                 <div class="text-sm leading-none font-medium">
                                   {getI18nLabel(child.label)}
                                 </div>
                                 {#if child.description}
-                                  <p class="text-muted-foreground line-clamp-2 text-sm leading-snug">
+                                  <p class="line-clamp-2 text-sm leading-snug text-muted-foreground">
                                     {getI18nLabel(child.description)}
                                   </p>
                                 {/if}
@@ -142,4 +135,10 @@
 
     <LanguageSwitcher />
   </div>
-</div>
+</header>
+
+<style>
+  header {
+    view-transition-name: header;
+  }
+</style>

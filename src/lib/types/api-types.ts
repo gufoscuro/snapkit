@@ -32,6 +32,16 @@ export type EmailAttr = {
 }
 
 /**
+ * Phone information (used across multiple entities)
+ */
+export type PhoneAttr = {
+	/** Phone label/name (e.g., "Main", "Mobile", "Office") */
+	name: string
+	/** Phone number */
+	phone: string
+}
+
+/**
  * Attribute key-value pair (used for custom metadata)
  */
 export type AttributeAttr = {
@@ -84,9 +94,77 @@ export type SupplierSummary = {
   vat_no: string
   categories: string[]
   default_currency: string
-  emails: Array<{ email: string; name: string }>
-  phones: Array<{ name: string; phone: string }>
+  emails: EmailAttr[]
+  phones: PhoneAttr[]
   mode?: 'ordinary' | 'self'
+}
+
+/**
+ * Bank information for suppliers
+ */
+export type BankAttr = {
+  /** IBAN code */
+  iban?: string
+  /** Bank name */
+  name?: string
+  /** SWIFT/BIC code */
+  swift?: string
+}
+
+/**
+ * Supplier details from supply-api GET /supplier/{supplierId} endpoint
+ */
+export type SupplierDetails = SupplierSummary & {
+  /** Addresses (physical locations) */
+  addresses: AddressAttr[]
+  /** Bank account information */
+  bank: BankAttr
+  /** Primary contact person name */
+  contact_name?: string
+  /** Supplier description */
+  description?: string
+  /** Payment method (e.g., "bank_transfer", "paypal") */
+  payment_method?: string
+  /** Website URL */
+  website?: string
+  /** Internal notes */
+  notes?: string
+  /** Archived status */
+  archived?: boolean
+  /** Record version */
+  version: number
+  /** Creation metadata */
+  created?: {
+    at: string
+    by: {
+      full_name: string
+      id: string
+      username: string
+    }
+  }
+  /** Last update metadata */
+  updated?: {
+    at: string
+    by: {
+      full_name: string
+      id: string
+      username: string
+    }
+  }
+  /** Custom form values */
+  custom_form_values?: {
+    generation?: number
+    values?: Array<{
+      filters?: Array<{ name: string; value: string }>
+      index: number
+      label: string
+      name: string
+      type: string
+      value?: unknown
+    }>
+  }
+  /** Foreign IDs mapping */
+  foreign_ids?: Record<string, unknown>
 }
 
 /**

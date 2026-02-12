@@ -179,6 +179,23 @@
     }, DEBOUNCE_MS)
   }
 
+  // Track last synced value to prevent infinite loops
+  let lastSyncedJson = $state('')
+
+  // Sync items from form context when values change
+  $effect(() => {
+    if (!form) return
+
+    const formValue = form.values[name] as T[] | undefined
+    const formValueJson = JSON.stringify(formValue || [])
+
+    // Only sync if the form value has actually changed since last sync
+    if (formValueJson !== lastSyncedJson && formValue && formValue.length > 0) {
+      lastSyncedJson = formValueJson
+      items = [...(formValue as T[]), createEmptyItem()]
+    }
+  })
+
   // Initialize with empty row if needed (runs once on mount)
   $effect.pre(() => {
     if (items.length === 0) {

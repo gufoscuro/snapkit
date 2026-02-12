@@ -13,7 +13,7 @@
 
   const languages = [
     { code: 'en', label: m.language_english() },
-    { code: 'it', label: m.language_italian() }
+    { code: 'it', label: m.language_italian() },
   ]
 
   function handleLanguageChange(code: string) {
@@ -21,8 +21,4 @@
   }
 </script>
 
-<LanguageSwitcherUI
-  {languages}
-  value={languageCtx.locale}
-  onChange={handleLanguageChange}
-/>
+<LanguageSwitcherUI {languages} variant="ghost" value={languageCtx.locale} onChange={handleLanguageChange} />

@@ -13,10 +13,10 @@
 <script lang="ts">
   import { browser } from '$app/environment'
   import { getComponent } from '$generated/components-registry'
+  import { Skeleton } from '$lib/components/ui/skeleton'
   import type { SnippetDefinition } from '$utils/page-registry'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import { getContext, type Snippet } from 'svelte'
-  import { Skeleton } from '$lib/components/ui/skeleton'
   import SnippetBindingsProvider from './SnippetBindingsProvider.svelte'
 
   type SnippetResolverProps = {
@@ -36,6 +36,11 @@
   let loading: boolean = $state(true)
   let error: any = $state(null)
   let latestKey: string = $state('')
+  const debugActive = false
+
+  function debugLog(...args: any[]) {
+    if (debugActive) console.log('[SnippetResolver]', ...args)
+  }
 
   async function loadSnippet(s: SnippetDefinition) {
     if (!s || !s.componentKey || !s.enabled) {
@@ -56,7 +61,7 @@
       if (cached) {
         ComponentFunction = cached.Component
         componentContract = cached.contract
-        console.log(`✓ Loaded from shared cache: ${s.componentKey}`)
+        debugLog(`✓ Loaded from shared cache: ${s.componentKey}`)
         return
       }
 
@@ -72,7 +77,7 @@
 
       ComponentFunction = customModule.default
       componentContract = contract
-      console.log(`✓ Loaded and cached component: ${s.componentKey}`, contract ? '(with contract)' : '(no contract)')
+      debugLog(`✓ Loaded and cached component: ${s.componentKey}`, contract ? '(with contract)' : '(no contract)')
     } catch (err) {
       console.error(`Failed to load component:`, err)
       error = err

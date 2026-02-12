@@ -1,7 +1,19 @@
+import { dev } from '$app/environment'
 import { AUTH_COOKIE_NAME } from '$lib/fixtures/constants'
 import { getApiGatewayUrl } from '$lib/server/request'
 import { error } from '@sveltejs/kit'
-import type { RequestHandler } from './$types'
+import type { RequestEvent, RequestHandler } from './$types'
+
+function getGatewayFromHost(event: RequestEvent): string {
+  if (dev) return getApiGatewayUrl()
+
+  const { hostname } = event.url
+  const parts = hostname.split('.')
+  const vanity = parts[0]
+  const domain = parts.slice(-2).join('.')
+
+  return `https://${vanity}.${domain}`
+}
 
 async function handleRequest(event: Parameters<RequestHandler>[0]): Promise<Response> {
   const { params, request, cookies, url } = event
@@ -11,7 +23,7 @@ async function handleRequest(event: Parameters<RequestHandler>[0]): Promise<Resp
     return error(401, 'Unauthorized')
   }
 
-  const gatewayUrl = getApiGatewayUrl()
+  const gatewayUrl = getGatewayFromHost(event)
   const targetPath = params.path
   const queryString = url.search
 

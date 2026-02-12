@@ -4,7 +4,7 @@ import { decodeToken } from '$lib/server/auth'
 import { redirect, type Handle } from '@sveltejs/kit'
 import { sequence } from '@sveltejs/kit/hooks'
 
-const PUBLIC_ROUTES = ['/login', '/api/login', '/api/logout']
+const PUBLIC_ROUTES = ['/login', '/api/login', '/api/logout', '/healthz']
 
 function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some((route) => pathname.startsWith(route))

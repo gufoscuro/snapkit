@@ -1,5 +1,5 @@
-import { SvelteMap } from 'svelte/reactivity'
 import type { PageState } from '$lib/contexts/page-state'
+import { SvelteMap } from 'svelte/reactivity'
 import type { FormDebugInfo, PageDetailsInfo } from './types'
 
 /**
@@ -24,14 +24,14 @@ export function registerForm(info: FormDebugInfo): () => void {
 	// SvelteMap is reactive, so .set() automatically triggers updates
 	forms.set(info.id, info)
 
-	console.log('[Devtools] Form registered:', info.id, 'Total forms:', forms.size)
+	// console.log('[Devtools] Form registered:', info.id, 'Total forms:', forms.size)
 
 	// Return cleanup function
 	return () => {
 		// SvelteMap is reactive, so .delete() automatically triggers updates
 		forms.delete(info.id)
 
-		console.log('[Devtools] Form unregistered:', info.id, 'Total forms:', forms.size)
+		// console.log('[Devtools] Form unregistered:', info.id, 'Total forms:', forms.size)
 	}
 }
 

@@ -24,12 +24,12 @@
 
   // Debug logging
   $effect(() => {
-    console.log('[Devtools Panel] Update:', {
-      formsCount: forms.size,
-      hasPageDetails: !!pageDetails,
-      hasPageState: !!pageState,
-      hasContent
-    })
+    // console.log('[Devtools Panel] Update:', {
+    //   formsCount: forms.size,
+    //   hasPageDetails: !!pageDetails,
+    //   hasPageState: !!pageState,
+    //   hasContent
+    // })
   })
 
   // Persist state changes

@@ -17,6 +17,7 @@
 		name = 'country',
 		label = m.country_label(),
 		id = name,
+		value = DEFAULT_COUNTRY_CODE,
 		error = undefined,
 		warning = undefined,
 		errorPosition = SelectorFieldDefaults.errorPosition,
@@ -40,6 +41,7 @@
 	{name}
 	{label}
 	{id}
+	{value}
 	{items}
 	{error}
 	{warning}

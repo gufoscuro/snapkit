@@ -112,8 +112,8 @@
         touched: formState.touched,
         isValid: formState.isValid,
         isDirty: formState.isDirty,
-        inflight: inflight
-      })
+        inflight: inflight,
+      }),
     })
 
     // Cleanup on unmount
@@ -159,10 +159,20 @@
   }
 
   // Watch initialValues changes - only reset when initialValues actually changes
-  let lastInitialValuesJson = $state(JSON.stringify(initialValues))
+  let lastInitialValuesJson = $state('')
+  let isFirstEffect = true
 
   $effect(() => {
     const currentJson = JSON.stringify(initialValues)
+
+    // On first run, just capture the initial JSON and skip
+    if (isFirstEffect) {
+      isFirstEffect = false
+      lastInitialValuesJson = currentJson
+      return
+    }
+
+    // On subsequent runs, update form state if values changed
     if (currentJson !== lastInitialValuesJson) {
       lastInitialValuesJson = currentJson
       formState.setValues(initialValues)
