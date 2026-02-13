@@ -1,14 +1,13 @@
-import { AUTH_COOKIE_NAME } from '$lib/fixtures/constants'
+import { serverError } from '$lib/hooks/server-errors'
 import { paraglideMiddleware } from '$lib/paraglide/server'
-import { decodeToken } from '$lib/server/auth'
-import { redirect, type Handle } from '@sveltejs/kit'
+import { type Handle, type HandleServerError } from '@sveltejs/kit'
 import { sequence } from '@sveltejs/kit/hooks'
 
-const PUBLIC_ROUTES = ['/login', '/api/login', '/api/logout', '/healthz']
+// const PUBLIC_ROUTES = ['/login', '/api/login', '/api/logout', '/healthz']
 
-function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
-}
+// function isPublicRoute(pathname: string): boolean {
+//   return PUBLIC_ROUTES.some(route => pathname.startsWith(route))
+// }
 
 /**
  * i18n middleware - handles locale detection and HTML lang attribute
@@ -18,7 +17,7 @@ const i18nHandle: Handle = ({ event, resolve }) => {
     event.request = localizedRequest
 
     return resolve(event, {
-      transformPageChunk: ({ html }) => html.replace('%paraglide.lang%', locale)
+      transformPageChunk: ({ html }) => html.replace('%paraglide.lang%', locale),
     })
   })
 }
@@ -29,30 +28,29 @@ const i18nHandle: Handle = ({ event, resolve }) => {
 const authHandle: Handle = async ({ event, resolve }) => {
   const { cookies, url } = event
 
-  // Get token from cookie or Authorization header
-  const authToken =
-    cookies.get(AUTH_COOKIE_NAME) ||
-    event.request.headers.get('Authorization')?.replace('Bearer ', '')
+  // const authToken =
+  //   cookies.get(AUTH_COOKIE_NAME) ||
+  //   event.request.headers.get('Authorization')?.replace('Bearer ', '')
 
-  // Allow public routes without auth
-  if (isPublicRoute(url.pathname)) {
-    return resolve(event)
-  }
+  // if (isPublicRoute(url.pathname)) {
+  //   return resolve(event)
+  // }
 
-  if (authToken) {
-    const user = decodeToken(authToken)
+  // if (authToken) {
+  //   const user = decodeToken(authToken)
 
-    if (user) {
-      event.locals.user = user
-      event.locals.token = authToken
-    } else {
-      throw redirect(302, '/login')
-    }
-  } else {
-    throw redirect(302, '/login')
-  }
+  //   if (user) {
+  //     event.locals.user = user
+  //     event.locals.token = authToken
+  //   } else {
+  //     throw redirect(302, '/login')
+  //   }
+  // } else {
+  //   throw redirect(302, '/login')
+  // }
 
   return resolve(event)
 }
 
 export const handle = sequence(i18nHandle, authHandle)
+export const handleError: HandleServerError = serverError

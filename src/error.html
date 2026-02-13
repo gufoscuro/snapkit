@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>%sveltekit.error.message%</title>
+    <style>
+      body {
+        font-family: 'Inter', 'Inter Variable', 'system-ui';
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        color: #222;
+
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      main {
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .message {
+        text-align: center;
+        display: flex;
+        align-items: center;
+      }
+
+      .message h1 {
+        font-weight: 300;
+        padding: 0;
+        margin: 0;
+        padding-right: 1rem;
+        margin-right: 1rem;
+        border-right: 1px solid #222;
+      }
+
+      .message p {
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+	</head>
+	<body>
+		<main>
+      <div class="message">
+        <h1>%sveltekit.status%</h1>
+        <p>%sveltekit.error.message%</p>
+      </div>
+    </main>
+	</body>
+</html>

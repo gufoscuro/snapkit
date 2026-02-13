@@ -1,0 +1,7 @@
+<script lang="ts">
+  const { class: className } = $props()
+</script>
+
+<svg class={className || ''} viewBox="0 0 151 166" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M150.125 165L75 102.396V165.5L0 100.652V0.5L73.3838 63.9502L150.125 0V165Z" fill="currentColor"></path>
+</svg>

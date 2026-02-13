@@ -1,12 +1,14 @@
 <script lang="ts">
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import { initPageState } from '$lib/contexts/page-state'
+  import { apiRequest } from '$utils/request'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
-  import { setContext } from 'svelte'
+  import { onMount, setContext } from 'svelte'
   import type { PageProps } from './$types'
 
   let { data }: PageProps = $props()
   let { pageDetails, routeDetails, tenantInterfaceDetails } = $derived(data)
+  let customers = $state<any[]>([])
 
   initPageState()
 
@@ -17,7 +19,16 @@
     routeDetails,
     tenantInterfaceDetails,
   }))
+
+  onMount(async () => {
+    const response = await apiRequest<any[]>({
+      url: '/customers',
+    })
+    customers = response
+  })
 </script>
+
+<pre>{JSON.stringify(customers, null, 2)}</pre>
 
 {#if pageDetails}
   <SnippetResolver snippet={pageDetails.config.layout} />
