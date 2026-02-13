@@ -21,10 +21,10 @@
 				"COMPONENTS_DIR": "./src/lib/components/features"
 			}
 		},
-		"arke": {
+		"moddo-api": {
 			"_comment": "Backend API discovery - endpoints & TypeScript types",
 			"type": "http",
-			"url": "https://arke.arkestaging.com/api/mcp-server"
+			"url": "http://api.moddo.local:8000/mcp/docs"
 		},
 		"snapkit-blueprint": {
 			"_comment": "SnapKit implementation rules and patterns",
@@ -34,7 +34,7 @@
 				"../snapkit-blueprint-mcp/dist/src/index.js"
 			],
 			"env": {
-				"GOOGLE_API_KEY": "AIzaSyArPd6OpUL2RM6i1lmXGlHYfHkxKtq_Mog",
+				"GOOGLE_API_KEY": "AIzaSyBiQeO2Ijmsv9XD8AXLT0v5mSv-NUcipjU",
 				"EMBEDDINGS_PATH": "../snapkit-blueprint-mcp/embeddings/embeddings.json"
 			}
 		},
@@ -46,14 +46,6 @@
 				"-y",
 				"mcp-remote",
 				"https://shadcn-svelte.mastra.cloud/api/mcp/shadcn/mcp"
-			]
-		},
-		"shadcn-svelte-extras": {
-			"_comment": "Extra components via jsrepo - https://www.shadcn-svelte-extras.com/",
-			"type": "stdio",
-			"command": "npx",
-			"args": [
-				"@jsrepo/mcp"
 			]
 		}
 	}

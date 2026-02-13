@@ -11,6 +11,7 @@ Before creating or modifying components, features, or any code:
 3. Follow ALL guidelines found, including post-implementation steps like updating registries
 
 **Example queries:**
+
 ```
 search_blueprint("component development guidelines")
 search_blueprint("API integration patterns")
@@ -32,7 +33,7 @@ No matter what language was used in the prompt, it's important that you **always
 | **shadcn-svelte**        | shadcn-svelte component docs       | Using/adding base UI components in `src/lib/components/ui/`                    |
 | **shadcn-svelte-extras** | Extra components via jsrepo        | Advanced components not in core shadcn-svelte (Chat, Code, Emoji Picker, etc.) |
 | **svelte-components**    | Feature component discovery        | Finding/creating components in `src/lib/components/features/`                  |
-| **arke**                 | Backend API discovery              | Finding API endpoints and TypeScript types for data fetching                   |
+| **Moddo API**            | Backend API discovery              | Finding API endpoints and TypeScript types for data fetching                   |
 
 ---
 
@@ -109,7 +110,7 @@ Use for **feature components** in `src/lib/components/features/`. This is where 
 
 ---
 
-## arke MCP
+## Moddo MCP
 
 Use for **backend API discovery** when creating components that fetch or interact with data.
 
