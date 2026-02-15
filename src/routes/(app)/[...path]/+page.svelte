@@ -9,14 +9,14 @@
   import type { PageProps } from './$types'
 
   let { data }: PageProps = $props()
-  let { pageDetails, routeDetails, tenantInterfaceDetails } = $derived(data)
+  let { pageDetails, routeDetails, user } = $derived(data)
 
   const pageState = initPageState()
 
   setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () => ({
     pageDetails,
     routeDetails,
-    tenantInterfaceDetails,
+    user,
   }))
 
   // Register with devtools in development
@@ -28,8 +28,8 @@
         route: pageDetails?.config.route ?? '',
         params: pageDetails?.params ?? {},
         config: pageDetails?.config ?? {},
-        tenantInterfaceDetails: tenantInterfaceDetails ?? {}
-      })
+        user: user ?? {},
+      }),
     })
 
     // Register page state

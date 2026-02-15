@@ -1,15 +1,15 @@
-import type { TenantInterfaceDetails } from "$utils/customer-registry"
-import type { PageDetails } from "$utils/page-registry"
+import type { UserResource } from '$lib/types/api-types'
+import type { PageDetails } from '$utils/page-registry'
 
 export type RouteDetails = {
-  url: URL,
-  search: string | null,
+  url: URL
+  search: string | null
 }
 
 export type SnippetProps = {
   pageDetails: PageDetails
   routeDetails: RouteDetails
-  tenantInterfaceDetails: TenantInterfaceDetails
+  user: UserResource
 }
 
 export type SnippetPropsGetter = () => SnippetProps

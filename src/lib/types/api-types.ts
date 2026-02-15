@@ -13,72 +13,72 @@
  * Address information (used across multiple entities)
  */
 export type AddressAttr = {
-	/** Address label/name (e.g., "Main Office", "Warehouse") */
-	name: string
-	/** Full address string */
-	address: string
-	/** ISO 3166-1 alpha-2 country code */
-	country: string
+  /** Address label/name (e.g., "Main Office", "Warehouse") */
+  name: string
+  /** Full address string */
+  address: string
+  /** ISO 3166-1 alpha-2 country code */
+  country: string
 }
 
 /**
  * Email information (used across multiple entities)
  */
 export type EmailAttr = {
-	/** Email label/name (e.g., "Main", "Billing", "Support") */
-	name: string
-	/** Email address */
-	email: string
+  /** Email label/name (e.g., "Main", "Billing", "Support") */
+  name: string
+  /** Email address */
+  email: string
 }
 
 /**
  * Phone information (used across multiple entities)
  */
 export type PhoneAttr = {
-	/** Phone label/name (e.g., "Main", "Mobile", "Office") */
-	name: string
-	/** Phone number */
-	phone: string
+  /** Phone label/name (e.g., "Main", "Mobile", "Office") */
+  name: string
+  /** Phone number */
+  phone: string
 }
 
 /**
  * Attribute key-value pair (used for custom metadata)
  */
 export type AttributeAttr = {
-	/** Attribute name/key */
-	name: string
-	/** Attribute value */
-	value: string
+  /** Attribute name/key */
+  name: string
+  /** Attribute value */
+  value: string
 }
 
 /**
  * Price deal/tier (volume-based pricing)
  */
 export type PriceDealAttr = {
-	/** Minimum quantity for this price tier */
-	min_quantity: number
-	/** Unit price for this tier */
-	unit: number
-	/** Optional category/label (e.g., "Wholesale", "Bulk") */
-	category?: string
+  /** Minimum quantity for this price tier */
+  min_quantity: number
+  /** Unit price for this tier */
+  unit: number
+  /** Optional category/label (e.g., "Wholesale", "Bulk") */
+  category?: string
 }
 
 /**
  * Pricing information (used across products, materials, etc.)
  */
 export type PricesAttr = {
-	/** Currency code (ISO 4217) */
-	currency: 'EUR' | 'USD' | 'GBP'
-	/** Unit price */
-	unit: number
-	/** VAT percentage */
-	vat?: number
-	/** Base price before discounts */
-	base_price?: number
-	/** Discount percentage (0-100) */
-	discount_percent?: number
-	/** Volume-based pricing tiers */
-	deals?: PriceDealAttr[]
+  /** Currency code (ISO 4217) */
+  currency: 'EUR' | 'USD' | 'GBP'
+  /** Unit price */
+  unit: number
+  /** VAT percentage */
+  vat?: number
+  /** Base price before discounts */
+  base_price?: number
+  /** Discount percentage (0-100) */
+  discount_percent?: number
+  /** Volume-based pricing tiers */
+  deals?: PriceDealAttr[]
 }
 
 // ============================================================================
@@ -437,6 +437,52 @@ export type ProductInventoryItemSummary = {
       username: string
     }
   }
+}
+
+export interface DataWrapper<T> {
+  data: T
+}
+
+// ============================================================================
+// User / Auth API Types
+// ============================================================================
+
+/**
+ * Permission enum values
+ */
+export type Permission =
+  | 'view-users'
+  | 'create-users'
+  | 'edit-users'
+  | 'delete-users'
+  | 'view-teams'
+  | 'create-teams'
+  | 'edit-teams'
+  | 'delete-teams'
+  | 'manage-roles'
+  | 'view-customers'
+  | 'create-customers'
+  | 'edit-customers'
+  | 'delete-customers'
+
+/**
+ * User resource from GET /api/user endpoint
+ */
+export type UserResource = {
+  id: string
+  name: string
+  email: string
+  tenant?: {
+    id: string
+    name: string
+    vanity: string
+  }
+  team?: {
+    id: string
+    name: string
+  }
+  roles?: Array<{ name: string }>
+  all_permissions: Permission[]
 }
 
 /**

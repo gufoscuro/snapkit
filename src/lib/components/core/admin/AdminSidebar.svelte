@@ -9,19 +9,18 @@
   import BlocksMenu from './blocks/BlocksMenu.svelte'
   import NavigationMenu from './NavigationMenu.svelte'
   import PagesMenu from './pages/PagesMenu.svelte'
-  import UserDropdown from './UserDropdown.svelte'
 
   interface Props {
-    user: any
+    // user: any
   }
 
-  const { user }: Props = $props()
+  // const { user }: Props = $props()
   const sidebarContext = $derived(adminStore.state.sidebarContext)
 </script>
 
 <Sidebar.Root collapsible="offcanvas">
   <Sidebar.Header class="space-y-3 border-b px-4 py-3">
-    <UserDropdown {user} />
+    <!-- <UserDropdown {user} /> -->
   </Sidebar.Header>
 
   <Sidebar.Content>

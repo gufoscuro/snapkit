@@ -9,13 +9,12 @@
   import { adminStore } from '$lib/admin/stores/admin-store.svelte'
   import ConfirmDeleteDialog from '$lib/components/ui/confirm-delete-dialog/confirm-delete-dialog.svelte'
   import * as Sidebar from '$lib/components/ui/sidebar'
-  import type { JWTUser } from '$lib/server/auth'
   import type { Snippet } from 'svelte'
   import AdminHeader from './AdminHeader.svelte'
   import AdminSidebar from './AdminSidebar.svelte'
 
   interface Props {
-    user: JWTUser
+    // user: JWTUser
     children: Snippet
   }
 
@@ -45,9 +44,9 @@
 
 <Sidebar.Provider>
   <div class="flex h-screen w-full overflow-hidden">
-    <AdminSidebar {user} />
+    <AdminSidebar />
     <div class="flex flex-1 flex-col overflow-hidden">
-      <AdminHeader {user} />
+      <AdminHeader />
       <main class="flex-1 overflow-auto bg-gray-50 p-6">
         {@render children()}
       </main>
