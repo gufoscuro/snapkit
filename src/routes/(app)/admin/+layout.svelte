@@ -28,6 +28,6 @@
   })
 </script>
 
-<AdminLayout user={data.user}>
+<AdminLayout>
   {@render children()}
 </AdminLayout>

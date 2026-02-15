@@ -1,21 +1,20 @@
 import { COMPONENT_REGISTRY, getAllComponentKeys } from '$generated/components-registry'
-import type { BlockConfig, BuilderPageConfig, FlatBuilderPageConfig, MenuConfig, TenantConfig } from '$lib/admin/types'
 import { nestedToFlat } from '$lib/admin/page-hierarchy-utils'
-import { redirect } from '@sveltejs/kit'
+import type { BlockConfig, FlatBuilderPageConfig, MenuConfig, TenantConfig } from '$lib/admin/types'
 import type { LayoutServerLoad } from './$types'
 
 export const load: LayoutServerLoad = async ({ locals, fetch }) => {
-  const { user } = locals
+  // const { user } = locals
 
-  if (!user) {
-    throw redirect(302, '/login')
-  }
+  // if (!user) {
+  //   throw redirect(302, '/login')
+  // }
 
-  const isAdmin = user.super_admin || user.roles?.includes('admin')
+  // const isAdmin = user.super_admin || user.roles?.includes('admin')
 
-  if (!isAdmin) {
-    throw redirect(302, '/')
-  }
+  // if (!isAdmin) {
+  //   throw redirect(302, '/')
+  // }
 
   // Fetch tenants from API
   let tenants: TenantConfig[] = []
@@ -53,7 +52,7 @@ export const load: LayoutServerLoad = async ({ locals, fetch }) => {
   // Generate blocks from component registry
   // Mock data is now loaded client-side in the iframe preview, no need to load here
   const componentKeys = getAllComponentKeys()
-  const blocks: BlockConfig[] = componentKeys.map((key) => {
+  const blocks: BlockConfig[] = componentKeys.map(key => {
     const entry = COMPONENT_REGISTRY[key]
     const domain = key.split('.')[0]
 
@@ -75,7 +74,6 @@ export const load: LayoutServerLoad = async ({ locals, fetch }) => {
   })
 
   return {
-    user,
     adminConfig: {
       pages: allPages,
       menus: allMenus,
