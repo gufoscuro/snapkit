@@ -4,14 +4,12 @@
   import ConfirmArchiveDialog from '$lib/components/ui/confirm-archive-dialog/confirm-archive-dialog.svelte'
   import { Toaster } from '$lib/components/ui/sonner'
   import { initLanguageContext } from '$lib/contexts/language'
-  import type { TenantInterfaceDetails } from '$utils/customer-registry'
   import type { OnNavigate } from '@sveltejs/kit'
-  import { setContext } from 'svelte'
   import type { LayoutProps } from './$types'
 
   let { children, data }: LayoutProps = $props()
 
-  setContext<TenantInterfaceDetails>('tenantInterfaceDetails', data.tenantInterfaceDetails)
+  // setContext<TenantInterfaceDetails>('tenantInterfaceDetails', data.tenantInterfaceDetails)
 
   // Initialize language context for i18n
   initLanguageContext()
