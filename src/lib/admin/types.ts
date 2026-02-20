@@ -1,6 +1,5 @@
 import type { ComponentKey } from '$generated/components-registry'
 import type { BindingConfig } from '$lib/contexts/page-state'
-import type { NavItem } from '$lib/utils/customer-registry'
 import type { TObject } from '@sinclair/typebox'
 
 /**
@@ -42,7 +41,7 @@ export interface MenuConfig {
   id: string
   tenantId: string // Foreign key to tenant
   name: string
-  items: NavItem[]
+  items: any[]
 }
 
 /**
@@ -58,15 +57,15 @@ export interface TenantConfig {
  * Block configuration
  */
 export interface BlockConfig {
-	id: string
-	name: string
-	description?: string
-	folder?: string
-	snippet: ExtendedSnippetDefinition
-	previewProps?: Record<string, unknown>
-	tags?: string[]
-	createdAt: string
-	updatedAt: string
+  id: string
+  name: string
+  description?: string
+  folder?: string
+  snippet: ExtendedSnippetDefinition
+  previewProps?: Record<string, unknown>
+  tags?: string[]
+  createdAt: string
+  updatedAt: string
 }
 
 /**

@@ -14,7 +14,6 @@
   import { confirmDelete } from '$lib/components/ui/confirm-delete-dialog/confirm-delete-dialog.svelte'
   import { Input } from '$lib/components/ui/input'
   import { Label } from '$lib/components/ui/label'
-  import type { NavItem } from '$lib/utils/customer-registry'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
   import Plus from '@lucide/svelte/icons/plus'
   import Save from '@lucide/svelte/icons/save'
@@ -40,7 +39,7 @@
     adminStore.updateMenu(menu.id, { items: newItems })
   }
 
-  function handleUpdateItem(index: number, item: NavItem) {
+  function handleUpdateItem(index: number, item: any) {
     const newItems = [...menu.items]
     newItems[index] = item
     adminStore.updateMenu(menu.id, { items: newItems })
