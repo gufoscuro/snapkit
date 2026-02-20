@@ -9,7 +9,7 @@ export type RouteDetails = {
 export type SnippetProps = {
   pageDetails: PageDetails
   routeDetails: RouteDetails
-  user: UserResource
+  user: UserResource | undefined
 }
 
 export type SnippetPropsGetter = () => SnippetProps

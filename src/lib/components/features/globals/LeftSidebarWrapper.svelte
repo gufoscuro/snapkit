@@ -11,8 +11,6 @@
   import CustomerMenu from './CustomerMenu.svelte'
 
   const { children, user }: WithChildren & SnippetProps = $props()
-
-  $inspect(user, 'User in LeftSidebarWrapper')
 </script>
 
 <Sidebar.Root collapsible="icon">

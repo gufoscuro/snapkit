@@ -3,6 +3,7 @@
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import { registerPageDetails, registerPageState } from '$components/runtime/devtools'
   import { initPageState } from '$lib/contexts/page-state'
+  import type { UserResource } from '$lib/types/api-types'
   import { getI18nLabel } from '$utils/i18n'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import { setContext } from 'svelte'
@@ -28,7 +29,7 @@
         route: pageDetails?.config.route ?? '',
         params: pageDetails?.params ?? {},
         config: pageDetails?.config ?? {},
-        user: user ?? {},
+        user: user as UserResource,
       }),
     })
 
