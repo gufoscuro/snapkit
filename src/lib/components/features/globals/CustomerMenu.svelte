@@ -5,18 +5,34 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js'
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
   import { useSidebar } from '$lib/components/ui/sidebar/index.js'
+  import * as m from '$lib/paraglide/messages'
+  import { getLocale, locales, setLocale } from '$lib/paraglide/runtime'
   import { apiRequest } from '$utils/request'
   import type { SnippetProps } from '$utils/runtime'
   import { getUserInitials } from '$utils/strings'
   import BadgeCheckIcon from '@lucide/svelte/icons/badge-check'
   import BellIcon from '@lucide/svelte/icons/bell'
+  import CheckIcon from '@lucide/svelte/icons/check'
   import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down'
   import CreditCardIcon from '@lucide/svelte/icons/credit-card'
+  import LanguagesIcon from '@lucide/svelte/icons/languages'
   import LogOutIcon from '@lucide/svelte/icons/log-out'
 
   let { user }: SnippetProps = $props()
 
   const sidebar = useSidebar()
+
+  let currentLocale = $state(getLocale())
+
+  const localeLabels: Record<string, string> = {
+    en: 'English',
+    it: 'Italiano',
+  }
+
+  function switchLocale(locale: string) {
+    setLocale(locale as (typeof locales)[number])
+    currentLocale = locale
+  }
 
   async function logoutApplication() {
     await apiRequest({
@@ -87,6 +103,22 @@
             <BellIcon />
             Notifications
           </DropdownMenu.Item>
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger>
+              <LanguagesIcon />
+              {m.language()}
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent>
+              {#each locales as locale (locale)}
+                <DropdownMenu.Item onclick={() => switchLocale(locale)}>
+                  {#if currentLocale === locale}
+                    <CheckIcon />
+                  {/if}
+                  {localeLabels[locale] ?? locale}
+                </DropdownMenu.Item>
+              {/each}
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
         </DropdownMenu.Group>
         <DropdownMenu.Separator />
         <DropdownMenu.Item onclick={logoutApplication}>

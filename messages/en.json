@@ -27,6 +27,7 @@
   "common_actions": "Actions",
   "datatable_no_data": "No data available",
   "datatable_load_more": "Load more",
+  "language": "Language",
   "language_english": "English",
   "language_italian": "Italian",
   "enum_supply_status_draft": "Draft",

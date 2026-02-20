@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { browser } from '$app/environment'
+  import { page } from '$app/state'
   import * as Collapsible from '$lib/components/ui/collapsible/index.js'
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
   import type { MenuItem } from '$lib/stores/tenant-config/types'
@@ -11,6 +13,24 @@
 
   const { entityConfig }: SnippetProps = $props()
   const mainMenu = $derived(entityConfig?.dashboard.menus.main || { name: 'Unnamed Menu', items: [] })
+
+  const STORAGE_KEY = 'left-sidebar-menu-open'
+
+  function loadOpenState(): Record<string, boolean> {
+    if (!browser) return {}
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Record<string, boolean>
+    } catch {
+      return {}
+    }
+  }
+
+  let openState = $state<Record<string, boolean>>(loadOpenState())
+
+  $effect(() => {
+    if (!browser) return
+    localStorage.setItem(STORAGE_KEY, JSON.stringify($state.snapshot(openState)))
+  })
 
   function getIcon(name?: string): Component | null {
     if (!name) return null
@@ -34,7 +54,7 @@
     {#each mainMenu.items.filter(i => i.visible !== false) as item (item.label)}
       {#if item.type === 'link'}
         <Sidebar.MenuItem>
-          <Sidebar.MenuButton tooltipContent={getI18nLabel(item.label)}>
+          <Sidebar.MenuButton isActive={page.url.pathname === getHref(item)} tooltipContent={getI18nLabel(item.label)}>
             {#snippet child({ props })}
               {@const Icon = getIcon(item.icon)}
               <a href={getHref(item)} {...props}>
@@ -47,7 +67,11 @@
           </Sidebar.MenuButton>
         </Sidebar.MenuItem>
       {:else}
-        <Collapsible.Root class="group/collapsible">
+        {@const isGroupActive = item.children.some(c => page.url.pathname === getHref(c))}
+        <Collapsible.Root
+          open={openState[item.label] ?? isGroupActive}
+          onOpenChange={(v) => { openState[item.label] = v }}
+          class="group/collapsible">
           {#snippet child({ props })}
             <Sidebar.MenuItem {...props}>
               <Collapsible.Trigger>
@@ -67,7 +91,7 @@
                 <Sidebar.MenuSub>
                   {#each item.children.filter(c => c.visible !== false) as subItem (subItem.label)}
                     <Sidebar.MenuSubItem>
-                      <Sidebar.MenuSubButton>
+                      <Sidebar.MenuSubButton isActive={page.url.pathname === getHref(subItem)}>
                         {#snippet child({ props })}
                           <a href={getHref(subItem)} {...props}>
                             <span>{getI18nLabel(subItem.label)}</span>
