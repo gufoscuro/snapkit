@@ -26,6 +26,11 @@
 			"type": "http",
 			"url": "http://api.moddo.local:8000/mcp/docs"
 		},
+		"moddo-legal-entity-config": {
+			"_comment": "Backend Admin API discovery - tenant custom fields and configuration",
+			"type": "http",
+			"url": "http://api.moddo.local:8000/mcp/legal-entity-config"
+		},
 		"snapkit-blueprint": {
 			"_comment": "SnapKit implementation rules and patterns",
 			"type": "stdio",

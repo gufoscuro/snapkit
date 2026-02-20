@@ -26,7 +26,7 @@ const i18nHandle: Handle = ({ event, resolve }) => {
  * Auth middleware - handles authentication and route protection
  */
 const authHandle: Handle = async ({ event, resolve }) => {
-  const { cookies, url } = event
+  // const { cookies, url } = event
 
   // const authToken =
   //   cookies.get(AUTH_COOKIE_NAME) ||
