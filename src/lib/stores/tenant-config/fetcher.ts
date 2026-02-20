@@ -1,66 +1,57 @@
-import type { TenantConfigData } from './types'
+import { apiRequest } from '$utils/request'
+import type { LegalEntityConfigResponse, TenantConfigData } from './types'
 
 /**
- * Hardcoded admin tenant configuration
- * Used as fallback when 'admin' vanity is accessed
- */
-const ADMIN_TENANT_CONFIG: TenantConfigData = {
-  id: 'admin',
-  name: 'Admin',
-  vanity: 'admin',
-  pages: [],
-  menus: [],
-  mainMenu: [
-    {
-      type: 'link',
-      label: 'Admin Dashboard',
-      pageId: 'admin-dashboard',
-      visible: true,
-    },
-  ],
-}
-
-/**
- * Fetch tenant configuration from API
+ * Fetch legal entity configuration from the backend API
  *
- * @param vanity - Tenant subdomain identifier
- * @returns Tenant configuration or null if not found
+ * GET /api/legal-entities/{legalEntityId}/config
+ * Returns the full config resource; the UI config lives in `dashboard`.
+ *
+ * @param legalEntityId - UUID of the legal entity
+ * @returns TenantConfigData (the `dashboard` field) or null if not found
  */
-export async function fetchTenantConfigFromAPI(
-  vanity: string
-): Promise<TenantConfigData | null> {
+export async function fetchLegalEntityConfig(legalEntityId: string): Promise<TenantConfigData | null> {
   try {
-    // Use direct fetch since this can be called server-side in +layout.ts
-    const response = await fetch(`/api/tenant-config/${vanity}`)
+    const response = await apiRequest<LegalEntityConfigResponse>({
+      url: `/legal-entities/${legalEntityId}/config`,
+    })
 
-    if (!response.ok) {
-      if (response.status === 404) return null
-      throw new Error(`Failed to fetch tenant config: ${response.statusText}`)
+    return {
+      pages: [
+        {
+          $id: 'home',
+          title: 'Home',
+          route: '/home',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.LeftSidebarMenu',
+              enabled: true,
+            },
+          },
+        },
+      ],
+      menus: {
+        main: {
+          id: 'main',
+          name: 'Main Menu',
+          items: [
+            {
+              label: 'Home',
+              pageId: 'home',
+              type: 'link',
+            },
+          ],
+        },
+      },
     }
 
-    return await response.json()
+    return response?.dashboard ?? null
   } catch (error) {
-    console.error(`Error fetching tenant config for ${vanity}:`, error)
+    console.error(`Error fetching config for legal entity ${legalEntityId}:`, error)
     return null
   }
-}
-
-/**
- * Fetch tenant configuration from source
- *
- * Now uses the API endpoint to retrieve tenant configuration.
- *
- * @param vanity - Tenant subdomain identifier
- * @returns Tenant configuration or null if not found
- */
-export async function fetchTenantConfigFromSource(
-  vanity: string
-): Promise<TenantConfigData | null> {
-  // Handle hardcoded admin tenant
-  if (vanity === 'admin') {
-    return ADMIN_TENANT_CONFIG
-  }
-
-  // Fetch from API
-  return fetchTenantConfigFromAPI(vanity)
 }

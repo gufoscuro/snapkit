@@ -78,18 +78,25 @@ export interface MenuConfigData {
 }
 
 export interface TenantConfigData {
-  /** Unique tenant identifier */
-  id: string
-  /** Display name */
-  name: string
-  /** Subdomain identifier (e.g., 'tenant1' for tenant1.example.com) */
-  vanity: string
   /** Pages configured for this tenant */
   pages: PageConfig[]
   /** Menus configured for this tenant */
-  menus: MenuConfigData[]
-  /** Pre-computed main navigation menu (flattened from all menus) */
-  mainMenu: MenuItem[]
+  menus: {
+    main: MenuConfigData
+    [key: string]: MenuConfigData
+  }
+}
+
+/**
+ * Response from GET /api/legal-entities/{legalEntity}/config
+ */
+export type LegalEntityConfigResponse = {
+  version: number | null
+  resources: unknown[]
+  /** The UI configuration payload (pages, menus) */
+  dashboard: TenantConfigData
+  created_by: string | null
+  created_at: string | null
 }
 
 /**

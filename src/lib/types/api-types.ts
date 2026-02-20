@@ -460,10 +460,21 @@ export type Permission =
   | 'edit-teams'
   | 'delete-teams'
   | 'manage-roles'
+  | 'view-legal-entities'
   | 'view-customers'
   | 'create-customers'
   | 'edit-customers'
   | 'delete-customers'
+
+/**
+ * Legal entity from GET /api/user or GET /api/legal-entities
+ */
+export type LegalEntity = {
+  id: string
+  name: string
+  created_at: string
+  updated_at: string
+}
 
 /**
  * User resource from GET /api/user endpoint
@@ -472,10 +483,12 @@ export type UserResource = {
   id: string
   name: string
   email: string
+  is_superadmin: boolean
   tenant?: {
     id: string
     name: string
     vanity: string
+    legal_entities?: LegalEntity[]
   }
   team?: {
     id: string
