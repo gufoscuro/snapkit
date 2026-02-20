@@ -467,13 +467,30 @@ export type Permission =
   | 'delete-customers'
 
 /**
- * Legal entity from GET /api/user or GET /api/legal-entities
+ * Legal entity from GET /api/user or GET /api/legal-entities/{id}
  */
 export type LegalEntity = {
   id: string
   name: string
-  created_at: string
-  updated_at: string
+  last_name: string
+  trade_name: string
+  eori_code: string
+  ateco_code: string | null
+  vat_number: string
+  tax_id: string
+  sdi_code: string
+  pec: string
+  email: string
+  phone: string
+  fax: string
+  website: string
+  registration_country_code: string
+  tax_regime: string
+  rea_office: string
+  rea_number: string
+  liquidation_status: string
+  notes: string
+  version: number
 }
 
 /**

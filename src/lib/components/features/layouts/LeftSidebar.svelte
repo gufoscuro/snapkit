@@ -8,14 +8,15 @@
   import type { LayoutSlotDefinition } from '$lib/admin/types'
 
   export const slots: LayoutSlotDefinition[] = [
-    { name: 'sidebar', label: 'Sidebar', description: 'Left sidebar navigation' },
+    { name: 'sidebarHeader', label: 'Sidebar Header', description: 'Left sidebar header section' },
+    { name: 'sidebarContent', label: 'Sidebar Content', description: 'Left sidebar content section' },
+    { name: 'sidebarFooter', label: 'Sidebar Footer', description: 'Left sidebar footer section' },
     { name: 'filters', label: 'Filters', description: 'Filter controls for the list' },
     { name: 'table', label: 'Table', description: 'Main data table/list component' },
   ]
 </script>
 
 <script lang="ts">
-  import LeftSidebarWrapper from '$components/features/globals/LeftSidebarWrapper.svelte'
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
   import * as Sidebar from '$lib/components/ui/sidebar'
   import type { SnippetProps } from '$utils/runtime'
@@ -26,9 +27,20 @@
 
 <Sidebar.Provider>
   <div class="flex h-screen w-full overflow-hidden">
-    <LeftSidebarWrapper {...snippetProps}>
-      <SnippetResolver snippet={config.snippets.sidebar} />
-    </LeftSidebarWrapper>
+    <SnippetResolver snippet={config.snippets.sidebar} />
+    <!-- <LeftSidebarWrapper>
+      {#snippet header()}
+        <SnippetResolver snippet={config.snippets.sidebarHeader} />
+      {/snippet}
+
+      {#snippet content()}
+        <SnippetResolver snippet={config.snippets.sidebarContent} />
+      {/snippet}
+
+      {#snippet footer()}
+        <SnippetResolver snippet={config.snippets.sidebarFooter} />
+      {/snippet}
+    </LeftSidebarWrapper> -->
 
     <div class="flex flex-1 flex-col overflow-hidden">
       <main class="flex-1 space-y-8 overflow-y-auto px-4 pb-4">

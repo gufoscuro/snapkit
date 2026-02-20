@@ -1,6 +1,5 @@
 import type { PageConfig, PageDetails } from '$lib/utils/page-registry'
 import { match } from 'path-to-regexp'
-import { fetchLegalEntityConfig } from './fetcher'
 import type { TenantConfigData } from './types'
 
 /**
@@ -57,93 +56,30 @@ function collectAllPageIds(pages: PageConfig[]): string[] {
 
 function createTenantConfigStore() {
   // In-memory cache: Map<legalEntityId, TenantConfigData>
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
   const cache = new Map<string, TenantConfigData>()
-
-  // Pending fetch promise - allows waiting for in-flight requests
-  let pendingFetch: Promise<TenantConfigData> | null = null
 
   // Reactive state using Svelte 5 runes
   let currentTenant = $state<TenantConfigData | null>(null)
   let currentLegalEntityId = $state<string | null>(null)
-  let loading = $state(false)
-  let error = $state<string | null>(null)
 
   /**
-   * Fetch and cache legal entity configuration.
-   * Sets the active legal entity in the store.
-   * Returns cached data if available, otherwise fetches from the backend.
+   * Set the active legal entity from pre-fetched config data.
    *
-   * Call this from the layout load function to initialise the store before
-   * page load functions run.
+   * The config is expected to come from the layout load function, which is
+   * responsible for fetching it. This method only handles caching and state.
    *
    * @param legalEntityId - UUID of the legal entity
-   * @returns Legal entity UI configuration
-   * @throws Error if config not found
+   * @param config - Pre-fetched TenantConfigData (dashboard field from the config response)
    */
-  async function setActiveLegalEntity(legalEntityId: string): Promise<TenantConfigData> {
-    // Return current config if already loaded for this legal entity
-    if (cache.has(legalEntityId) && currentLegalEntityId === legalEntityId && currentTenant) {
-      return currentTenant
-    }
-
-    // Check cache (switching back to a previously loaded entity)
-    if (cache.has(legalEntityId)) {
-      currentTenant = cache.get(legalEntityId)!
-      currentLegalEntityId = legalEntityId
-      return currentTenant
-    }
-
-    // If there's already a fetch in progress, wait for it
-    if (pendingFetch) {
-      return pendingFetch
-    }
-
-    loading = true
-    error = null
-
-    pendingFetch = (async () => {
-      try {
-        const config = await fetchLegalEntityConfig(legalEntityId)
-
-        console.log('fetch config', config)
-
-        if (!config) {
-          throw new Error(`Config not found for legal entity: ${legalEntityId}`)
-        }
-
-        cache.set(legalEntityId, config)
-        currentTenant = config
-        currentLegalEntityId = legalEntityId
-        return config
-      } catch (e) {
-        error = e instanceof Error ? e.message : 'Failed to load legal entity configuration'
-        throw e
-      } finally {
-        loading = false
-        pendingFetch = null
-      }
-    })()
-
-    return pendingFetch
+  function setActiveLegalEntity(legalEntityId: string, config: TenantConfigData): void {
+    cache.set(legalEntityId, config)
+    currentTenant = config
+    currentLegalEntityId = legalEntityId
   }
 
   /**
-   * Wait for config to be ready.
-   * Resolves immediately if already loaded, or waits for the in-flight fetch.
-   */
-  async function waitForReady(): Promise<TenantConfigData | null> {
-    if (currentTenant) {
-      return currentTenant
-    }
-    if (pendingFetch) {
-      return pendingFetch
-    }
-
-    return null
-  }
-
-  /**
-   * Invalidate cache to force refetch on next access
+   * Invalidate cache to force a re-fetch on the next layout load.
    *
    * @param legalEntityId - Specific entity to invalidate, or undefined for all
    */
@@ -168,17 +104,13 @@ function createTenantConfigStore() {
    * @param route - Route path to match (e.g., '/purchase/orders')
    * @returns Page details with matched params, or null if not found
    */
-  async function getPageByRoute(route: string): Promise<PageDetails | null> {
-    const tenant = await waitForReady()
-
-    if (!tenant) {
+  function getPageByRoute(route: string): PageDetails | null {
+    if (!currentTenant) {
       console.warn('getPageByRoute called but no config data available')
       return null
     }
 
-    console.log('getPageByRoute', { route, tenant })
-
-    return searchPages(tenant.pages, route)
+    return searchPages(currentTenant.pages, route)
   }
 
   /**
@@ -219,16 +151,9 @@ function createTenantConfigStore() {
     get currentLegalEntityId() {
       return currentLegalEntityId
     },
-    get loading() {
-      return loading
-    },
-    get error() {
-      return error
-    },
 
     // Methods
     setActiveLegalEntity,
-    waitForReady,
     invalidate,
     getPageByRoute,
     getLegalEntityId,

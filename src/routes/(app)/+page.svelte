@@ -6,7 +6,7 @@
   import type { PageProps } from './$types'
 
   let { data }: PageProps = $props()
-  let { pageDetails, routeDetails, user } = $derived(data)
+  let { pageDetails, routeDetails, entityConfig, legalEntity, user } = $derived(data)
 
   initPageState()
 
@@ -15,6 +15,8 @@
   setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () => ({
     pageDetails: pageDetails!,
     routeDetails,
+    entityConfig,
+    legalEntity,
     user,
   }))
 </script>

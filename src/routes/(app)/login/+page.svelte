@@ -37,7 +37,7 @@
       error = 'An error occurred. Please try again.'
     } finally {
       loading = false
-      goto(resolve('/home'))
+      goto(resolve('/'))
     }
   }
 </script>

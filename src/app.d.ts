@@ -8,6 +8,7 @@ declare global {
 		interface Locals {
 			user?: JWTUser
 			token?: string
+			legalEntityId?: string | null
 		}
 		// interface PageData {}
 		// interface PageState {}

@@ -1,4 +1,5 @@
-import type { UserResource } from '$lib/types/api-types'
+import type { LegalEntityConfigResponse } from '$lib/stores/tenant-config/types'
+import type { LegalEntity, UserResource } from '$lib/types/api-types'
 import type { PageDetails } from '$utils/page-registry'
 
 export type RouteDetails = {
@@ -9,7 +10,9 @@ export type RouteDetails = {
 export type SnippetProps = {
   pageDetails: PageDetails
   routeDetails: RouteDetails
-  user: UserResource | undefined
+  entityConfig: LegalEntityConfigResponse | null
+  user: UserResource | null
+  legalEntity?: LegalEntity | null
 }
 
 export type SnippetPropsGetter = () => SnippetProps

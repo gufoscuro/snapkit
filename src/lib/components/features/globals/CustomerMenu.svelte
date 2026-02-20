@@ -5,8 +5,8 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js'
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
   import { useSidebar } from '$lib/components/ui/sidebar/index.js'
-  import type { UserResource } from '$lib/types/api-types'
   import { apiRequest } from '$utils/request'
+  import type { SnippetProps } from '$utils/runtime'
   import { getUserInitials } from '$utils/strings'
   import BadgeCheckIcon from '@lucide/svelte/icons/badge-check'
   import BellIcon from '@lucide/svelte/icons/bell'
@@ -14,7 +14,7 @@
   import CreditCardIcon from '@lucide/svelte/icons/credit-card'
   import LogOutIcon from '@lucide/svelte/icons/log-out'
 
-  let { user }: { user: UserResource | undefined } = $props()
+  let { user }: SnippetProps = $props()
 
   const sidebar = useSidebar()
 

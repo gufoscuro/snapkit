@@ -9,8 +9,6 @@
 
   let { children, data }: LayoutProps = $props()
 
-  // setContext<TenantInterfaceDetails>('tenantInterfaceDetails', data.tenantInterfaceDetails)
-
   // Initialize language context for i18n
   initLanguageContext()
 

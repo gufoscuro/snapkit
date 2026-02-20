@@ -64,6 +64,8 @@ export type MenuItemWithSubmenu = Omit<MenuItemBase, 'pageId'> & {
   children: MenuItem[]
   /** Optional description (shown in list-style submenu) */
   description?: string
+
+  icon?: string
 }
 
 /**
@@ -77,7 +79,7 @@ export interface MenuConfigData {
   items: MenuItem[]
 }
 
-export interface TenantConfigData {
+export interface DashboardConfigData {
   /** Pages configured for this tenant */
   pages: PageConfig[]
   /** Menus configured for this tenant */
@@ -94,16 +96,7 @@ export type LegalEntityConfigResponse = {
   version: number | null
   resources: unknown[]
   /** The UI configuration payload (pages, menus) */
-  dashboard: TenantConfigData
+  dashboard: DashboardConfigData
   created_by: string | null
   created_at: string | null
-}
-
-/**
- * @deprecated Use TenantConfigData instead
- * Kept for backward compatibility during migration
- */
-export type TenantInterfaceDetails = {
-  name: string
-  mainMenu: NavItem[]
 }

@@ -1,4 +1,5 @@
 import { serverError } from '$lib/hooks/server-errors'
+import { LEGAL_ENTITY_COOKIE_NAME } from '$lib/fixtures/constants'
 import { paraglideMiddleware } from '$lib/paraglide/server'
 import { type Handle, type HandleServerError } from '@sveltejs/kit'
 import { sequence } from '@sveltejs/kit/hooks'
@@ -26,6 +27,8 @@ const i18nHandle: Handle = ({ event, resolve }) => {
  * Auth middleware - handles authentication and route protection
  */
 const authHandle: Handle = async ({ event, resolve }) => {
+  event.locals.legalEntityId = event.cookies.get(LEGAL_ENTITY_COOKIE_NAME) ?? null
+
   // const { cookies, url } = event
 
   // const authToken =

@@ -1,17 +1,14 @@
-import { tenantConfigStore } from '$lib/stores/tenant-config'
-import type { RouteDetails } from '$utils/runtime'
+import { getRouteByURL } from '$lib/stores/tenant-config/route-details'
+import { error } from '@sveltejs/kit'
 import type { PageLoad } from './$types'
 
 export const load: PageLoad = async ({ url, parent }) => {
   await parent()
 
-  const route = '/'
-  const routeDetails: RouteDetails = {
-    url,
-    search: url.searchParams.get('search'),
-  }
+  const route = `/`
+  const { pageDetails, routeDetails } = getRouteByURL(route, url)
 
-  const pageDetails = await tenantConfigStore.getPageByRoute(route)
+  if (!pageDetails) throw error(404, `Page not found: ${route}`)
 
   return {
     pageDetails,
