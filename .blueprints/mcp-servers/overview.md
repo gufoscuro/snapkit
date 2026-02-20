@@ -10,7 +10,8 @@ This project uses multiple MCP servers. Use the appropriate one based on your ta
 | **shadcn-svelte**        | shadcn-svelte component docs       | Using/adding base UI components in `src/lib/components/ui/`                    |
 | **shadcn-svelte-extras** | Extra components via jsrepo        | Advanced components not in core shadcn-svelte (Chat, Code, Emoji Picker, etc.) |
 | **svelte-components**    | Feature component discovery        | Finding/creating components in `src/lib/components/features/`                  |
-| **arke**                 | Backend API discovery              | Finding API endpoints and TypeScript types for data fetching                   |
+| **moddo-api**            | Backend API discovery              | Finding API endpoints and TypeScript types for data fetching                   |
+| **moddo-legal-entity-config** | Legal entity field configuration | Managing custom fields and field visibility per tenant/legal entity        |
 
 ## svelte MCP
 
@@ -75,23 +76,41 @@ Use for **feature components** in `src/lib/components/features/`. This is where 
 2. Understanding props and usage of custom project components
 3. Finding components with specific functionality
 
-## arke MCP
+## moddo-api MCP
 
 Use for **backend API discovery** when creating components that fetch or interact with data.
 
 **Tools:**
 
-- **search_api**: Search for API operations by natural language query. Returns matching endpoints with method, path, and TypeScript types.
+- **get-api-documentation**: Returns live API documentation generated from the actual codebase. Includes endpoints grouped by feature with HTTP method, URL, request/response schemas, and required permissions.
 
 **Parameters:**
 
-- `query`: Natural language description (e.g., "list orders", "create customer", "update product")
-- `namespace` (optional): Filter by API namespace (e.g., "sales-api", "supply-api", "product-api")
-- `include_schemas`: Set to `true` to get raw JSON schemas in addition to TypeScript types
+- `group` (optional): Filter by endpoint group name (e.g., `"Customers"`, `"Legal entities"`)
 
 **Workflow for components that fetch data:**
 
-1. **Search for relevant endpoints**: Use `search_api` to find endpoints that match your data needs
-2. **Review the response types**: Use the returned TypeScript type definitions to type your component's data
-3. **Implement the fetch call**: Use `apiRequest` from `$lib/utils/request.ts` (NOT raw `fetch`)
+1. **Get endpoint docs**: Call `get-api-documentation` (optionally filtered by group) to find endpoints and TypeScript types
+2. **Add types to api-types.ts**: Centralize all API types in `$lib/types/api-types.ts`
+3. **Implement the request**: Use `apiRequest` from `$lib/utils/request.ts` (NOT raw `fetch`)
 4. **Handle loading and error states**: Always account for async data fetching
+
+## moddo-legal-entity-config MCP
+
+Use for **managing legal entity field configuration** — custom fields and field visibility per tenant.
+
+**Tools:**
+
+- **list-tenants**: List all tenants with their ID, name, and vanity slug
+- **get-legal-entity-config**: Returns current field visibility settings and custom fields for a legal entity
+- **get-legal-entity-config-schema**: Returns the configuration schema (available fields and custom field types)
+- **add-custom-field**: Add a custom field to a resource (text, number, boolean, date, select, textarea)
+- **remove-custom-field**: Remove a custom field from a resource
+- **set-field-visibility**: Show or hide an optional field
+- **set-field-required**: Mark an optional field as required or optional
+
+**Workflow:**
+
+1. Use `list-tenants` to find the tenant vanity slug
+2. Use `get-legal-entity-config` to see the current configuration before making changes
+3. Confirm changes with the user before applying them

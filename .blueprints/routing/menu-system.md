@@ -222,29 +222,41 @@ Displays items in a multi-column grid. Best for component showcases or large cat
 
 ## Configuration Structure
 
-Menus are configured in `TenantConfigData`:
+Menus are configured in `TenantConfigData`, which is the `dashboard` field of the legal entity config response (`LegalEntityConfigResponse`):
 
 ```typescript
 interface TenantConfigData {
+  pages: PageConfig[]
+  menus: {
+    main: MenuConfigData        // Primary navigation menu
+    [key: string]: MenuConfigData  // Additional named menus
+  }
+}
+
+interface MenuConfigData {
   id: string
   name: string
-  vanity: string
-  pages: PageConfig[]
-  menus: MenuConfigData[]
-  mainMenu: MenuItem[]  // Main navigation menu
+  items: MenuItem[]
 }
+```
+
+The config is fetched and stored in `tenantConfigStore` by the layout load function. Access menu items via:
+
+```typescript
+import { tenantConfigStore } from '$lib/stores/tenant-config'
+
+const menuItems = $derived(tenantConfigStore.currentTenant?.menus.main.items ?? [])
 ```
 
 ### Example: Complete Menu Configuration
 
+The JSON served by `GET /api/legal-entities/{id}/config` (field `dashboard.menus.main.items`):
+
 ```typescript
-const tenantConfig: TenantConfigData = {
-  id: 'manufacturing-tenant',
-  name: 'Manufacturing Co',
-  vanity: 'manufacturing',
-  pages: [/* ... */],
-  menus: [],
-  mainMenu: [
+const menuConfig: MenuConfigData = {
+  id: 'main-menu',
+  name: 'Main Navigation',
+  items: [
     // Simple link
     {
       type: 'link',
@@ -340,24 +352,26 @@ const resolved = resolveMenuItem(menuItem)
 
 ## Using Menu Items in Components
 
-The `AppHeader` component automatically resolves and renders menu items:
+Menu components read items directly from `tenantConfigStore`, which is populated by the layout load function before any page renders:
 
 ```svelte
-<script>
-  import type { SnippetProps } from '$utils/runtime'
+<script lang="ts">
+  import { tenantConfigStore } from '$lib/stores/tenant-config'
+  import type { MenuItem } from '$lib/stores/tenant-config/types'
 
-  const { tenantInterfaceDetails }: SnippetProps = $props()
-  // tenantInterfaceDetails.mainMenu is automatically resolved
+  const menuItems = $derived<MenuItem[]>(
+    tenantConfigStore.currentTenant?.menus.main.items ?? []
+  )
 </script>
 ```
 
-The component handles:
+The `LeftSidebarMenu` component handles:
 
-- ✅ URL generation via `createRoute()`
-- ✅ Submenu rendering with Navigation Menu
+- ✅ URL generation via `getHref()` (wraps `createRoute()`)
+- ✅ Collapsible submenus with persisted open/closed state
+- ✅ Active state detection via `page.url.pathname`
+- ✅ Icon rendering (kebab-case → PascalCase + `Icon` suffix via `lucide-svelte`)
 - ✅ Visibility filtering
-- ✅ Icon rendering (placeholder for Lucide integration)
-- ✅ Disabled state styling
 
 ## Icons
 
