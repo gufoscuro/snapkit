@@ -5,6 +5,7 @@
 **ResourceTable** is a generic, declarative table component that abstracts common data table patterns, eliminating boilerplate code for fetching, pagination, filtering, and rendering.
 
 **Key Benefits:**
+
 - ✅ **70% less code** - Reduces typical table component from ~200 lines to ~60 lines
 - ✅ **Declarative configuration** - Define columns with simple config objects
 - ✅ **11 built-in renderers** - Common patterns like links, badges, dates, currency
@@ -76,7 +77,7 @@ const columns: ColumnConfig<YourType>[] = [
     header: m.status(),
     renderer: 'badge',
     rendererConfig: {
-      variantMapper: (status) => status === 'active' ? 'info' : 'secondary',
+      variantMapper: (status) => status === 'active' ? 'brand' : 'secondary',
       labelMapper: (status) => status.toUpperCase()
     }
   },
@@ -92,17 +93,13 @@ const columns: ColumnConfig<YourType>[] = [
 
 ```typescript
 const fetchItems = createApiFetcher<YourType>('api/endpoint')
+// Returns: (page: number, filters?: FilterQuery) => Promise<PaginatedResponse<YourType>>
 ```
 
 ### 4. Render ResourceTable
 
 ```svelte
-<ResourceTable
-  columns={columns}
-  fetchFunction={fetchItems}
-  filtersContract={YourTableContract}
-  class="mt-4"
-/>
+<ResourceTable {columns} fetchFunction={fetchItems} filtersContract={YourTableContract} class="mt-4" />
 ```
 
 ---
@@ -148,11 +145,13 @@ Creates links to detail pages.
 Extracts first email from an email array.
 
 **Expected data structure:**
+
 ```typescript
 emails: [{ email: "test@example.com" }, ...]
 ```
 
 **Usage:**
+
 ```typescript
 {
   accessorKey: 'emails',
@@ -162,6 +161,7 @@ emails: [{ email: "test@example.com" }, ...]
 ```
 
 **Custom accessor (optional):**
+
 ```typescript
 {
   accessorKey: 'contacts',
@@ -180,11 +180,13 @@ emails: [{ email: "test@example.com" }, ...]
 Extracts first phone from a phone array.
 
 **Expected data structure:**
+
 ```typescript
 phones: [{ phone: "+39 123456789" }, ...]
 ```
 
 **Usage:**
+
 ```typescript
 {
   accessorKey: 'phones',
@@ -206,7 +208,7 @@ Renders a single badge with dynamic variant and label.
   renderer: 'badge',
   rendererConfig: {
     variantMapper: (status) => {
-      if (status === 'active') return 'info'
+      if (status === 'active') return 'brand'
       if (status === 'pending') return 'default'
       return 'secondary'
     },
@@ -215,7 +217,7 @@ Renders a single badge with dynamic variant and label.
 }
 ```
 
-**Available variants:** `'default' | 'secondary' | 'info' | 'destructive' | 'outline'`
+**Available variants:** `'default' | 'secondary' | 'brand' | 'destructive' | 'outline'`
 
 ---
 
@@ -235,6 +237,7 @@ Renders multiple badges using a custom component (e.g., CategoryBadges).
 ```
 
 **Custom accessor:**
+
 ```typescript
 {
   accessorKey: 'tags',
@@ -290,6 +293,7 @@ Formats currency using `Intl.NumberFormat`.
 Renders action buttons (single button or multiple).
 
 **Single action:**
+
 ```typescript
 {
   renderer: 'actions',
@@ -312,6 +316,7 @@ Renders action buttons (single button or multiple).
 ```
 
 **Multiple actions (TODO - currently renders buttons side by side):**
+
 ```typescript
 {
   renderer: 'actions',
@@ -337,11 +342,13 @@ Renders action buttons (single button or multiple).
 ```
 
 **Action helpers:**
+
 - `helpers.removeRow(id)` - Optimistically remove row
 - `helpers.updateRow(id, updates)` - Optimistically update row
 - `helpers.refresh()` - Refetch all data
 
 **Conditional visibility/disable:**
+
 ```typescript
 {
   label: m.common_edit(),
@@ -403,12 +410,17 @@ Complete control over cell rendering.
 Creates a generic fetch function compatible with ResourceTable.
 
 **Handles:**
-- Pagination (offset-based)
+
+- Pagination (page-based, Laravel standard)
 - Filtering (via `FilterQuery`)
-- Default items limit (100)
 - Error handling
 
+**Returns:** `(page: number, filters?: FilterQuery) => Promise<PaginatedResponse<T>>`
+
+The response includes `data`, `links` (with `next`/`prev` for load-more detection), and `meta` (with `current_page`, `last_page`, `total`, etc.).
+
 **Usage:**
+
 ```typescript
 const fetchSuppliers = createApiFetcher<SupplierSummary>('supply/supplier')
 
@@ -427,6 +439,7 @@ const fetchSuppliers = createApiFetcher<SupplierSummary>('supply/supplier')
 Creates a standardized archive action with confirmation dialog.
 
 **Features:**
+
 - Archive icon (lucide-svelte)
 - Confirmation dialog
 - API DELETE request
@@ -434,6 +447,7 @@ Creates a standardized archive action with confirmation dialog.
 - Optimistic row removal
 
 **Usage:**
+
 ```typescript
 import { createArchiveAction } from '$lib/utils/table-actions'
 
@@ -455,6 +469,7 @@ import { createArchiveAction } from '$lib/utils/table-actions'
 ```
 
 **Config type:**
+
 ```typescript
 type ArchiveActionConfig<T> = {
   apiUrl: (row: T) => string
@@ -553,6 +568,7 @@ src/lib/components/features/supply/SuppliersTable/
 ### When to Create a Custom Renderer
 
 Create a custom renderer when:
+
 - ✅ The pattern is used in **3+ tables**
 - ✅ The logic is **reusable** across domains
 - ✅ It encapsulates **complex rendering logic**
@@ -577,7 +593,7 @@ export function createStatusBadgeRenderer<T>(config: ColumnConfig<T>) {
 
     // Auto-detect variant based on status
     const variant =
-      value === 'active' ? 'info' :
+      value === 'active' ? 'brand' :
       value === 'pending' ? 'default' :
       'secondary'
 
@@ -637,6 +653,7 @@ const fetchSuppliers = createApiFetcher<SupplierSummary>('supply/supplier')
 ### 2. Use Utilities for Common Patterns
 
 ❌ **Don't:**
+
 ```typescript
 {
   renderer: 'actions',
@@ -652,6 +669,7 @@ const fetchSuppliers = createApiFetcher<SupplierSummary>('supply/supplier')
 ```
 
 ✅ **Do:**
+
 ```typescript
 {
   renderer: 'actions',
@@ -752,6 +770,7 @@ const columns = [
 ## Complete Example: SuppliersTable
 
 **Before (198 lines):**
+
 ```svelte
 <script lang="ts">
   import { DataTable } from '$lib/components/core/DataTable'
@@ -769,6 +788,7 @@ const columns = [
 ```
 
 **After (93 lines):**
+
 ```svelte
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
@@ -787,60 +807,54 @@ const columns = [
       header: m.supplier(),
       renderer: 'link',
       rendererConfig: {
-        urlBuilder: (row) => createRoute({
-          $id: 'supplier-details',
-          params: { uuid: row.id! }
-        })
-      }
+        urlBuilder: row =>
+          createRoute({
+            $id: 'supplier-details',
+            params: { uuid: row.id! },
+          }),
+      },
     },
     {
       accessorKey: 'categories',
       header: m.categories(),
       renderer: 'badges',
-      rendererConfig: { component: CategoryBadges }
+      rendererConfig: { component: CategoryBadges },
     },
     {
       accessorKey: 'emails',
       header: m.email(),
-      renderer: 'email'
+      renderer: 'email',
     },
     {
       accessorKey: 'phones',
       header: m.phone(),
-      renderer: 'phone'
+      renderer: 'phone',
     },
     {
       accessorKey: 'vat_no',
       header: m.vat(),
-      renderer: 'text'
+      renderer: 'text',
     },
     {
       renderer: 'actions',
       rendererConfig: {
         actions: [
           createArchiveAction({
-            apiUrl: (supplier) => `supply/supplier/${supplier.id}`,
-            confirmMessage: (supplier) =>
-              m.archive_supplier_confirmation({ name: supplier.name || '' }),
-            successMessage: (supplier) =>
-              m.supplier_archived_success({ name: supplier.name || '' }),
-            errorMessage: m.supplier_archive_error()
-          })
-        ]
+            apiUrl: supplier => `supply/supplier/${supplier.id}`,
+            confirmMessage: supplier => m.archive_supplier_confirmation({ name: supplier.name || '' }),
+            successMessage: supplier => m.supplier_archived_success({ name: supplier.name || '' }),
+            errorMessage: m.supplier_archive_error(),
+          }),
+        ],
       },
-      meta: { cellClassName: 'p-0 w-12' }
-    }
+      meta: { cellClassName: 'p-0 w-12' },
+    },
   ]
 
   const fetchSuppliers = createApiFetcher<SupplierSummary>('supply/supplier')
 </script>
 
-<ResourceTable
-  columns={columns}
-  fetchFunction={fetchSuppliers}
-  filtersContract={SuppliersTableContract}
-  class="mt-4"
-/>
+<ResourceTable {columns} fetchFunction={fetchSuppliers} filtersContract={SuppliersTableContract} class="mt-4" />
 ```
 
 **Result:** 53% less code, more readable, fully type-safe!
@@ -850,11 +864,13 @@ const columns = [
 ## Future Enhancements
 
 ### Short-term
+
 - [ ] Implement dropdown menu for multiple actions (currently renders side-by-side)
 - [ ] Add more built-in renderers as patterns emerge
 - [ ] Create common action helpers (edit, delete, duplicate)
 
 ### Long-term (Visual Table Builder)
+
 - [ ] JSON-serializable config format
 - [ ] String-based component registry
 - [ ] Template interpolation (`"/suppliers/{id}"`)
@@ -874,6 +890,7 @@ const columns = [
 ✅ Being extensible for custom needs
 
 **Use ResourceTable for:**
+
 - List views with pagination
 - Admin panels with CRUD operations
 - Data tables with filtering
@@ -881,6 +898,7 @@ const columns = [
 - Any table with standard patterns
 
 **Don't use ResourceTable for:**
+
 - Tables with very custom, one-off logic
 - Tables that don't fit the pagination + filters pattern
 - Ultra-simple tables (< 3 columns, no actions)
