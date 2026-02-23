@@ -1,6 +1,6 @@
 <!--
 /**
- * @description List layout component that renders a page with filters and table sections
+ * @description Left Sidebar layout component that renders a page with filters and table sections
  */
 -->
 
@@ -8,17 +8,18 @@
   import type { LayoutSlotDefinition } from '$lib/admin/types'
 
   export const slots: LayoutSlotDefinition[] = [
-    { name: 'sidebarHeader', label: 'Sidebar Header', description: 'Left sidebar header section' },
-    { name: 'sidebarContent', label: 'Sidebar Content', description: 'Left sidebar content section' },
-    { name: 'sidebarFooter', label: 'Sidebar Footer', description: 'Left sidebar footer section' },
-    { name: 'filters', label: 'Filters', description: 'Filter controls for the list' },
-    { name: 'table', label: 'Table', description: 'Main data table/list component' },
+    { name: 'sidebar', label: 'Sidebar', description: 'Left sidebar section' },
+    { name: 'header', label: 'Main content header', description: 'Header section for the main content area' },
+    { name: 'filters', label: 'Filters', description: 'Filters section for the main content area' },
+    { name: 'content', label: 'Main content', description: 'Main content area for the page' },
+    { name: 'footer', label: 'Main content footer', description: 'Footer section for the main content area' },
   ]
 </script>
 
 <script lang="ts">
+  import Breadcrumbs from '$components/features/globals/Breadcrumbs.svelte'
   import SnippetResolver from '$components/runtime/SnippetResolver.svelte'
-  import * as Sidebar from '$lib/components/ui/sidebar'
+  import * as Sidebar from '$components/ui/sidebar'
   import type { SnippetProps } from '$utils/runtime'
 
   const snippetProps: SnippetProps = $props()
@@ -28,25 +29,24 @@
 <Sidebar.Provider>
   <div class="flex h-screen w-full overflow-hidden">
     <SnippetResolver snippet={config.snippets.sidebar} />
-    <!-- <LeftSidebarWrapper>
-      {#snippet header()}
-        <SnippetResolver snippet={config.snippets.sidebarHeader} />
-      {/snippet}
 
-      {#snippet content()}
-        <SnippetResolver snippet={config.snippets.sidebarContent} />
-      {/snippet}
+    <div class="flex h-screen flex-1 flex-col overflow-y-scroll">
+      <SnippetResolver snippet={config.snippets.header} class="h-10 w-full">
+        {#snippet fallback(snippetProps)}
+          <Breadcrumbs {...snippetProps} />
+        {/snippet}
+      </SnippetResolver>
 
-      {#snippet footer()}
-        <SnippetResolver snippet={config.snippets.sidebarFooter} />
-      {/snippet}
-    </LeftSidebarWrapper> -->
-
-    <div class="flex flex-1 flex-col overflow-hidden">
-      <main class="flex-1 space-y-8 overflow-y-auto px-4 pb-4">
+      <main class="flex flex-1 flex-col gap-4 p-4">
         <SnippetResolver snippet={config.snippets.filters} class="h-10 w-full" />
-        <SnippetResolver snippet={config.snippets.table} class="h-dvh w-full" />
+        <SnippetResolver snippet={config.snippets.content} class="h-dvh w-full" />
       </main>
+
+      {#if config.snippets.footer}
+        <footer class="h-14 w-full">
+          <SnippetResolver snippet={config.snippets.footer} class="w-full" />
+        </footer>
+      {/if}
     </div>
   </div>
 </Sidebar.Provider>
