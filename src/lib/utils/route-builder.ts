@@ -65,9 +65,7 @@ export function createRoute(options: CreateRouteOptions): string {
   const toPath = compiledRoutes.get($id)!
 
   // Convert all params to strings for path-to-regexp
-  const stringParams = Object.fromEntries(
-    Object.entries(params).map(([k, v]) => [k, String(v)])
-  )
+  const stringParams = Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]))
 
   let path = toPath(stringParams)
 
