@@ -28,7 +28,7 @@
     initialValues: T
     validate?: ValidateFn<T>
     onSubmit: (values: T) => Promise<unknown>
-    onSuccess?: (payload: SuccessPayload) => void
+    onSuccess?: (payload: SuccessPayload<T>) => void
     onFailure?: (payload: FailurePayload) => void
     locked?: boolean
     novalidate?: boolean
@@ -133,7 +133,7 @@
     errorResponse = null
 
     try {
-      const result = await onSubmit(formState.values)
+      const result = (await onSubmit(formState.values)) as T
       onSuccess?.({ result, option: submitOption })
     } catch (error: unknown) {
       if (dev) console.info('FormUtil error:', error)

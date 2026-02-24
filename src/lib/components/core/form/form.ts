@@ -3,8 +3,8 @@
 // =============================================================================
 
 export const FormFieldClass = Object.freeze({
-  MinWidth: 'min-w-64 md:min-w-formfield',
-  MaxWidth: 'max-w-full md:max-w-formfield',
+  MinWidth: 'min-w-64 md:min-w-md',
+  MaxWidth: 'max-w-full md:max-w-md',
   TableCell: 'h-10 w-full rounded-none border-transparent focus:border-primary focus-visible:ring-0',
   SelectorDefaultWidth: 'min-w-40 lg:min-w-[280px]',
   SelectorContentDefaultWidth: 'min-w-[280px]',

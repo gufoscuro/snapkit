@@ -1,15 +1,15 @@
 <script lang="ts">
   import { browser } from '$app/environment'
-  import { getFormContextOptional } from './form-context'
-  import { FormLabelClass, SelectorFieldDefaults, type SelectorFieldProps } from './form'
-  import FormFieldMessages from './FormFieldMessages.svelte'
-  import FormFieldSkeleton from './FormFieldSkeleton.svelte'
-  import * as Select from '$components/ui/select'
   import Label from '$components/ui/label/label.svelte'
+  import * as Select from '$components/ui/select'
   import { joinClassnames } from '$utils/classnames'
   import { getUserMessagingClasses } from '$utils/form'
   import type { BasicOption } from '$utils/generics'
   import { X } from 'lucide-svelte'
+  import { FormLabelClass, SelectorFieldDefaults, type SelectorFieldProps } from './form'
+  import { getFormContextOptional } from './form-context'
+  import FormFieldMessages from './FormFieldMessages.svelte'
+  import FormFieldSkeleton from './FormFieldSkeleton.svelte'
 
   type Props = SelectorFieldProps & {
     items?: Array<BasicOption>
@@ -57,11 +57,9 @@
   const isDisabled = $derived(disabled || locked)
 
   // Derive trigger content
-  const selectedLabel = $derived(internalItems.find((item) => item.value === value)?.label ?? placeholder ?? label)
+  const selectedLabel = $derived(internalItems.find(item => item.value === value)?.label ?? placeholder ?? label)
 
-  const classes = $derived(
-    joinClassnames(className, width, getUserMessagingClasses(error, warning))
-  )
+  const classes = $derived(joinClassnames(className, width, getUserMessagingClasses(error, warning)))
 
   // Sync items when prop changes
   $effect(() => {
@@ -123,27 +121,21 @@
       {#snippet children({ aria })}
         <Select.Root
           type="single"
-          name={name}
+          {name}
           value={value ?? undefined}
           disabled={isDisabled}
           onValueChange={handleValueChange}
-          onOpenChange={handleOpenChange}
-        >
+          onOpenChange={handleOpenChange}>
           <div class="relative">
-            <Select.Trigger
-              {id}
-              class="{classes} {allowClear && value ? 'pr-8' : ''}"
-              {...aria}
-            >
+            <Select.Trigger {id} class="{classes} {allowClear && value ? 'pr-8' : ''}" {...aria}>
               <span class="truncate">{selectedLabel}</span>
             </Select.Trigger>
 
             {#if allowClear && value}
               <button
                 type="button"
-                class="absolute right-8 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                onclick={handleClear}
-              >
+                class="absolute top-1/2 right-8 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                onclick={handleClear}>
                 <X class="h-3.5 w-3.5" />
               </button>
             {/if}
