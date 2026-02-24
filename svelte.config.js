@@ -12,12 +12,12 @@ const config = {
 	},
 
 	vitePlugin: {
-		inspector: {
-			toggleKeyCombo: 'control-shift',
-			holdMode: true,
-			showToggleButton: 'always',
-			toggleButtonPos: 'bottom-right'
-		}
+		// inspector: {
+		// 	toggleKeyCombo: 'control-shift',
+		// 	holdMode: true,
+		// 	showToggleButton: 'always',
+		// 	toggleButtonPos: 'bottom-right'
+		// }
 	},
 
 	kit: {

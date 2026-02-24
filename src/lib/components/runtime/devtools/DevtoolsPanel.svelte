@@ -2,7 +2,7 @@
   import { dev } from '$app/environment'
   import { Button } from '$components/ui/button'
   import { shortcut } from '$lib/actions/shortcut.svelte'
-  import { IconBug, IconX } from '@tabler/icons-svelte'
+  import { IconX } from '@tabler/icons-svelte'
   import { fly } from 'svelte/transition'
   import { getForms, getPageDetails, getPageState } from './devtools-registry.svelte'
   import { loadDevtoolsState, saveDevtoolsState } from './devtools-storage'
@@ -98,7 +98,7 @@
 
 {#if dev && hasContent}
   <!-- Floating toggle button -->
-  <div class="fixed right-2 bottom-12 z-50">
+  <!-- <div class="fixed right-2 bottom-12 z-50">
     <Button
       size="icon"
       variant={isOpen ? 'default' : 'secondary'}
@@ -107,7 +107,7 @@
       title="Toggle Devtools (Ctrl+M / Cmd+M)">
       <IconBug />
     </Button>
-  </div>
+  </div> -->
 
   <!-- Spacer to allow content to scroll above panel when open -->
   {#if isOpen}
