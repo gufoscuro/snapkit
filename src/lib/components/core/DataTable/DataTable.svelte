@@ -6,14 +6,14 @@
   @uses Table, Button, Skeleton, TanStack Table
 -->
 <script lang="ts" generics="T">
-  import { type ColumnDef, getCoreRowModel } from '@tanstack/table-core'
+  import { Button } from '$lib/components/ui/button'
   import { createSvelteTable, FlexRender } from '$lib/components/ui/data-table'
   import * as Table from '$lib/components/ui/table'
-  import { Button } from '$lib/components/ui/button'
   import * as m from '$lib/paraglide/messages.js'
+  import LoaderCircle from '@lucide/svelte/icons/loader-circle'
+  import { type ColumnDef, getCoreRowModel } from '@tanstack/table-core'
   import type { Snippet } from 'svelte'
   import DataTableSkeleton from './DataTableSkeleton.svelte'
-  import LoaderCircle from '@lucide/svelte/icons/loader-circle'
 
   type DataTableProps = {
     /** Array of data items to display */
@@ -48,7 +48,7 @@
     emptyState,
     loadMoreLabel,
     stickyHeader = true,
-    class: className
+    class: className,
   }: DataTableProps = $props()
 
   const table = createSvelteTable({
@@ -58,7 +58,7 @@
     get columns() {
       return columns
     },
-    getCoreRowModel: getCoreRowModel()
+    getCoreRowModel: getCoreRowModel(),
   })
 </script>
 
@@ -66,18 +66,17 @@
   <DataTableSkeleton columns={columns.length} class={className} />
 {:else}
   <div class="space-y-4">
-    <div class="data-table-wrapper border {className}">
+    <div class="data-table-wrapper border-y {className}">
       <Table.Root>
         <Table.Header>
           {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
             <Table.Row>
               {#each headerGroup.headers as header (header.id)}
-                <Table.Head colspan={header.colSpan} class={stickyHeader ? 'sticky top-0 z-10 bg-background border-b border-border' : ''}>
+                <Table.Head
+                  colspan={header.colSpan}
+                  class={stickyHeader ? 'sticky top-14 z-10 border-b border-border bg-background' : ''}>
                   {#if !header.isPlaceholder}
-                    <FlexRender
-                      content={header.column.columnDef.header}
-                      context={header.getContext()}
-                    />
+                    <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
                   {/if}
                 </Table.Head>
               {/each}
@@ -88,11 +87,8 @@
           {#each table.getRowModel().rows as row (row.id)}
             <Table.Row>
               {#each row.getVisibleCells() as cell (cell.id)}
-                <Table.Cell>
-                  <FlexRender
-                    content={cell.column.columnDef.cell}
-                    context={cell.getContext()}
-                  />
+                <Table.Cell class={cell.column.columnDef.meta?.cellClassName || ''}>
+                  <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
                 </Table.Cell>
               {/each}
             </Table.Row>
@@ -113,11 +109,7 @@
 
     {#if hasMore && onLoadMore}
       <div class="flex justify-center">
-        <Button
-          variant="outline"
-          onclick={onLoadMore}
-          disabled={loadingMore}
-        >
+        <Button variant="outline" onclick={onLoadMore} disabled={loadingMore}>
           {#if loadingMore}
             <LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
           {/if}
@@ -130,7 +122,7 @@
 
 <style>
   /* Override table container to allow sticky header */
-  .data-table-wrapper :global([data-slot="table-container"]) {
+  .data-table-wrapper :global([data-slot='table-container']) {
     overflow: visible;
   }
 </style>
