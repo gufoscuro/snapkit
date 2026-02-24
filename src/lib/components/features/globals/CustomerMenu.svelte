@@ -17,6 +17,11 @@
   import CreditCardIcon from '@lucide/svelte/icons/credit-card'
   import LanguagesIcon from '@lucide/svelte/icons/languages'
   import LogOutIcon from '@lucide/svelte/icons/log-out'
+  import MonitorIcon from '@lucide/svelte/icons/monitor'
+  import MoonIcon from '@lucide/svelte/icons/moon'
+  import SunIcon from '@lucide/svelte/icons/sun'
+  import SunMoonIcon from '@lucide/svelte/icons/sun-moon'
+  import { resetMode, setMode, userPrefersMode } from 'mode-watcher'
 
   let { user }: SnippetProps = $props()
 
@@ -117,6 +122,38 @@
                   {localeLabels[locale] ?? locale}
                 </DropdownMenu.Item>
               {/each}
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger>
+              <SunMoonIcon />
+              {m.theme()}
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent>
+              <DropdownMenu.Item onclick={() => setMode('light')}>
+                {#if userPrefersMode.current === 'light'}
+                  <CheckIcon />
+                {:else}
+                  <SunIcon />
+                {/if}
+                {m.theme_light()}
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => setMode('dark')}>
+                {#if userPrefersMode.current === 'dark'}
+                  <CheckIcon />
+                {:else}
+                  <MoonIcon />
+                {/if}
+                {m.theme_dark()}
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => resetMode()}>
+                {#if userPrefersMode.current === 'system'}
+                  <CheckIcon />
+                {:else}
+                  <MonitorIcon />
+                {/if}
+                {m.theme_system()}
+              </DropdownMenu.Item>
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
         </DropdownMenu.Group>

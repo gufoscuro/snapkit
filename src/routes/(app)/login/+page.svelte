@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
+  import BusyButton from '$components/core/form/BusyButton.svelte'
   import Logo from '$lib/components/icons/Logo.svelte'
-  import { Button } from '$lib/components/ui/button'
   import { Input } from '$lib/components/ui/input'
   import { Label } from '$lib/components/ui/label'
   import { ApiError, apiRequest, initSanctum } from '$utils/request'
@@ -46,7 +46,7 @@
   <div class="flex flex-col gap-4 p-6 md:p-10">
     <div class="flex justify-center gap-2 md:justify-start">
       <a href="##" class="flex items-center gap-2 font-medium">
-        <Logo class="size-5 text-primary" />
+        <Logo class="size-5 text-brand" />
         Moddo
       </a>
     </div>
@@ -88,13 +88,7 @@
               disabled={loading} />
           </div>
 
-          <Button type="submit" class="w-full" disabled={loading}>
-            {#if loading}
-              Logging in...
-            {:else}
-              Login
-            {/if}
-          </Button>
+          <BusyButton type="submit" variant="brand" busy={loading} class="w-full">Login</BusyButton>
         </form>
       </div>
     </div>

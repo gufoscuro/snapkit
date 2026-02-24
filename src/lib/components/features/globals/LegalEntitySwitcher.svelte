@@ -6,10 +6,10 @@
 <script lang="ts">
   import { invalidateAll } from '$app/navigation'
   import Logo from '$components/icons/Logo.svelte'
-  import { LEGAL_ENTITY_COOKIE_NAME } from '$lib/fixtures/constants'
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js'
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
   import { useSidebar } from '$lib/components/ui/sidebar/index.js'
+  import { LEGAL_ENTITY_COOKIE_NAME } from '$lib/fixtures/constants'
   import { legal_entities } from '$lib/paraglide/messages'
   import type { LegalEntity } from '$lib/types/api-types'
   import type { SnippetProps } from '$utils/runtime'
@@ -25,9 +25,7 @@
 
   // Always derived so it reacts to prop changes after invalidateAll()
   const activeEntity = $derived<LegalEntity | undefined>(
-    (selectedEntityId ? entities.find((e) => e.id === selectedEntityId) : null) ??
-      legalEntity ??
-      entities[0],
+    (selectedEntityId ? entities.find(e => e.id === selectedEntityId) : null) ?? legalEntity ?? entities[0],
   )
 
   // Sync cookie on mount (or whenever activeEntity changes) without triggering a reload.
@@ -38,7 +36,7 @@
 
     const existing = document.cookie
       .split('; ')
-      .find((row) => row.startsWith(`${LEGAL_ENTITY_COOKIE_NAME}=`))
+      .find(row => row.startsWith(`${LEGAL_ENTITY_COOKIE_NAME}=`))
       ?.split('=')[1]
 
     if (existing !== id) {
@@ -65,7 +63,7 @@
             size="lg"
             class="pl-0 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
             <div class="flex size-8 shrink-0 items-center justify-center">
-              <Logo class="size-5 shrink-0 text-primary" />
+              <Logo class="size-5 shrink-0 text-brand" />
             </div>
             <div class="grid flex-1 text-start text-sm leading-tight">
               <span class="truncate font-medium">
