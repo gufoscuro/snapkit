@@ -58,14 +58,43 @@ src/lib/components/core/<ComponentName>/
 
 **Available core components:**
 
-| Component       | Purpose                                        | Usage Example                                  |
-| --------------- | ---------------------------------------------- | ---------------------------------------------- |
-| `ResourceTable` | Declarative data table with built-in renderers | CRUD tables with pagination, filters, actions  |
-| `DataTable`     | Generic data table with TanStack Table         | Lists, grids, paginated data                   |
-| `GanttChart`    | Generic Gantt chart with timeline              | Scheduling, planning, timelines                |
-| `form/*`        | Context-based form system                      | Forms with validation, field sync              |
+| Component            | Location              | Purpose                                        | Usage Example                                        |
+| -------------------- | --------------------- | ---------------------------------------------- | ---------------------------------------------------- |
+| `ResourceTable`      | `core/ResourceTable/` | Declarative data table with built-in renderers | CRUD tables with pagination, filters, actions        |
+| `DataTable`          | `core/DataTable/`     | Generic data table with TanStack Table         | Lists, grids, paginated data                         |
+| `GanttChart`         | `core/Gantt/`         | Generic Gantt chart with timeline              | Scheduling, planning, timelines                      |
+| `form/*`             | `core/form/`          | Context-based form system                      | Forms with validation, field sync                    |
+| `RequestPlaceholder` | `core/common/`        | Loading/error state wrapper for async requests | Wrap any component that awaits a promise             |
+| `BackButton`         | `core/common/`        | Navigation back button using history stack     | Detail pages, sidebars, anywhere "go back" is needed |
 
 > **💡 Tip:** For new data tables, prefer `ResourceTable` over `DataTable` to reduce boilerplate. See [resource-table.md](./resource-table.md) for full documentation.
+
+### `BackButton`
+
+A navigation utility button that goes back using the internal history stack. Falls back to a specified route if no history entry is available. Renders nothing if neither history nor fallback are present.
+
+```svelte
+<script lang="ts">
+  import BackButton from '$components/core/common/BackButton.svelte'
+  import { createRoute } from '$utils/route-builder'
+</script>
+
+<!-- Goes back in history, falls back to the customers list -->
+<BackButton fallback={createRoute({ $id: 'customers' })} />
+
+<!-- Ghost variant with custom label -->
+<BackButton variant="ghost" label="Go back" fallback="/dashboard" />
+```
+
+**Props:**
+
+| Prop       | Type            | Default    | Description                                |
+| ---------- | --------------- | ---------- | ------------------------------------------ |
+| `variant`  | `ButtonVariant` | `'outline'`| Button visual variant                      |
+| `fallback` | `string`        | —          | Route to navigate to when history is empty |
+| `label`    | `string`        | `m.back()` | Button label (i18n by default)             |
+
+> **Note:** `BackButton` lives in `core/common/` and is imported directly — it is NOT in the auto-generated components registry and cannot be referenced by page configuration.
 
 ### Core Form System
 
