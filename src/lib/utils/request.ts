@@ -28,6 +28,11 @@ export type ExtendedFetchOptions = RequestInit & {
   redirectOnUnauthorized?: boolean
 }
 
+export type SafeApiResponse<T> = {
+  data: T | null
+  error: ApiError | null
+}
+
 export async function request<T>(options: ExtendedFetchOptions): Promise<T> {
   let data: any = null
   const { url, ...requestOptions } = options
@@ -39,61 +44,6 @@ export async function request<T>(options: ExtendedFetchOptions): Promise<T> {
   }
 
   if (!result.ok) throw new Error('Request failed')
-
-  return data as T
-}
-
-/**
- * Client-side API request that goes through the SvelteKit proxy
- * Uses cookies for authentication (automatically sent by browser)
- * @param options - Request options (url should be the API path, e.g., 'sales/order')
- */
-export async function apiRequestLegacy<T>(options: ExtendedFetchOptions): Promise<T> {
-  const { redirectOnUnauthorized = true, ...rest } = options
-  let url = `/api/proxy/${options.url}`
-
-  if (options.queryParams) {
-    const searchParams = new URLSearchParams()
-    for (const [key, value] of Object.entries(options.queryParams)) {
-      searchParams.append(key, String(value))
-    }
-    url += `?${searchParams.toString()}`
-  }
-
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  }
-
-  const body = rest.data ? JSON.stringify(rest.data) : rest.body ? JSON.stringify(rest.body) : undefined
-
-  const result = await fetch(url, {
-    ...rest,
-    headers,
-    body,
-    credentials: 'include',
-  })
-
-  let data: any = null
-  const text = await result.text()
-  if (text) {
-    try {
-      data = JSON.parse(text)
-    } catch {
-      data = { rawText: text }
-    }
-  }
-
-  if (result.status === 401) {
-    if (redirectOnUnauthorized) {
-      window.location.href = '/login'
-    }
-    throw new ApiError('Unauthorized', result.status, data, result)
-  }
-
-  if (!result.ok) {
-    throw new ApiError(data?.message || 'Request failed', result.status, data, result)
-  }
 
   return data as T
 }
@@ -170,4 +120,20 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
   }
 
   return data as T
+}
+
+export async function safeApiRequest<T>(
+  options: ExtendedFetchOptions,
+): Promise<{ data: T | null; error: ApiError | null }> {
+  try {
+    const data = await apiRequest<T>(options)
+    // await new Promise(resolve => setTimeout(resolve, 1500))
+
+    return { data, error: null }
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { data: null, error }
+    }
+    return { data: null, error: new ApiError(error?.toString() || 'Unknown error', 0, null, new Response()) }
+  }
 }
