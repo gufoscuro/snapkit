@@ -38,6 +38,7 @@ Snapkit uses a context-based form system built on Svelte 5 runes. This architect
 | `$components/core/form/FormUtil.svelte`      | Form container component             |
 | `$components/core/form/form-state.svelte.ts` | Reactive state management with runes |
 | `$components/core/form/form-context.ts`      | Context API (get/set)                |
+| `$components/core/form/form.ts`              | Field prop types and `FormFieldClass` constants |
 | `$components/core/form/validation.ts`        | Validation builder                   |
 
 ## FormUtil Component
@@ -52,13 +53,14 @@ Snapkit uses a context-based form system built on Svelte 5 runes. This architect
 
 ```typescript
 type Props = {
-  initialValues: T;                    // Initial form values
-  validate?: ValidateFn<T>;            // Validation function
+  initialValues: T;                         // Initial form values
+  validate?: ValidateFn<T>;                 // Validation function
+  resourceConfig?: LegalEntityResourceConfig; // Tenant field config (visibility + dynamic required)
   onSubmit: (values: T) => Promise<unknown>;  // Submit handler
   onSuccess?: (payload: SuccessPayload) => void;
   onFailure?: (payload: FailurePayload) => void;
-  locked?: boolean;                    // Disable form interactions
-  novalidate?: boolean;                // Disable native validation (default: true)
+  locked?: boolean;                         // Disable form interactions
+  novalidate?: boolean;                     // Disable native validation (default: true)
   class?: string;
 };
 ```
@@ -116,6 +118,7 @@ type FormAPI<T> = {
   readonly inflight: boolean;
   readonly locked: boolean;
   readonly errorMessage: string | null;
+  readonly resourceConfig?: LegalEntityResourceConfig; // forwarded from FormUtil prop
 
   // Methods
   updateField: <K extends keyof T>(name: K, value: T[K]) => void;
@@ -137,6 +140,105 @@ const form = getFormContext<MyFormValues>();
 // Optional context - returns null if not inside FormUtil
 const form = getFormContextOptional<MyFormValues>();
 ```
+
+## Resource Config: field visibility and dynamic validation
+
+`resourceConfig` is an optional `LegalEntityResourceConfig` object sourced from `entityConfig.resources['resource-key']`. When passed to `FormUtil`, it enables two automatic behaviours for all autowired field components inside the form.
+
+### Type
+
+```typescript
+// src/lib/stores/tenant-config/types.ts
+type ResourceFieldConfig = {
+  visible?: boolean   // false → field is hidden
+  required?: boolean  // true  → field becomes required at runtime
+}
+
+type LegalEntityResourceConfig = {
+  fields: Record<string, ResourceFieldConfig>
+  custom_fields: ResourceCustomFieldConfig[]
+}
+```
+
+### 1. Config-driven field visibility
+
+Any field whose `name` matches a key with `visible: false` in `resourceConfig.fields` is **automatically hidden** — no extra props needed on the field component. This combines with the local `hidden` prop (see below): a field is hidden if either condition is true.
+
+```svelte
+const resourceConfig = $derived(entityConfig?.resources?.['customers'])
+
+<FormUtil {resourceConfig} ...>
+  <!-- Hidden automatically if resourceConfig.fields.vat_number.visible === false -->
+  <TextField name="vat_number" ... />
+</FormUtil>
+```
+
+### 2. Dynamic required validation
+
+Fields with `required: true` in `resourceConfig.fields` are automatically added to validation — even if they are not listed in the static `validate` schema. `FormUtil` wraps the provided `validate` function via `buildEffectiveValidate`:
+
+- Config-required fields are validated first
+- Static `validate` errors take priority (override config errors on the same field)
+
+```svelte
+<FormUtil {validate} {resourceConfig} ...>
+  <!-- vat_number becomes required if resourceConfig.fields.vat_number.required === true -->
+  <TextField name="vat_number" ... />
+</FormUtil>
+```
+
+This means `validateUpdate` can stay minimal (only format rules) and rely on `resourceConfig` for tenant-specific required fields.
+
+### Deriving resourceConfig
+
+```typescript
+// Always derive from SnippetProps — the key must match the API resource name
+const resourceConfig = $derived(entityConfig?.resources?.['customers'])
+// or: entityConfig?.resources?.['orders'], etc.
+```
+
+---
+
+## Field Visibility: the `hidden` prop
+
+All built-in field components accept a `hidden` prop. When `true`, the field and its label are removed from the DOM entirely (not just visually hidden). This is for **local, conditional** visibility based on form values.
+
+**Supported on:**
+- `BaseFieldProps` → `TextField`, `TextareaField`, `SelectField`, `DateField`, `CountryField`
+- `SwitchFieldProps` → `SwitchField`
+- `EntitySelectorProps` → `FormGenericSingleSelector` and entity-specific selectors
+
+```svelte
+<!-- Hide last_name unless type is individual -->
+<TextField
+  name="last_name"
+  label={m.last_name()}
+  hidden={formAPI?.values?.type !== 'individual'} />
+
+<!-- Always visible, but hides if config says visible: false -->
+<TextField name="vat_number" label={m.vat()} />
+```
+
+**Visibility resolution (inside each field component):**
+
+```typescript
+// How isHidden is computed inside every field:
+const isHidden = $derived(
+  hidden || form?.resourceConfig?.fields?.[name]?.visible === false
+)
+```
+
+**Priority rules:**
+
+| Condition | Result |
+|---|---|
+| `hidden={true}` (local prop) | Field hidden |
+| `resourceConfig.fields[name].visible === false` | Field hidden |
+| Both false / absent | Field visible |
+
+Local `hidden` and config visibility are independent — either one is sufficient to hide a field.
+
+---
 
 ## Creating Field Components
 
@@ -436,3 +538,6 @@ See the POC implementation for a complete working example:
 5. **Use validation builder** - More maintainable than manual validation functions
 6. **Localize field names** - Pass Paraglide messages to `field` option for localized errors
 7. **Handle loading states** - Check `form.inflight` to disable submit buttons
+8. **Pass `resourceConfig` on entity forms** - Enables automatic field visibility and dynamic required validation driven by tenant config. Always derive it with `$derived(entityConfig?.resources?.['resource-key'])`.
+9. **Use `hidden` for conditional local visibility** - Prefer `hidden={condition}` over wrapping fields in `{#if}` blocks. The field component handles the DOM removal and skeleton suppression internally.
+10. **Never put `v.required()` in `validateUpdate`** - For update forms, rely on `resourceConfig` for required validation. Only include format/business-rule validators (e.g. `v.email()`) in the update schema.

@@ -12,7 +12,8 @@ snapkit-content/
 │   ├── development-guidelines.md  # Component creation and organization
 │   ├── patterns.md                # Common component patterns (selectors, etc.)
 │   ├── state-sharing.md           # Sibling component state sharing architecture
-│   └── forms.md                   # Form system with context API and validation
+│   ├── forms.md                   # Form system with context API and validation
+│   └── detail-record-form.md      # Create/update record form guide (useDetailRecord)
 ├── api/                  # API integration guidelines
 │   └── integration-guidelines.md  # API types, requests, error handling
 └── routing/              # Navigation and routing patterns
@@ -31,6 +32,7 @@ snapkit-content/
 - **patterns.md**: Specific patterns like selector components, with implementation examples
 - **state-sharing.md**: Architecture for sharing state between sibling components using contracts and bindings. Covers PageState, useProvides/useConsumes hooks, and database-driven configuration
 - **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, and scaffolding examples
+- **detail-record-form.md**: Step-by-step guide for creating create/update detail form components using `useDetailRecord`. Covers the full workflow: entity type discovery, contract, `useDetailRecord` setup, validation schemas, resource config, page state sharing, and the component checklist
 - **resource-table.md**: Generic ResourceTable component for data tables. Covers declarative column configuration, 11 built-in renderers, utilities (createApiFetcher, createArchiveAction), table variants, and best practices
 
 ### API
@@ -67,6 +69,9 @@ When updating guidelines:
 - "How do components share state?" → `components/state-sharing.md`
 - "How to create a form?" → `components/forms.md`
 - "How to validate form fields?" → `components/forms.md`
+- "How to create a create/edit record form?" → `components/detail-record-form.md`
+- "How to use useDetailRecord?" → `components/detail-record-form.md`
+- "How to handle create and update in the same component?" → `components/detail-record-form.md`
 - "How to create a data table?" → `components/resource-table.md`
 - "How to use ResourceTable?" → `components/resource-table.md`
 - "What renderers are available for tables?" → `components/resource-table.md`
