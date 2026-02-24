@@ -7,6 +7,15 @@ import type { LayoutLoad, LayoutLoadEvent } from './$types'
 
 const unauthenticatedRoutes = ['/(app)/login']
 
+interface GlobalsCache {
+  legalEntityId: string | null
+  user: UserResource | null
+  legalEntity: LegalEntity | null
+  entityConfig: LegalEntityConfigResponse | null
+}
+
+let globalsCache: GlobalsCache | null = null
+
 async function fetchGlobals(isAuthenticated: boolean, cookieLegalEntityId: string | null) {
   await apiRequest({
     url: '/tenant',
@@ -18,6 +27,15 @@ async function fetchGlobals(isAuthenticated: boolean, cookieLegalEntityId: strin
       legalEntity: null,
       entityConfig: null,
     }
+
+  // Cache hit: same legal entity, skip heavy API calls
+  if (globalsCache !== null && globalsCache.legalEntityId === cookieLegalEntityId) {
+    return {
+      user: globalsCache.user,
+      legalEntity: globalsCache.legalEntity,
+      entityConfig: globalsCache.entityConfig,
+    }
+  }
 
   const user = await apiRequest<UserResource>({
     url: '/user',
@@ -47,6 +65,8 @@ async function fetchGlobals(isAuthenticated: boolean, cookieLegalEntityId: strin
     }
   }
 
+  globalsCache = { legalEntityId: cookieLegalEntityId, user, legalEntity, entityConfig }
+
   return {
     user,
     legalEntity,
@@ -56,7 +76,7 @@ async function fetchGlobals(isAuthenticated: boolean, cookieLegalEntityId: strin
 
 export const load: LayoutLoad = async (event: LayoutLoadEvent) => {
   try {
-    const { legalEntityId } = await event.parent()
+    const { legalEntityId } = (await event.parent()) as { legalEntityId: string | null }
     return await fetchGlobals(!unauthenticatedRoutes.includes(event.route.id), legalEntityId)
   } catch {
     throw error(404, 'Tenant not found')
