@@ -1,4 +1,4 @@
-import type { TSchema, Static } from '@sinclair/typebox'
+import type { Static, TSchema } from '@sinclair/typebox'
 
 /**
  * Contract that defines what a component provides and consumes.
@@ -6,7 +6,7 @@ import type { TSchema, Static } from '@sinclair/typebox'
  */
 export interface ComponentContract<
   TProvides extends Record<string, TSchema> = Record<string, TSchema>,
-  TConsumes extends Record<string, TSchema> = Record<string, TSchema>
+  TConsumes extends Record<string, TSchema> = Record<string, TSchema>,
 > {
   /** Unique identifier for the contract */
   $id: string
@@ -32,6 +32,7 @@ export interface BindingConfig {
 export interface StateHandle<T> {
   get(): T
   set(value: T): void
+  unset(): void
   update(fn: (current: T) => T): void
 }
 

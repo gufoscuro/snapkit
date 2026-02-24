@@ -11,12 +11,13 @@
     header?: Snippet
     content?: Snippet
     footer?: Snippet
+    collapsible?: 'offcanvas' | 'icon' | 'none'
   }
 
-  const { header, content, footer }: Props = $props()
+  const { header, content, footer, collapsible = 'icon' }: Props = $props()
 </script>
 
-<Sidebar.Root collapsible="icon">
+<Sidebar.Root {collapsible} class="sidebar-wrapper">
   {#if header}
     <Sidebar.Header class="justify-center space-y-3 py-3">
       {@render header()}
@@ -35,3 +36,9 @@
 
   <Sidebar.Rail />
 </Sidebar.Root>
+
+<style>
+  :global(.sidebar-wrapper) {
+    view-transition-name: sidebar;
+  }
+</style>

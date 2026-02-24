@@ -23,10 +23,11 @@
     snippet: SnippetDefinition
     props?: Record<string, any>
     children?: Snippet
+    fallback?: Snippet<[snippetProps: ReturnType<SnippetPropsGetter>]>
     class?: string
   }
 
-  let { props, snippet, children, class: className }: SnippetResolverProps = $props()
+  let { props, snippet, children, fallback, class: className }: SnippetResolverProps = $props()
 
   // Get the snippet props getter from context - $derived ensures reactivity
   const getSnippetProps = getContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY)
@@ -111,4 +112,6 @@
   {:else}
     <ComponentFunction {...snippetProps} {...props} />
   {/if}
-{:else}{/if}
+{:else if fallback}
+  {@render fallback?.(snippetProps)}
+{/if}

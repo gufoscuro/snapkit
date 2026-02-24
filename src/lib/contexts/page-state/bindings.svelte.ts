@@ -1,7 +1,7 @@
+import type { Static } from '@sinclair/typebox'
 import { getContext, setContext } from 'svelte'
-import type { TSchema, Static } from '@sinclair/typebox'
-import { getPageState, type PageState } from './page-state.svelte.js'
-import type { ComponentContract, BindingConfig, ResolvedBindings, StateHandle } from './types.js'
+import { getPageState } from './page-state.svelte.js'
+import type { BindingConfig, ComponentContract, ResolvedBindings, StateHandle } from './types.js'
 
 const BINDINGS_KEY = Symbol('snippet-bindings')
 
@@ -9,13 +9,10 @@ const BINDINGS_KEY = Symbol('snippet-bindings')
  * Resolve bindings by applying defaults where not explicitly specified.
  * Default: logical name = namespace name
  */
-export function resolveBindings(
-  contract: ComponentContract,
-  config?: BindingConfig
-): ResolvedBindings {
+export function resolveBindings(contract: ComponentContract, config?: BindingConfig): ResolvedBindings {
   const resolved: ResolvedBindings = {
     provides: {},
-    consumes: {}
+    consumes: {},
   }
 
   // Resolve provides bindings
@@ -53,12 +50,9 @@ export function getSnippetBindings(): ResolvedBindings {
  * Create a typed state handle for a "provides" binding.
  * Use this when your component writes state.
  */
-export function useProvides<
-  C extends ComponentContract,
-  K extends keyof C['provides'] & string
->(
+export function useProvides<C extends ComponentContract, K extends keyof C['provides'] & string>(
   contract: C,
-  logicalName: K
+  logicalName: K,
 ): StateHandle<Static<C['provides'][K]>> {
   const pageState = getPageState()
   const bindings = getSnippetBindings()
@@ -77,9 +71,12 @@ export function useProvides<
     set(value: T): void {
       pageState.set(namespace, value)
     },
+    unset(): void {
+      pageState.set(namespace, undefined)
+    },
     update(fn: (current: T) => T): void {
-      pageState.update<T>(namespace, (current) => fn(current as T))
-    }
+      pageState.update<T>(namespace, current => fn(current as T))
+    },
   }
 }
 
@@ -87,12 +84,9 @@ export function useProvides<
  * Create a typed state handle for a "consumes" binding.
  * Use this when your component reads state.
  */
-export function useConsumes<
-  C extends ComponentContract,
-  K extends keyof C['consumes'] & string
->(
+export function useConsumes<C extends ComponentContract, K extends keyof C['consumes'] & string>(
   contract: C,
-  logicalName: K
+  logicalName: K,
 ): { get(): Static<C['consumes'][K]> | undefined } {
   const pageState = getPageState()
   const bindings = getSnippetBindings()
@@ -107,6 +101,6 @@ export function useConsumes<
   return {
     get(): T | undefined {
       return pageState.get<T>(namespace)
-    }
+    },
   }
 }
