@@ -467,6 +467,26 @@ export type Permission =
   | 'delete-customers'
 
 /**
+ * Customer from Moddo API GET /api/legal-entities/{legalEntity}/customers
+ */
+export type Customer = {
+  id: string
+  type: 'company' | 'individual' | 'public_entity' | 'consortium' | 'association'
+  status: 'active' | 'suspended' | 'blocked' | 'ceased' | 'prospect'
+  name: string
+  last_name: string
+  trade_name: string
+  vat_number: string
+  tax_id: string
+  email: string
+  phone: string
+  pec: string
+  language_code: string
+  registration_country_code: string
+  version: number
+}
+
+/**
  * Legal entity from GET /api/user or GET /api/legal-entities/{id}
  */
 export type LegalEntity = {

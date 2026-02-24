@@ -1,5 +1,5 @@
 import * as m from '$lib/paraglide/messages.js'
-import type { SalesOrderSummary, SupplyOrderSummary } from '$lib/types/api-types'
+import type { Customer, SalesOrderSummary, SupplyOrderSummary } from '$lib/types/api-types'
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline'
 
@@ -53,4 +53,38 @@ export function getSalesShippedLabel(shipped: NonNullable<SalesOrderSummary['shi
 
 export function getSalesShippedVariant(shipped: NonNullable<SalesOrderSummary['shipped']>): BadgeVariant {
   return salesShippedStatusConfig[shipped]?.variant ?? 'default'
+}
+
+// Customer Type
+export const customerTypeConfig: Record<Customer['type'], EnumDisplayConfig> = {
+  company: { label: m.enum_customer_type_company, variant: 'default' },
+  individual: { label: m.enum_customer_type_individual, variant: 'secondary' },
+  public_entity: { label: m.enum_customer_type_public_entity, variant: 'outline' },
+  consortium: { label: m.enum_customer_type_consortium, variant: 'secondary' },
+  association: { label: m.enum_customer_type_association, variant: 'secondary' },
+}
+
+export function getCustomerTypeLabel(type: Customer['type']): string {
+  return customerTypeConfig[type]?.label() ?? type
+}
+
+export function getCustomerTypeVariant(type: Customer['type']): BadgeVariant {
+  return customerTypeConfig[type]?.variant ?? 'default'
+}
+
+// Customer Status
+export const customerStatusConfig: Record<Customer['status'], EnumDisplayConfig> = {
+  active: { label: m.enum_customer_status_active, variant: 'default' },
+  suspended: { label: m.enum_customer_status_suspended, variant: 'outline' },
+  blocked: { label: m.enum_customer_status_blocked, variant: 'destructive' },
+  ceased: { label: m.enum_customer_status_ceased, variant: 'secondary' },
+  prospect: { label: m.enum_customer_status_prospect, variant: 'secondary' },
+}
+
+export function getCustomerStatusLabel(status: Customer['status']): string {
+  return customerStatusConfig[status]?.label() ?? status
+}
+
+export function getCustomerStatusVariant(status: Customer['status']): BadgeVariant {
+  return customerStatusConfig[status]?.variant ?? 'default'
 }
