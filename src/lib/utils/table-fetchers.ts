@@ -1,11 +1,11 @@
 import { apiRequest } from './request'
-import { createQueryRequestObject, DEFAULT_ITEMS_LIMIT, type FilterQuery } from './filters'
+import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from './filters'
 
 /**
  * Creates a generic API fetcher function for ResourceTable
  *
  * Returns a function that fetches data from the specified API endpoint
- * with automatic pagination and filter support.
+ * with automatic page-based pagination and filter support.
  *
  * @param url - API endpoint URL (e.g., 'supply/supplier')
  * @returns Fetch function compatible with ResourceTable
@@ -19,16 +19,13 @@ import { createQueryRequestObject, DEFAULT_ITEMS_LIMIT, type FilterQuery } from 
  * />
  */
 export function createApiFetcher<T>(url: string) {
-	return async (offset: number = 0, filters?: FilterQuery): Promise<T[]> => {
-		const response = await apiRequest<T[]>({
+	return async (page: number = 1, filters?: FilterQuery): Promise<PaginatedResponse<T>> => {
+		return await apiRequest<PaginatedResponse<T>>({
 			url,
-			queryParams: createQueryRequestObject({
-				limit: DEFAULT_ITEMS_LIMIT,
-				offset,
-				search: filters?.search,
-				query: filters?.query
-			})
+			queryParams: {
+				page,
+				...createQueryRequestObject({ search: filters?.search, query: filters?.query })
+			}
 		})
-		return response ?? []
 	}
 }

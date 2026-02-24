@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends Record<string, any>">
 	import { DataTable } from '$lib/components/core/DataTable'
 	import { useConsumes } from '$lib/contexts/page-state/bindings.svelte'
-	import { DEFAULT_ITEMS_LIMIT, type FilterQuery } from '$lib/utils/filters'
+	import { type FilterQuery } from '$lib/utils/filters'
 	import { resolveColumns } from './utils/column-resolver'
 	import type { ResourceTableProps } from './types'
 
@@ -20,6 +20,7 @@
 	let loading = $state(true)
 	let loadingMore = $state(false)
 	let hasMore = $state(true)
+	let currentPage = $state(1)
 
 	// --- Filter Integration (optional) ---
 	// Note: Binding name is fixed to 'filters' for now
@@ -30,9 +31,10 @@
 	async function loadInitial() {
 		loading = true
 		try {
-			const items = await fetchFunction(0, filters)
-			data = items
-			hasMore = items.length >= DEFAULT_ITEMS_LIMIT
+			const response = await fetchFunction(1, filters)
+			data = response.data
+			currentPage = 1
+			hasMore = !!response.links.next
 		} catch (err) {
 			console.error('ResourceTable: Failed to load data:', err)
 			data = []
@@ -47,9 +49,10 @@
 
 		loadingMore = true
 		try {
-			const items = await fetchFunction(data.length, filters)
-			data = [...data, ...items]
-			hasMore = items.length >= DEFAULT_ITEMS_LIMIT
+			const response = await fetchFunction(currentPage + 1, filters)
+			data = [...data, ...response.data]
+			currentPage = response.meta.current_page
+			hasMore = !!response.links.next
 		} catch (err) {
 			console.error('ResourceTable: Failed to load more:', err)
 		} finally {

@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export const DEFAULT_ITEMS_LIMIT: number = 100
 
 export type QueryObject = {
 	[key: string]: string
@@ -11,8 +10,6 @@ export type AdditionalQueryProps = {
 
 export interface MinimalFilterQuery {
 	search?: string
-	limit?: number
-	offset?: number
 }
 
 export type FilterQuery = MinimalFilterQuery & {
@@ -24,6 +21,30 @@ export type ExtendedFilterQuery = FilterQuery & AdditionalQueryProps
 export type ExtendedFilterQueryObject = MinimalFilterQuery & {
 	query?: string
 } & AdditionalQueryProps
+
+export type PaginationLinks = {
+	first: string
+	last: string
+	prev: string | null
+	next: string | null
+}
+
+export type PaginationMeta = {
+	current_page: number
+	from: number
+	last_page: number
+	per_page: number
+	to: number
+	total: number
+	path: string
+	links: { url: string; label: string; active: boolean }[]
+}
+
+export type PaginatedResponse<T> = {
+	data: T[]
+	links: PaginationLinks
+	meta: PaginationMeta
+}
 
 /**
  * Parses a query string into an object
@@ -62,7 +83,7 @@ export function getQueryFromURL<T = AdditionalQueryProps>(
  * @returns {boolean} - Whether the query is active
  */
 export function isQueryActive(query: FilterQuery): boolean {
-	return !!query.search || !!query.limit || !!query.offset || !!query.query
+	return !!query.search || !!query.query
 }
 
 /**
@@ -73,6 +94,7 @@ export function isQueryActive(query: FilterQuery): boolean {
 export function isSearchActive(query: FilterQuery): boolean {
 	return !!query.search
 }
+
 /**
  * Creates request object from query
  * @param query {FilterQuery} - Query object
@@ -80,16 +102,12 @@ export function isSearchActive(query: FilterQuery): boolean {
  */
 export function createQueryRequestObject({
 	search,
-	limit = DEFAULT_ITEMS_LIMIT,
-	offset,
 	query,
 	...overrides
 }: FilterQuery): ExtendedFilterQueryObject {
 	return {
 		...(search && search.trim() !== '' ? { search } : {}),
 		...(query ? { query: JSON.stringify(query) } : {}),
-		...(limit ? { limit } : {}),
-		...(offset ? { offset } : {}),
 		...(overrides ? overrides : {})
 	}
 }

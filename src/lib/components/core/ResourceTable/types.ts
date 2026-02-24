@@ -1,5 +1,5 @@
 import type { ComponentContract } from '$lib/contexts/page-state/types'
-import type { FilterQuery } from '$lib/utils/filters'
+import type { FilterQuery, PaginatedResponse } from '$lib/utils/filters'
 import type { Snippet } from 'svelte'
 import type { BadgeVariant } from '$lib/components/ui/badge'
 import type { ButtonVariant } from '$lib/components/ui/button'
@@ -17,7 +17,7 @@ export type ResourceTableProps<T extends Record<string, any>> = {
 	/**
 	 * Function to fetch data with pagination and optional filters
 	 */
-	fetchFunction: (offset: number, filters?: FilterQuery) => Promise<T[]>
+	fetchFunction: (page: number, filters?: FilterQuery) => Promise<PaginatedResponse<T>>
 
 	/**
 	 * Column configurations (declarative)

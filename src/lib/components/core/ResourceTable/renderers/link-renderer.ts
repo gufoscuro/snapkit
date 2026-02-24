@@ -1,6 +1,6 @@
-import { createRawSnippet } from 'svelte'
 import { renderSnippet } from '$lib/components/ui/data-table'
 import type { CellContext } from '@tanstack/table-core'
+import { createRawSnippet } from 'svelte'
 import type { ColumnConfig, LinkConfig } from '../types'
 
 /**
@@ -28,38 +28,37 @@ import type { ColumnConfig, LinkConfig } from '../types'
  * }
  */
 export function createLinkRenderer<T>(config: ColumnConfig<T>) {
-	return (context: CellContext<T, unknown>) => {
-		const row = context.row.original
-		const linkConfig = config.rendererConfig as LinkConfig<T> | undefined
+  return (context: CellContext<T, unknown>) => {
+    const row = context.row.original
+    const linkConfig = config.rendererConfig as LinkConfig<T> | undefined
 
-		// Use custom accessor if provided, otherwise use default getValue
-		const value = linkConfig?.valueAccessor ? linkConfig.valueAccessor(row) : context.getValue()
+    // Use custom accessor if provided, otherwise use default getValue
+    const value = linkConfig?.valueAccessor ? linkConfig.valueAccessor(row) : context.getValue()
 
-		// Fallback for missing/empty values
-		if (value === null || value === undefined || value === '') {
-			return '-'
-		}
+    // Fallback for missing/empty values
+    if (value === null || value === undefined || value === '') {
+      return '-'
+    }
 
-		const displayValue = String(value)
+    const displayValue = String(value)
 
-		// If no urlBuilder, just show text
-		if (!linkConfig?.urlBuilder) {
-			return displayValue
-		}
+    // If no urlBuilder, just show text
+    if (!linkConfig?.urlBuilder) {
+      return displayValue
+    }
 
-		const url = linkConfig.urlBuilder(row)
+    const url = linkConfig.urlBuilder(row)
 
-		// If URL is empty, just show text without link
-		if (!url) {
-			return displayValue
-		}
+    // If URL is empty, just show text without link
+    if (!url) {
+      return displayValue
+    }
 
-		// Create snippet with link
-		const snippet = createRawSnippet(() => ({
-			render: () =>
-				`<a href="${url}" class="text-primary hover:underline">${displayValue}</a>`
-		}))
+    // Create snippet with link
+    const snippet = createRawSnippet(() => ({
+      render: () => `<a href="${url}" class="text-primary hover:underline hover:text-brand">${displayValue}</a>`,
+    }))
 
-		return renderSnippet(snippet)
-	}
+    return renderSnippet(snippet)
+  }
 }
