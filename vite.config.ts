@@ -42,7 +42,22 @@ export default defineConfig({
           name: 'server',
           environment: 'node',
           include: ['src/**/*.{test,spec}.{js,ts}'],
-          exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+          exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', 'src/**/*.unit.{test,spec}.{js,ts}'],
+        },
+      },
+
+      {
+        extends: './vite.config.ts',
+
+        resolve: {
+          conditions: ['browser'],
+        },
+
+        test: {
+          name: 'unit',
+          environment: 'happy-dom',
+          include: ['src/**/*.unit.{test,spec}.{js,ts}'],
+          setupFiles: ['src/test-setup.ts'],
         },
       },
     ],
