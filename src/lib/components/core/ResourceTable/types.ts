@@ -1,4 +1,3 @@
-import type { ComponentContract } from '$lib/contexts/page-state/types'
 import type { FilterQuery, PaginatedResponse } from '$lib/utils/filters'
 import type { Snippet } from 'svelte'
 import type { BadgeVariant } from '$lib/components/ui/badge'
@@ -25,9 +24,10 @@ export type ResourceTableProps<T extends Record<string, any>> = {
 	columns: ColumnConfig<T>[]
 
 	/**
-	 * Optional filter integration via ComponentContract
+	 * Optional filters to apply when fetching data.
+	 * Pass the result of useConsumes() from the parent component.
 	 */
-	filtersContract?: ComponentContract
+	filters?: FilterQuery
 
 	/**
 	 * Additional CSS classes

@@ -16,6 +16,8 @@
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import { useConsumes } from '$lib/contexts/page-state'
+  import type { FilterQuery } from '$lib/utils/filters'
   import * as m from '$lib/paraglide/messages.js'
   import type { SupplierSummary } from '$lib/types/api-types'
   import { createArchiveAction } from '$lib/utils/table-actions'
@@ -23,6 +25,9 @@
   import { createRoute } from '$utils/route-builder.js'
   import CategoryBadges from '../../CategoryBadges.svelte'
   import { SuppliersTableContract } from './SuppliersTable.contract.js'
+
+  const filtersHandle = useConsumes(SuppliersTableContract, 'filters')
+  const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
 
   // Column configuration - declarative and clean!
   const columns: ColumnConfig<SupplierSummary>[] = [
@@ -84,4 +89,4 @@
   const fetchSuppliers = createApiFetcher<SupplierSummary>('supply/supplier')
 </script>
 
-<ResourceTable {columns} fetchFunction={fetchSuppliers} filtersContract={SuppliersTableContract} class="mt-4" />
+<ResourceTable {columns} fetchFunction={fetchSuppliers} {filters} class="mt-4" />

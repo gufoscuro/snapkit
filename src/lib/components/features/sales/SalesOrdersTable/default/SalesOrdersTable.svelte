@@ -15,6 +15,8 @@
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import { useConsumes } from '$lib/contexts/page-state'
+  import type { FilterQuery } from '$lib/utils/filters'
   import * as m from '$lib/paraglide/messages.js'
   import type { SalesOrderSummary } from '$lib/types/api-types'
   import {
@@ -26,6 +28,9 @@
   import { createApiFetcher } from '$lib/utils/table-fetchers'
   import { createRoute } from '$utils/route-builder.js'
   import { SalesOrdersTableContract } from './SalesOrdersTable.contract.js'
+
+  const filtersHandle = useConsumes(SalesOrdersTableContract, 'filters')
+  const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
 
   // Column configuration - declarative and clean!
   const columns: ColumnConfig<SalesOrderSummary>[] = [
@@ -122,4 +127,4 @@
   const fetchOrders = createApiFetcher<SalesOrderSummary>('sales/order')
 </script>
 
-<ResourceTable {columns} fetchFunction={fetchOrders} filtersContract={SalesOrdersTableContract} class="mt-4" />
+<ResourceTable {columns} fetchFunction={fetchOrders} {filters} class="mt-4" />

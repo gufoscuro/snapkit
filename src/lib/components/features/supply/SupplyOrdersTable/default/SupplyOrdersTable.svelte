@@ -15,12 +15,17 @@
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import { useConsumes } from '$lib/contexts/page-state'
+  import type { FilterQuery } from '$lib/utils/filters'
   import * as m from '$lib/paraglide/messages.js'
   import type { SupplyOrderSummary } from '$lib/types/api-types'
   import { getSupplyStatusLabel, getSupplyStatusVariant } from '$lib/utils/enum-labels'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
   import { createRoute } from '$utils/route-builder.js'
   import { SupplyOrdersTableContract } from './SupplyOrdersTable.contract.js'
+
+  const filtersHandle = useConsumes(SupplyOrdersTableContract, 'filters')
+  const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
 
   // Column configuration - declarative and clean!
   const columns: ColumnConfig<SupplyOrderSummary>[] = [
@@ -95,4 +100,4 @@
   const fetchOrders = createApiFetcher<SupplyOrderSummary>('supply/order')
 </script>
 
-<ResourceTable {columns} fetchFunction={fetchOrders} filtersContract={SupplyOrdersTableContract} class="mt-4" />
+<ResourceTable {columns} fetchFunction={fetchOrders} {filters} class="mt-4" />
