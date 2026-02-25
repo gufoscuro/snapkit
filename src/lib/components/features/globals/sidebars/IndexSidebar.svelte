@@ -13,7 +13,7 @@
   const props: SnippetProps = $props()
 </script>
 
-<LeftSidebarWrapper>
+<LeftSidebarWrapper collapsible="offcanvas">
   {#snippet header()}
     <LegalEntitySwitcher {...props} />
   {/snippet}
