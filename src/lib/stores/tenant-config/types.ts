@@ -1,5 +1,27 @@
 import type { PageConfig } from '$lib/utils/page-registry'
 
+// =============================================================================
+// LEGAL ENTITY RESOURCE CONFIG
+// =============================================================================
+
+export type ResourceFieldConfig = {
+  visible?: boolean
+  required?: boolean
+}
+
+export type ResourceCustomFieldConfig = {
+  key: string
+  label: string
+  type: 'text' | 'number' | 'boolean' | 'date' | 'select' | 'textarea'
+  required: boolean
+  options?: string[]
+}
+
+export type LegalEntityResourceConfig = {
+  fields: Record<string, ResourceFieldConfig>
+  custom_fields: ResourceCustomFieldConfig[]
+}
+
 /**
  * @deprecated Use MenuItem instead
  * Kept for backward compatibility during migration
@@ -94,7 +116,7 @@ export interface DashboardConfigData {
  */
 export type LegalEntityConfigResponse = {
   version: number | null
-  resources: unknown[]
+  resources: Record<string, LegalEntityResourceConfig>
   /** The UI configuration payload (pages, menus) */
   dashboard: DashboardConfigData
   created_by: string | null

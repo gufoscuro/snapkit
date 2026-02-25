@@ -466,24 +466,73 @@ export type Permission =
   | 'edit-customers'
   | 'delete-customers'
 
+export type CustomerType = 'company' | 'individual' | 'public_entity' | 'consortium' | 'association'
+export type CustomerStatus = 'active' | 'suspended' | 'blocked' | 'ceased' | 'prospect'
+export type AtecoCode = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V'
+export type CompanySize = 'micro' | 'small' | 'medium' | 'large' | 'enterprise'
+export type EmployeeCountRange = '1_9' | '10_49' | '50_249' | '250_999' | '1000_plus'
+export type AnnualRevenueRange = 'under_2m' | '2m_10m' | '10m_50m' | '50m_250m' | 'over_250m'
+
+export type CustomerAddress = {
+  id: string
+  type: 'billing' | 'shipping' | 'legal'
+  is_default: boolean
+  address_line_1: string
+  address_line_2: string
+  city: string
+  province: string
+  region: string
+  postal_code: string
+  country_code: string
+  receiving_hours: string
+  delivery_instructions: string
+  warehouse_assignment: string
+  version: number
+}
+
+export type CustomerContact = {
+  id: string
+  type: 'primary' | 'technical_support' | 'administrative' | 'logistics' | 'quality'
+  name: string
+  job_title: string
+  phone: string
+  mobile_phone: string
+  email: string
+  version: number
+}
+
 /**
  * Customer from Moddo API GET /api/legal-entities/{legalEntity}/customers
  */
 export type Customer = {
   id: string
-  type: 'company' | 'individual' | 'public_entity' | 'consortium' | 'association'
-  status: 'active' | 'suspended' | 'blocked' | 'ceased' | 'prospect'
+  type: CustomerType
+  status: CustomerStatus
   name: string
   last_name: string
   trade_name: string
-  vat_number: string
-  tax_id: string
-  email: string
-  phone: string
-  pec: string
+  eori_code: string
+  ateco_code: AtecoCode | null
+  parent_id: string
+  company_size: CompanySize | null
+  employee_count_range: EmployeeCountRange | null
+  annual_revenue_range: AnnualRevenueRange | null
+  founded_year: number | null
   language_code: string
   registration_country_code: string
+  vat_number: string
+  tax_id: string
+  sdi_code: string
+  pec: string
+  email: string
+  phone: string
+  fax: string
+  website: string
+  notes: string
+  custom_fields: unknown[]
   version: number
+  addresses?: CustomerAddress[]
+  contacts?: CustomerContact[]
 }
 
 /**
