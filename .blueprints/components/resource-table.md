@@ -52,12 +52,52 @@ ResourceTable.svelte              # Main component with state & fetch logic
 
 ## Basic Usage
 
+### 0. Create the Component Contract (MANDATORY)
+
+Every table component that uses `ResourceTable` with filter integration **must** have a contract file that declares what it consumes from the page state.
+
+Create `YourTable.contract.ts` alongside the component:
+
+```typescript
+// YourTable/default/YourTable.contract.ts
+import { Type } from '@sinclair/typebox'
+import type { ComponentContract } from '$lib/contexts/page-state'
+
+export const ConsumedFilterStateSchema = Type.Object({
+  search: Type.Optional(Type.String()),
+  query: Type.Optional(Type.Record(Type.String(), Type.String()))
+})
+
+export const YourTableContract = {
+  $id: 'YourTable',
+  provides: {},
+  consumes: {
+    filters: ConsumedFilterStateSchema
+  }
+} as const satisfies ComponentContract
+```
+
+Then export the contract from the component's `<script module>` block:
+
+```svelte
+<script lang="ts" module>
+  export { YourTableContract as contract } from './YourTable.contract.js'
+</script>
+```
+
+> **Why?** The table component itself must call `useConsumes` (see step 1). This requires it to be wrapped by `SnippetBindingsProvider`, which uses the exported contract to resolve bindings. Without the contract, `useConsumes` can't find a valid namespace and throws.
+
+---
+
 ### 1. Import Required Components
 
 ```typescript
 import { ResourceTable } from '$lib/components/core/ResourceTable'
+import { useConsumes } from '$lib/contexts/page-state'
 import { createApiFetcher } from '$lib/utils/table-fetchers'
 import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+import type { FilterQuery } from '$lib/utils/filters'
+import { YourTableContract } from './YourTable.contract.js'
 ```
 
 ### 2. Define Column Configuration
@@ -89,18 +129,28 @@ const columns: ColumnConfig<YourType>[] = [
 ]
 ```
 
-### 3. Create Fetch Function
+### 3. Read filters from page state and create fetch function
+
+Call `useConsumes` at the top level of the script (NOT inside `{#if}` blocks):
 
 ```typescript
+// Read filters from page state — MUST be called at top level
+const filtersHandle = useConsumes(YourTableContract, 'filters')
+const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
+
 const fetchItems = createApiFetcher<YourType>('api/endpoint')
 // Returns: (page: number, filters?: FilterQuery) => Promise<PaginatedResponse<YourType>>
 ```
 
 ### 4. Render ResourceTable
 
+Pass `{filters}` directly — ResourceTable will react to filter changes:
+
 ```svelte
-<ResourceTable {columns} fetchFunction={fetchItems} filtersContract={YourTableContract} class="mt-4" />
+<ResourceTable {columns} fetchFunction={fetchItems} {filters} class="mt-4" />
 ```
+
+> **Why not `filtersContract` on ResourceTable?** `ResourceTable` is a generic core component — it should not depend on the page state context system. The table feature component (which IS wrapped by `SnippetBindingsProvider`) reads filters and passes them as a plain reactive prop.
 
 ---
 
@@ -792,14 +842,19 @@ const columns = [
 ```svelte
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
+  import { useConsumes } from '$lib/contexts/page-state'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createRoute } from '$utils/route-builder.js'
   import type { SupplierSummary } from '$lib/types/api-types'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import type { FilterQuery } from '$lib/utils/filters'
   import * as m from '$lib/paraglide/messages.js'
   import CategoryBadges from '../../CategoryBadges.svelte'
   import { SuppliersTableContract } from './SuppliersTable.contract.js'
+
+  const filtersHandle = useConsumes(SuppliersTableContract, 'filters')
+  const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
 
   const columns: ColumnConfig<SupplierSummary>[] = [
     {
@@ -854,7 +909,7 @@ const columns = [
   const fetchSuppliers = createApiFetcher<SupplierSummary>('supply/supplier')
 </script>
 
-<ResourceTable {columns} fetchFunction={fetchSuppliers} filtersContract={SuppliersTableContract} class="mt-4" />
+<ResourceTable {columns} fetchFunction={fetchSuppliers} {filters} class="mt-4" />
 ```
 
 **Result:** 53% less code, more readable, fully type-safe!
