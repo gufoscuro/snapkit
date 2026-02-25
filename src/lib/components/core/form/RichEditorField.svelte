@@ -310,6 +310,10 @@
   .rich-editor-area :global(.ProseMirror s) {
     @apply line-through;
   }
+
+  .rich-editor-area :global(.ProseMirror) {
+    @apply text-sm;
+  }
   /* Placeholder when empty */
   .rich-editor-area :global(.ProseMirror p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
