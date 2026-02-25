@@ -19,10 +19,10 @@
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { Customer } from '$lib/types/api-types'
+  import { getCustomerStatusLabel, getCustomerTypeLabel } from '$lib/utils/enum-labels'
   import type { FilterQuery } from '$lib/utils/filters'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
-  import { getCustomerTypeLabel } from '$utils/customers'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
   import { CustomersTableContract } from './CustomersTable.contract.js'
@@ -61,17 +61,23 @@
       header: m.type(),
       renderer: 'badge',
       rendererConfig: {
-        variantMapper: (type: Customer['type']) => {
-          const variants: Record<Customer['type'], 'brand' | 'default' | 'secondary' | 'outline'> = {
-            company: 'default',
-            individual: 'secondary',
-            public_entity: 'secondary',
-            consortium: 'secondary',
-            association: 'outline',
-          }
-          return variants[type] ?? 'default'
-        },
+        variantMapper: (type: Customer['type']) => 'outline',
         labelMapper: (type: Customer['type']) => getCustomerTypeLabel(type),
+      },
+    },
+    {
+      accessorKey: 'status',
+      header: m.status(),
+      renderer: 'status',
+      rendererConfig: {
+        variantMapper: (status: Customer['status']) => {
+          if (status === 'active') return 'active'
+          if (status === 'prospect') return 'in-progress'
+          if (status === 'suspended') return 'paused'
+          if (status === 'blocked') return 'blocked'
+          return 'neutral'
+        },
+        labelMapper: (status: Customer['status']) => getCustomerStatusLabel(status),
       },
     },
     {

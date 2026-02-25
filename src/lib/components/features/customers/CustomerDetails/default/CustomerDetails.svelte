@@ -17,6 +17,7 @@
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
+  import StatusSelector, { type StatusOption } from '$components/core/form/StatusSelector.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
   import { useProvides } from '$lib/contexts/page-state'
@@ -51,7 +52,9 @@
       customerHandle.unset()
       breadcrumbTitle.clear()
     },
-    extraSubmitData: {},
+    extraSubmitData: {
+      custom_fields: [],
+    },
   })
 
   const { handleSubmit, handleSuccess, handleFailure } = detail
@@ -86,7 +89,17 @@
   }))
 
   const typeItems = Object.entries(customerTypeConfig).map(([value, cfg]) => ({ value, label: cfg.label() }))
-  const statusItems = Object.entries(customerStatusConfig).map(([value, cfg]) => ({ value, label: cfg.label() }))
+  const customerStatuses: StatusOption[] = Object.entries(customerStatusConfig).map(([value, cfg]) => ({
+    value,
+    label: cfg.label(),
+    variant:
+      (
+        { active: 'active', prospect: 'in-progress', suspended: 'paused', blocked: 'blocked' } as Record<
+          string,
+          StatusOption['variant']
+        >
+      )[value] ?? 'neutral',
+  }))
 
   const atecoItems = [
     'A',
@@ -173,7 +186,14 @@
           class={FormFieldClass.MinWidth}
           disabled={!!record} />
 
-        <SelectField name="status" label={m.status()} items={statusItems} class={FormFieldClass.MinWidth} />
+        <div class={FormFieldClass.MaxWidth}>
+          <StatusSelector
+            name="status"
+            label={m.status()}
+            statuses={customerStatuses}
+            class={FormFieldClass.MinWidth}
+            allowClear={false} />
+        </div>
 
         <TextField name="name" label={m.name()} class={FormFieldClass.MaxWidth} focus={!record} />
         <TextField
