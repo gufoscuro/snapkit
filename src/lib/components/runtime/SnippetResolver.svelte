@@ -32,8 +32,12 @@
   // Get the snippet props getter from context - $derived ensures reactivity
   const getSnippetProps = getContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY)
   let snippetProps = $derived(getSnippetProps?.())
-  let ComponentFunction = $state<ConstructorOfATypedSvelteComponent | null>(null)
-  let componentContract = $state<ComponentContract | null>(null)
+
+  // Component and contract are kept as a single object to guarantee they are always
+  // updated atomically — prevents a transient render where a new Component is paired
+  // with the previous componentContract (or null), which would cause useConsumes() to
+  // read bindings from the wrong SnippetBindingsProvider context.
+  let loaded = $state<CachedComponent | null>(null)
   let loading: boolean = $state(true)
   let error: any = $state(null)
   let latestKey: string = $state('')
@@ -45,8 +49,7 @@
 
   async function loadSnippet(s: SnippetDefinition) {
     if (!s || !s.componentKey || !s.enabled) {
-      ComponentFunction = null
-      componentContract = null
+      loaded = null
       latestKey = ''
       loading = false
       return
@@ -60,8 +63,7 @@
       // Check shared cache first
       const cached = sharedComponentsCache.get(s.componentKey)
       if (cached) {
-        ComponentFunction = cached.Component
-        componentContract = cached.contract
+        loaded = cached
         debugLog(`✓ Loaded from shared cache: ${s.componentKey}`)
         return
       }
@@ -71,13 +73,9 @@
       const customModule = await componentDef.component()
       const contract = customModule.contract ?? null
 
-      sharedComponentsCache.set(s.componentKey, {
-        Component: customModule.default,
-        contract,
-      })
-
-      ComponentFunction = customModule.default
-      componentContract = contract
+      const entry: CachedComponent = { Component: customModule.default, contract }
+      sharedComponentsCache.set(s.componentKey, entry)
+      loaded = entry
       debugLog(`✓ Loaded and cached component: ${s.componentKey}`, contract ? '(with contract)' : '(no contract)')
     } catch (err) {
       console.error(`Failed to load component:`, err)
@@ -104,14 +102,14 @@
       <Skeleton class="mx-auto {className || 'h-10 w-60'}" />
     </div>
   {/if}
-{:else if ComponentFunction}
-  {#if componentContract}
-    <SnippetBindingsProvider contract={componentContract} bindings={snippet.bindings}>
-      <ComponentFunction {...snippetProps} {...props} />
+{:else if loaded?.contract}
+  {#key loaded.contract.$id}
+    <SnippetBindingsProvider contract={loaded.contract} bindings={snippet.bindings}>
+      <loaded.Component {...snippetProps} {...props} />
     </SnippetBindingsProvider>
-  {:else}
-    <ComponentFunction {...snippetProps} {...props} />
-  {/if}
+  {/key}
+{:else if loaded}
+  <loaded.Component {...snippetProps} {...props} />
 {:else if fallback}
   {@render fallback?.(snippetProps)}
 {/if}
