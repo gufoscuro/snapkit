@@ -35,6 +35,7 @@
     autoWidth = InputFieldDefaults.autoWidth,
     rightLabel = undefined,
     disabled = InputFieldDefaults.disabled,
+    hidden = false,
     textAlign = 'left',
     width = InputFieldDefaults.width,
     right,
@@ -47,6 +48,8 @@
 
   // Autowire to form context (optional = works standalone too)
   const form = getFormContextOptional()
+
+  const isHidden = $derived(hidden || form?.resourceConfig?.fields?.[name]?.visible === false)
 
   // Single source of truth: form context OR bindable prop
   const value = $derived(form ? (form.values[name] as string | number | undefined) : valueProp)
@@ -98,7 +101,7 @@
   }
 </script>
 
-{#if browser}
+{#if browser && !isHidden}
   <div class:numeric={type === 'number'} class:flex-1={autoWidth}>
     <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
@@ -138,7 +141,7 @@
       {/snippet}
     </FormFieldMessages>
   </div>
-{:else}
+{:else if !isHidden}
   <FormFieldSkeleton {showLabel} {width} />
 {/if}
 

@@ -27,6 +27,7 @@
     showLabel = TextareaFieldDefaults.showLabel,
     showErrorMessage = TextareaFieldDefaults.showErrorMessage,
     disabled = TextareaFieldDefaults.disabled,
+    hidden = false,
     rows = TextareaFieldDefaults.rows,
     width = TextareaFieldDefaults.width,
     oninput,
@@ -37,6 +38,8 @@
 
   // Autowire to form context
   const form = getFormContextOptional()
+
+  const isHidden = $derived(hidden || form?.resourceConfig?.fields?.[name]?.visible === false)
 
   // Single source of truth: form context OR bindable prop
   const value = $derived(form ? (form.values[name] as string | undefined) : valueProp)
@@ -81,7 +84,7 @@
   }
 </script>
 
-{#if browser}
+{#if browser && !isHidden}
   <div>
     <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
@@ -103,6 +106,6 @@
       {/snippet}
     </FormFieldMessages>
   </div>
-{:else}
+{:else if !isHidden}
   <FormFieldSkeleton {showLabel} {width} />
 {/if}

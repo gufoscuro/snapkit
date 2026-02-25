@@ -26,6 +26,7 @@
 		showErrorMessage = SelectorFieldDefaults.showErrorMessage,
 		allowClear = false,
 		disabled = SelectorFieldDefaults.disabled,
+		hidden = false,
 		width = 'min-w-32',
 		contentWidth = SelectorFieldDefaults.contentWidth,
 		align = SelectorFieldDefaults.align,
@@ -51,6 +52,7 @@
 	{showErrorMessage}
 	{allowClear}
 	{disabled}
+	{hidden}
 	{width}
 	{contentWidth}
 	{align}

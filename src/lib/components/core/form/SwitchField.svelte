@@ -18,6 +18,7 @@
     id = name,
     checked = $bindable(false),
     disabled = SwitchFieldDefaults.disabled,
+    hidden = false,
     showLabel = SwitchFieldDefaults.showLabel,
     labelPosition = SwitchFieldDefaults.labelPosition,
     labelClass = SwitchFieldDefaults.labelClass,
@@ -28,6 +29,8 @@
 
   // Autowire to form context
   const form = getFormContextOptional()
+
+  const isHidden = $derived(hidden || form?.resourceConfig?.fields?.[name]?.visible === false)
 
   // Derive values - form context takes precedence, otherwise use bindable prop
   const locked = $derived(form?.locked ?? false)
@@ -50,6 +53,7 @@
   }
 </script>
 
+{#if !isHidden}
 <div class="flex gap-2 {className} {labelPosition === 'left' ? 'flex-row-reverse justify-end' : 'items-center'}">
   <Switch
     {id}
@@ -70,3 +74,4 @@
     {/if}
   </Label>
 </div>
+{/if}

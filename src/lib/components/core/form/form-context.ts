@@ -1,4 +1,5 @@
 import { getContext, setContext } from 'svelte';
+import type { LegalEntityResourceConfig } from '$lib/stores/tenant-config/types';
 
 const FORM_CONTEXT_KEY = Symbol('form-context');
 
@@ -15,6 +16,7 @@ export type FormAPI<T extends Record<string, unknown> = Record<string, unknown>>
 	readonly inflight: boolean;
 	readonly locked: boolean;
 	readonly errorMessage: string | null;
+	readonly resourceConfig?: LegalEntityResourceConfig;
 	updateField: <K extends keyof T>(name: K, value: T[K]) => void;
 	validateField: <K extends keyof T>(name: K) => void;
 	touchField: <K extends keyof T>(name: K) => void;

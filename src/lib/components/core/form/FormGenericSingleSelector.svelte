@@ -44,6 +44,7 @@
     align = EntitySelectorDefaults.align,
     readonly = EntitySelectorDefaults.readonly,
     disabled = EntitySelectorDefaults.disabled,
+    hidden = false,
     allowNewRecord = EntitySelectorDefaults.allowNewRecord,
     allowClear = true,
     onChoose = () => {},
@@ -62,6 +63,8 @@
   }: Props = $props()
 
   const form = getFormContextOptional()
+
+  const isHidden = $derived(hidden || form?.resourceConfig?.fields?.[name]?.visible === false)
 
   let itemsList: Array<T> = $state([])
 
@@ -92,9 +95,9 @@
   }
 </script>
 
-{#if readonly}
+{#if !isHidden && readonly}
   <ReadOnlyMultiselect {selectedValue} width={FormFieldClass.MinWidth} {label} {placeholder} {name} {id} {showLabel} />
-{:else if browser}
+{:else if !isHidden && browser}
   <div>
     <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} error={errorMessage} {warning} {warningPosition} {showErrorMessage}>
@@ -120,6 +123,6 @@
         onChange={onSelectionChange} />
     </FormFieldMessages>
   </div>
-{:else}
+{:else if !isHidden}
   <FormFieldSkeleton {showLabel} {width} class={className} />
 {/if}

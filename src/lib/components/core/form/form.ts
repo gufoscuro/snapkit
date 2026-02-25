@@ -58,6 +58,8 @@ export type BaseFieldProps = {
   width?: string
   /** Classi CSS aggiuntive */
   class?: string
+  /** Nasconde il campo (override locale) */
+  hidden?: boolean
 }
 
 // =============================================================================
@@ -129,6 +131,8 @@ export type SwitchFieldProps = {
   labelClass?: string
   /** Classi CSS aggiuntive */
   class?: string
+  /** Nasconde il campo (override locale) */
+  hidden?: boolean
 }
 
 /** Props base per entity selectors (Material, Product, etc.) */
@@ -165,6 +169,8 @@ export type EntitySelectorProps = {
   allowNewRecord?: boolean
   /** Classi CSS aggiuntive */
   class?: string
+  /** Nasconde il campo (override locale) */
+  hidden?: boolean
 }
 
 // =============================================================================

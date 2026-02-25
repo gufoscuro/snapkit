@@ -20,6 +20,8 @@
 <script lang="ts" generics="T extends Record<string, unknown>">
   import { dev } from '$app/environment'
   import { registerForm } from '$components/runtime/devtools'
+  import type { LegalEntityResourceConfig } from '$lib/stores/tenant-config/types'
+  import * as m from '$lib/paraglide/messages'
   import type { Snippet } from 'svelte'
   import { setFormContext, type FormAPI } from './form-context'
   import { createFormState, type ValidateFn } from './form-state.svelte'
@@ -27,18 +29,21 @@
   type Props = {
     initialValues: T
     validate?: ValidateFn<T>
+    resourceConfig?: LegalEntityResourceConfig
     onSubmit: (values: T) => Promise<unknown>
     onSuccess?: (payload: SuccessPayload<T>) => void
     onFailure?: (payload: FailurePayload) => void
     locked?: boolean
     novalidate?: boolean
     class?: string
-    children: Snippet
+    children?: Snippet
+    withContext?: Snippet<[FormAPI<T>]>
   }
 
   let {
     initialValues,
     validate,
+    resourceConfig,
     onSubmit,
     onSuccess,
     onFailure,
@@ -46,11 +51,37 @@
     novalidate = true,
     class: className = '',
     children,
+    withContext,
   }: Props = $props()
+
+  function buildEffectiveValidate(
+    base: ValidateFn<T> | undefined,
+    config: LegalEntityResourceConfig | undefined
+  ): ValidateFn<T> | undefined {
+    if (!config) return base
+    return (values: T): Partial<Record<keyof T, string>> => {
+      const configErrors: Partial<Record<keyof T, string>> = {}
+      for (const [field, fieldConfig] of Object.entries(config.fields)) {
+        if (fieldConfig.required) {
+          const value = values[field as keyof T]
+          const empty =
+            value === null ||
+            value === undefined ||
+            (typeof value === 'string' && value.trim() === '') ||
+            (Array.isArray(value) && value.length === 0)
+          if (empty) {
+            configErrors[field as keyof T] = m.validation_required_generic()
+          }
+        }
+      }
+      const baseErrors = base ? base(values) : {}
+      return { ...configErrors, ...baseErrors }
+    }
+  }
 
   const formState = createFormState({
     getInitialValues: () => initialValues,
-    getValidate: () => validate,
+    getValidate: () => buildEffectiveValidate(validate, resourceConfig),
   })
 
   // UI state
@@ -87,6 +118,9 @@
     },
     get errorMessage() {
       return errorMessage
+    },
+    get resourceConfig() {
+      return resourceConfig
     },
     updateField: formState.updateField,
     validateField: formState.validateField,
@@ -182,5 +216,9 @@
 
 <form onsubmit={handleSubmit} {novalidate} class={className}>
   <input bind:this={submitter} type="submit" class="hidden" aria-hidden="true" tabindex="-1" />
-  {@render children()}
+  {#if withContext}
+    {@render withContext(formAPI)}
+  {:else}
+    {@render children?.()}
+  {/if}
 </form>

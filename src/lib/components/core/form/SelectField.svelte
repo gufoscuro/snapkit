@@ -34,6 +34,7 @@
     showErrorMessage = SelectorFieldDefaults.showErrorMessage,
     allowClear = SelectorFieldDefaults.allowClear,
     disabled = SelectorFieldDefaults.disabled,
+    hidden = false,
     width = SelectorFieldDefaults.width,
     contentWidth = SelectorFieldDefaults.contentWidth,
     align = SelectorFieldDefaults.align,
@@ -45,6 +46,8 @@
 
   // Autowire to form context
   const form = getFormContextOptional()
+
+  const isHidden = $derived(hidden || form?.resourceConfig?.fields?.[name]?.visible === false)
 
   // Internal state for items (fetched or from props)
   let internalItems = $state<Array<BasicOption>>([...items])
@@ -114,7 +117,7 @@
   }
 </script>
 
-{#if browser && !fetching}
+{#if browser && !fetching && !isHidden}
   <div>
     <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
@@ -154,6 +157,6 @@
       {/snippet}
     </FormFieldMessages>
   </div>
-{:else}
+{:else if !isHidden}
   <FormFieldSkeleton {showLabel} {width} />
 {/if}

@@ -59,6 +59,7 @@
     showLabel = InputFieldDefaults.showLabel,
     showErrorMessage = InputFieldDefaults.showErrorMessage,
     disabled = InputFieldDefaults.disabled,
+    hidden = false,
     width = InputFieldDefaults.width,
     minDaysFromNow = 0,
     maxDaysFromNow,
@@ -75,6 +76,8 @@
 
   // Autowire to form context (optional = works standalone too)
   const form = getFormContextOptional()
+
+  const isHidden = $derived(hidden || form?.resourceConfig?.fields?.[name]?.visible === false)
 
   // Internal state
   let open = $state(false)
@@ -172,7 +175,7 @@
   }
 </script>
 
-{#if browser}
+{#if browser && !isHidden}
   <div>
     <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label
     >
@@ -232,6 +235,6 @@
       {/snippet}
     </FormFieldMessages>
   </div>
-{:else}
+{:else if !isHidden}
   <FormFieldSkeleton {showLabel} {width} />
 {/if}
