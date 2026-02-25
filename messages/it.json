@@ -216,5 +216,12 @@
   "enum_customer_status_suspended": "Sospeso",
   "enum_customer_status_blocked": "Bloccato",
   "enum_customer_status_ceased": "Cessato",
-  "enum_customer_status_prospect": "Prospect"
+  "enum_customer_status_prospect": "Prospect",
+  "eori_code": "Codice EORI",
+  "ateco_code": "Codice ATECO",
+  "sdi_code": "Codice SDI",
+  "fax": "Fax",
+  "founded_year": "Anno di fondazione",
+  "employee_count_range": "Fascia dipendenti",
+  "annual_revenue_range": "Fascia fatturato"
 }
