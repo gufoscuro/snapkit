@@ -1,8 +1,8 @@
-import { createRawSnippet } from 'svelte'
-import { renderComponent } from '$lib/components/ui/data-table'
 import Badge from '$lib/components/ui/badge/badge.svelte'
+import { renderComponent } from '$lib/components/ui/data-table'
 import type { CellContext } from '@tanstack/table-core'
-import type { ColumnConfig, BadgeConfig } from '../types'
+import { createRawSnippet } from 'svelte'
+import type { BadgeConfig, ColumnConfig } from '../types'
 
 /**
  * Badge renderer - displays single badge with variant mapping
@@ -19,32 +19,32 @@ import type { ColumnConfig, BadgeConfig } from '../types'
  * }
  */
 export function createBadgeRenderer<T>(config: ColumnConfig<T>) {
-	return (context: CellContext<T, unknown>) => {
-		const value = context.getValue()
+  return (context: CellContext<T, unknown>) => {
+    const value = context.getValue()
 
-		// Fallback for missing values
-		if (value === null || value === undefined || value === '') {
-			return '-'
-		}
+    // Fallback for missing values
+    if (value === null || value === undefined || value === '') {
+      return '-'
+    }
 
-		const badgeConfig = config.rendererConfig as BadgeConfig<T> | undefined
+    const badgeConfig = config.rendererConfig as BadgeConfig<T> | undefined
 
-		if (!badgeConfig?.variantMapper) {
-			// No variant mapper, just show text
-			return String(value)
-		}
+    if (!badgeConfig?.variantMapper) {
+      // No variant mapper, just show text
+      return String(value)
+    }
 
-		// Map value to variant
-		const variant = badgeConfig.variantMapper(value)
+    // Map value to variant
+    const variant = badgeConfig.variantMapper(value)
 
-		// Map value to label (optional)
-		const label = badgeConfig.labelMapper ? badgeConfig.labelMapper(value) : String(value)
+    // Map value to label (optional)
+    const label = badgeConfig.labelMapper ? badgeConfig.labelMapper(value) : String(value)
 
-		// Create snippet for badge children
-		const children = createRawSnippet(() => ({
-			render: () => `<span>${label}</span>`
-		}))
+    // Create snippet for badge children
+    const children = createRawSnippet(() => ({
+      render: () => `<span>${label}</span>`,
+    }))
 
-		return renderComponent(Badge, { variant, children })
-	}
+    return renderComponent(Badge, { variant, class: 'px-1.5 text-muted-foreground', children })
+  }
 }
