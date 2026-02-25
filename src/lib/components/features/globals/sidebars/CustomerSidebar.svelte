@@ -45,9 +45,24 @@
       },
       {
         type: 'link',
+        label: m.addresses(),
+        pageId: 'customer-addresses',
+        params: { uuid: customer.id },
+        disabled: true,
+      },
+      {
+        type: 'link',
+        label: m.contacts(),
+        pageId: 'customer-contacts',
+        params: { uuid: customer.id },
+        disabled: true,
+      },
+      {
+        type: 'link',
         label: m.documents(),
         pageId: 'customer-documents',
         params: { uuid: customer.id },
+        disabled: true,
       },
     ]
 
@@ -94,9 +109,15 @@
             <Sidebar.MenuItem>
               <Sidebar.MenuButton isActive={page.url.pathname === getHref(item)} tooltipContent={item.label}>
                 {#snippet child({ props })}
-                  <a href={getHref(item)} {...props}>
-                    <span>{item.label}</span>
-                  </a>
+                  {#if item.disabled}
+                    <div {...props} class="{props.class || ''} cursor-default hover:bg-none!">
+                      <span>{item.label}</span>
+                    </div>
+                  {:else}
+                    <a href={getHref(item)} {...props}>
+                      <span>{item.label}</span>
+                    </a>
+                  {/if}
                 {/snippet}
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
