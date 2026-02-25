@@ -2,24 +2,35 @@
   @component CustomersTable
   @description Displays a paginated table of customers with load more functionality.
   Shows customer name (linked to details), VAT number, email, phone, and type.
-  @keywords customers, table, list, pagination, load-more
+  Consumes filter state from page context to filter displayed data.
+  @keywords customers, table, list, pagination, load-more, filters
   @uses ResourceTable
   @api GET /api/legal-entities/{legalEntity}/customers (Moddo API) -> Customer[]
   @api DELETE /api/legal-entities/{legalEntity}/customers/{customer} (Moddo API)
   @route customer-details
 -->
+<script lang="ts" module>
+  export { CustomersTableContract as contract } from './CustomersTable.contract.js'
+</script>
+
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { Customer } from '$lib/types/api-types'
+  import type { FilterQuery } from '$lib/utils/filters'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
   import { getCustomerTypeLabel } from '$utils/customers'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
+  import { CustomersTableContract } from './CustomersTable.contract.js'
 
   let { legalEntity, pageDetails }: SnippetProps = $props()
+
+  const filtersHandle = useConsumes(CustomersTableContract, 'filters')
+  const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
 
   const columns: ColumnConfig<Customer>[] = [
     {
@@ -87,5 +98,5 @@
 </script>
 
 {#if legalEntity && fetchCustomers}
-  <ResourceTable {columns} fetchFunction={fetchCustomers} />
+  <ResourceTable {columns} fetchFunction={fetchCustomers} {filters} />
 {/if}
