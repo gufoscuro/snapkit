@@ -10,17 +10,16 @@
   import { apiRequest } from '$utils/request'
   import type { SnippetProps } from '$utils/runtime'
   import { getUserInitials } from '$utils/strings'
-  import BadgeCheckIcon from '@lucide/svelte/icons/badge-check'
   import BellIcon from '@lucide/svelte/icons/bell'
   import CheckIcon from '@lucide/svelte/icons/check'
   import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down'
-  import CreditCardIcon from '@lucide/svelte/icons/credit-card'
   import LanguagesIcon from '@lucide/svelte/icons/languages'
   import LogOutIcon from '@lucide/svelte/icons/log-out'
   import MonitorIcon from '@lucide/svelte/icons/monitor'
   import MoonIcon from '@lucide/svelte/icons/moon'
   import SunIcon from '@lucide/svelte/icons/sun'
   import SunMoonIcon from '@lucide/svelte/icons/sun-moon'
+  import { Cog } from 'lucide-svelte'
   import { resetMode, setMode, userPrefersMode } from 'mode-watcher'
 
   let { user }: SnippetProps = $props()
@@ -36,7 +35,7 @@
 
   function switchLocale(locale: string) {
     setLocale(locale as (typeof locales)[number])
-    currentLocale = locale
+    currentLocale = locale as (typeof locales)[number]
   }
 
   async function logoutApplication() {
@@ -97,12 +96,8 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Group>
           <DropdownMenu.Item disabled>
-            <BadgeCheckIcon />
-            Account
-          </DropdownMenu.Item>
-          <DropdownMenu.Item disabled>
-            <CreditCardIcon />
-            Billing
+            <Cog />
+            Settings
           </DropdownMenu.Item>
           <DropdownMenu.Item disabled>
             <BellIcon />
