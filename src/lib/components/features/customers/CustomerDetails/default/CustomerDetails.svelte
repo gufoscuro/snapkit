@@ -223,6 +223,7 @@
         <TextField name="founded_year" label={m.founded_year()} class={FormFieldClass.MaxWidth} />
 
         <!-- <div class="sticky top-breadcrumbs z-10 bg-background py-3 font-semibold">Informazioni fiscali</div> -->
+
         <TextField name="vat_number" label={m.vat()} class={FormFieldClass.MaxWidth} />
         <TextField name="tax_id" label={m.tax_id()} class={FormFieldClass.MaxWidth} />
         <TextField name="sdi_code" label={m.sdi_code()} class={FormFieldClass.MaxWidth} />
