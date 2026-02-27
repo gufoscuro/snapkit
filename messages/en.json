@@ -290,5 +290,7 @@
   "enum_annual_revenue_2m_10m": "2M–10M",
   "enum_annual_revenue_10m_50m": "10M–50M",
   "enum_annual_revenue_50m_250m": "50M–250M",
-  "enum_annual_revenue_over_250m": "> 250M"
+  "enum_annual_revenue_over_250m": "> 250M",
+  "form_error_title": "Unable to process your request",
+  "validation_error_generic": "Some of the fields are invalid. Please check your input again."
 }
