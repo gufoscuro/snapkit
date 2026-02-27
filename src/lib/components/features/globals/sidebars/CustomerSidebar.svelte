@@ -8,13 +8,7 @@
 </script>
 
 <script lang="ts">
-  import { page } from '$app/state'
-
-  import BackButton from '$components/core/common/BackButton.svelte'
-  import CustomerMenu from '$components/features/globals/CustomerMenu.svelte'
-  import LeftSidebarWrapper from '$components/features/globals/LeftSidebarWrapper.svelte'
   import Skeleton from '$components/ui/skeleton/skeleton.svelte'
-  import * as Sidebar from '$lib/components/ui/sidebar/index.js'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages'
   import type { MenuItem } from '$lib/stores/tenant-config/types'
@@ -23,6 +17,8 @@
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
   import { CustomerSidebarContract } from './CustomerSidebar.contract.js'
+  import SubpageMenuGroup from './SubpageMenuGroup.svelte'
+  import SubpageSidebarBase from './SubpageSidebarBase.svelte'
 
   const props: SnippetProps = $props()
 
@@ -68,74 +64,35 @@
 
     return { name: m.customer(), items }
   })
-
-  function getHref(item: MenuItem): string {
-    if (!item.pageId) return '#'
-
-    return createRoute({ $id: item.pageId, params: item.params, query: item.query })
-  }
 </script>
 
-<LeftSidebarWrapper collapsible="offcanvas">
-  {#snippet header()}
-    <div class="">
-      <BackButton variant="ghost" fallback={createRoute({ $id: 'customers' })} />
+<SubpageSidebarBase {...props} fallback={createRoute({ $id: 'customers' })}>
+  {#if !customer && !props.pageDetails?.params?.uuid}
+    <div class="px-4">
+      <h2 class="line-clamp-2 text-lg font-semibold">
+        {m.add_new_customer()}
+      </h2>
     </div>
-  {/snippet}
+  {:else if customer}
+    <div class="px-4 pt-2">
+      <h2 class="line-clamp-2 text-lg font-semibold" title={customer.name}>
+        {customer.name}
+      </h2>
 
-  {#snippet content()}
-    {#if !customer && !props.pageDetails?.params?.uuid}
-      <div class="px-4">
-        <h2 class="line-clamp-2 text-lg font-semibold">
-          {m.add_new_customer()}
-        </h2>
-      </div>
-    {:else if customer}
-      <div class="px-4 pt-2">
-        <h2 class="line-clamp-2 text-lg font-semibold" title={customer.name}>
-          {customer.name}
-        </h2>
+      <p class="">{getCustomerTypeLabel(customer.type)}</p>
+      <p class="mt-1 text-sm text-muted-foreground">{m.vat_no()}: {customer.vat_number}</p>
+      <p class="text-sm text-muted-foreground">{m.email()}: {customer.email}</p>
+      <p class="text-sm text-muted-foreground">{m.phone()}: {customer.phone}</p>
+    </div>
 
-        <p class="">{getCustomerTypeLabel(customer.type)}</p>
-        <p class="mt-1 text-sm text-muted-foreground">{m.vat_no()}: {customer.vat_number}</p>
-        <p class="text-sm text-muted-foreground">{m.email()}: {customer.email}</p>
-        <p class="text-sm text-muted-foreground">{m.phone()}: {customer.phone}</p>
-      </div>
-
-      <Sidebar.Group>
-        <Sidebar.GroupLabel>{pageMenu.name}</Sidebar.GroupLabel>
-        <Sidebar.Menu>
-          {#each pageMenu.items as item (item.label)}
-            <Sidebar.MenuItem>
-              <Sidebar.MenuButton isActive={page.url.pathname === getHref(item)} tooltipContent={item.label}>
-                {#snippet child({ props })}
-                  {#if item.disabled}
-                    <div {...props} class="{props.class || ''} cursor-default hover:bg-none!">
-                      <span>{item.label}</span>
-                    </div>
-                  {:else}
-                    <a href={getHref(item)} {...props}>
-                      <span>{item.label}</span>
-                    </a>
-                  {/if}
-                {/snippet}
-              </Sidebar.MenuButton>
-            </Sidebar.MenuItem>
-          {/each}
-        </Sidebar.Menu>
-      </Sidebar.Group>
-    {:else}
-      <div class="flex flex-col gap-1 px-4 pt-2">
-        <Skeleton class="h-7 w-3/4" />
-        <Skeleton class="h-5 w-1/4" />
-        <Skeleton class="mt-1 h-5 w-3/4" />
-        <Skeleton class="h-5 w-full" />
-        <Skeleton class="h-5 w-2/4" />
-      </div>
-    {/if}
-  {/snippet}
-
-  {#snippet footer()}
-    <CustomerMenu {...props} />
-  {/snippet}
-</LeftSidebarWrapper>
+    <SubpageMenuGroup name={pageMenu.name} items={pageMenu.items} />
+  {:else}
+    <div class="flex flex-col gap-1 px-4 pt-2">
+      <Skeleton class="h-7 w-3/4" />
+      <Skeleton class="h-5 w-1/4" />
+      <Skeleton class="mt-1 h-5 w-3/4" />
+      <Skeleton class="h-5 w-full" />
+      <Skeleton class="h-5 w-2/4" />
+    </div>
+  {/if}
+</SubpageSidebarBase>
