@@ -511,19 +511,66 @@ async function handleArchive() {
 
 **See [patterns.md](./patterns.md#archivingdeleting-records) for complete documentation.**
 
-### 4. Component Completeness
+### 4. Testing
+
+**REQUIRED:** When creating or modifying a feature component, you MUST write tests and verify they pass.
+
+#### Creating a new feature component
+
+Create a test file `<ComponentName>.unit.test.ts` alongside the component:
+
+```
+src/lib/components/features/<domain>/
+├── <ComponentName>.svelte
+├── <ComponentName>.mock.ts
+└── <ComponentName>.unit.test.ts    ← REQUIRED
+```
+
+Tests should cover at minimum:
+- Rendering with default/required props
+- Key user interactions (clicks, form submissions)
+- Conditional rendering (loading, error, empty states)
+- Props variations that affect behavior
+
+#### Modifying an existing feature component
+
+When modifying a component that already has tests:
+1. Run existing tests first to ensure they pass before your changes
+2. Update or add tests to cover your changes
+3. Run tests again to verify everything passes
+
+When modifying a component without tests:
+1. Write tests for the existing behavior first
+2. Make your changes
+3. Update tests to cover the new behavior
+
+#### Run tests after implementation
+
+**After every component creation or modification, you MUST run:**
+
+```bash
+npm test
+```
+
+This runs both `unit` and `server` test projects. All tests must pass before considering the work complete. If tests fail, fix the issues before moving on.
+
+> **📖 For testing patterns, mocking strategies, and project configuration, see [testing/strategy.md](../testing/strategy.md)**
+
+### 5. Component Completeness
 
 Ensure your component includes:
 
 - ✅ Proper TypeScript types for all props
 - ✅ Component documentation comment block
 - ✅ Mock data file (`<ComponentName>.mock.ts`)
+- ✅ Unit test file (`<ComponentName>.unit.test.ts`)
 - ✅ Barrel export file (`index.ts`) for standalone components
 - ✅ Updated components registry (`npm run generate:components-registry`)
 - ✅ All required translations in both `en.json` and `it.json`
 - ✅ No hardcoded user-facing strings
 - ✅ Validated with `svelte-autofixer` (zero issues)
 - ✅ Uses `confirmArchive` utility for delete/archive operations (if applicable)
+- ✅ All tests pass (`npm test`)
 
 **Pre-completion checklist:**
 
@@ -540,8 +587,8 @@ grep -r "hardcoded text" src/lib/components/features/YourComponent/
 # 4. Update registry
 npm run generate:components-registry
 
-# 5. Test the component
-# Run the app and verify visually
+# 5. Run tests
+npm test
 ```
 
 ## Variants vs Props
