@@ -20,6 +20,7 @@
   import MoonIcon from '@lucide/svelte/icons/moon'
   import SunIcon from '@lucide/svelte/icons/sun'
   import SunMoonIcon from '@lucide/svelte/icons/sun-moon'
+  import BrandPowershell from '@tabler/icons-svelte/icons/brand-powershell'
   import { Cog } from 'lucide-svelte'
   import { resetMode, setMode, userPrefersMode } from 'mode-watcher'
 
@@ -96,6 +97,12 @@
         </DropdownMenu.Group> -->
         <DropdownMenu.Separator />
         <DropdownMenu.Group>
+          {#if user?.is_superadmin}
+            <DropdownMenu.Item onclick={() => goto('/admin')}>
+              <BrandPowershell />
+              {m.administration()}
+            </DropdownMenu.Item>
+          {/if}
           <DropdownMenu.Item onclick={() => goto(createRoute({ $id: 'settings' }))}>
             <Cog />
             {m.settings()}

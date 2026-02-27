@@ -1,0 +1,61 @@
+<script lang="ts">
+  import Logo from '$components/icons/Logo.svelte'
+  import LegalEntitySelector from '$lib/components/features/form/LegalEntitySelector.svelte'
+  import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js'
+  import * as m from '$lib/paraglide/messages'
+  import type { LegalEntity } from '$lib/types/api-types'
+  import { switchLegalEntity } from '$lib/utils/legal-entity'
+  import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
+  import { setContext } from 'svelte'
+  import type { PageProps } from '../$types'
+
+  let { data, children }: PageProps & { children?: () => any } = $props()
+  let { pageDetails, routeDetails, entityConfig, legalEntity, user } = $derived(data)
+
+  async function onLegalEntityChoose(entity: LegalEntity) {
+    await switchLegalEntity(entity.id)
+  }
+
+  setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () => ({
+    pageDetails,
+    routeDetails,
+    entityConfig,
+    legalEntity,
+    user,
+  }))
+</script>
+
+<div class="flex min-h-0 flex-1 flex-col" data-scrollable-content>
+  <header class="flex h-14 w-full shrink-0 items-center justify-between border-b bg-background px-4">
+    <div class="flex items-center gap-4">
+      <div class="flex cursor-default items-center gap-2">
+        <Logo class="size-5 text-brand" />
+        <div>
+          Moddo<span class="font-semibold text-brand">Admin</span>
+        </div>
+      </div>
+
+      <Breadcrumb.Root>
+        <Breadcrumb.List>
+          <Breadcrumb.Item>
+            <Breadcrumb.Link href="/">Moddo</Breadcrumb.Link>
+          </Breadcrumb.Item>
+          <Breadcrumb.Separator />
+          <Breadcrumb.Item>
+            <Breadcrumb.Page>{m.administration()}</Breadcrumb.Page>
+          </Breadcrumb.Item>
+        </Breadcrumb.List>
+      </Breadcrumb.Root>
+    </div>
+
+    <LegalEntitySelector
+      attr={legalEntity}
+      showLabel={false}
+      width="w-64"
+      onChoose={onLegalEntityChoose} />
+  </header>
+
+  <main class="flex min-h-0 flex-1">
+    {@render children?.()}
+  </main>
+</div>
