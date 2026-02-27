@@ -48,29 +48,50 @@
     })
   }
 
-  function createWelcomeMessage(): Message {
-    return {
-      senderId: ASSISTANT_ID,
-      message: m.chat_welcome(),
-      sentAt: formatShortTime(new Date()),
-    }
-  }
-
   let inputRef = $state<HTMLInputElement | null>(null)
   let conversationId = $state<string | null>(null)
   let message = $state('')
   let loading = $state(false)
   let open = $state(false)
-  const messages = $state<Message[]>([createWelcomeMessage()])
+  const messages = $state<Message[]>([])
 
-  // Reset conversation when legal entity changes
+  async function fetchSplashMessage(entityId: string) {
+    loading = true
+    try {
+      const response = await apiRequest<ChatResponse>({
+        url: `/legal-entities/${entityId}/config/chat`,
+        method: 'POST',
+        data: { message: 'Hi' },
+      })
+
+      conversationId = response.conversation_id
+
+      messages.push({
+        senderId: ASSISTANT_ID,
+        message: response.message,
+        sentAt: formatShortTime(new Date()),
+      })
+    } catch {
+      messages.push({
+        senderId: ASSISTANT_ID,
+        message: m.chat_error(),
+        sentAt: formatShortTime(new Date()),
+        isError: true,
+      })
+    } finally {
+      loading = false
+    }
+  }
+
+  // Reset conversation and fetch splash when legal entity changes
   $effect(() => {
-    legalEntityId
+    const entityId = legalEntityId
+    if (!entityId) return
 
     untrack(() => {
       messages.length = 0
-      messages.push(createWelcomeMessage())
       conversationId = null
+      fetchSplashMessage(entityId)
     })
   })
 
@@ -209,7 +230,12 @@
         </Popover.Content>
       </Popover.Root>
     </EmojiPicker.Root>
-    <Input bind:ref={inputRef} bind:value={message} class="rounded-full" placeholder={m.chat_placeholder()} disabled={loading} />
+    <Input
+      bind:ref={inputRef}
+      bind:value={message}
+      class="rounded-full"
+      placeholder={m.chat_placeholder()}
+      disabled={loading} />
     <Button
       type="submit"
       variant="default"

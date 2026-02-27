@@ -1,30 +1,26 @@
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation'
+  import { invalidate, invalidateAll } from '$app/navigation'
   import AdminChat from '$components/core/admin/AdminChat.svelte'
-  import { onMount } from 'svelte'
-  import type { PageProps } from '../$types'
+  import { m } from '$lib/paraglide/messages'
+  import { invalidateGlobalsCache } from '$lib/stores/globals-cache'
+  import { toast } from 'svelte-sonner'
+  import type { PageProps } from './$types'
 
   const props: PageProps = $props()
 
   async function onAgentMessage(message: string) {
-    // For demonstration purposes, we're just logging the agent message.
-    // In a real application, you might want to display this message in the UI or perform other actions.
-    console.log('Agent message:', message)
+    invalidateGlobalsCache()
+    await invalidate('admin:index')
     await invalidateAll()
-  }
 
-  onMount(async () => {
-    // Simulate receiving an agent message after 5 seconds
-    setTimeout(() => {
-      onAgentMessage('This is a message from the agent.')
-    }, 5000)
-  })
+    toast.success(m.configuration_updated())
+  }
 </script>
 
 <div class="flex min-h-0 flex-1">
   <div class="relative flex flex-1 flex-col">
     <pre class="flex-1 overflow-auto p-4 text-xs text-muted-foreground">{JSON.stringify(
-        props.data.entityConfig?.resources,
+        props.data.legalEntityConfig?.resources,
         null,
         2,
       )}</pre>

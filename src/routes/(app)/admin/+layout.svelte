@@ -49,7 +49,7 @@
     </div>
 
     <LegalEntitySelector
-      attr={legalEntity}
+      attr={legalEntity || undefined}
       showLabel={false}
       width="w-64"
       onChoose={onLegalEntityChoose} />
