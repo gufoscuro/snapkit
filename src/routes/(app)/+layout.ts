@@ -1,3 +1,4 @@
+import { getGlobalsCache, setGlobalsCache } from '$lib/stores/globals-cache'
 import { tenantConfigStore } from '$lib/stores/tenant-config'
 import { type LegalEntityConfigResponse } from '$lib/stores/tenant-config/types'
 import type { LegalEntity, UserResource } from '$lib/types/api-types'
@@ -6,15 +7,6 @@ import { error } from '@sveltejs/kit'
 import type { LayoutLoad, LayoutLoadEvent } from './$types'
 
 const unauthenticatedRoutes = ['/(app)/login']
-
-interface GlobalsCache {
-  legalEntityId: string | null
-  user: UserResource | null
-  legalEntity: LegalEntity | null
-  entityConfig: LegalEntityConfigResponse | null
-}
-
-let globalsCache: GlobalsCache | null = null
 
 async function fetchGlobals(isAuthenticated: boolean, cookieLegalEntityId: string | null) {
   await apiRequest({
@@ -29,11 +21,12 @@ async function fetchGlobals(isAuthenticated: boolean, cookieLegalEntityId: strin
     }
 
   // Cache hit: same legal entity, skip heavy API calls
-  if (globalsCache !== null && globalsCache.legalEntityId === cookieLegalEntityId) {
+  const cached = getGlobalsCache()
+  if (cached !== null && cached.legalEntityId === cookieLegalEntityId) {
     return {
-      user: globalsCache.user,
-      legalEntity: globalsCache.legalEntity,
-      entityConfig: globalsCache.entityConfig,
+      user: cached.user,
+      legalEntity: cached.legalEntity,
+      entityConfig: cached.entityConfig,
     }
   }
 
@@ -65,7 +58,7 @@ async function fetchGlobals(isAuthenticated: boolean, cookieLegalEntityId: strin
     }
   }
 
-  globalsCache = { legalEntityId: cookieLegalEntityId, user, legalEntity, entityConfig }
+  setGlobalsCache({ legalEntityId: cookieLegalEntityId, user, legalEntity, entityConfig })
 
   return {
     user,
