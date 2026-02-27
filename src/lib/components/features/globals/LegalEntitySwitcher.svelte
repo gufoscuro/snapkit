@@ -4,14 +4,13 @@
 	@keywords sidebar, legal entity, switcher
 -->
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation'
   import Logo from '$components/icons/Logo.svelte'
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js'
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
   import { useSidebar } from '$lib/components/ui/sidebar/index.js'
-  import { LEGAL_ENTITY_COOKIE_NAME } from '$lib/fixtures/constants'
   import { legal_entities } from '$lib/paraglide/messages'
   import type { LegalEntity } from '$lib/types/api-types'
+  import { getLegalEntityCookie, switchLegalEntity } from '$lib/utils/legal-entity'
   import type { SnippetProps } from '$utils/runtime'
   import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down'
 
@@ -34,13 +33,9 @@
     const id = activeEntity?.id
     if (!id) return
 
-    const existing = document.cookie
-      .split('; ')
-      .find(row => row.startsWith(`${LEGAL_ENTITY_COOKIE_NAME}=`))
-      ?.split('=')[1]
-
+    const existing = getLegalEntityCookie()
     if (existing !== id) {
-      document.cookie = `${LEGAL_ENTITY_COOKIE_NAME}=${id}; path=/; SameSite=Lax`
+      switchLegalEntity(id, { reload: false })
     }
   })
 
@@ -48,8 +43,7 @@
     if (entity.id === activeEntity?.id) return
 
     selectedEntityId = entity.id
-    document.cookie = `${LEGAL_ENTITY_COOKIE_NAME}=${entity.id}; path=/; SameSite=Lax`
-    await invalidateAll()
+    await switchLegalEntity(entity.id)
   }
 </script>
 
