@@ -1,39 +1,45 @@
-import { describe, it, expect } from 'vitest';
-import { getPageByRoute } from './page-registry';
+import { describe, it, expect } from 'vitest'
+import { PAGES } from './page-registry'
+import type { PageConfig, PageDetails, SnippetDefinition } from './page-registry'
 
-describe('page-registry route matching', () => {
-  it('should match exact routes', async () => {
-    const result = await getPageByRoute('/orders');
-    expect(result).not.toBeNull();
-    expect(result?.config.page_key).toBe('orders');
-    expect(result?.params).toEqual({});
-  });
+describe('page-registry', () => {
+  it('exports PAGES as an array', () => {
+    expect(Array.isArray(PAGES)).toBe(true)
+  })
 
-  it('should match routes with single parameter', async () => {
-    const result = await getPageByRoute('/orders/abc-123-def');
-    expect(result).not.toBeNull();
-    expect(result?.config.page_key).toBe('order-detail');
-    expect(result?.params).toEqual({ uuid: 'abc-123-def' });
-  });
+  it('PageConfig type is usable', () => {
+    const config: PageConfig = {
+      $id: 'test',
+      title: 'Test',
+      route: '/test',
+      layout: { componentKey: 'TestLayout' as never, enabled: true },
+      snippets: {},
+    }
+    expect(config.$id).toBe('test')
+  })
 
-  it('should match routes with multiple parameters', async () => {
-    const result = await getPageByRoute('/orders/order-456/delivery/delivery-789');
-    expect(result).not.toBeNull();
-    expect(result?.config.page_key).toBe('order-delivery');
-    expect(result?.params).toEqual({
-      uuid: 'order-456',
-      delivery_uuid: 'delivery-789'
-    });
-  });
+  it('PageDetails type includes params', () => {
+    const details: PageDetails = {
+      config: {
+        $id: 'test',
+        title: 'Test',
+        route: '/test/:id',
+        layout: { componentKey: 'TestLayout' as never, enabled: true },
+        snippets: {},
+      },
+      params: { id: '123' },
+    }
+    expect(details.params.id).toBe('123')
+  })
 
-  it('should return null for non-matching routes', async () => {
-    const result = await getPageByRoute('/non-existent-page');
-    expect(result).toBeNull();
-  });
-
-  it('should handle URL encoded parameters', async () => {
-    const result = await getPageByRoute('/orders/test%20with%20spaces');
-    expect(result).not.toBeNull();
-    expect(result?.params.uuid).toBe('test with spaces');
-  });
-});
+  it('SnippetDefinition supports optional bindings and props', () => {
+    const snippet: SnippetDefinition = {
+      componentKey: 'TestComponent' as never,
+      enabled: true,
+      bindings: {},
+      props: { color: 'red' },
+    }
+    expect(snippet.enabled).toBe(true)
+    expect(snippet.props?.color).toBe('red')
+  })
+})

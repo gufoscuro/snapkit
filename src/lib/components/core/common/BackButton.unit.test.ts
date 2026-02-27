@@ -2,15 +2,13 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/svelte'
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import BackButton from './BackButton.svelte'
 
-const { mockGoto, mockResolve, mockHasPrevious, mockPopUrl } = vi.hoisted(() => ({
+const { mockGoto, mockHasPrevious, mockPopUrl } = vi.hoisted(() => ({
   mockGoto: vi.fn(),
-  mockResolve: vi.fn((path: string) => path),
   mockHasPrevious: vi.fn(() => false),
   mockPopUrl: vi.fn(() => null as string | null),
 }))
 
 vi.mock('$app/navigation', () => ({ goto: mockGoto }))
-vi.mock('$app/paths', () => ({ resolve: mockResolve }))
 vi.mock('$lib/contexts/navigation-history.svelte', () => ({
   hasPrevious: mockHasPrevious,
   popUrl: mockPopUrl,
@@ -21,7 +19,6 @@ describe('BackButton', () => {
     vi.clearAllMocks()
     mockHasPrevious.mockReturnValue(false)
     mockPopUrl.mockReturnValue(null)
-    mockResolve.mockImplementation((path: string) => path)
   })
 
   afterEach(() => cleanup())
@@ -65,7 +62,6 @@ describe('BackButton', () => {
       await fireEvent.click(screen.getByRole('button'))
 
       expect(mockPopUrl).toHaveBeenCalledOnce()
-      expect(mockResolve).toHaveBeenCalledWith('/customers')
       expect(mockGoto).toHaveBeenCalledWith('/customers')
     })
 
@@ -76,7 +72,6 @@ describe('BackButton', () => {
       await fireEvent.click(screen.getByRole('button'))
 
       expect(mockPopUrl).toHaveBeenCalledOnce()
-      expect(mockResolve).toHaveBeenCalledWith('/customers')
       expect(mockGoto).toHaveBeenCalledWith('/customers')
     })
 
