@@ -299,5 +299,11 @@
   "validation_error_generic": "Alcuni campi non sono validi. Controlla nuovamente i tuoi input.",
   "chat_placeholder": "Scrivi un messaggio...",
   "chat_error": "Si è verificato un errore. Riprova.",
-  "configuration_updated": "Configurazione aggiornata"
+  "configuration_updated": "Configurazione aggiornata",
+  "scaffold_config_confirm_title": "Reimpostare la configurazione?",
+  "scaffold_config_confirm_description": "Questa operazione sovrascriverà la configurazione corrente con la struttura di default. Questa azione non può essere annullata.",
+  "scaffold_config_confirm_text": "Reimposta",
+  "scaffold_config_loading_text": "Reimpostando...",
+  "scaffold_config_success": "Configurazione reimpostata con successo",
+  "scaffold_config_error": "Impossibile reimpostare la configurazione"
 }

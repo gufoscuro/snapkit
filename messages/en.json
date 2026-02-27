@@ -299,5 +299,11 @@
   "validation_error_generic": "Some of the fields are invalid. Please check your input again.",
   "chat_placeholder": "Type a message...",
   "chat_error": "Sorry, something went wrong. Please try again.",
-  "configuration_updated": "Configuration updated"
+  "configuration_updated": "Configuration updated",
+  "scaffold_config_confirm_title": "Reset configuration?",
+  "scaffold_config_confirm_description": "This will overwrite the current configuration with the default structure. This action cannot be undone.",
+  "scaffold_config_confirm_text": "Reset",
+  "scaffold_config_loading_text": "Resetting...",
+  "scaffold_config_success": "Configuration reset successfully",
+  "scaffold_config_error": "Failed to reset configuration"
 }

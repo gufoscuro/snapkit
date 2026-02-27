@@ -1,18 +1,14 @@
 <script lang="ts">
-  import { invalidate, invalidateAll } from '$app/navigation'
   import AdminChat from '$components/core/admin/AdminChat.svelte'
-  import { m } from '$lib/paraglide/messages'
-  import { invalidateGlobalsCache } from '$lib/stores/globals-cache'
+  import * as m from '$lib/paraglide/messages'
+  import { refreshAdminConfig } from '$lib/utils/admin-config'
   import { toast } from 'svelte-sonner'
   import type { PageProps } from './$types'
 
   const props: PageProps = $props()
 
   async function onAgentMessage(message: string) {
-    invalidateGlobalsCache()
-    await invalidate('admin:index')
-    await invalidateAll()
-
+    await refreshAdminConfig()
     toast.success(m.configuration_updated())
   }
 </script>

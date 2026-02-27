@@ -89,6 +89,8 @@
     onError?: (err: unknown) => void
     /** Callback on cancel */
     onCancel?: () => void
+    /** Text shown on the confirm button while loading (defaults to "Archiving...") */
+    loadingText?: string
   }
 
   /**
@@ -139,7 +141,7 @@
         disabled={dialogState.loading}
         onclick={dialogState.confirm}
       >
-        {dialogState.loading ? 'Archiving...' : (dialogState.options?.confirmText ?? 'Archive')}
+        {dialogState.loading ? (dialogState.options?.loadingText ?? 'Archiving...') : (dialogState.options?.confirmText ?? 'Archive')}
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>

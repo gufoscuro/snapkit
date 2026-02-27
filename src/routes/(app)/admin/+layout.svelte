@@ -1,11 +1,15 @@
 <script lang="ts">
   import Logo from '$components/icons/Logo.svelte'
+  import Button from '$components/ui/button/button.svelte'
+  import { confirmArchive } from '$lib/components/ui/confirm-archive-dialog'
   import LegalEntitySelector from '$lib/components/features/form/LegalEntitySelector.svelte'
   import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity } from '$lib/types/api-types'
+  import { pushScaffoldConfig } from '$lib/utils/admin-config'
   import { switchLegalEntity } from '$lib/utils/legal-entity'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
+  import Database from '@tabler/icons-svelte/icons/database'
   import { setContext } from 'svelte'
   import type { PageProps } from '../$types'
 
@@ -14,6 +18,24 @@
 
   async function onLegalEntityChoose(entity: LegalEntity) {
     await switchLegalEntity(entity.id)
+  }
+
+  function onScaffoldClick() {
+    if (!legalEntity?.id) return
+
+    const entityId = legalEntity.id
+    confirmArchive({
+      title: m.scaffold_config_confirm_title(),
+      description: m.scaffold_config_confirm_description(),
+      confirmText: m.scaffold_config_confirm_text(),
+      cancelText: m.common_cancel(),
+      loadingText: m.scaffold_config_loading_text(),
+      onArchive: async () => {
+        await pushScaffoldConfig(entityId)
+      },
+      successMessage: m.scaffold_config_success(),
+      errorMessage: m.scaffold_config_error(),
+    })
   }
 
   setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () => ({
@@ -48,11 +70,17 @@
       </Breadcrumb.Root>
     </div>
 
-    <LegalEntitySelector
-      attr={legalEntity || undefined}
-      showLabel={false}
-      width="w-64"
-      onChoose={onLegalEntityChoose} />
+    <div class="flex items-center gap-2">
+      <Button variant="ghost" size="icon" onclick={onScaffoldClick}>
+        <Database />
+      </Button>
+
+      <LegalEntitySelector
+        attr={legalEntity || undefined}
+        showLabel={false}
+        width="w-64"
+        onChoose={onLegalEntityChoose} />
+    </div>
   </header>
 
   <main class="flex min-h-0 flex-1">
