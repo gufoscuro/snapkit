@@ -225,5 +225,12 @@
   "fax": "Fax",
   "founded_year": "Anno di fondazione",
   "employee_count_range": "Fascia dipendenti",
-  "annual_revenue_range": "Fascia fatturato"
+  "annual_revenue_range": "Fascia fatturato",
+  "settings": "Impostazioni",
+  "notifications": "Notifiche",
+  "product_line": "Linea Prodotto",
+  "product_family": "Famiglia Prodotto",
+  "commodity_code": "Codice Merceologico",
+  "broken_link": "Link non valido",
+  "broken_link_message": "La pagina a cui stai cercando di accedere non è ancora configurata: {linkId}"
 }

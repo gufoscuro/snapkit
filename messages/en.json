@@ -225,5 +225,12 @@
   "fax": "Fax",
   "founded_year": "Founded Year",
   "employee_count_range": "Employee Count",
-  "annual_revenue_range": "Annual Revenue"
+  "annual_revenue_range": "Annual Revenue",
+  "settings": "Settings",
+  "notifications": "Notifications",
+  "product_line": "Product Line",
+  "product_family": "Product Family",
+  "commodity_code": "Commodity Code",
+  "broken_link": "Broken Link",
+  "broken_link_message": "The page you're trying to access is not configured yet: {linkId}"
 }
