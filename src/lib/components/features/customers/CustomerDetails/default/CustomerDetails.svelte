@@ -25,7 +25,16 @@
   import * as m from '$lib/paraglide/messages'
   import type { Customer } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import { customerStatusConfig, customerTypeConfig } from '$lib/utils/enum-labels'
+  import {
+    atecoCodeLabels,
+    annualRevenueRangeLabels,
+    companySizeLabels,
+    currencyLabels,
+    customerStatusConfig,
+    customerTypeConfig,
+    employeeCountRangeLabels,
+    toSelectItems,
+  } from '$lib/utils/enum-labels'
   import type { SnippetProps } from '$utils/runtime'
   import { CustomerDetailsContract } from './CustomerDetails.contract.js'
 
@@ -76,6 +85,7 @@
     founded_year: null,
     language_code: '',
     registration_country_code: '',
+    default_currency: 'EUR' as const,
     vat_number: '',
     tax_id: '',
     sdi_code: '',
@@ -94,58 +104,18 @@
     label: cfg.label(),
     variant:
       (
-        { active: 'active', prospect: 'in-progress', suspended: 'paused', blocked: 'blocked' } as Record<
+        { active: 'active', prospect: 'in-progress', suspended: 'paused', blocked: 'blocked', ceased: 'neutral' } as Record<
           string,
           StatusOption['variant']
         >
       )[value] ?? 'neutral',
   }))
 
-  const atecoItems = [
-    'A',
-    'B',
-    'C',
-    'D',
-    'E',
-    'F',
-    'G',
-    'H',
-    'I',
-    'J',
-    'K',
-    'L',
-    'M',
-    'N',
-    'O',
-    'P',
-    'Q',
-    'R',
-    'S',
-    'T',
-    'U',
-    'V',
-  ].map(code => ({ value: code, label: code }))
-  const companySizeItems = [
-    { value: 'micro', label: 'Micro' },
-    { value: 'small', label: 'Small' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'large', label: 'Large' },
-    { value: 'enterprise', label: 'Enterprise' },
-  ]
-  const employeeCountItems = [
-    { value: '1_9', label: '1–9' },
-    { value: '10_49', label: '10–49' },
-    { value: '50_249', label: '50–249' },
-    { value: '250_999', label: '250–999' },
-    { value: '1000_plus', label: '1000+' },
-  ]
-  const annualRevenueItems = [
-    { value: 'under_2m', label: '< 2M' },
-    { value: '2m_10m', label: '2M–10M' },
-    { value: '10m_50m', label: '10M–50M' },
-    { value: '50m_250m', label: '50M–250M' },
-    { value: 'over_250m', label: '> 250M' },
-  ]
+  const atecoItems = toSelectItems(atecoCodeLabels)
+  const companySizeItems = toSelectItems(companySizeLabels)
+  const employeeCountItems = toSelectItems(employeeCountRangeLabels)
+  const annualRevenueItems = toSelectItems(annualRevenueRangeLabels)
+  const currencyItems = toSelectItems(currencyLabels)
 
   const validateCreate = v
     .schema<Partial<Customer>>({
@@ -154,6 +124,7 @@
       status: [v.required()],
       language_code: [v.required()],
       registration_country_code: [v.required()],
+      default_currency: [v.required()],
       email: [v.email()],
     })
     .build()
@@ -236,6 +207,11 @@
         <CountryField
           name="registration_country_code"
           label={m.registration_country_code()}
+          class={FormFieldClass.MinWidth} />
+        <SelectField
+          name="default_currency"
+          label={m.default_currency()}
+          items={currencyItems}
           class={FormFieldClass.MinWidth} />
         <TextField name="language_code" label={m.language_code()} class={FormFieldClass.MaxWidth} />
 
