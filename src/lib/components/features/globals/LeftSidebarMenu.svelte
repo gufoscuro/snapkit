@@ -48,7 +48,7 @@
   }
 </script>
 
-<Sidebar.Group>
+<Sidebar.Group data-sveltekit-preload-data="off">
   <Sidebar.GroupLabel>{getI18nLabel(mainMenu.name)}</Sidebar.GroupLabel>
   <Sidebar.Menu>
     {#each mainMenu.items.filter(i => i.visible !== false) as item (item.label)}
@@ -70,7 +70,9 @@
         {@const isGroupActive = item.children.some(c => page.url.pathname === getHref(c))}
         <Collapsible.Root
           open={openState[item.label] ?? isGroupActive}
-          onOpenChange={(v) => { openState[item.label] = v }}
+          onOpenChange={v => {
+            openState[item.label] = v
+          }}
           class="group/collapsible">
           {#snippet child({ props })}
             <Sidebar.MenuItem {...props}>
