@@ -297,7 +297,7 @@
   "enum_annual_revenue_over_250m": "> 250M",
   "form_error_title": "Impossibile elaborare la tua richiesta",
   "validation_error_generic": "Alcuni campi non sono validi. Controlla nuovamente i tuoi input.",
-  "chat_welcome": "Ciao! Sono l'Assistente Moddo. Come posso aiutarti a configurare questa entità legale?",
   "chat_placeholder": "Scrivi un messaggio...",
-  "chat_error": "Si è verificato un errore. Riprova."
+  "chat_error": "Si è verificato un errore. Riprova.",
+  "configuration_updated": "Configurazione aggiornata"
 }

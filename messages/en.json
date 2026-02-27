@@ -297,7 +297,7 @@
   "enum_annual_revenue_over_250m": "> 250M",
   "form_error_title": "Unable to process your request",
   "validation_error_generic": "Some of the fields are invalid. Please check your input again.",
-  "chat_welcome": "Hi! I'm the Moddo Assistant. How can I help you configure this legal entity?",
   "chat_placeholder": "Type a message...",
-  "chat_error": "Sorry, something went wrong. Please try again."
+  "chat_error": "Sorry, something went wrong. Please try again.",
+  "configuration_updated": "Configuration updated"
 }
