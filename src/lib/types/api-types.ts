@@ -472,6 +472,7 @@ export type AtecoCode = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J
 export type CompanySize = 'micro' | 'small' | 'medium' | 'large' | 'enterprise'
 export type EmployeeCountRange = '1_9' | '10_49' | '50_249' | '250_999' | '1000_plus'
 export type AnnualRevenueRange = 'under_2m' | '2m_10m' | '10m_50m' | '50m_250m' | 'over_250m'
+export type Currency = 'EUR' | 'USD' | 'GBP' | 'CHF' | 'JPY' | 'CNY' | 'CAD' | 'AUD' | 'SEK' | 'NOK' | 'DKK' | 'PLN' | 'CZK' | 'HUF' | 'RON' | 'BGN' | 'TRY' | 'BRL' | 'INR' | 'AED' | 'SAR'
 
 export type CustomerAddress = {
   id: string
@@ -520,6 +521,7 @@ export type Customer = {
   founded_year: number | null
   language_code: string
   registration_country_code: string
+  default_currency: Currency
   vat_number: string
   tax_id: string
   sdi_code: string
