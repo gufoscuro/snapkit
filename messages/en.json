@@ -16,6 +16,7 @@
   "common_search": "Search",
   "contacts": "Contacts",
   "confirm_action": "Are you sure?",
+  "administration": "Administration",
   "archiving": "Archiving...",
   "suppliers": "Suppliers",
   "archive_supplier_confirmation": "Are you sure you want to archive the supplier \"{name}\"? This action cannot be undone.",
@@ -51,6 +52,9 @@
   "enum_sales_shipped_not_shipped": "Not Shipped",
   "enum_sales_shipped_partial": "Partial",
   "legal_entities": "Legal entities",
+  "legal_entity": "Legal entity",
+  "select_legal_entity_placeholder": "Select a legal entity",
+  "no_legal_entities_found": "No legal entities found",
   "quantity": "Quantity",
   "material": "Material",
   "select_material_placeholder": "Select a material",
@@ -292,5 +296,8 @@
   "enum_annual_revenue_50m_250m": "50M–250M",
   "enum_annual_revenue_over_250m": "> 250M",
   "form_error_title": "Unable to process your request",
-  "validation_error_generic": "Some of the fields are invalid. Please check your input again."
+  "validation_error_generic": "Some of the fields are invalid. Please check your input again.",
+  "chat_welcome": "Hi! I'm the Moddo Assistant. How can I help you configure this legal entity?",
+  "chat_placeholder": "Type a message...",
+  "chat_error": "Sorry, something went wrong. Please try again."
 }

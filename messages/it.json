@@ -16,6 +16,7 @@
   "common_search": "Cerca",
   "contacts": "Contatti",
   "confirm_action": "Sei sicuro?",
+  "administration": "Amministrazione",
   "archiving": "Archiviando...",
   "suppliers": "Fornitori",
   "archive_supplier_confirmation": "Sei sicuro di voler archiviare il fornitore \"{name}\"? Questa azione non può essere annullata.",
@@ -49,6 +50,9 @@
   "quantity": "Quantità",
   "material": "Materiale",
   "legal_entities": "Entità legali",
+  "legal_entity": "Entità legale",
+  "select_legal_entity_placeholder": "Seleziona un'entità legale",
+  "no_legal_entities_found": "Nessuna entità legale trovata",
   "select_material_placeholder": "Seleziona un materiale",
   "product": "Prodotto",
   "product_id": "ID Prodotto",
@@ -292,5 +296,8 @@
   "enum_annual_revenue_50m_250m": "50M–250M",
   "enum_annual_revenue_over_250m": "> 250M",
   "form_error_title": "Impossibile elaborare la tua richiesta",
-  "validation_error_generic": "Alcuni campi non sono validi. Controlla nuovamente i tuoi input."
+  "validation_error_generic": "Alcuni campi non sono validi. Controlla nuovamente i tuoi input.",
+  "chat_welcome": "Ciao! Sono l'Assistente Moddo. Come posso aiutarti a configurare questa entità legale?",
+  "chat_placeholder": "Scrivi un messaggio...",
+  "chat_error": "Si è verificato un errore. Riprova."
 }
