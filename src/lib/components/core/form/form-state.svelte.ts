@@ -94,6 +94,17 @@ export function createFormState<T extends Record<string, unknown>>(config: FormS
 		touched = {};
 	}
 
+	/**
+	 * Set errors programmatically (e.g. from server-side validation).
+	 * Also marks the affected fields as touched so error messages are displayed.
+	 */
+	function setErrors(serverErrors: Partial<Record<keyof T, string>>) {
+		errors = { ...errors, ...serverErrors };
+		for (const key of Object.keys(serverErrors) as Array<keyof T>) {
+			touched[key] = true;
+		}
+	}
+
 	return {
 		get values() {
 			return values;
@@ -115,7 +126,8 @@ export function createFormState<T extends Record<string, unknown>>(config: FormS
 		validate,
 		touchField,
 		reset,
-		setValues
+		setValues,
+		setErrors
 	};
 }
 

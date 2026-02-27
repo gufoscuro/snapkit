@@ -18,10 +18,11 @@
 </script>
 
 <script lang="ts" generics="T extends Record<string, unknown>">
-  import { dev } from '$app/environment'
+  import { browser, dev } from '$app/environment'
   import { registerForm } from '$components/runtime/devtools'
-  import type { LegalEntityResourceConfig } from '$lib/stores/tenant-config/types'
   import * as m from '$lib/paraglide/messages'
+  import type { LegalEntityResourceConfig } from '$lib/stores/tenant-config/types'
+  import type { ApiError } from '$utils/request'
   import type { Snippet } from 'svelte'
   import { setFormContext, type FormAPI } from './form-context'
   import { createFormState, type ValidateFn } from './form-state.svelte'
@@ -33,6 +34,7 @@
     onSubmit: (values: T) => Promise<unknown>
     onSuccess?: (payload: SuccessPayload<T>) => void
     onFailure?: (payload: FailurePayload) => void
+    onServerSideValidationError?: (errors: Partial<Record<keyof T, string>>) => void
     locked?: boolean
     novalidate?: boolean
     class?: string
@@ -52,11 +54,14 @@
     class: className = '',
     children,
     withContext,
+    onServerSideValidationError = () => {
+      if (browser) document.querySelector('[data-scrollable-content]')?.scrollTo({ top: 0, behavior: 'smooth' })
+    },
   }: Props = $props()
 
   function buildEffectiveValidate(
     base: ValidateFn<T> | undefined,
-    config: LegalEntityResourceConfig | undefined
+    config: LegalEntityResourceConfig | undefined,
   ): ValidateFn<T> | undefined {
     if (!config) return base
     return (values: T): Partial<Record<keyof T, string>> => {
@@ -90,8 +95,6 @@
   let errorResponse = $state<unknown>(null)
   let submitOption = $state<SubmitOption>(null)
   let submitter: HTMLInputElement | null = $state(null)
-
-  const DEFAULT_ERROR_MESSAGE = 'Generic Error'
 
   // Form API exposed via context
   const formAPI: FormAPI<T> = {
@@ -163,7 +166,7 @@
     if (!formState.validate()) return
 
     inflight = true
-    errorMessage = null
+    errorMessage = ''
     errorResponse = null
 
     try {
@@ -173,15 +176,36 @@
       if (dev) console.info('FormUtil error:', error)
 
       try {
-        const response = await (error as { response?: { json?: () => Promise<unknown> } })?.response?.json?.()
-        const responseObj = response as { error?: string } | undefined
-        errorMessage = responseObj?.error ?? DEFAULT_ERROR_MESSAGE
-        errorResponse = response
-      } catch {
-        errorMessage = DEFAULT_ERROR_MESSAGE
+        const exception = error as ApiError
+        errorResponse = exception.data
+
+        if (exception.status === 422) {
+          errorMessage = m.validation_error_generic()
+
+          // Map server-side validation errors to form field errors
+          const serverErrors = exception.data?.errors
+          if (serverErrors && typeof serverErrors === 'object') {
+            const fieldErrors: Partial<Record<keyof T, string>> = {}
+            for (const [field, messages] of Object.entries(serverErrors)) {
+              if (Array.isArray(messages) && messages.length > 0) {
+                fieldErrors[field as keyof T] = messages[0]
+              }
+            }
+            if (Object.keys(fieldErrors).length > 0) {
+              formState.setErrors(fieldErrors)
+            }
+            onServerSideValidationError(fieldErrors)
+          }
+
+          return
+        }
+
+        errorMessage = exception?.data?.error || m.common_error()
+      } catch (parseError) {
+        errorMessage = m.common_error()
       }
 
-      onFailure?.({ error, message: errorMessage, response: errorResponse })
+      onFailure?.({ error, message: errorMessage as string, response: errorResponse })
     } finally {
       inflight = false
     }

@@ -30,7 +30,7 @@
   <div class="flex h-screen w-full overflow-hidden">
     <SnippetResolver snippet={config.snippets.sidebar} />
 
-    <div class="flex h-screen flex-1 flex-col overflow-y-scroll">
+    <div class="flex h-screen flex-1 flex-col overflow-y-scroll" data-scrollable-content>
       <SnippetResolver snippet={config.snippets.header} class="h-10 w-full">
         {#snippet fallback(snippetProps)}
           <Breadcrumbs {...snippetProps} />

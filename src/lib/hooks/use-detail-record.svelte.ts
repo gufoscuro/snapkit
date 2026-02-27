@@ -109,7 +109,7 @@ export function useDetailRecord<T extends { id: string }>(options: DetailRecordO
 
     if (!record) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve
-      goto(createRoute({ $id: options.detailPageId, params: { uuid: (result as T).id } }))
+      goto(createRoute({ $id: options.detailPageId, params: { uuid: (result as T).id } }), { replaceState: true })
       return
     }
 

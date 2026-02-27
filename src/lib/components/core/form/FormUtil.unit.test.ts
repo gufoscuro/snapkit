@@ -5,6 +5,8 @@ vi.mock('$app/environment', () => ({ dev: false }))
 vi.mock('$components/runtime/devtools', () => ({ registerForm: vi.fn(() => vi.fn()) }))
 vi.mock('$lib/paraglide/messages', () => ({
   validation_required_generic: () => 'This field is required',
+  validation_error_generic: () => 'Validation Error',
+  common_error: () => 'Generic Error',
 }))
 
 import FormUtil from './FormUtil.svelte'

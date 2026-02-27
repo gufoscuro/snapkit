@@ -14,6 +14,7 @@
   import BusyButton from '$components/core/form/BusyButton.svelte'
   import CountryField from '$components/core/form/CountryField.svelte'
   import { FormFieldClass } from '$components/core/form/form.js'
+  import FormErrorMessage from '$components/core/form/FormErrorMessage.svelte'
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
@@ -26,8 +27,8 @@
   import type { Customer } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import {
-    atecoCodeLabels,
     annualRevenueRangeLabels,
+    atecoCodeLabels,
     companySizeLabels,
     currencyLabels,
     customerStatusConfig,
@@ -104,10 +105,13 @@
     label: cfg.label(),
     variant:
       (
-        { active: 'active', prospect: 'in-progress', suspended: 'paused', blocked: 'blocked', ceased: 'neutral' } as Record<
-          string,
-          StatusOption['variant']
-        >
+        {
+          active: 'active',
+          prospect: 'in-progress',
+          suspended: 'paused',
+          blocked: 'blocked',
+          ceased: 'neutral',
+        } as Record<string, StatusOption['variant']>
       )[value] ?? 'neutral',
   }))
 
@@ -149,6 +153,8 @@
       onFailure={handleFailure}
       class="flex flex-col gap-4">
       {#snippet withContext(formAPI)}
+        <FormErrorMessage />
+
         <!-- <div class="sticky top-breadcrumbs z-10 bg-background py-3 font-semibold">Informazioni generali</div> -->
         <SelectField
           name="type"
