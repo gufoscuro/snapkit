@@ -9,11 +9,14 @@ snapkit-content/
 ├── mcp-servers/          # MCP server documentation and usage
 │   └── overview.md       # All available MCP servers and their tools
 ├── components/           # Component development guidelines
-│   ├── development-guidelines.md  # Component creation and organization
+│   ├── development-guidelines.md  # Component creation, organization, testing rules
 │   ├── patterns.md                # Common component patterns (selectors, etc.)
 │   ├── state-sharing.md           # Sibling component state sharing architecture
 │   ├── forms.md                   # Form system with context API and validation
-│   └── detail-record-form.md      # Create/update record form guide (useDetailRecord)
+│   ├── detail-record-form.md      # Create/update record form guide (useDetailRecord)
+│   └── resource-table.md          # ResourceTable component and renderers
+├── testing/              # Testing strategy and patterns
+│   └── strategy.md       # Test projects, mocking, what/how to test
 ├── api/                  # API integration guidelines
 │   └── integration-guidelines.md  # API types, requests, error handling
 └── routing/              # Navigation and routing patterns
@@ -34,6 +37,10 @@ snapkit-content/
 - **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, and scaffolding examples
 - **detail-record-form.md**: Step-by-step guide for creating create/update detail form components using `useDetailRecord`. Covers the full workflow: entity type discovery, contract, `useDetailRecord` setup, validation schemas, resource config, page state sharing, and the component checklist
 - **resource-table.md**: Generic ResourceTable component for data tables. Covers declarative column configuration, 11 built-in renderers, utilities (createApiFetcher, createArchiveAction), table variants, and best practices
+
+### Testing
+
+- **strategy.md**: Complete testing guide covering Vitest project configuration, file naming conventions, mocking patterns (SvelteKit modules, i18n, fetch, Svelte components), testing reactive code with `flushSync`, component testing with `@testing-library/svelte`, and what to test vs what not to test
 
 ### API
 
@@ -75,3 +82,8 @@ When updating guidelines:
 - "How to create a data table?" → `components/resource-table.md`
 - "How to use ResourceTable?" → `components/resource-table.md`
 - "What renderers are available for tables?" → `components/resource-table.md`
+- "How to write tests?" → `testing/strategy.md`
+- "How to mock SvelteKit modules in tests?" → `testing/strategy.md`
+- "What test file naming convention?" → `testing/strategy.md`
+- "How to test a Svelte component?" → `testing/strategy.md`
+- "Do I need to write tests for a new component?" → `components/development-guidelines.md` (Section 4: Testing)
