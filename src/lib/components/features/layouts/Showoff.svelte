@@ -5,7 +5,7 @@
 -->
 
 <script lang="ts" module>
-  import type { LayoutSlotDefinition } from '$lib/admin/types'
+  import type { LayoutSlotDefinition } from '$lib/types/layout'
 
   export const slots: LayoutSlotDefinition[] = [
     { name: 'title', label: 'Title', description: 'Page title component' },
