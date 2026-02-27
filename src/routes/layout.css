@@ -165,6 +165,16 @@
     animation: var(--view-transition-duration) ease-out both slide-out-y;
   }
 
+  [style*='zoom-in']::view-transition-old(root),
+  [style*='zoom-in']::view-transition-new(root) {
+    animation: 300ms ease-out both zoom-in;
+  }
+
+  [style*='zoom-out']::view-transition-old(root),
+  [style*='zoom-out']::view-transition-new(root) {
+    animation: var(--view-transition-duration) ease-out both zoom-out;
+  }
+
   [style*='normal']::view-transition-old(root),
   [style*='normal']::view-transition-new(root) {
     animation: 100ms ease-out both fade;
@@ -185,18 +195,30 @@
 
 @keyframes slide-in-y {
   from {
-    transform: translateY(5%);
+    transform: translateY(10%);
   }
 }
 
 @keyframes slide-out-y {
   from {
-    transform: translateY(5%);
+    transform: translateY(-10%);
   }
 }
 
 @keyframes fade {
   from {
     opacity: 0.6;
+  }
+}
+
+@keyframes zoom-in {
+  from {
+    transform: scale(0.9);
+  }
+}
+
+@keyframes zoom-out {
+  from {
+    transform: scale(1.1);
   }
 }

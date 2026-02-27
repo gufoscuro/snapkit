@@ -22,11 +22,11 @@
   }
 
   function applyTransition(navigation: OnNavigate) {
-    // const fromPathname = navigation.from?.url.pathname
-    // const toPathname = navigation.to?.url.pathname
+    const fromPathname = navigation.from?.url.pathname
+    const toPathname = navigation.to?.url.pathname
 
-    // if (toPathname?.includes('login')) return setTransitionProperty('zoom-out')
-    // else if (fromPathname?.includes('login')) return setTransitionProperty('zoom-out')
+    if (toPathname?.includes('/admin')) return setTransitionProperty('slide-in-y')
+    else if (fromPathname?.includes('/admin')) return setTransitionProperty('normal')
     // else if (fromPathname?.includes('upsert') && navigation.to?.url.pathname.includes('upsert'))
     //   return setTransitionProperty('normal')
     // else if (fromPathname?.includes('upsert')) return setTransitionProperty('slide-out')
