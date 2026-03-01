@@ -9,7 +9,7 @@
   let { data, children }: PageProps & { children?: () => any } = $props()
   let { pageDetails, routeDetails, entityConfig, legalEntity, user } = $derived(data)
 
-  $inspect('data', data)
+  // $inspect('data', data)
 
   initPageState()
 

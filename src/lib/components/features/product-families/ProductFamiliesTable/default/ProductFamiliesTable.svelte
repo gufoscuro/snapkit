@@ -33,7 +33,10 @@
     {
       accessorKey: 'code',
       header: m.code(),
-      renderer: 'text',
+      renderer: 'link',
+      rendererConfig: {
+        urlBuilder: (row) => `/settings/product-families/upsert/${row.id}`,
+      },
     },
     {
       accessorKey: 'name',
