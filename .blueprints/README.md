@@ -15,6 +15,9 @@ snapkit-content/
 │   ├── forms.md                   # Form system with context API and validation
 │   ├── detail-record-form.md      # Create/update record form guide (useDetailRecord)
 │   └── resource-table.md          # ResourceTable component and renderers
+├── pages/                # Page architecture and CRUD patterns
+│   ├── crud-workflow.md           # End-to-end CRUD workflow (list + form + filters)
+│   └── fixed-pages.md            # Fixed pages (settings, admin) vs configurable pages
 ├── testing/              # Testing strategy and patterns
 │   └── strategy.md       # Test projects, mocking, what/how to test
 ├── api/                  # API integration guidelines
@@ -37,6 +40,11 @@ snapkit-content/
 - **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, and scaffolding examples
 - **detail-record-form.md**: Step-by-step guide for creating create/update detail form components using `useDetailRecord`. Covers the full workflow: entity type discovery, contract, `useDetailRecord` setup, validation schemas, resource config, page state sharing, and the component checklist
 - **resource-table.md**: Generic ResourceTable component for data tables. Covers declarative column configuration, 11 built-in renderers, utilities (createApiFetcher, createArchiveAction), table variants, and best practices
+
+### Pages
+
+- **crud-workflow.md**: End-to-end guide for building a CRUD (list, filters, detail form, archive). Covers the anatomy of a CRUD, step-by-step instructions, the difference between configurable and fixed pages, and i18n conventions
+- **fixed-pages.md**: Complete guide for creating fixed pages (settings, admin) that use file-based routing instead of the configurable page system. Covers layout structure, sidebar with fixed links, list/detail page patterns, `setSnippetBindings()` usage, custom `handleSuccess` for navigation, breadcrumbs, and the header pattern
 
 ### Testing
 
@@ -87,3 +95,11 @@ When updating guidelines:
 - "What test file naming convention?" → `testing/strategy.md`
 - "How to test a Svelte component?" → `testing/strategy.md`
 - "Do I need to write tests for a new component?" → `components/development-guidelines.md` (Section 4: Testing)
+- "How to build a CRUD?" → `pages/crud-workflow.md`
+- "What is the anatomy of a CRUD?" → `pages/crud-workflow.md`
+- "How to create a settings page?" → `pages/fixed-pages.md`
+- "How to create a fixed page?" → `pages/fixed-pages.md`
+- "What is the difference between configurable and fixed pages?" → `pages/fixed-pages.md`
+- "How to set up snippet bindings manually?" → `pages/fixed-pages.md`
+- "How to handle navigation in fixed pages?" → `pages/fixed-pages.md`
+- "How to create a sidebar with fixed links?" → `pages/fixed-pages.md`
