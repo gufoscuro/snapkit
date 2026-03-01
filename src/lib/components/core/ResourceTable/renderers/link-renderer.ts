@@ -56,7 +56,7 @@ export function createLinkRenderer<T>(config: ColumnConfig<T>) {
 
     // Create snippet with link
     const snippet = createRawSnippet(() => ({
-      render: () => `<a href="${url}" class="text-primary hover:underline hover:text-brand">${displayValue}</a>`,
+      render: () => `<a href="${url}" class="text-foreground hover:underline hover:text-brand">${displayValue}</a>`,
     }))
 
     return renderSnippet(snippet)
