@@ -6,6 +6,7 @@
   import { Input } from '$lib/components/ui/input'
   import * as Popover from '$lib/components/ui/popover'
   import * as m from '$lib/paraglide/messages'
+  import { getLocale } from '$lib/paraglide/runtime'
   import { cn } from '$lib/utils.js'
   import { apiRequest } from '$utils/request'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
@@ -21,6 +22,7 @@
 
   const { onAgentMessage }: AdminChatProps = $props()
 
+  const currentLocale = getLocale()
   const getSnippetProps = getContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY)
   const snippetProps = $derived(getSnippetProps?.())
   const legalEntityId = $derived(snippetProps.legalEntity?.id)
@@ -61,7 +63,7 @@
       const response = await apiRequest<ChatResponse>({
         url: `/legal-entities/${entityId}/config/chat`,
         method: 'POST',
-        data: { message: 'Hi' },
+        data: { message: currentLocale === 'it' ? 'Ciao' : 'Hi' },
       })
 
       conversationId = response.conversation_id
