@@ -22,6 +22,9 @@ export type LegalEntityResourceConfig = {
   custom_fields: ResourceCustomFieldConfig[]
 }
 
+/** The serialized shape of custom field values sent/received from the API */
+export type CustomFieldValues = Record<string, unknown>
+
 /**
  * @deprecated Use MenuItem instead
  * Kept for backward compatibility during migration

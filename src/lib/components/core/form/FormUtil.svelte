@@ -21,9 +21,10 @@
   import { browser, dev } from '$app/environment'
   import { registerForm } from '$components/runtime/devtools'
   import * as m from '$lib/paraglide/messages'
-  import type { LegalEntityResourceConfig } from '$lib/stores/tenant-config/types'
+  import type { LegalEntityResourceConfig, ResourceCustomFieldConfig } from '$lib/stores/tenant-config/types'
   import type { ApiError } from '$utils/request'
   import type { Snippet } from 'svelte'
+  import CustomFields from './CustomFields.svelte'
   import { setFormContext, type FormAPI } from './form-context'
   import { createFormState, type ValidateFn } from './form-state.svelte'
 
@@ -37,9 +38,12 @@
     onServerSideValidationError?: (errors: Partial<Record<keyof T, string>>) => void
     locked?: boolean
     novalidate?: boolean
+    /** Show custom fields section at the bottom of the form. Default: true */
+    showCustomFields?: boolean
     class?: string
     children?: Snippet
     withContext?: Snippet<[FormAPI<T>]>
+    bottom?: Snippet<[FormAPI<T>]>
   }
 
   let {
@@ -51,9 +55,11 @@
     onFailure,
     locked = false,
     novalidate = true,
+    showCustomFields = true,
     class: className = '',
     children,
     withContext,
+    bottom,
     onServerSideValidationError = () => {
       if (browser) document.querySelector('[data-scrollable-content]')?.scrollTo({ top: 0, behavior: 'smooth' })
     },
@@ -88,6 +94,71 @@
     getInitialValues: () => initialValues,
     getValidate: () => buildEffectiveValidate(validate, resourceConfig),
   })
+
+  // === Custom Fields State ===
+  const customFieldConfigs = $derived<ResourceCustomFieldConfig[]>(resourceConfig?.custom_fields ?? [])
+  let customFieldValues = $state<Record<string, unknown>>({})
+  let customFieldErrors = $state<Record<string, string>>({})
+  let customFieldTouched = $state<Record<string, boolean>>({})
+
+  function initCustomFieldValues(source: T) {
+    const existing = (source as Record<string, unknown>).custom_fields
+    if (existing && typeof existing === 'object' && !Array.isArray(existing)) {
+      customFieldValues = { ...(existing as Record<string, unknown>) }
+    } else {
+      customFieldValues = {}
+    }
+  }
+
+  // Initialize on mount
+  initCustomFieldValues(initialValues)
+
+  function updateCustomField(key: string, value: unknown) {
+    customFieldValues = { ...customFieldValues, [key]: value }
+  }
+
+  function touchCustomField(key: string) {
+    customFieldTouched = { ...customFieldTouched, [key]: true }
+  }
+
+  function isEmptyCustomFieldValue(value: unknown): boolean {
+    return (
+      value === null ||
+      value === undefined ||
+      (typeof value === 'string' && value.trim() === '') ||
+      (typeof value === 'number' && isNaN(value))
+    )
+  }
+
+  function validateCustomField(key: string) {
+    const config = customFieldConfigs.find(c => c.key === key)
+    if (!config) return
+
+    if (config.required && isEmptyCustomFieldValue(customFieldValues[key])) {
+      customFieldErrors = { ...customFieldErrors, [key]: m.validation_required_generic() }
+      return
+    }
+
+    // Clear error if valid
+    const { [key]: _, ...rest } = customFieldErrors
+    customFieldErrors = rest
+  }
+
+  function validateAllCustomFields(): boolean {
+    const errors: Record<string, string> = {}
+    const touched: Record<string, boolean> = {}
+    for (const config of customFieldConfigs) {
+      if (config.required && isEmptyCustomFieldValue(customFieldValues[config.key])) {
+        errors[config.key] = m.validation_required_generic()
+        touched[config.key] = true
+      }
+    }
+    customFieldErrors = errors
+    if (Object.keys(touched).length > 0) {
+      customFieldTouched = { ...customFieldTouched, ...touched }
+    }
+    return Object.keys(errors).length === 0
+  }
 
   // UI state
   let inflight = $state(false)
@@ -128,8 +199,27 @@
     updateField: formState.updateField,
     validateField: formState.validateField,
     touchField: formState.touchField,
-    reset: formState.reset,
+    reset: () => {
+      formState.reset()
+      initCustomFieldValues(initialValues)
+      customFieldErrors = {}
+      customFieldTouched = {}
+    },
     submit: triggerSubmit,
+
+    // Custom Fields
+    get customFieldValues() {
+      return customFieldValues
+    },
+    get customFieldErrors() {
+      return customFieldErrors
+    },
+    get customFieldTouched() {
+      return customFieldTouched
+    },
+    updateCustomField,
+    touchCustomField,
+    validateCustomField,
   }
 
   setFormContext(formAPI)
@@ -150,6 +240,8 @@
         isValid: formState.isValid,
         isDirty: formState.isDirty,
         inflight: inflight,
+        customFieldValues,
+        customFieldErrors,
       }),
     })
 
@@ -165,12 +257,31 @@
     if (inflight || locked) return
     if (!formState.validate()) return
 
+    // Validate custom fields (only when enabled and configured)
+    const hasCustomFields = showCustomFields && customFieldConfigs.length > 0
+    if (hasCustomFields && !validateAllCustomFields()) return
+
     inflight = true
     errorMessage = ''
     errorResponse = null
 
     try {
-      const result = (await onSubmit(formState.values)) as T
+      // Build payload: inject custom_fields when enabled
+      let payload: T
+      if (hasCustomFields) {
+        // Ensure boolean fields have explicit values
+        const finalCustomFields = { ...customFieldValues }
+        for (const config of customFieldConfigs) {
+          if (config.type === 'boolean' && finalCustomFields[config.key] === undefined) {
+            finalCustomFields[config.key] = false
+          }
+        }
+        payload = { ...formState.values, custom_fields: finalCustomFields } as T
+      } else {
+        payload = formState.values
+      }
+
+      const result = (await onSubmit(payload)) as T
       onSuccess?.({ result, option: submitOption })
     } catch (error: unknown) {
       if (dev) console.info('FormUtil error:', error)
@@ -186,13 +297,26 @@
           const serverErrors = exception.data?.errors
           if (serverErrors && typeof serverErrors === 'object') {
             const fieldErrors: Partial<Record<keyof T, string>> = {}
+            const cfErrors: Record<string, string> = {}
+
             for (const [field, messages] of Object.entries(serverErrors)) {
               if (Array.isArray(messages) && messages.length > 0) {
-                fieldErrors[field as keyof T] = messages[0]
+                // Route custom_fields.* errors to custom field state
+                if (field.startsWith('custom_fields.')) {
+                  const cfKey = field.replace('custom_fields.', '')
+                  cfErrors[cfKey] = messages[0]
+                  customFieldTouched = { ...customFieldTouched, [cfKey]: true }
+                } else {
+                  fieldErrors[field as keyof T] = messages[0]
+                }
               }
             }
+
             if (Object.keys(fieldErrors).length > 0) {
               formState.setErrors(fieldErrors)
+            }
+            if (Object.keys(cfErrors).length > 0) {
+              customFieldErrors = { ...customFieldErrors, ...cfErrors }
             }
             onServerSideValidationError(fieldErrors)
           }
@@ -234,6 +358,10 @@
     if (currentJson !== lastInitialValuesJson) {
       lastInitialValuesJson = currentJson
       formState.setValues(initialValues)
+      // Also re-initialize custom fields from new data
+      initCustomFieldValues(initialValues)
+      customFieldErrors = {}
+      customFieldTouched = {}
     }
   })
 </script>
@@ -244,5 +372,13 @@
     {@render withContext(formAPI)}
   {:else}
     {@render children?.()}
+  {/if}
+
+  {#if showCustomFields && customFieldConfigs.length > 0}
+    <CustomFields configs={customFieldConfigs} />
+  {/if}
+
+  {#if bottom}
+    {@render bottom(formAPI)}
   {/if}
 </form>

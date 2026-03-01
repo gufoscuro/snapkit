@@ -562,7 +562,7 @@ export type Customer = {
   fax: string
   website: string
   notes: string
-  custom_fields: unknown[]
+  custom_fields: Record<string, unknown>
   version: number
   addresses?: CustomerAddress[]
   contacts?: CustomerContact[]

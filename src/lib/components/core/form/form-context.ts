@@ -22,6 +22,14 @@ export type FormAPI<T extends Record<string, unknown> = Record<string, unknown>>
 	touchField: <K extends keyof T>(name: K) => void;
 	reset: () => void;
 	submit: (option?: string | null) => void;
+
+	// Custom Fields (parallel state — dynamic keys not part of T)
+	readonly customFieldValues: Record<string, unknown>;
+	readonly customFieldErrors: Record<string, string>;
+	readonly customFieldTouched: Record<string, boolean>;
+	updateCustomField: (key: string, value: unknown) => void;
+	touchCustomField: (key: string) => void;
+	validateCustomField: (key: string) => void;
 };
 
 /**

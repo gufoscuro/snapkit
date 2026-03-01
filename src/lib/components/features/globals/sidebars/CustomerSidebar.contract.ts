@@ -116,7 +116,7 @@ const CustomerDataSchema = Type.Object({
   fax: Type.String(),
   website: Type.String(),
   notes: Type.String(),
-  custom_fields: Type.Array(Type.Unknown()),
+  custom_fields: Type.Record(Type.String(), Type.Unknown()),
   version: Type.Number(),
 })
 

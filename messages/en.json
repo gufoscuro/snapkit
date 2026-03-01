@@ -325,5 +325,6 @@
   "new_product_line": "New Product Line",
   "archive_product_line_confirmation": "Are you sure you want to archive the product line \"{name}\"? This action cannot be undone.",
   "product_line_archived_success": "Product line \"{name}\" archived successfully",
-  "product_line_archive_error": "Failed to archive product line"
+  "product_line_archive_error": "Failed to archive product line",
+  "custom_fields": "Custom Fields"
 }

@@ -62,9 +62,6 @@
       customerHandle.unset()
       breadcrumbTitle.clear()
     },
-    extraSubmitData: {
-      custom_fields: [],
-    },
   })
 
   const { handleSubmit, handleSuccess, handleFailure } = detail
@@ -151,7 +148,7 @@
       onSubmit={handleSubmit}
       onSuccess={handleSuccess}
       onFailure={handleFailure}
-      class="flex flex-col gap-4">
+      class="relative flex flex-col gap-4 pb-breadcrumbs">
       {#snippet withContext(formAPI)}
         <FormErrorMessage />
 
@@ -222,7 +219,9 @@
         <TextField name="language_code" label={m.language_code()} class={FormFieldClass.MaxWidth} />
 
         <RichEditorField name="notes" label={m.notes()} width={FormFieldClass.MaxWidth} />
+      {/snippet}
 
+      {#snippet bottom()}
         <div class="fixed right-0 bottom-0 flex h-14 w-full items-center justify-end px-4">
           <BusyButton type="submit">{m.save_changes()}</BusyButton>
         </div>
