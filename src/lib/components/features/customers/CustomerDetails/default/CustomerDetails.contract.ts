@@ -1,17 +1,33 @@
-import { Type } from '@sinclair/typebox'
 import type { ComponentContract } from '$lib/contexts/page-state'
+import { Type } from '@sinclair/typebox'
 
 /**
  * Schema for the customer data provided by this component.
  * Matches the Customer type from api-types.ts.
  */
 const AtecoCodeSchema = Type.Union([
-  Type.Literal('A'), Type.Literal('B'), Type.Literal('C'), Type.Literal('D'),
-  Type.Literal('E'), Type.Literal('F'), Type.Literal('G'), Type.Literal('H'),
-  Type.Literal('I'), Type.Literal('J'), Type.Literal('K'), Type.Literal('L'),
-  Type.Literal('M'), Type.Literal('N'), Type.Literal('O'), Type.Literal('P'),
-  Type.Literal('Q'), Type.Literal('R'), Type.Literal('S'), Type.Literal('T'),
-  Type.Literal('U'), Type.Literal('V'),
+  Type.Literal('A'),
+  Type.Literal('B'),
+  Type.Literal('C'),
+  Type.Literal('D'),
+  Type.Literal('E'),
+  Type.Literal('F'),
+  Type.Literal('G'),
+  Type.Literal('H'),
+  Type.Literal('I'),
+  Type.Literal('J'),
+  Type.Literal('K'),
+  Type.Literal('L'),
+  Type.Literal('M'),
+  Type.Literal('N'),
+  Type.Literal('O'),
+  Type.Literal('P'),
+  Type.Literal('Q'),
+  Type.Literal('R'),
+  Type.Literal('S'),
+  Type.Literal('T'),
+  Type.Literal('U'),
+  Type.Literal('V'),
 ])
 
 const CompanySizeSchema = Type.Union([
@@ -36,6 +52,30 @@ const AnnualRevenueRangeSchema = Type.Union([
   Type.Literal('10m_50m'),
   Type.Literal('50m_250m'),
   Type.Literal('over_250m'),
+])
+
+const CurrencySchema = Type.Union([
+  Type.Literal('EUR'),
+  Type.Literal('USD'),
+  Type.Literal('GBP'),
+  Type.Literal('CHF'),
+  Type.Literal('JPY'),
+  Type.Literal('CNY'),
+  Type.Literal('CAD'),
+  Type.Literal('AUD'),
+  Type.Literal('SEK'),
+  Type.Literal('NOK'),
+  Type.Literal('DKK'),
+  Type.Literal('PLN'),
+  Type.Literal('CZK'),
+  Type.Literal('HUF'),
+  Type.Literal('RON'),
+  Type.Literal('BGN'),
+  Type.Literal('TRY'),
+  Type.Literal('BRL'),
+  Type.Literal('INR'),
+  Type.Literal('AED'),
+  Type.Literal('SAR'),
 ])
 
 export const CustomerDataSchema = Type.Object({
@@ -65,6 +105,7 @@ export const CustomerDataSchema = Type.Object({
   annual_revenue_range: Type.Union([AnnualRevenueRangeSchema, Type.Null()]),
   founded_year: Type.Union([Type.Number(), Type.Null()]),
   language_code: Type.String(),
+  default_currency: CurrencySchema,
   registration_country_code: Type.String(),
   vat_number: Type.String(),
   tax_id: Type.String(),
