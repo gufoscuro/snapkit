@@ -439,6 +439,37 @@ export type ProductInventoryItemSummary = {
   }
 }
 
+// ============================================================================
+// Settings / Configuration Types
+// ============================================================================
+
+/**
+ * Product family from Moddo API GET /api/legal-entities/{legalEntity}/product-families
+ */
+export type ProductFamily = {
+  id: string
+  code: string
+  name: string
+  description: string
+  is_active: boolean
+}
+
+export type CommodityCode = {
+  id: string
+  code: string
+  name: string
+  description: string
+  is_active: boolean
+}
+
+export type ProductLine = {
+  id: string
+  code: string
+  name: string
+  description: string
+  is_active: boolean
+}
+
 export interface DataWrapper<T> {
   data: T
 }

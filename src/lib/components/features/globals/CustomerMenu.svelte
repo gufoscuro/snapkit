@@ -8,7 +8,6 @@
   import * as m from '$lib/paraglide/messages'
   import { getLocale, locales, setLocale } from '$lib/paraglide/runtime'
   import { apiRequest } from '$utils/request'
-  import { createRoute } from '$utils/route-builder'
   import type { SnippetProps } from '$utils/runtime'
   import { getUserInitials } from '$utils/strings'
   import BellIcon from '@lucide/svelte/icons/bell'
@@ -103,7 +102,7 @@
               {m.administration()}
             </DropdownMenu.Item>
           {/if}
-          <DropdownMenu.Item onclick={() => goto(createRoute({ $id: 'settings' }))}>
+          <DropdownMenu.Item onclick={() => goto('/settings')}>
             <Cog />
             {m.settings()}
           </DropdownMenu.Item>
