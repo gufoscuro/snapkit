@@ -21,7 +21,7 @@
   const props: SnippetProps = $props()
 </script>
 
-<GenericFilters {...props}>
+<GenericFilters {...props} hideSearch>
   <Button variant="default" href="/settings/product-lines/upsert">
     {m.add_new_product_line()}
   </Button>

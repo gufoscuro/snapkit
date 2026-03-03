@@ -1,9 +1,9 @@
 <!--
-  @component CommodityCodesFilters
-  @description A search filter component that provides filter state to sibling components.
-  Positioned on the right side with a search input field and an "Add" button.
-  Provides filter state consumable by CommodityCodesTable.
-  @keywords filter, search, commodity-codes, settings
+  @component BanksFilters
+  @description A filter component that provides filter state to sibling components.
+  Positioned on the right side with an "Add" button. Search is hidden for settings sections.
+  Provides filter state consumable by BanksTable.
+  @keywords filter, banks, settings
   @uses GenericFilters
   @provides filters
 -->
@@ -22,7 +22,7 @@
 </script>
 
 <GenericFilters {...props} hideSearch>
-  <Button variant="default" href="/settings/commodity-codes/upsert">
-    {m.add_new_commodity_code()}
+  <Button variant="default" href="/settings/banks/upsert">
+    {m.add_new_bank()}
   </Button>
 </GenericFilters>

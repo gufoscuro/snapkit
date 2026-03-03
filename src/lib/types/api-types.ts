@@ -470,6 +470,28 @@ export type ProductLine = {
   is_active: boolean
 }
 
+/**
+ * Legal entity bank from Moddo API GET /api/legal-entities/{legalEntity}/banks
+ */
+export type LegalEntityBank = {
+  id: string
+  code: string
+  name: string
+  branch: string
+  abi: string
+  cab: string
+  cin: string
+  account_number: string
+  iban: string
+  address: string
+  city: string
+  province: string
+  postal_code: string
+  country_code: string
+  bic_swift: string
+  version: number
+}
+
 export interface DataWrapper<T> {
   data: T
 }

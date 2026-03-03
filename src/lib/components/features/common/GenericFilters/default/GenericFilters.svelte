@@ -20,7 +20,7 @@
   import type { Snippet } from 'svelte'
   import { GenericFiltersContract } from './GenericFilters.contract.js'
 
-  const { children }: SnippetProps & { children?: Snippet } = $props()
+  const { children, hideSearch = false }: SnippetProps & { children?: Snippet; hideSearch?: boolean } = $props()
 
   // Get handle to provide filter state
   const filtersHandle = useProvides(GenericFiltersContract, 'filters')
@@ -68,10 +68,12 @@
 </script>
 
 <div class="flex w-full items-center justify-end gap-4">
-  <div class="relative w-64">
-    <Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-    <Input type="search" placeholder={m.common_search()} value={searchValue} oninput={handleInput} class="pl-9" />
-  </div>
+  {#if !hideSearch}
+    <div class="relative w-64">
+      <Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Input type="search" placeholder={m.common_search()} value={searchValue} oninput={handleInput} class="pl-9" />
+    </div>
+  {/if}
 
   {@render children?.()}
 </div>
