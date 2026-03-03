@@ -9,16 +9,17 @@ import type { LayoutLoad, LayoutLoadEvent } from './$types'
 const unauthenticatedRoutes = ['/(app)/login']
 
 async function fetchGlobals(isAuthenticated: boolean, cookieLegalEntityId: string | null) {
-  await apiRequest({
-    url: '/tenant',
-  })
+  if (!isAuthenticated) {
+    await apiRequest({
+      url: '/tenant',
+    })
 
-  if (!isAuthenticated)
     return {
       user: null,
       legalEntity: null,
       entityConfig: null,
     }
+  }
 
   // Cache hit: same legal entity, skip heavy API calls
   const cached = getGlobalsCache()
@@ -30,6 +31,9 @@ async function fetchGlobals(isAuthenticated: boolean, cookieLegalEntityId: strin
     }
   }
 
+  await apiRequest({
+    url: '/tenant',
+  })
   const user = await apiRequest<UserResource>({
     url: '/user',
   })
