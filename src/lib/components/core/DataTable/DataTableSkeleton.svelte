@@ -27,18 +27,16 @@
 
   // Pre-generate widths for consistent rendering (using $derived to react to prop changes)
   const rowWidths = $derived(
-    Array.from({ length: rows }, () =>
-      Array.from({ length: columns }, () => getRandomWidth())
-    )
+    Array.from({ length: rows }, () => Array.from({ length: columns }, () => getRandomWidth())),
   )
 </script>
 
-<div class="border {className}">
+<div class={className}>
   <Table.Root>
     <Table.Header>
       <Table.Row>
         {#each Array(columns) as _, i (i)}
-          <Table.Head>
+          <Table.Head class="h-10">
             <Skeleton class="h-4 w-24" />
           </Table.Head>
         {/each}
@@ -48,11 +46,8 @@
       {#each rowWidths as rowWidth, rowIndex (rowIndex)}
         <Table.Row>
           {#each rowWidth as width, colIndex (colIndex)}
-            <Table.Cell>
-              <Skeleton
-                class="h-4"
-                style="width: {width};"
-              />
+            <Table.Cell class="h-10">
+              <Skeleton class="h-4" style="width: {width};" />
             </Table.Cell>
           {/each}
         </Table.Row>

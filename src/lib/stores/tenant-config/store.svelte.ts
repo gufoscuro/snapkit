@@ -110,7 +110,7 @@ function createTenantConfigStore() {
       return null
     }
 
-    return searchPages(currentTenant.pages, route)
+    return searchPages(currentTenant?.pages ?? [], route)
   }
 
   /**
@@ -129,7 +129,7 @@ function createTenantConfigStore() {
    */
   function getPageById($id: string): PageConfig | null {
     if (!currentTenant) return null
-    return findPageById($id, currentTenant.pages)
+    return findPageById($id, currentTenant?.pages ?? [])
   }
 
   /**
@@ -140,7 +140,7 @@ function createTenantConfigStore() {
    */
   function getAllPageIds(): string[] {
     if (!currentTenant) return []
-    return collectAllPageIds(currentTenant.pages)
+    return collectAllPageIds(currentTenant?.pages ?? [])
   }
 
   return {

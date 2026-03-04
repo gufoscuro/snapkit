@@ -27,6 +27,27 @@ export type ExtendedFetchOptions = RequestInit & {
   queryParams?: Record<string, string | number | boolean>
   /** Set to false to prevent automatic redirect to /login on 401. Default: true */
   redirectOnUnauthorized?: boolean
+  /** Force a fresh request, removing the cached entry for this URL if present. Only applies to GET requests. */
+  invalidateCache?: boolean
+}
+
+const MAX_CACHE_SIZE = 10
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+
+type CacheEntry = { data: unknown; timestamp: number }
+const apiCache = new Map<string, CacheEntry>()
+
+function getBaseUrl(url: string): string {
+  return url.split('?')[0]
+}
+
+function invalidateCacheByBasePath(url: string): void {
+  const basePath = getBaseUrl(url)
+  for (const key of apiCache.keys()) {
+    if (getBaseUrl(key) === basePath) {
+      apiCache.delete(key)
+    }
+  }
 }
 
 export type SafeApiResponse<T> = {
@@ -70,7 +91,7 @@ function getXsrfToken(): string | null {
  * @param options - Request options (url should be the API path, e.g., 'sales/order')
  */
 export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
-  const { redirectOnUnauthorized = true, ...rest } = options
+  const { redirectOnUnauthorized = true, invalidateCache = false, ...rest } = options
 
   let url = `${API_GATEWAY}/api${options.url}`
   let data: any = null
@@ -83,8 +104,23 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
     url += `?${searchParams.toString()}`
   }
 
-  const xsrfToken = getXsrfToken()
+  const isGet = !rest.method || rest.method.toUpperCase() === 'GET'
 
+  if (isGet) {
+    if (invalidateCache) {
+      apiCache.delete(url)
+    } else {
+      const cached = apiCache.get(url)
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+        return cached.data as T
+      }
+      if (cached) apiCache.delete(url)
+    }
+  } else {
+    invalidateCacheByBasePath(url)
+  }
+
+  const xsrfToken = getXsrfToken()
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -115,6 +151,14 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
     if (result.status === 422) throw new ApiError('Validation Error', result.status, data, result)
 
     throw new ApiError(data?.message || 'Request failed', result.status, data, result)
+  }
+
+  if (isGet) {
+    if (apiCache.size >= MAX_CACHE_SIZE) {
+      const oldest = apiCache.keys().next().value as string
+      apiCache.delete(oldest)
+    }
+    apiCache.set(url, { data, timestamp: Date.now() })
   }
 
   return data as T

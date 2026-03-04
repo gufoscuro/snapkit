@@ -10,6 +10,7 @@
   @route customer-details
 -->
 <script lang="ts" module>
+  // eslint-disable-next-line no-import-assign
   export { CustomersTableContract as contract } from './CustomersTable.contract.js'
 </script>
 
@@ -27,7 +28,7 @@
   import type { SnippetProps } from '$utils/runtime'
   import { CustomersTableContract } from './CustomersTable.contract.js'
 
-  let { legalEntity, pageDetails }: SnippetProps = $props()
+  let { legalEntity }: SnippetProps = $props()
 
   const filtersHandle = useConsumes(CustomersTableContract, 'filters')
   const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
@@ -61,7 +62,7 @@
       header: m.type(),
       renderer: 'badge',
       rendererConfig: {
-        variantMapper: (type: Customer['type']) => 'outline',
+        variantMapper: () => 'outline',
         labelMapper: (type: Customer['type']) => getCustomerTypeLabel(type),
       },
     },

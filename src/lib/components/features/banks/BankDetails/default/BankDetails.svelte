@@ -113,7 +113,7 @@
     })
     .build()
 
-  const validate = $derived(!!record ? validateUpdate : validateCreate)
+  const validate = $derived(!record ? validateCreate : validateUpdate)
 </script>
 
 <RequestPlaceholder {promise}>
