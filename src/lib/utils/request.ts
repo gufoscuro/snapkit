@@ -41,7 +41,7 @@ function getBaseUrl(url: string): string {
   return url.split('?')[0]
 }
 
-function invalidateCacheByBasePath(url: string): void {
+export function invalidateCacheByBasePath(url: string): void {
   const basePath = getBaseUrl(url)
   for (const key of apiCache.keys()) {
     if (getBaseUrl(key) === basePath) {
@@ -160,6 +160,45 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
     }
     apiCache.set(url, { data, timestamp: Date.now() })
   }
+
+  return data as T
+}
+
+/**
+ * Client-side API request for multipart/form-data uploads (e.g. file uploads).
+ * Unlike apiRequest, this does NOT set Content-Type so the browser can set it
+ * automatically with the correct multipart boundary.
+ */
+export async function apiUploadRequest<T>(options: {
+  url: string
+  method?: string
+  body: FormData
+  redirectOnUnauthorized?: boolean
+}): Promise<T> {
+  const { url, method = 'POST', body, redirectOnUnauthorized = true } = options
+  const fullUrl = `${API_GATEWAY}/api${url}`
+
+  const xsrfToken = getXsrfToken()
+  const headers: HeadersInit = {
+    Accept: 'application/json',
+    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+  }
+
+  const result = await fetch(fullUrl, { method, headers, body, credentials: 'include' })
+  const text = await result.text()
+  const data: any = text ? parseJSON(text) || text : null
+
+  if (result.status === 401) {
+    if (redirectOnUnauthorized) goto(resolve('/login'))
+    throw new ApiError('Unauthorized', result.status, data, result)
+  }
+
+  if (!result.ok) {
+    if (result.status === 422) throw new ApiError('Validation Error', result.status, data, result)
+    throw new ApiError(data?.message || 'Request failed', result.status, data, result)
+  }
+
+  invalidateCacheByBasePath(fullUrl)
 
   return data as T
 }

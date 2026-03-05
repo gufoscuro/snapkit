@@ -135,6 +135,42 @@ export type SwitchFieldProps = {
   hidden?: boolean
 }
 
+/** Props base per multi selectors */
+export type MultiSelectorProps = {
+  /** Campo name per form e identificazione */
+  name?: string
+  /** Etichetta del campo */
+  label?: string
+  /** Placeholder text */
+  placeholder?: string
+  /** ID HTML (default: name) */
+  id?: string
+  /** Messaggio di errore */
+  error?: string
+  /** Messaggio di warning */
+  warning?: string
+  /** Posizione messaggio warning */
+  warningPosition?: FormFieldMessagePosition
+  /** Mostra label visibile */
+  showLabel?: boolean
+  /** Mostra messaggio errore */
+  showErrorMessage?: boolean
+  /** Larghezza campo (classe Tailwind) */
+  width?: string
+  /** Larghezza contenuto dropdown */
+  contentWidth?: string
+  /** Permetti creazione inline */
+  allowCreate?: boolean
+  /** Testo vuoto */
+  emptyText?: string
+  /** Testo aggiunta item */
+  addItemText?: string
+  /** Testo item non valido */
+  addItemInvalidText?: string
+  /** Classi CSS aggiuntive */
+  class?: string
+}
+
 /** Props base per entity selectors (Material, Product, etc.) */
 export type EntitySelectorProps = {
   /** Campo name per form e identificazione */
@@ -219,6 +255,22 @@ export const SwitchFieldDefaults = {
   showLabel: true,
   labelPosition: 'right' as const,
   labelClass: '',
+} as const
+
+/** Default per multi selectors */
+export const MultiSelectorDefaults = {
+  label: 'Items',
+  placeholder: 'Select Items...',
+  error: '',
+  warning: undefined,
+  warningPosition: 'bottom' as FormFieldMessagePosition,
+  showLabel: true,
+  showErrorMessage: true,
+  width: FormFieldClass.MinWidth,
+  allowCreate: false,
+  emptyText: 'No Results Found',
+  addItemText: 'Add Item',
+  addItemInvalidText: 'Cannot Add Item',
 } as const
 
 /** Default per entity selectors (Material, Product, etc.) */

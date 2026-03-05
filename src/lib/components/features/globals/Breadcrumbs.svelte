@@ -57,7 +57,7 @@
             {#if i === breadcrumbItems.length - 1}
               <Breadcrumb.Page>{recordTitle ?? getI18nLabel(page.title)}</Breadcrumb.Page>
             {:else}
-              <Breadcrumb.Link class="hover:text-brand hover:underline" href={createRoute({ $id: page.$id })}>
+              <Breadcrumb.Link class="hover:text-brand hover:underline" href={createRoute({ $id: page.$id, params: props.pageDetails.params })}>
                 {getI18nLabel(page.title)}
               </Breadcrumb.Link>
             {/if}

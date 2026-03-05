@@ -4,6 +4,7 @@
   @keywords sidebar
 -->
 <script lang="ts" module>
+  // eslint-disable-next-line no-import-assign
   export { CustomerSidebarContract as contract } from './CustomerSidebar.contract.js'
 </script>
 
@@ -58,7 +59,6 @@
         label: m.documents(),
         pageId: 'customer-documents',
         params: { uuid: customer.id },
-        disabled: true,
       },
     ]
 

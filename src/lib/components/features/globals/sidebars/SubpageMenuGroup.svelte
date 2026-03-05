@@ -29,10 +29,13 @@
   <Sidebar.Menu>
     {#each items as item (item.label)}
       <Sidebar.MenuItem>
-        <Sidebar.MenuButton isActive={page.url.pathname === getHref(item)} tooltipContent={item.label}>
+        <Sidebar.MenuButton
+          isActive={page.url.pathname === getHref(item)}
+          tooltipContent={item.label}
+          class={item.disabled ? 'hover:bg-sidebar hover:text-muted-foreground/80' : ''}>
           {#snippet child({ props })}
             {#if item.disabled}
-              <div {...props} class="{props.class || ''} cursor-default hover:bg-none!">
+              <div {...props} class="{props.class || ''} cursor-default text-muted-foreground/80">
                 <span>{item.label}</span>
               </div>
             {:else}

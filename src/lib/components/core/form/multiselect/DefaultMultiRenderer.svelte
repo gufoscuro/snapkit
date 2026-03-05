@@ -1,28 +1,23 @@
 <script lang="ts">
+  import { badgeVariants } from '$lib/components/ui/badge/badge.svelte'
   import type { ExtendedOption } from '$utils/generics'
 
   type Props = {
     items?: Array<ExtendedOption>
-    removeItem?: (item: ExtendedOption, event: MouseEvent) => void
     placeholder: string
-    colored?: boolean
+    removeItem: (option: ExtendedOption, event: MouseEvent) => void
   }
 
-  let {
-    items = [],
-    removeItem = () => {},
-    placeholder,
-    colored = true,
-  }: Props = $props()
+  let { items = [], placeholder, removeItem }: Props = $props()
 </script>
 
 <div class="flex flex-wrap gap-1">
-  {#each items as item}
+  {#each items as item (item.value)}
     <button
-      type="button"
-      class="cursor-pointer rounded border bg-muted/30 px-1 py-0.5 hover:bg-muted/50"
-      onclick={(event) => removeItem(item, event)}
-    >
+      class="{badgeVariants({
+        variant: 'secondary',
+      })} hover:bg-primary hover:text-primary-foreground focus-visible:bg-primary focus-visible:text-primary-foreground"
+      onclick={event => removeItem?.(item, event)}>
       {item.label}
     </button>
   {:else}

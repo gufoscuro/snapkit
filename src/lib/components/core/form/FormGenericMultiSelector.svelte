@@ -3,29 +3,21 @@
   import Label from '$components/ui/label/label.svelte'
   import type { MinimalFilterQuery } from '$utils/filters'
   import type { ExtendedOption } from '$utils/generics'
+  import type { Component } from 'svelte'
   import FormFieldMessages from './FormFieldMessages.svelte'
   import FormFieldSkeleton from './FormFieldSkeleton.svelte'
-  import { FormFieldClass, FormLabelClass, type FormFieldMessagePosition } from './form'
+  import { FormLabelClass, MultiSelectorDefaults, type MultiSelectorProps } from './form'
   import { getFormContextOptional } from './form-context'
   import MultiSelect from './multiselect/MultiSelect.svelte'
 
-  type Props = {
-    label?: string
-    placeholder?: string
+  type Props = Omit<MultiSelectorProps, 'name'> & {
     name: string
-    id?: string
     value?: Array<string>
-    error?: string
-    warning?: string
-    warningPosition?: FormFieldMessagePosition
-    showLabel?: boolean
-    showErrorMessage?: boolean
-    width?: string
-    contentWidth?: string
-    allowCreate?: boolean
-    emptyText?: string
-    addItemText?: string
-    addItemInvalidText?: string
+    selectedItemRendererComponent?: Component<{
+      items: Array<ExtendedOption>
+      placeholder: string
+      removeItem: (option: ExtendedOption, event: MouseEvent) => void
+    }>
     onChoose?: (items: T[]) => void
     onChange?: (items: ExtendedOption[]) => void
     fetchFunction?: (query: Partial<MinimalFilterQuery>) => Promise<T[]>
@@ -35,22 +27,24 @@
   }
 
   let {
-    label = 'Items',
-    placeholder = 'Select Items...',
+    label = MultiSelectorDefaults.label,
+    placeholder = MultiSelectorDefaults.placeholder,
     name,
     id = name,
     value = [],
-    error = '',
-    warning = '',
-    warningPosition = undefined,
-    showLabel = true,
-    showErrorMessage = true,
-    width = FormFieldClass.MinWidth,
+    error = MultiSelectorDefaults.error,
+    warning = MultiSelectorDefaults.warning,
+    warningPosition = MultiSelectorDefaults.warningPosition,
+    showLabel = MultiSelectorDefaults.showLabel,
+    showErrorMessage = MultiSelectorDefaults.showErrorMessage,
+    width = MultiSelectorDefaults.width,
     contentWidth = width,
-    allowCreate = false,
-    emptyText = 'No Results Found',
-    addItemText = 'Add Item',
-    addItemInvalidText = 'Cannot Add Item',
+    allowCreate = MultiSelectorDefaults.allowCreate,
+    emptyText = MultiSelectorDefaults.emptyText,
+    addItemText = MultiSelectorDefaults.addItemText,
+    addItemInvalidText = MultiSelectorDefaults.addItemInvalidText,
+    class: className = '',
+    selectedItemRendererComponent = undefined,
     onChoose = () => {},
     onChange = () => {},
     fetchFunction = () => Promise.resolve([]),
@@ -90,7 +84,7 @@
     const mappedItems = itemsList.map(optionMappingFunction)
 
     return valuesArray.map(selectedValue => ({
-      label: mappedItems.find(i => i.value === selectedValue)?.label as string,
+      label: (mappedItems.find(i => i.value === selectedValue)?.label as string) || selectedValue,
       value: selectedValue,
     }))
   })
@@ -125,6 +119,7 @@
         {width}
         {contentWidth}
         {validateAddItem}
+        {selectedItemRendererComponent}
         fetchFunction={defaultFetchFunction}
         value={selectedValues}
         options={[]}
@@ -133,8 +128,8 @@
         {addItemInvalidText}
         {emptyText}
         onChange={onItemsChange}
-        multiselectionColored={false}
-        multiselection />
+        multiselection
+        class={className} />
     </FormFieldMessages>
   </div>
 {:else}

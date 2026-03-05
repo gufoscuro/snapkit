@@ -2,15 +2,11 @@
   import type { MinimalFilterQuery } from '$utils/filters'
   import type { ExtendedOption } from '$utils/generics'
 
-  export type MultiselectFetchFunction = (
-    query: Partial<MinimalFilterQuery>
-  ) => Promise<Array<ExtendedOption>>
+  export type MultiselectFetchFunction = (query: Partial<MinimalFilterQuery>) => Promise<Array<ExtendedOption>>
 </script>
 
 <script lang="ts">
   import { browser } from '$app/environment'
-  import DefaultMultiRenderer from './DefaultMultiRenderer.svelte'
-  import DefaultSingleRenderer from './DefaultSingleRenderer.svelte'
   import { Button } from '$components/ui/button'
   import * as Command from '$components/ui/command'
   import * as Popover from '$components/ui/popover/'
@@ -22,14 +18,15 @@
   import { Plus, X } from 'lucide-svelte'
   import Check from 'lucide-svelte/icons/check'
   import ChevronsUpDown from 'lucide-svelte/icons/chevrons-up-down'
-  import { tick, untrack } from 'svelte'
   import type { Component } from 'svelte'
+  import { tick, untrack } from 'svelte'
+  import DefaultMultiRenderer from './DefaultMultiRenderer.svelte'
+  import DefaultSingleRenderer from './DefaultSingleRenderer.svelte'
 
   type Props = {
     options?: Array<ExtendedOption>
     placeholder?: string
     multiselection?: boolean
-    multiselectionColored?: boolean
     allowCreate?: boolean
     allowClear?: boolean
     allowNewRecord?: boolean
@@ -47,7 +44,11 @@
     error?: string
     warning?: string
     itemRendererComponent?: Component<{ option: ExtendedOption }>
-    selectedItemRendererComponent?: Component<{ items: Array<ExtendedOption>; placeholder: string }>
+    selectedItemRendererComponent?: Component<{
+      items: Array<ExtendedOption>
+      placeholder: string
+      removeItem: (option: ExtendedOption, event: MouseEvent) => void
+    }>
     showSelectedOptionLabel?: boolean
     onCreateNew?: () => void
     fetchFunction?: MultiselectFetchFunction
@@ -60,7 +61,6 @@
     options = $bindable([]),
     placeholder = 'Search Placeholder',
     multiselection = true,
-    multiselectionColored = true,
     allowCreate = false,
     allowClear = false,
     allowNewRecord = false,
@@ -97,28 +97,21 @@
   const TIME_THRESHOLD = 300
 
   // Derived values - use value directly, no internal copy needed
-  const selectedValues = $derived(value.map((item) => item.value))
+  const selectedValues = $derived(value.map(item => item.value))
   const availableOptions = $derived(
-    shouldFilter ? options.filter((option) => !selectedValues.includes(option.value)) : options
+    shouldFilter ? options.filter(option => !selectedValues.includes(option.value)) : options,
   )
   const filteredResults = $derived(
     shouldFilter
-      ? availableOptions.filter((option) =>
-          option.label.toLowerCase().includes(inputValue.toLowerCase())
-        )
-      : availableOptions
+      ? availableOptions.filter(option => option.label.toLowerCase().includes(inputValue.toLowerCase()))
+      : availableOptions,
   )
   const hasPerfectMatch = $derived(
-    !!filteredResults.find((option) => option.label?.toLowerCase() === inputValue?.toLowerCase())
+    !!filteredResults.find(option => option.label?.toLowerCase() === inputValue?.toLowerCase()),
   )
   const validInput = $derived(inputValue?.length && validateAddItem(inputValue))
   const classes = $derived(
-    joinClassnames(
-      className,
-      width,
-      getUserMessagingClasses(error, warning),
-      triggerAutoWidth ? '!w-full' : ''
-    )
+    joinClassnames(className, width, getUserMessagingClasses(error, warning), triggerAutoWidth ? '!w-full' : ''),
   )
 
   // Fetch options when popover opens
@@ -152,7 +145,7 @@
   }
 
   function addItem(nextValue: ExtendedOption) {
-    if (value.find((option) => option.value === nextValue.value)) return
+    if (value.find(option => option.value === nextValue.value)) return
 
     value = [...value, nextValue]
     onChange(value)
@@ -166,7 +159,7 @@
   function removeItem(nextValue: ExtendedOption, event: MouseEvent) {
     event.stopPropagation()
     event.preventDefault()
-    value = value.filter((item) => item.value !== nextValue.value)
+    value = value.filter(item => item.value !== nextValue.value)
     onChange(value)
   }
 
@@ -179,7 +172,7 @@
   async function onItemSelect(nextValue: string, isCreateAction: boolean = false) {
     const option = isCreateAction
       ? { label: nextValue, value: nextValue }
-      : options.find((opt) => opt.value === nextValue)
+      : options.find(opt => opt.value === nextValue)
     if (!validateAddItem(nextValue)) return
     if (!option) return
 
@@ -198,9 +191,8 @@
     fetching = true
     options = await fetchFunction(
       createQueryRequestObject({
-        limit: 100,
         search,
-      })
+      }),
     )
     fetching = false
   }
@@ -217,21 +209,11 @@
           aria-expanded={open}
           aria-label={placeholder}
           {...props}
-          class="h-auto min-h-9 justify-between py-1.5 {classes}"
-        >
+          class="h-auto min-h-9 justify-between py-1.5 {classes}">
           {#if selectedItemRendererComponent}
-            <svelte:component
-              this={selectedItemRendererComponent}
-              items={value}
-              {placeholder}
-            />
+            <svelte:component this={selectedItemRendererComponent} items={value} {removeItem} {placeholder} />
           {:else if multiselection}
-            <DefaultMultiRenderer
-              items={value}
-              colored={multiselectionColored}
-              {removeItem}
-              {placeholder}
-            />
+            <DefaultMultiRenderer items={value} {removeItem} {placeholder} />
           {:else}
             <DefaultSingleRenderer items={value} {removeItem} {placeholder} />
           {/if}
@@ -246,20 +228,14 @@
 
         {#if allowClear && value.length && inputValue?.trim().length === 0}
           <Command.Group>
-            <Command.Item
-              class="aria-selected:bg-destructive/20 flex-col items-start"
-              onSelect={() => onClear()}
-            >
+            <Command.Item class="flex-col items-start aria-selected:bg-destructive/20" onSelect={() => onClear()}>
               <div class="flex items-center justify-start">
                 <X class="{IconSize.Small} mr-2" />
                 Rimuovi selezione
               </div>
 
               {#if showSelectedOptionLabel}
-                <div
-                  class="text-muted-foreground text-sm"
-                  class:text-xs={(value?.[0]?.label || '').length > 30}
-                >
+                <div class="text-sm text-muted-foreground" class:text-xs={(value?.[0]?.label || '').length > 30}>
                   {value?.[0]?.label || ''}
                 </div>
               {/if}
@@ -269,10 +245,7 @@
 
         {#if allowNewRecord && inputValue?.trim().length === 0}
           <Command.Group>
-            <Command.Item
-              class="aria-selected:bg-info/30 flex-col items-start"
-              onSelect={() => onCreateNewRecord()}
-            >
+            <Command.Item class="aria-selected:bg-info/30 flex-col items-start" onSelect={() => onCreateNewRecord()}>
               <div class="flex items-center justify-start">
                 <Plus class="{IconSize.Small} mr-2" />
                 {newRecordText}
@@ -285,14 +258,14 @@
         {#if filteredResults.length === 0 && fetching}
           <Command.Group class="max-h-64 overflow-y-auto">
             <div class="flex animate-pulse flex-col gap-1">
-              <div class="bg-muted h-8 rounded-md"></div>
-              <div class="bg-muted h-8 w-3/4 rounded-md"></div>
-              <div class="bg-muted h-8 w-2/4 rounded-md"></div>
-              <div class="bg-muted h-8 rounded-md"></div>
-              <div class="bg-muted h-8 w-3/4 rounded-md"></div>
-              <div class="bg-muted h-8 rounded-md"></div>
-              <div class="bg-muted h-8 w-3/4 rounded-md"></div>
-              <div class="bg-muted h-8 w-2/4 rounded-md"></div>
+              <div class="h-8 rounded-md bg-muted"></div>
+              <div class="h-8 w-3/4 rounded-md bg-muted"></div>
+              <div class="h-8 w-2/4 rounded-md bg-muted"></div>
+              <div class="h-8 rounded-md bg-muted"></div>
+              <div class="h-8 w-3/4 rounded-md bg-muted"></div>
+              <div class="h-8 rounded-md bg-muted"></div>
+              <div class="h-8 w-3/4 rounded-md bg-muted"></div>
+              <div class="h-8 w-2/4 rounded-md bg-muted"></div>
             </div>
           </Command.Group>
         {:else}
@@ -302,17 +275,12 @@
         {/if}
 
         <Command.Group class="max-h-64 overflow-y-auto">
-          {#each filteredResults as option}
+          {#each filteredResults as option, index (option.value + '-' + index)}
             <Command.Item value={option.value} onSelect={() => onItemSelect(option.value)}>
               {#if itemRendererComponent}
                 <svelte:component this={itemRendererComponent} {option} />
               {:else}
-                <Check
-                  class={cn(
-                    'mr-2 h-4 w-4',
-                    option.value !== value[0]?.value && 'text-transparent'
-                  )}
-                />
+                <Check class={cn('mr-2 h-4 w-4', option.value !== value[0]?.value && 'text-transparent')} />
                 {option.label}
               {/if}
             </Command.Item>
@@ -322,14 +290,12 @@
         {#if allowCreate && !hasPerfectMatch && inputValue?.trim().length > 0}
           <Command.Group
             heading={validInput ? addItemText : addItemInvalidText}
-            class={validInput ? '' : '[&_[data-cmdk-group-heading]]:text-destructive'}
-          >
+            class={validInput ? '' : '[&_[data-cmdk-group-heading]]:text-destructive'}>
             <Command.Item
               value={inputValue}
               aria-invalid={!validInput}
               class={validInput ? '' : 'bg-destructive/20 text-destructive'}
-              onSelect={() => onItemSelect(inputValue, true)}
-            >
+              onSelect={() => onItemSelect(inputValue, true)}>
               {#if validInput}
                 <Plus class="{IconSize.Small} mr-2" />
               {:else}

@@ -1,5 +1,5 @@
-import { apiRequest } from './request'
 import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from './filters'
+import { apiRequest } from './request'
 
 /**
  * Creates a generic API fetcher function for ResourceTable
@@ -18,14 +18,15 @@ import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } fr
  *   columns={columns}
  * />
  */
-export function createApiFetcher<T>(url: string) {
-	return async (page: number = 1, filters?: FilterQuery): Promise<PaginatedResponse<T>> => {
-		return await apiRequest<PaginatedResponse<T>>({
-			url,
-			queryParams: {
-				page,
-				...createQueryRequestObject({ search: filters?.search, query: filters?.query })
-			}
-		})
-	}
+export function createApiFetcher<T>(url: string, options?: { invalidateCache?: boolean }) {
+  return async (page: number = 1, filters?: FilterQuery): Promise<PaginatedResponse<T>> => {
+    return await apiRequest<PaginatedResponse<T>>({
+      url,
+      queryParams: {
+        page,
+        ...createQueryRequestObject({ search: filters?.search, query: filters?.query }),
+      },
+      ...(options ? options : {}),
+    })
+  }
 }

@@ -72,21 +72,27 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   enabled: true,
                 },
               },
-            },
-            {
-              $id: 'customer-documents',
-              title: 'customers_documents',
-              route: '/contacts/customers/upsert/:uuid/documents',
-              layout: {
-                componentKey: 'layouts.LeftSidebar',
-                enabled: true,
-              },
-              snippets: {
-                sidebar: {
-                  componentKey: 'globals.sidebars.CustomerSidebar',
-                  enabled: true,
+              subpages: [
+                {
+                  $id: 'customer-documents',
+                  title: 'customers_documents',
+                  route: '/contacts/customers/upsert/:uuid/documents',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.CustomerSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'customers.customerdocumentstable.default.CustomerDocumentsTable',
+                      enabled: true,
+                    },
+                  },
                 },
-              },
+              ],
             },
           ],
         },

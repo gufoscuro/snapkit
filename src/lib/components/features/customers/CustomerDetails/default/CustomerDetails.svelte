@@ -6,6 +6,7 @@
   @api GET /api/legal-entities/{legalEntity}/customers/{customer} (Moddo API)
 -->
 <script lang="ts" module>
+  // eslint-disable-next-line no-import-assign
   export { CustomerDetailsContract as contract } from './CustomerDetails.contract.js'
 </script>
 
@@ -136,7 +137,7 @@
     })
     .build()
 
-  const validate = $derived(!!record ? validateUpdate : validateCreate)
+  const validate = $derived(!record ? validateCreate : validateUpdate)
 </script>
 
 <RequestPlaceholder {promise}>

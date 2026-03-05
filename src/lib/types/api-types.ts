@@ -639,6 +639,41 @@ export type UserResource = {
   all_permissions: Permission[]
 }
 
+// ============================================================================
+// Documents API Types
+// ============================================================================
+
+/**
+ * Document tag
+ */
+export type DocumentTag = {
+  id: string
+  name: string
+  slug: string
+}
+
+/**
+ * Document (file attached to any entity)
+ */
+export type Document = {
+  id: string
+  legal_entity_id: string
+  documentable_type: string
+  documentable_id: string
+  original_filename: string
+  mime_type: string
+  size: number
+  description: string
+  tags?: DocumentTag[]
+  uploader?: {
+    id: string
+    name: string
+    email: string
+  }
+  created_at: string
+  download_url?: string
+}
+
 /**
  * Price calculation result from sales-api POST /customer/{customerId}/products/{productId}/_calculate-price
  */
