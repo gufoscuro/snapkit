@@ -56,11 +56,10 @@
         }
 
         applyTransition(navigation)
-        document.startViewTransition &&
-          document.startViewTransition(async () => {
-            resolve()
-            await navigation.complete
-          })
+        document.startViewTransition(async () => {
+          resolve()
+          await navigation.complete
+        })
       })
   })
 </script>
