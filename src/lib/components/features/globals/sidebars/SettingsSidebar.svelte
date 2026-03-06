@@ -24,6 +24,7 @@
     { label: m.product_family(), href: '/settings/product-families' },
     { label: m.commodity_code(), href: '/settings/commodity-codes' },
     { label: m.bank(), href: '/settings/banks' },
+    { label: m.emails(), href: '/settings/emails' },
   ]
 </script>
 

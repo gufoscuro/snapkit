@@ -492,6 +492,19 @@ export type LegalEntityBank = {
   version: number
 }
 
+/**
+ * Legal entity email from Moddo API GET /api/legal-entities/{legalEntity}/emails
+ */
+export type LegalEntityEmail = {
+  id: string
+  legal_entity_id: string
+  label: string
+  email: string
+  display_name: string
+  reply_to: string
+  version: number
+}
+
 export interface DataWrapper<T> {
   data: T
 }
