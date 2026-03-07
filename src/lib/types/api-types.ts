@@ -505,6 +505,36 @@ export type LegalEntityEmail = {
   version: number
 }
 
+/**
+ * Payment term due date from Moddo API
+ */
+export type PaymentTermDueDate = {
+  days: number
+  percentage: number
+  payment_method: string
+  amount_type: string
+}
+
+/**
+ * Payment term terms structure from Moddo API
+ */
+export type PaymentTermTerms = {
+  reference_date: 'end_of_month' | 'invoice_date'
+  due_dates: PaymentTermDueDate[]
+}
+
+/**
+ * Payment term from Moddo API GET /api/legal-entities/{legalEntity}/payment-terms
+ */
+export type PaymentTerm = {
+  id: string
+  code: string
+  name: string
+  description: string
+  terms: PaymentTermTerms
+  is_active: boolean
+}
+
 export interface DataWrapper<T> {
   data: T
 }
