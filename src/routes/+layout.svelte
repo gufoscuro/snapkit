@@ -15,12 +15,15 @@
   onMount(() => {
     function handleError(event: ErrorEvent) {
       uncaughtError = event.error ?? new Error(event.message)
+      console.error('Uncaught error:', uncaughtError)
+
       event.preventDefault()
     }
 
     function handleUnhandledRejection(event: PromiseRejectionEvent) {
       const reason = event.reason
       uncaughtError = reason instanceof Error ? reason : new Error(String(reason))
+      console.error('Unhandled promise rejection:', uncaughtError)
       event.preventDefault()
     }
 

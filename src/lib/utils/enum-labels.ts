@@ -5,6 +5,8 @@ import type {
   CompanySize,
   Currency,
   Customer,
+  CustomerAddress,
+  CustomerContact,
   EmployeeCountRange,
   SalesOrderSummary,
   SupplyOrderSummary,
@@ -96,6 +98,38 @@ export function getCustomerStatusLabel(status: Customer['status']): string {
 
 export function getCustomerStatusVariant(status: Customer['status']): BadgeVariant {
   return customerStatusConfig[status]?.variant ?? 'default'
+}
+
+// Address Type
+export const addressTypeConfig: Record<CustomerAddress['type'], EnumDisplayConfig> = {
+  billing: { label: m.enum_address_type_billing, variant: 'default' },
+  shipping: { label: m.enum_address_type_shipping, variant: 'secondary' },
+  legal: { label: m.enum_address_type_legal, variant: 'outline' },
+}
+
+export function getAddressTypeLabel(type: CustomerAddress['type']): string {
+  return addressTypeConfig[type]?.label() ?? type
+}
+
+export function getAddressTypeVariant(type: CustomerAddress['type']): BadgeVariant {
+  return addressTypeConfig[type]?.variant ?? 'default'
+}
+
+// Contact Type
+export const contactTypeConfig: Record<CustomerContact['type'], EnumDisplayConfig> = {
+  primary: { label: m.enum_contact_type_primary, variant: 'default' },
+  technical_support: { label: m.enum_contact_type_technical_support, variant: 'secondary' },
+  administrative: { label: m.enum_contact_type_administrative, variant: 'outline' },
+  logistics: { label: m.enum_contact_type_logistics, variant: 'secondary' },
+  quality: { label: m.enum_contact_type_quality, variant: 'outline' },
+}
+
+export function getContactTypeLabel(type: CustomerContact['type']): string {
+  return contactTypeConfig[type]?.label() ?? type
+}
+
+export function getContactTypeVariant(type: CustomerContact['type']): BadgeVariant {
+  return contactTypeConfig[type]?.variant ?? 'default'
 }
 
 // --- Select item mappings ---

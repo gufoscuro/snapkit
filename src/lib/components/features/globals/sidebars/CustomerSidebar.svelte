@@ -45,14 +45,12 @@
         label: m.addresses(),
         pageId: 'customer-addresses',
         params: { uuid: customer.id },
-        disabled: true,
       },
       {
         type: 'link',
         label: m.contacts(),
         pageId: 'customer-contacts',
         params: { uuid: customer.id },
-        disabled: true,
       },
       {
         type: 'link',

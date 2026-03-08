@@ -41,10 +41,19 @@ function getBaseUrl(url: string): string {
   return url.split('?')[0]
 }
 
+function getParentPath(path: string): string | null {
+  const lastSlash = path.lastIndexOf('/')
+  if (lastSlash <= 0) return null
+  return path.substring(0, lastSlash)
+}
+
 export function invalidateCacheByBasePath(url: string): void {
   const basePath = getBaseUrl(url)
+  const parentPath = getParentPath(basePath)
+
   for (const key of apiCache.keys()) {
-    if (getBaseUrl(key) === basePath) {
+    const keyBase = getBaseUrl(key)
+    if (keyBase === basePath || keyBase === parentPath) {
       apiCache.delete(key)
     }
   }
