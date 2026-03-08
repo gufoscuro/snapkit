@@ -37,34 +37,66 @@ import type { OrderSummary } from '$lib/types/api-types'
 
 **Why:** This ensures type consistency across the application, enables reusability, and makes it easier to update types when the API changes.
 
-## Using the API Request Utility
+## Using the API Client
 
-**CRITICAL:** Always use `apiRequest` from `$lib/utils/request.ts` instead of raw `fetch()`.
+**CRITICAL:** Always use `api` from `$lib/utils/request.ts` instead of raw `fetch()`.
+
+For **new code**, use the typed `api` client. The legacy `apiRequest` / `safeApiRequest` functions are still exported for backward compatibility but should not be used in new implementations.
 
 ### Basic Usage
 
 ```typescript
-import { apiRequest } from '$lib/utils/request';
+import { api } from '$lib/utils/request';
 import { createQueryRequestObject } from '$lib/utils/filters';
-import type { OrderSummary } from '$lib/types/api-types';
+import type { OrderSummary, CreateOrderBody } from '$lib/types/api-types';
 
-// Simple GET request
-const orders = await apiRequest<OrderSummary[]>({
-  url: 'sales/order'
-});
+// GET request — typed response
+const orders = await api.get<OrderSummary[]>('/sales/order');
 
-// With query parameters
-const orders = await apiRequest<OrderSummary[]>({
-  url: 'sales/order',
+// GET with query parameters
+const orders = await api.get<OrderSummary[]>('/sales/order', {
   queryParams: createQueryRequestObject(query)
 });
 
-// POST request
-const newOrder = await apiRequest<OrderSummary>({
-  url: 'sales/order',
-  method: 'POST',
-  body: orderData
+// POST request — typed response and body
+const created = await api.post<OrderSummary, CreateOrderBody>('/sales/order', {
+  data: { name: 'New order', customer_id: '123' }
 });
+
+// PUT / PATCH — same pattern
+await api.put<OrderSummary, UpdateOrderBody>('/sales/order/123', { data: changes });
+await api.patch<OrderSummary, Partial<UpdateOrderBody>>('/sales/order/123', { data: partial });
+
+// DELETE
+await api.delete('/sales/order/123');
+
+// File upload
+const result = await api.upload<UploadResponse>('/sales/order/123/attachment', {
+  body: formData
+});
+```
+
+### Safe Requests (no throw)
+
+Use `api.safe.*` when you want `{ data, error }` instead of exceptions:
+
+```typescript
+const { data: orders, error } = await api.safe.get<OrderSummary[]>('/sales/order');
+if (error) {
+  // handle error — error is typed as ApiError | null
+}
+```
+
+### Custom Prefixed Client
+
+Use `createApiClient(prefix)` when multiple calls share the same base path:
+
+```typescript
+import { createApiClient } from '$lib/utils/request';
+
+const salesApi = createApiClient('/sales');
+const orders = await salesApi.get<OrderSummary[]>('/order');
+const order = await salesApi.get<OrderSummary>('/order/123');
 ```
 
 ### Error Handling
@@ -79,11 +111,9 @@ let data = $state<OrderSummary[]>([]);
 async function loadOrders() {
   loading = true;
   error = null;
-  
+
   try {
-    data = await apiRequest<OrderSummary[]>({
-      url: 'sales/order'
-    });
+    data = await api.get<OrderSummary[]>('/sales/order');
   } catch (err) {
     error = err instanceof Error ? err.message : 'Failed to load orders';
   } finally {
@@ -91,6 +121,10 @@ async function loadOrders() {
   }
 }
 ```
+
+### Legacy Functions (deprecated for new code)
+
+`apiRequest<T>` and `safeApiRequest<T>` are still exported and work as before. Existing code does not need to be migrated immediately, but all **new** implementations should use `api`.
 
 ## Discovering API Endpoints
 
@@ -142,8 +176,9 @@ const orders = await apiRequest<OrderSummary[]>({
 ## Best Practices
 
 1. **Always use TypeScript types** from `api-types.ts`
-2. **Never use raw fetch()** - use `apiRequest` instead
-3. **Handle all async states** - loading, error, success
-4. **Use arke MCP** to discover endpoints before implementing
-5. **Centralize types** - never define API types inline
-6. **Use query builders** - leverage `createQueryRequestObject` for filters
+2. **Never use raw fetch()** — use `api` from `$lib/utils/request` instead
+3. **Use `api.*` for new code** — not the legacy `apiRequest` / `safeApiRequest`
+4. **Handle all async states** — loading, error, success
+5. **Use Moddo MCP** to discover endpoints before implementing
+6. **Centralize types** — never define API types inline
+7. **Use query builders** — leverage `createQueryRequestObject` for filters
