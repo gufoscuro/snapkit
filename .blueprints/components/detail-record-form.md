@@ -94,6 +94,8 @@ export const EntityDetailsContract = {
   import * as m from '$lib/paraglide/messages'
   import type { Entity } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
+  import { api } from '$lib/utils/request'
+  import { createRoute } from '$lib/utils/route-builder'
   import type { SnippetProps } from '$utils/runtime'
   import { EntityDetailsContract } from './EntityDetails.contract.js'
 
@@ -113,10 +115,10 @@ export const EntityDetailsContract = {
   // Use $derived to preserve reactivity. Functions are safe to destructure.
   const detail = useDetailRecord<Entity>({
     getUuid: () => uuid,
-    fetchUrl:  (id) => `/legal-entities/${legalEntityId}/entities/${id}`,
-    createUrl: ()   => `/legal-entities/${legalEntityId}/entities`,
-    updateUrl: (id) => `/legal-entities/${legalEntityId}/entities/${id}`,
-    detailPageId: 'entity-details',          // ← page $id from tenant config
+    fetch:  (id) => api.safe.get<Entity>(`/legal-entities/${legalEntityId}/entities/${id}`),
+    create: (data) => api.post(`/legal-entities/${legalEntityId}/entities`, { data }),
+    update: (id, data) => api.put(`/legal-entities/${legalEntityId}/entities/${id}`, { data }),
+    getDetailRoute: (record) => createRoute({ $id: 'entity-details', params: { uuid: record.id } }),
     onFetched: (data) => {
       entityHandle.set(data)
       breadcrumbTitle.set(data.name)
@@ -233,14 +235,14 @@ npm run generate:components-registry
 
 ```typescript
 const detail = useDetailRecord<T extends { id: string }>({
-  getUuid:      () => string | undefined,   // undefined = create mode
-  fetchUrl:  (uuid) => string,              // GET URL builder
-  createUrl:    () => string,               // POST URL builder
-  updateUrl: (uuid) => string,              // PUT URL builder
-  detailPageId:    string,                  // page $id for post-create navigation
-  onFetched?:   (record: T) => void,        // side effects after fetch
-  cleanup?:     () => void,                 // side effects on unmount
-  extraSubmitData?: Record<string, unknown> // merged into every submit payload
+  getUuid:      () => string | undefined,                    // undefined = create mode
+  fetch:     (uuid) => Promise<SafeApiResponse<T>>,          // e.g. api.safe.get<T>(url)
+  create:    (data) => Promise<unknown>,                     // e.g. api.post(url, { data })
+  update: (uuid, data) => Promise<unknown>,                  // e.g. api.put(url, { data })
+  getDetailRoute: (record: T) => string,                     // route after successful create
+  onFetched?:   (record: T) => void,                         // side effects after fetch
+  cleanup?:     () => void,                                  // side effects on unmount
+  extraSubmitData?: Record<string, unknown>                  // merged into every submit payload
 })
 ```
 
@@ -273,7 +275,7 @@ const { handleSubmit, handleSuccess, handleFailure } = detail
 **Behavior:**
 - **Create mode** (`uuid = undefined`): skips fetch, `record = null`, `promise = null`, form renders immediately
 - **Update mode** (`uuid` present): fetches via GET, shows `RequestPlaceholder` spinner during load
-- **Submit (create)**: POST → on success, navigates to `createRoute({ $id: detailPageId, params: { uuid: result.id } })`
+- **Submit (create)**: POST → on success, navigates to `getDetailRoute(result)`
 - **Submit (update)**: PUT → on success, updates `record` with API response
 - Both modes: `toast.success(m.changes_saved())` on success, `toast.error(m.common_error())` on failure
 
@@ -377,7 +379,7 @@ Before considering the component complete:
 - [ ] Entity type identified via Moddo API MCP
 - [ ] Resource config key confirmed with user
 - [ ] Contract file created (`<Entity>Details.contract.ts`)
-- [ ] `useDetailRecord` configured with correct URLs and `detailPageId`
+- [ ] `useDetailRecord` configured with `fetch`, `create`, `update`, and `getDetailRoute`
 - [ ] `record` and `promise` extracted with `$derived` (not destructured directly)
 - [ ] `initialValues` covers all entity fields with sensible defaults
 - [ ] `validateCreate` matches POST required fields from API schema

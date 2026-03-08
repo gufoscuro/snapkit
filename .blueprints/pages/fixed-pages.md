@@ -28,7 +28,7 @@ Use configurable pages (catch-all) when:
 | Sidebar | Dynamic from `entityConfig.dashboard.menus` | Fixed items with `href` |
 | Snippet bindings | `SnippetBindingsProvider` (automatic) | `setSnippetBindings()` (manual) |
 | Page config | Registered in `entityConfig.dashboard.pages` | Not registered |
-| Post-create navigation | `createRoute({ $id: detailPageId })` | `goto('/fixed/path/${id}')` |
+| Post-create navigation | `getDetailRoute(record)` via `createRoute()` | `getDetailRoute(record)` returns a fixed path |
 
 ---
 
@@ -248,41 +248,25 @@ const uuid = $derived(pageDetails.params.uuid)
 let { legalEntity, uuid }: { legalEntity?: LegalEntity | null; uuid?: string } = $props()
 ```
 
-### 2. Navigation: custom `handleSuccess`
+### 2. Navigation: `getDetailRoute` with a fixed path
 
-The default `useDetailRecord.handleSuccess` uses `createRoute()` for post-create navigation, which requires a registered `detailPageId`. Fixed pages are not registered in the page config, so provide a custom `handleSuccess`:
+The `useDetailRecord` hook uses `getDetailRoute` to navigate after a successful create. For fixed pages, simply return the hardcoded path:
 
 ```typescript
 const detail = useDetailRecord<Entity>({
   getUuid: () => uuid,
-  fetchUrl: (id) => `/legal-entities/${legalEntityId}/entities/${id}`,
-  createUrl: () => `/legal-entities/${legalEntityId}/entities`,
-  updateUrl: (id) => `/legal-entities/${legalEntityId}/entities/${id}`,
-  detailPageId: 'entity-details', // placeholder — unused because we override handleSuccess
+  fetch: (id) => api.safe.get<Entity>(`/legal-entities/${legalEntityId}/entities/${id}`),
+  create: (data) => api.post(`/legal-entities/${legalEntityId}/entities`, { data }),
+  update: (id, data) => api.put(`/legal-entities/${legalEntityId}/entities/${id}`, { data }),
+  getDetailRoute: (record) => `/settings/entity-name/upsert/${record.id}`,
   onFetched: (data) => { breadcrumbTitle.set(data.name) },
   cleanup: () => { breadcrumbTitle.clear() },
 })
 
-const { handleSubmit, handleFailure } = detail
-
-function handleSuccess(payload: SuccessPayload<unknown>) {
-  if (!detail.record) {
-    // Create mode — navigate to fixed route
-    toast.success(m.changes_saved())
-    const newId = (payload.result as Entity).id
-    // eslint-disable-next-line svelte/no-navigation-without-resolve
-    goto(`/settings/entity-name/upsert/${newId}`, { replaceState: true })
-    return
-  }
-  // Update mode — delegate to the hook (shows toast + updates internal record)
-  detail.handleSuccess(payload)
-}
+const { handleSubmit, handleSuccess, handleFailure } = detail
 ```
 
-Key points:
-- Only override the **create** branch — the update branch of `detail.handleSuccess` works fine (it just updates the internal `record` state, no navigation)
-- Use `replaceState: true` so the browser back button goes to the list, not back to the create URL
-- The `detailPageId` passed to `useDetailRecord` is a placeholder; it's never used because our custom `handleSuccess` intercepts the create case
+No custom `handleSuccess` override needed — `getDetailRoute` handles the navigation for both configurable and fixed pages.
 
 ### 3. Contract and useProvides: optional
 
