@@ -13,9 +13,9 @@
   import FormGenericSingleSelector from '$components/core/form/FormGenericSingleSelector.svelte'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity } from '$lib/types/api-types'
-  import { createQueryRequestObject, type FilterQuery } from '$lib/utils/filters'
+  import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$lib/utils/filters'
   import type { ExtendedOption } from '$lib/utils/generics'
-  import { apiRequest } from '$lib/utils/request'
+  import { api } from '$lib/utils/request'
 
   type Props = EntitySelectorProps & {
     /** Pre-selected legal entity */
@@ -64,10 +64,11 @@
   async function defaultFetchFunction(query: Partial<FilterQuery>): Promise<LegalEntity[]> {
     const params = createQueryRequestObject(query)
 
-    return apiRequest<LegalEntity[]>({
-      url: '/legal-entities',
-      queryParams: params,
-    })
+    return (
+      await api.get<PaginatedResponse<LegalEntity>>('/legal-entities', {
+        queryParams: params,
+      })
+    ).data
   }
 
   async function fetchFunction(query: Partial<FilterQuery>): Promise<LegalEntity[]> {
