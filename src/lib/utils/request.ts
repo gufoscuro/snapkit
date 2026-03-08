@@ -227,3 +227,125 @@ export async function safeApiRequest<T>(
     return { data: null, error: new ApiError(error?.toString() || 'Unknown error', 0, null, new Response()) }
   }
 }
+
+// --- Typed API Client ---
+
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+/** Options for requests without a body (GET, DELETE). */
+type ClientOptions = Omit<ExtendedFetchOptions, 'url' | 'method' | 'data' | 'body'>
+
+/** Options for requests with a typed body (POST, PUT, PATCH). */
+type ClientOptionsWithBody<TBody = unknown> = ClientOptions & {
+  data?: TBody
+}
+
+/** Options for file upload requests. */
+type UploadOptions = {
+  body: FormData
+  redirectOnUnauthorized?: boolean
+}
+
+type ApiClient = {
+  get: <TResponse = unknown>(url: string, options?: ClientOptions) => Promise<TResponse>
+  delete: <TResponse = unknown>(url: string, options?: ClientOptions) => Promise<TResponse>
+  post: <TResponse = unknown, TBody = unknown>(
+    url: string,
+    options?: ClientOptionsWithBody<TBody>,
+  ) => Promise<TResponse>
+  put: <TResponse = unknown, TBody = unknown>(
+    url: string,
+    options?: ClientOptionsWithBody<TBody>,
+  ) => Promise<TResponse>
+  patch: <TResponse = unknown, TBody = unknown>(
+    url: string,
+    options?: ClientOptionsWithBody<TBody>,
+  ) => Promise<TResponse>
+  upload: <TResponse = unknown>(
+    url: string,
+    options: UploadOptions & { method?: string },
+  ) => Promise<TResponse>
+  safe: {
+    get: <TResponse = unknown>(url: string, options?: ClientOptions) => Promise<SafeApiResponse<TResponse>>
+    delete: <TResponse = unknown>(url: string, options?: ClientOptions) => Promise<SafeApiResponse<TResponse>>
+    post: <TResponse = unknown, TBody = unknown>(
+      url: string,
+      options?: ClientOptionsWithBody<TBody>,
+    ) => Promise<SafeApiResponse<TResponse>>
+    put: <TResponse = unknown, TBody = unknown>(
+      url: string,
+      options?: ClientOptionsWithBody<TBody>,
+    ) => Promise<SafeApiResponse<TResponse>>
+    patch: <TResponse = unknown, TBody = unknown>(
+      url: string,
+      options?: ClientOptionsWithBody<TBody>,
+    ) => Promise<SafeApiResponse<TResponse>>
+  }
+}
+
+function buildRequestOptions<TBody>(
+  method: HttpMethod,
+  url: string,
+  prefix: string,
+  options?: ClientOptions | ClientOptionsWithBody<TBody>,
+): ExtendedFetchOptions {
+  return { ...options, url: `${prefix}${url}`, method }
+}
+
+/**
+ * Creates a typed API client with method-specific functions.
+ *
+ * Usage:
+ *   const api = createApiClient()
+ *   const order = await api.get<Order>('/sales/order/123')
+ *   const created = await api.post<Order, CreateOrderBody>('/sales/order', { data: body })
+ *   const { data, error } = await api.safe.get<Order[]>('/sales/order')
+ *
+ * The client delegates to apiRequest / safeApiRequest internally,
+ * so caching and cache invalidation work exactly as before.
+ *
+ * @param basePrefix - Optional path prefix prepended to every URL (e.g. '/sales')
+ */
+export function createApiClient(basePrefix?: string): ApiClient {
+  const prefix = basePrefix ?? ''
+
+  return {
+    get: <TResponse = unknown>(url: string, options?: ClientOptions) =>
+      apiRequest<TResponse>(buildRequestOptions('GET', url, prefix, options)),
+
+    delete: <TResponse = unknown>(url: string, options?: ClientOptions) =>
+      apiRequest<TResponse>(buildRequestOptions('DELETE', url, prefix, options)),
+
+    post: <TResponse = unknown, TBody = unknown>(url: string, options?: ClientOptionsWithBody<TBody>) =>
+      apiRequest<TResponse>(buildRequestOptions('POST', url, prefix, options)),
+
+    put: <TResponse = unknown, TBody = unknown>(url: string, options?: ClientOptionsWithBody<TBody>) =>
+      apiRequest<TResponse>(buildRequestOptions('PUT', url, prefix, options)),
+
+    patch: <TResponse = unknown, TBody = unknown>(url: string, options?: ClientOptionsWithBody<TBody>) =>
+      apiRequest<TResponse>(buildRequestOptions('PATCH', url, prefix, options)),
+
+    upload: <TResponse = unknown>(url: string, options: UploadOptions & { method?: string }) =>
+      apiUploadRequest<TResponse>({ url: `${prefix}${url}`, ...options }),
+
+    safe: {
+      get: <TResponse = unknown>(url: string, options?: ClientOptions) =>
+        safeApiRequest<TResponse>(buildRequestOptions('GET', url, prefix, options)),
+
+      delete: <TResponse = unknown>(url: string, options?: ClientOptions) =>
+        safeApiRequest<TResponse>(buildRequestOptions('DELETE', url, prefix, options)),
+
+      post: <TResponse = unknown, TBody = unknown>(url: string, options?: ClientOptionsWithBody<TBody>) =>
+        safeApiRequest<TResponse>(buildRequestOptions('POST', url, prefix, options)),
+
+      put: <TResponse = unknown, TBody = unknown>(url: string, options?: ClientOptionsWithBody<TBody>) =>
+        safeApiRequest<TResponse>(buildRequestOptions('PUT', url, prefix, options)),
+
+      patch: <TResponse = unknown, TBody = unknown>(url: string, options?: ClientOptionsWithBody<TBody>) =>
+        safeApiRequest<TResponse>(buildRequestOptions('PATCH', url, prefix, options)),
+    },
+  }
+}
+
+/** Default API client instance — use this for all API calls. */
+export const api = createApiClient()
