@@ -9,12 +9,10 @@
   @api PUT /api/legal-entities/{legalEntity}/payment-terms/{paymentTerm} (Moddo API)
 -->
 <script lang="ts">
-  import { goto } from '$app/navigation'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
   import { FormFieldClass } from '$components/core/form/form.js'
   import FormErrorMessage from '$components/core/form/FormErrorMessage.svelte'
-  import type { SuccessPayload } from '$components/core/form/FormUtil.svelte'
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import SwitchField from '$components/core/form/SwitchField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
@@ -24,7 +22,7 @@
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity, PaymentTerm, PaymentTermTerms } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import { toast } from 'svelte-sonner'
+  import { api } from '$lib/utils/request'
 
   let { legalEntity, uuid }: { legalEntity?: LegalEntity | null; uuid?: string } = $props()
 
@@ -33,10 +31,10 @@
 
   const detail = useDetailRecord<PaymentTerm>({
     getUuid: () => uuid,
-    fetchUrl: id => `/legal-entities/${legalEntityId}/payment-terms/${id}`,
-    createUrl: () => `/legal-entities/${legalEntityId}/payment-terms`,
-    updateUrl: id => `/legal-entities/${legalEntityId}/payment-terms/${id}`,
-    detailPageId: 'payment-term-details',
+    fetch: id => api.safe.get<PaymentTerm>(`/legal-entities/${legalEntityId}/payment-terms/${id}`),
+    create: data => api.post(`/legal-entities/${legalEntityId}/payment-terms`, { data }),
+    update: (id, data) => api.put(`/legal-entities/${legalEntityId}/payment-terms/${id}`, { data }),
+    getDetailRoute: record => `/settings/payment-terms/upsert/${record.id}`,
     onFetched: data => {
       breadcrumbTitle.set(data.name)
     },
@@ -45,20 +43,9 @@
     },
   })
 
-  const { handleSubmit, handleFailure } = detail
+  const { handleSubmit, handleSuccess, handleFailure } = detail
   const record = $derived(detail.record)
   const promise = $derived(detail.promise)
-
-  function handleSuccess(payload: SuccessPayload<unknown>) {
-    if (!detail.record) {
-      toast.success(m.changes_saved())
-      const newId = (payload.result as PaymentTerm).id
-      // eslint-disable-next-line svelte/no-navigation-without-resolve
-      goto(`/settings/payment-terms/upsert/${newId}`, { replaceState: true })
-      return
-    }
-    detail.handleSuccess(payload)
-  }
 
   const defaultTerms: PaymentTermTerms = {
     reference_date: 'end_of_month',

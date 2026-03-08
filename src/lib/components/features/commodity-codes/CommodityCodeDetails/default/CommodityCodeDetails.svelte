@@ -8,12 +8,10 @@
   @api PUT /api/legal-entities/{legalEntity}/commodity-codes/{commodityCode} (Moddo API)
 -->
 <script lang="ts">
-  import { goto } from '$app/navigation'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
   import { FormFieldClass } from '$components/core/form/form.js'
   import FormErrorMessage from '$components/core/form/FormErrorMessage.svelte'
-  import type { SuccessPayload } from '$components/core/form/FormUtil.svelte'
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import SwitchField from '$components/core/form/SwitchField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
@@ -23,7 +21,7 @@
   import * as m from '$lib/paraglide/messages'
   import type { CommodityCode, LegalEntity } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import { toast } from 'svelte-sonner'
+  import { api } from '$lib/utils/request'
 
   let { legalEntity, uuid }: { legalEntity?: LegalEntity | null; uuid?: string } = $props()
 
@@ -32,10 +30,10 @@
 
   const detail = useDetailRecord<CommodityCode>({
     getUuid: () => uuid,
-    fetchUrl: (id) => `/legal-entities/${legalEntityId}/commodity-codes/${id}`,
-    createUrl: () => `/legal-entities/${legalEntityId}/commodity-codes`,
-    updateUrl: (id) => `/legal-entities/${legalEntityId}/commodity-codes/${id}`,
-    detailPageId: 'commodity-code-details',
+    fetch: (id) => api.safe.get<CommodityCode>(`/legal-entities/${legalEntityId}/commodity-codes/${id}`),
+    create: (data) => api.post(`/legal-entities/${legalEntityId}/commodity-codes`, { data }),
+    update: (id, data) => api.put(`/legal-entities/${legalEntityId}/commodity-codes/${id}`, { data }),
+    getDetailRoute: (record) => `/settings/commodity-codes/upsert/${record.id}`,
     onFetched: (data) => {
       breadcrumbTitle.set(data.name)
     },
@@ -44,20 +42,9 @@
     },
   })
 
-  const { handleSubmit, handleFailure } = detail
+  const { handleSubmit, handleSuccess, handleFailure } = detail
   const record = $derived(detail.record)
   const promise = $derived(detail.promise)
-
-  function handleSuccess(payload: SuccessPayload<unknown>) {
-    if (!detail.record) {
-      toast.success(m.changes_saved())
-      const newId = (payload.result as CommodityCode).id
-      // eslint-disable-next-line svelte/no-navigation-without-resolve
-      goto(`/settings/commodity-codes/upsert/${newId}`, { replaceState: true })
-      return
-    }
-    detail.handleSuccess(payload)
-  }
 
   const initialValues = $derived.by(() => ({
     code: '',

@@ -29,7 +29,8 @@
   import type { Customer, CustomerAddress } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { addressTypeConfig } from '$lib/utils/enum-labels'
-  import { apiRequest } from '$utils/request.js'
+  import { api } from '$utils/request.js'
+  import { createRoute } from '$lib/utils/route-builder'
   import type { SnippetProps } from '$utils/runtime'
   import { onDestroy, onMount } from 'svelte'
   import { CustomerAddressDetailsContract } from './CustomerAddressDetails.contract.js'
@@ -45,9 +46,7 @@
 
   onMount(async () => {
     if (legalEntityId && customerId) {
-      const customer = await apiRequest<Customer>({
-        url: `/legal-entities/${legalEntityId}/customers/${customerId}`,
-      })
+      const customer = await api.get<Customer>(`/legal-entities/${legalEntityId}/customers/${customerId}`)
       customerHandle.set(customer)
     }
   })
@@ -56,10 +55,10 @@
 
   const detail = useDetailRecord<CustomerAddress>({
     getUuid: () => uuid,
-    fetchUrl: id => `/legal-entities/${legalEntityId}/customers/${customerId}/addresses/${id}`,
-    createUrl: () => `/legal-entities/${legalEntityId}/customers/${customerId}/addresses`,
-    updateUrl: id => `/legal-entities/${legalEntityId}/customers/${customerId}/addresses/${id}`,
-    detailPageId: 'customer-address-details',
+    fetch: id => api.safe.get<CustomerAddress>(`/legal-entities/${legalEntityId}/customers/${customerId}/addresses/${id}`),
+    create: data => api.post(`/legal-entities/${legalEntityId}/customers/${customerId}/addresses`, { data }),
+    update: (id, data) => api.put(`/legal-entities/${legalEntityId}/customers/${customerId}/addresses/${id}`, { data }),
+    getDetailRoute: record => createRoute({ $id: 'customer-address-details', params: { uuid: record.id } }),
     onFetched: data => {
       breadcrumbTitle.set(data.address_line_1)
     },

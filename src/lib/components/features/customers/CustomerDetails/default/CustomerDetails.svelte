@@ -26,6 +26,8 @@
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
   import type { Customer } from '$lib/types/api-types'
+  import { api } from '$lib/utils/request'
+  import { createRoute } from '$lib/utils/route-builder'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import {
     annualRevenueRangeLabels,
@@ -51,10 +53,10 @@
 
   const detail = useDetailRecord<Customer>({
     getUuid: () => uuid,
-    fetchUrl: id => `/legal-entities/${legalEntityId}/customers/${id}`,
-    createUrl: () => `/legal-entities/${legalEntityId}/customers`,
-    updateUrl: id => `/legal-entities/${legalEntityId}/customers/${id}`,
-    detailPageId: 'customer-details',
+    fetch: id => api.safe.get<Customer>(`/legal-entities/${legalEntityId}/customers/${id}`),
+    create: data => api.post(`/legal-entities/${legalEntityId}/customers`, { data }),
+    update: (id, data) => api.put(`/legal-entities/${legalEntityId}/customers/${id}`, { data }),
+    getDetailRoute: record => createRoute({ $id: 'customer-details', params: { uuid: record.id } }),
     onFetched: data => {
       customerHandle.set(data)
       breadcrumbTitle.set(data.name)

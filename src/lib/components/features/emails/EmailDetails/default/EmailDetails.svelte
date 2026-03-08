@@ -8,12 +8,10 @@
   @api PUT /api/legal-entities/{legalEntity}/emails/{email} (Moddo API)
 -->
 <script lang="ts">
-  import { goto } from '$app/navigation'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
   import { FormFieldClass } from '$components/core/form/form.js'
   import FormErrorMessage from '$components/core/form/FormErrorMessage.svelte'
-  import type { SuccessPayload } from '$components/core/form/FormUtil.svelte'
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
@@ -21,7 +19,7 @@
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity, LegalEntityEmail } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import { toast } from 'svelte-sonner'
+  import { api } from '$lib/utils/request'
 
   let { legalEntity, uuid }: { legalEntity?: LegalEntity | null; uuid?: string } = $props()
 
@@ -30,10 +28,10 @@
 
   const detail = useDetailRecord<LegalEntityEmail>({
     getUuid: () => uuid,
-    fetchUrl: id => `/legal-entities/${legalEntityId}/emails/${id}`,
-    createUrl: () => `/legal-entities/${legalEntityId}/emails`,
-    updateUrl: id => `/legal-entities/${legalEntityId}/emails/${id}`,
-    detailPageId: 'email-details',
+    fetch: id => api.safe.get<LegalEntityEmail>(`/legal-entities/${legalEntityId}/emails/${id}`),
+    create: data => api.post(`/legal-entities/${legalEntityId}/emails`, { data }),
+    update: (id, data) => api.put(`/legal-entities/${legalEntityId}/emails/${id}`, { data }),
+    getDetailRoute: record => `/settings/emails/upsert/${record.id}`,
     onFetched: data => {
       breadcrumbTitle.set(data.label)
     },
@@ -42,20 +40,9 @@
     },
   })
 
-  const { handleSubmit, handleFailure } = detail
+  const { handleSubmit, handleSuccess, handleFailure } = detail
   const record = $derived(detail.record)
   const promise = $derived(detail.promise)
-
-  function handleSuccess(payload: SuccessPayload<unknown>) {
-    if (!detail.record) {
-      toast.success(m.changes_saved())
-      const newId = (payload.result as LegalEntityEmail).id
-      // eslint-disable-next-line svelte/no-navigation-without-resolve
-      goto(`/settings/emails/upsert/${newId}`, { replaceState: true })
-      return
-    }
-    detail.handleSuccess(payload)
-  }
 
   const initialValues = $derived.by(() => ({
     label: '',

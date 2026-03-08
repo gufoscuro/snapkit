@@ -1,8 +1,7 @@
 import { goto } from '$app/navigation'
 import type { FailurePayload, SuccessPayload } from '$components/core/form/FormUtil.svelte'
 import * as m from '$lib/paraglide/messages'
-import { apiRequest, safeApiRequest, type SafeApiResponse } from '$lib/utils/request'
-import { createRoute } from '$lib/utils/route-builder'
+import type { SafeApiResponse } from '$lib/utils/request'
 import { toast } from 'svelte-sonner'
 
 export type DetailRecordOptions<T extends { id: string }> = {
@@ -12,21 +11,24 @@ export type DetailRecordOptions<T extends { id: string }> = {
    */
   getUuid: () => string | undefined
   /**
-   * Builds the GET URL for fetching the record.
-   * Called with the current uuid (guaranteed non-empty).
+   * Fetches the record by UUID.
+   * Should use the api client's safe method (e.g. api.safe.get).
    */
-  fetchUrl: (uuid: string) => string
+  fetch: (uuid: string) => Promise<SafeApiResponse<T>>
   /**
-   * Builds the POST URL for creating a new record.
+   * Creates a new record. Should throw on error (FormUtil catches it).
+   * Should use the api client (e.g. api.post).
    */
-  createUrl: () => string
+  create: (data: Record<string, unknown>) => Promise<unknown>
   /**
-   * Builds the PUT URL for updating an existing record.
-   * Called with the current uuid (guaranteed non-empty).
+   * Updates an existing record. Should throw on error (FormUtil catches it).
+   * Should use the api client (e.g. api.put).
    */
-  updateUrl: (uuid: string) => string
-  /** Page $id to navigate to after a successful create, e.g. 'customer-details'. */
-  detailPageId: string
+  update: (uuid: string, data: Record<string, unknown>) => Promise<unknown>
+  /**
+   * Returns the route to navigate to after a successful create.
+   */
+  getDetailRoute: (record: T) => string
   /** Called after a successful GET with the retrieved record. */
   onFetched?: (record: T) => void
   /** Called on component unmount (breadcrumb clear, page-state unset, etc.). */
@@ -39,10 +41,13 @@ export type DetailRecordOptions<T extends { id: string }> = {
  * Composable that manages the full lifecycle of a create/update detail form.
  *
  * - Fetches the record by UUID (skipped in create mode)
- * - Submits POST (create) or PUT (update) based on whether a record is loaded
+ * - Submits create or update based on whether a record is loaded
  * - After create, navigates to the detail page of the new record
  * - After update, refreshes local state with the API response
  * - Handles success toast and failure toast+log consistently
+ *
+ * The hook is API-agnostic: consumers provide their own fetch/create/update
+ * callbacks using the appropriate api client.
  *
  * **IMPORTANT — reactivity:** `record`, `promise` and `isCreate` are reactive
  * properties backed by `$state`/`$derived`. Do NOT destructure them directly —
@@ -51,10 +56,10 @@ export type DetailRecordOptions<T extends { id: string }> = {
  * @example
  * const detail = useDetailRecord<Customer>({
  *   getUuid: () => uuid,
- *   fetchUrl:  (id) => `/legal-entities/${legalEntityId}/customers/${id}`,
- *   createUrl: ()   => `/legal-entities/${legalEntityId}/customers`,
- *   updateUrl: (id) => `/legal-entities/${legalEntityId}/customers/${id}`,
- *   detailPageId: 'customer-details',
+ *   fetch:  (id) => api.safe.get<Customer>(`/legal-entities/${legalEntityId}/customers/${id}`),
+ *   create: (data) => api.post(`/legal-entities/${legalEntityId}/customers`, { data }),
+ *   update: (id, data) => api.put(`/legal-entities/${legalEntityId}/customers/${id}`, { data }),
+ *   getDetailRoute: (record) => createRoute({ $id: 'customer-details', params: { uuid: record.id } }),
  *   onFetched: (data) => { breadcrumbTitle.set(data.name) },
  *   cleanup:   ()     => { breadcrumbTitle.clear() },
  *   extraSubmitData: { custom_fields: {} },
@@ -75,12 +80,10 @@ export function useDetailRecord<T extends { id: string }>(options: DetailRecordO
     const uuid = options.getUuid()
     if (!uuid) return
 
-    // Reading uuid and calling fetchUrl/createUrl/updateUrl callbacks synchronously
+    // Reading uuid and calling fetch/create/update callbacks synchronously
     // before the first await ensures $effect tracks all reactive dependencies
     // (e.g. legalEntityId closures) and re-runs when they change.
-    const url = options.fetchUrl(uuid)
-
-    const req = safeApiRequest<T>({ url, method: 'GET' })
+    const req = options.fetch(uuid)
     promise = req
 
     const { data } = await req
@@ -98,10 +101,10 @@ export function useDetailRecord<T extends { id: string }>(options: DetailRecordO
     const data = { ...values, ...options.extraSubmitData }
 
     if (!record) {
-      return apiRequest({ method: 'POST', url: options.createUrl(), data })
+      return options.create(data) as Promise<void>
     }
 
-    return apiRequest({ method: 'PUT', url: options.updateUrl(uuid!), data })
+    return options.update(uuid!, data) as Promise<void>
   }
 
   function handleSuccess({ result }: SuccessPayload<unknown>) {
@@ -109,7 +112,7 @@ export function useDetailRecord<T extends { id: string }>(options: DetailRecordO
 
     if (!record) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve
-      goto(createRoute({ $id: options.detailPageId, params: { uuid: (result as T).id } }), { replaceState: true })
+      goto(options.getDetailRoute(result as T), { replaceState: true })
       return
     }
 
