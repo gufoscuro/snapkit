@@ -74,6 +74,94 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               },
               subpages: [
                 {
+                  $id: 'customer-addresses',
+                  title: 'customer_addresses',
+                  route: '/contacts/customers/upsert/:uuid/addresses',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.CustomerSidebar',
+                      enabled: true,
+                    },
+                    filters: {
+                      componentKey: 'common.filters.CustomerAddressesFilters',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'customers.customeraddressestable.default.CustomerAddressesTable',
+                      enabled: true,
+                    },
+                  },
+                  subpages: [
+                    {
+                      $id: 'customer-address-details',
+                      title: 'customer_address_details',
+                      route: '/contacts/customers/upsert/:uuid/addresses/upsert{/:aid}',
+                      layout: {
+                        componentKey: 'layouts.LeftSidebar',
+                        enabled: true,
+                      },
+                      snippets: {
+                        sidebar: {
+                          componentKey: 'globals.sidebars.SimpleSidebar',
+                          enabled: true,
+                        },
+                        content: {
+                          componentKey: 'customers.customeraddressdetails.default.CustomerAddressDetails',
+                          enabled: true,
+                        },
+                      },
+                    },
+                  ],
+                },
+                {
+                  $id: 'customer-contacts',
+                  title: 'customer_contacts',
+                  route: '/contacts/customers/upsert/:uuid/contacts',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.CustomerSidebar',
+                      enabled: true,
+                    },
+                    filters: {
+                      componentKey: 'common.filters.CustomerContactsFilters',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'customers.customercontactstable.default.CustomerContactsTable',
+                      enabled: true,
+                    },
+                  },
+                  subpages: [
+                    {
+                      $id: 'customer-contact-details',
+                      title: 'customer_contact_details',
+                      route: '/contacts/customers/upsert/:uuid/contact/upsert{/:cid}',
+                      layout: {
+                        componentKey: 'layouts.LeftSidebar',
+                        enabled: true,
+                      },
+                      snippets: {
+                        sidebar: {
+                          componentKey: 'globals.sidebars.SimpleSidebar',
+                          enabled: true,
+                        },
+                        content: {
+                          componentKey: 'customers.customercontactdetails.default.CustomerContactDetails',
+                          enabled: true,
+                        },
+                      },
+                    },
+                  ],
+                },
+                {
                   $id: 'customer-documents',
                   title: 'customers_documents',
                   route: '/contacts/customers/upsert/:uuid/documents',
