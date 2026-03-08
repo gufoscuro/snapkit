@@ -933,6 +933,199 @@ const columns = [
 
 ---
 
+## Recipe: Creating a Listing Table Feature Component
+
+This is a step-by-step guide for building a self-enclosed listing table component that fetches, displays, and allows archiving records from an API endpoint. The component consumes filters from sibling components via the page-state contract system.
+
+### When to Use This Recipe
+
+- You need a paginated table that lists records from a REST endpoint
+- The table should support search/filter integration with a sibling filters component
+- Records can be archived (deleted) from the table rows
+- The component must be self-enclosed (usable on any page via the configurable page system)
+
+### File Structure
+
+```
+src/lib/components/features/<domain>/<ComponentName>Table/
+├── default/
+│   ├── <ComponentName>Table.svelte           # The table component
+│   └── <ComponentName>Table.contract.ts      # Page-state contract
+└── index.ts                                   # Barrel export
+```
+
+### Step-by-Step
+
+#### 1. Add i18n Messages
+
+Add keys to both `messages/en.json` and `messages/it.json`:
+
+```json
+{
+  "enum_<type>_<value>": "Label",
+  "archive_<entity>_confirmation": "Are you sure you want to archive ...? This action cannot be undone.",
+  "<entity>_archived_success": "... archived successfully",
+  "<entity>_archive_error": "Failed to archive ..."
+}
+```
+
+#### 2. Add Enum Labels (if the table displays enum fields)
+
+In `src/lib/utils/enum-labels.ts`, add a config record and helper functions:
+
+```typescript
+import type { YourEntity } from '$lib/types/api-types'
+
+export const yourEnumConfig: Record<YourEntity['type'], EnumDisplayConfig> = {
+  value_a: { label: m.enum_your_type_value_a, variant: 'default' },
+  value_b: { label: m.enum_your_type_value_b, variant: 'secondary' },
+}
+
+export function getYourEnumLabel(type: YourEntity['type']): string {
+  return yourEnumConfig[type]?.label() ?? type
+}
+
+export function getYourEnumVariant(type: YourEntity['type']): BadgeVariant {
+  return yourEnumConfig[type]?.variant ?? 'default'
+}
+```
+
+#### 3. Create the Contract
+
+```typescript
+// <ComponentName>Table/default/<ComponentName>Table.contract.ts
+import { Type } from '@sinclair/typebox'
+import type { ComponentContract } from '$lib/contexts/page-state'
+
+export const ConsumedFilterStateSchema = Type.Object({
+  search: Type.Optional(Type.String()),
+  query: Type.Optional(Type.Record(Type.String(), Type.String()))
+})
+
+export const YourTableContract = {
+  $id: 'YourTable',
+  provides: {},
+  consumes: {
+    filters: ConsumedFilterStateSchema
+  }
+} as const satisfies ComponentContract
+```
+
+#### 4. Create the Component
+
+Key patterns:
+- Use `SnippetProps` to receive `legalEntity` and `pageDetails`
+- Extract nested IDs from `pageDetails.params` (e.g. `pageDetails.params.uuid` for parent entity)
+- Build the API URL reactively with `$derived`, guarding against missing IDs
+- Export the contract from the `<script module>` block
+
+```svelte
+<script lang="ts" module>
+  // eslint-disable-next-line no-import-assign
+  export { YourTableContract as contract } from './YourTable.contract.js'
+</script>
+
+<script lang="ts">
+  import { ResourceTable } from '$lib/components/core/ResourceTable'
+  import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import { useConsumes } from '$lib/contexts/page-state'
+  import * as m from '$lib/paraglide/messages.js'
+  import type { YourEntity } from '$lib/types/api-types'
+  import type { FilterQuery } from '$lib/utils/filters'
+  import { createArchiveAction } from '$lib/utils/table-actions'
+  import { createApiFetcher } from '$lib/utils/table-fetchers'
+  import type { SnippetProps } from '$utils/runtime'
+  import { YourTableContract } from './YourTable.contract.js'
+
+  let { legalEntity, pageDetails }: SnippetProps = $props()
+
+  // Extract parent entity ID from route params (for nested resources)
+  const parentId = $derived(pageDetails.params.uuid)
+
+  const filtersHandle = useConsumes(YourTableContract, 'filters')
+  const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
+
+  const columns: ColumnConfig<YourEntity>[] = [
+    // ... column definitions
+  ]
+
+  // Two-step derivation prevents spurious re-creation when legalEntity
+  // is a new object reference but the ID hasn't changed
+  const apiUrl = $derived(
+    legalEntity?.id && parentId
+      ? `/legal-entities/${legalEntity.id}/parents/${parentId}/entities`
+      : null
+  )
+  const fetchEntities = $derived(
+    apiUrl ? createApiFetcher<YourEntity>(apiUrl) : null
+  )
+</script>
+
+{#if legalEntity && parentId && fetchEntities}
+  <ResourceTable {columns} fetchFunction={fetchEntities} {filters} />
+{/if}
+```
+
+#### 5. Create the Barrel Export
+
+```typescript
+// <ComponentName>Table/index.ts
+export { default as YourTable } from './default/YourTable.svelte'
+```
+
+#### 6. Run the Registry Generator
+
+```bash
+npm run generate:components-registry
+```
+
+This registers the component so the configurable page system can discover and render it.
+
+#### 7. Validate with svelte-autofixer
+
+Run the autofixer on the `.svelte` file and fix any issues until zero remain.
+
+### Nested Resource Pattern
+
+When the table lists resources nested under a parent entity (e.g., addresses under a customer), the API URL depends on both `legalEntity.id` and the parent entity's ID from the route:
+
+```typescript
+// Parent ID comes from route params
+const customerId = $derived(pageDetails.params.uuid)
+
+// API URL includes both legal entity and parent entity
+const apiUrl = $derived(
+  legalEntity?.id && customerId
+    ? `/legal-entities/${legalEntity.id}/customers/${customerId}/addresses`
+    : null
+)
+```
+
+The archive action URL must also include the full nested path:
+
+```typescript
+createArchiveAction({
+  apiUrl: address =>
+    `/legal-entities/${legalEntity?.id}/customers/${customerId}/addresses/${address.id}`,
+  // ...
+})
+```
+
+### Checklist
+
+- [ ] i18n keys added to both `en.json` and `it.json`
+- [ ] Enum labels added (if displaying enum fields as badges)
+- [ ] Contract file created with `$id`, `provides`, and `consumes`
+- [ ] Component exports contract from `<script module>`
+- [ ] Column config uses appropriate renderers
+- [ ] API URL built reactively with null guards
+- [ ] Archive action configured with i18n messages
+- [ ] Barrel export (`index.ts`) created
+- [ ] `npm run generate:components-registry` executed
+- [ ] Component validated with `svelte-autofixer` (zero issues)
+
+---
+
 ## Summary
 
 **ResourceTable** dramatically simplifies table component development by:

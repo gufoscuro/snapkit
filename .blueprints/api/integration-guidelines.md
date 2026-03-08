@@ -130,6 +130,15 @@ const orders = await apiRequest<OrderSummary[]>({
 });
 ```
 
+## Caching
+
+`apiRequest` includes a built-in in-memory cache for GET requests with automatic invalidation on mutations. See **[Cache System](./cache.md)** for full documentation.
+
+**Key points:**
+- GET responses are cached for 5 minutes (max 10 entries)
+- Non-GET requests automatically invalidate the cache for the resource and its parent listing
+- Use `invalidateCache: true` to force a fresh GET request
+
 ## Best Practices
 
 1. **Always use TypeScript types** from `api-types.ts`
