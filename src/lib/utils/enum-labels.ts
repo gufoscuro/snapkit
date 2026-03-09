@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as m from '$lib/paraglide/messages.js'
 import type {
   AnnualRevenueRange,
@@ -111,8 +112,8 @@ export function getAddressTypeLabel(type: CustomerAddress['type']): string {
   return addressTypeConfig[type]?.label() ?? type
 }
 
-export function getAddressTypeVariant(type: CustomerAddress['type']): BadgeVariant {
-  return addressTypeConfig[type]?.variant ?? 'default'
+export function getAddressTypeVariant(_type: CustomerAddress['type']): BadgeVariant {
+  return 'outline'
 }
 
 // Contact Type
@@ -129,7 +130,7 @@ export function getContactTypeLabel(type: CustomerContact['type']): string {
 }
 
 export function getContactTypeVariant(type: CustomerContact['type']): BadgeVariant {
-  return contactTypeConfig[type]?.variant ?? 'default'
+  return 'outline'
 }
 
 // --- Select item mappings ---
