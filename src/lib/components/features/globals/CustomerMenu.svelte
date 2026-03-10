@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* eslint-disable svelte/no-navigation-without-resolve */
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import * as Avatar from '$lib/components/ui/avatar/index.js'

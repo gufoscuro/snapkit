@@ -5,6 +5,7 @@
 -->
 
 <script lang="ts">
+  /* eslint-disable svelte/no-navigation-without-resolve */
   import { page } from '$app/state'
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
   import * as m from '$lib/paraglide/messages'
