@@ -9,17 +9,13 @@
   import { page } from '$app/state'
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
   import * as m from '$lib/paraglide/messages'
+  import type { BasicMenuItem } from '$lib/stores/tenant-config/types'
   import type { SnippetProps } from '$utils/runtime'
   import SubpageSidebarBase from './SubpageSidebarBase.svelte'
 
-  type SettingsMenuItem = {
-    label: string
-    href: string
-  }
-
   const props: SnippetProps = $props()
 
-  const items: SettingsMenuItem[] = [
+  const items: BasicMenuItem[] = [
     { label: m.overview(), href: '/settings' },
     { label: m.product_line(), href: '/settings/product-lines' },
     { label: m.product_family(), href: '/settings/product-families' },
@@ -27,6 +23,7 @@
     { label: m.bank(), href: '/settings/banks' },
     { label: m.emails(), href: '/settings/emails' },
     { label: m.payment_terms(), href: '/settings/payment-terms' },
+    { label: m.warehouse(), href: '/settings/warehouses' },
   ]
 </script>
 
