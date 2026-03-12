@@ -90,7 +90,6 @@ const CustomerDataSchema = Type.Object({
   status: Type.Union([
     Type.Literal('active'),
     Type.Literal('suspended'),
-    Type.Literal('blocked'),
     Type.Literal('ceased'),
     Type.Literal('prospect'),
   ]),

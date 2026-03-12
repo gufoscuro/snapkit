@@ -73,7 +73,7 @@
 
   const initialValues = $derived.by(() => ({
     type: 'company' as const,
-    status: 'active' as const,
+    status: 'prospect' as const,
     name: '',
     last_name: '',
     trade_name: '',
@@ -100,20 +100,26 @@
   }))
 
   const typeItems = Object.entries(customerTypeConfig).map(([value, cfg]) => ({ value, label: cfg.label() }))
-  const customerStatuses: StatusOption[] = Object.entries(customerStatusConfig).map(([value, cfg]) => ({
+  const statusVariants: Record<string, StatusOption['variant']> = {
+    active: 'active',
+    prospect: 'in-progress',
+    suspended: 'paused',
+    blocked: 'blocked',
+    ceased: 'neutral',
+  }
+
+  const allCustomerStatuses: StatusOption[] = Object.entries(customerStatusConfig).map(([value, cfg]) => ({
     value,
     label: cfg.label(),
-    variant:
-      (
-        {
-          active: 'active',
-          prospect: 'in-progress',
-          suspended: 'paused',
-          blocked: 'blocked',
-          ceased: 'neutral',
-        } as Record<string, StatusOption['variant']>
-      )[value] ?? 'neutral',
+    variant: statusVariants[value] ?? 'neutral',
   }))
+
+  // On create, 'active' is not allowed by the API
+  const customerStatuses = $derived(
+    record
+      ? allCustomerStatuses
+      : allCustomerStatuses.filter(s => s.value !== 'active'),
+  )
 
   const atecoItems = toSelectItems(atecoCodeLabels)
   const companySizeItems = toSelectItems(companySizeLabels)
