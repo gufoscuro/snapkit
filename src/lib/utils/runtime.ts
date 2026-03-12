@@ -18,3 +18,5 @@ export type SnippetProps = {
 export type SnippetPropsGetter = () => SnippetProps
 
 export const SNIPPET_PROPS_CONTEXT_KEY = 'snippetProps'
+export const WAREHOUSE_CONTEXT_KEY = 'warehouseData'
+export const ZONE_CONTEXT_KEY = 'zoneData'

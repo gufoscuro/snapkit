@@ -68,7 +68,7 @@ export type PriceDealAttr = {
  */
 export type PricesAttr = {
   /** Currency code (ISO 4217) */
-  currency: 'EUR' | 'USD' | 'GBP'
+  currency: Currency
   /** Unit price */
   unit: number
   /** VAT percentage */
@@ -191,7 +191,7 @@ export type RawMaterialSummary = {
   /** Pricing information including unit price, currency, VAT, and volume discounts */
   prices?: {
     base_price?: number
-    currency: 'EUR' | 'USD' | 'GBP'
+    currency: Currency
     deals?: Array<{
       category?: string
       min_quantity: number
@@ -290,7 +290,7 @@ export type SupplyOrderDetails = SupplyOrderSummary & {
     order_id?: string
     prices?: {
       base_price?: number
-      currency: 'EUR' | 'USD' | 'GBP'
+      currency: Currency
       deals?: Array<{
         category?: string
         min_quantity: number
@@ -382,7 +382,7 @@ export type ProductSummary = {
   /** Pricing information including unit price, currency, VAT, and volume discounts */
   prices: {
     base_price?: number
-    currency: 'EUR' | 'USD' | 'GBP'
+    currency: Currency
     deals?: Array<{
       category?: string
       min_quantity: number
@@ -468,6 +468,79 @@ export type ProductLine = {
   name: string
   description: string
   is_active: boolean
+}
+
+// ============================================================================
+// Warehouse Types
+// ============================================================================
+
+export type WarehouseType =
+  | 'main'
+  | 'consignment'
+  | 'subcontracting'
+  | 'returns'
+  | 'defective'
+  | 'spare_parts'
+  | 'transit'
+  | 'quarantine'
+
+export type ValuationMethod = 'weighted_average' | 'fifo' | 'standard' | 'last_cost'
+
+/**
+ * Warehouse from Moddo API GET /api/legal-entities/{legalEntity}/warehouses
+ */
+export type LegalEntityWarehouse = {
+  id: string
+  code: string
+  description: string
+  warehouse_type: WarehouseType
+  is_negative_allowed: boolean
+  valuation_method: ValuationMethod
+  is_active: boolean
+  version: number
+}
+
+export type ZoneType = 'receiving' | 'storage' | 'shipping' | 'quarantine' | 'production'
+export type BinLocationType = 'shelf' | 'floor' | 'cell' | 'picking' | 'bulk'
+
+/**
+ * Warehouse address from Moddo API GET /api/legal-entities/{legalEntity}/warehouses/{warehouse}/address
+ */
+export type WarehouseAddress = {
+  id: string
+  address_line_1: string
+  address_line_2: string
+  city: string
+  province: string
+  postal_code: string
+  country_code: string
+  version: number
+}
+
+/**
+ * Warehouse zone from Moddo API GET /api/legal-entities/{legalEntity}/warehouses/{warehouse}/zones
+ */
+export type WarehouseZone = {
+  id: string
+  code: string
+  description: string
+  zone_type: ZoneType
+  version: number
+}
+
+/**
+ * Warehouse bin from Moddo API GET /api/legal-entities/{legalEntity}/warehouses/{warehouse}/zones/{zone}/bins
+ */
+export type WarehouseBin = {
+  id: string
+  code: string
+  description: string
+  location_type: BinLocationType
+  max_weight_kg: number
+  max_volume_m3: number
+  is_active: boolean
+  is_default: boolean
+  version: number
 }
 
 /**
@@ -561,9 +634,61 @@ export type Permission =
   | 'create-customers'
   | 'edit-customers'
   | 'delete-customers'
+  | 'view-suppliers'
+  | 'create-suppliers'
+  | 'edit-suppliers'
+  | 'delete-suppliers'
+  | 'view-items'
+  | 'create-items'
+  | 'edit-items'
+  | 'delete-items'
+  | 'view-product-families'
+  | 'create-product-families'
+  | 'edit-product-families'
+  | 'delete-product-families'
+  | 'view-product-lines'
+  | 'create-product-lines'
+  | 'edit-product-lines'
+  | 'delete-product-lines'
+  | 'view-commodity-codes'
+  | 'create-commodity-codes'
+  | 'edit-commodity-codes'
+  | 'delete-commodity-codes'
+  | 'view-payment-terms'
+  | 'create-payment-terms'
+  | 'edit-payment-terms'
+  | 'delete-payment-terms'
+  | 'view-banks'
+  | 'create-banks'
+  | 'edit-banks'
+  | 'delete-banks'
+  | 'view-emails'
+  | 'create-emails'
+  | 'edit-emails'
+  | 'delete-emails'
+  | 'view-quotations'
+  | 'create-quotations'
+  | 'edit-quotations'
+  | 'delete-quotations'
+  | 'view-sales-orders'
+  | 'create-sales-orders'
+  | 'edit-sales-orders'
+  | 'delete-sales-orders'
+  | 'view-pre-deliveries'
+  | 'create-pre-deliveries'
+  | 'edit-pre-deliveries'
+  | 'delete-pre-deliveries'
+  | 'view-warehouses'
+  | 'create-warehouses'
+  | 'edit-warehouses'
+  | 'delete-warehouses'
+  | 'view-transport-documents'
+  | 'create-transport-documents'
+  | 'edit-transport-documents'
+  | 'delete-transport-documents'
 
 export type CustomerType = 'company' | 'individual' | 'public_entity' | 'consortium' | 'association'
-export type CustomerStatus = 'active' | 'suspended' | 'blocked' | 'ceased' | 'prospect'
+export type CustomerStatus = 'active' | 'suspended' | 'ceased' | 'prospect'
 export type AtecoCode =
   | 'A'
   | 'B'
@@ -632,7 +757,7 @@ export type CustomerAddress = {
 
 export type CustomerContact = {
   id: string
-  type: 'primary' | 'technical_support' | 'administrative' | 'logistics' | 'quality'
+  type: 'primary' | 'technical_support' | 'administrative' | 'logistics' | 'quality' | 'purchasing' | 'sales'
   name: string
   job_title: string
   phone: string
@@ -676,6 +801,20 @@ export type Customer = {
   contacts?: CustomerContact[]
 }
 
+export type LegalEntityAddress = {
+  id: string
+  type: 'legal' | 'operational'
+  is_default: boolean
+  address_line_1: string
+  address_line_2: string
+  city: string
+  province: string
+  region: string
+  postal_code: string
+  country_code: string
+  version: number
+}
+
 /**
  * Legal entity from GET /api/user or GET /api/legal-entities/{id}
  */
@@ -685,7 +824,7 @@ export type LegalEntity = {
   last_name: string
   trade_name: string
   eori_code: string
-  ateco_code: string | null
+  ateco_code: AtecoCode | null
   vat_number: string
   tax_id: string
   sdi_code: string
@@ -701,6 +840,9 @@ export type LegalEntity = {
   liquidation_status: string
   notes: string
   version: number
+  addresses?: LegalEntityAddress[]
+  banks?: LegalEntityBank[]
+  emails?: LegalEntityEmail[]
 }
 
 /**

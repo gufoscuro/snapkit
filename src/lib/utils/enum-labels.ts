@@ -3,14 +3,21 @@ import * as m from '$lib/paraglide/messages.js'
 import type {
   AnnualRevenueRange,
   AtecoCode,
+  BinLocationType,
   CompanySize,
   Currency,
   Customer,
   CustomerAddress,
   CustomerContact,
   EmployeeCountRange,
+  LegalEntityWarehouse,
   SalesOrderSummary,
   SupplyOrderSummary,
+  ValuationMethod,
+  WarehouseBin,
+  WarehouseType,
+  WarehouseZone,
+  ZoneType,
 } from '$lib/types/api-types'
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline'
@@ -88,7 +95,6 @@ export function getCustomerTypeVariant(type: Customer['type']): BadgeVariant {
 export const customerStatusConfig: Record<Customer['status'], EnumDisplayConfig> = {
   active: { label: m.enum_customer_status_active, variant: 'default' },
   suspended: { label: m.enum_customer_status_suspended, variant: 'outline' },
-  blocked: { label: m.enum_customer_status_blocked, variant: 'destructive' },
   ceased: { label: m.enum_customer_status_ceased, variant: 'secondary' },
   prospect: { label: m.enum_customer_status_prospect, variant: 'secondary' },
 }
@@ -123,6 +129,8 @@ export const contactTypeConfig: Record<CustomerContact['type'], EnumDisplayConfi
   administrative: { label: m.enum_contact_type_administrative, variant: 'outline' },
   logistics: { label: m.enum_contact_type_logistics, variant: 'secondary' },
   quality: { label: m.enum_contact_type_quality, variant: 'outline' },
+  purchasing: { label: m.enum_contact_type_purchasing, variant: 'secondary' },
+  sales: { label: m.enum_contact_type_sales, variant: 'secondary' },
 }
 
 export function getContactTypeLabel(type: CustomerContact['type']): string {
@@ -221,4 +229,58 @@ export const annualRevenueRangeLabels: EnumLabelMap<AnnualRevenueRange> = {
   '10m_50m': m.enum_annual_revenue_10m_50m,
   '50m_250m': m.enum_annual_revenue_50m_250m,
   over_250m: m.enum_annual_revenue_over_250m,
+}
+
+// Warehouse Type
+export const warehouseTypeLabels: EnumLabelMap<WarehouseType> = {
+  main: m.enum_warehouse_type_main,
+  consignment: m.enum_warehouse_type_consignment,
+  subcontracting: m.enum_warehouse_type_subcontracting,
+  returns: m.enum_warehouse_type_returns,
+  defective: m.enum_warehouse_type_defective,
+  spare_parts: m.enum_warehouse_type_spare_parts,
+  transit: m.enum_warehouse_type_transit,
+  quarantine: m.enum_warehouse_type_quarantine,
+}
+
+export function getWarehouseTypeLabel(type: LegalEntityWarehouse['warehouse_type']): string {
+  return warehouseTypeLabels[type]?.() ?? type
+}
+
+// Valuation Method
+export const valuationMethodLabels: EnumLabelMap<ValuationMethod> = {
+  weighted_average: m.enum_valuation_method_weighted_average,
+  fifo: m.enum_valuation_method_fifo,
+  standard: m.enum_valuation_method_standard,
+  last_cost: m.enum_valuation_method_last_cost,
+}
+
+export function getValuationMethodLabel(method: LegalEntityWarehouse['valuation_method']): string {
+  return valuationMethodLabels[method]?.() ?? method
+}
+
+// Zone Type
+export const zoneTypeLabels: EnumLabelMap<ZoneType> = {
+  receiving: m.enum_zone_type_receiving,
+  storage: m.enum_zone_type_storage,
+  shipping: m.enum_zone_type_shipping,
+  quarantine: m.enum_zone_type_quarantine,
+  production: m.enum_zone_type_production,
+}
+
+export function getZoneTypeLabel(type: WarehouseZone['zone_type']): string {
+  return zoneTypeLabels[type]?.() ?? type
+}
+
+// Bin Location Type
+export const binLocationTypeLabels: EnumLabelMap<BinLocationType> = {
+  shelf: m.enum_bin_location_type_shelf,
+  floor: m.enum_bin_location_type_floor,
+  cell: m.enum_bin_location_type_cell,
+  picking: m.enum_bin_location_type_picking,
+  bulk: m.enum_bin_location_type_bulk,
+}
+
+export function getBinLocationTypeLabel(type: WarehouseBin['location_type']): string {
+  return binLocationTypeLabels[type]?.() ?? type
 }

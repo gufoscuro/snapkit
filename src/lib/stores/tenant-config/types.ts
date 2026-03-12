@@ -93,6 +93,11 @@ export type MenuItemWithSubmenu = Omit<MenuItemBase, 'pageId'> & {
   icon?: string
 }
 
+export type BasicMenuItem = {
+  label: string
+  href: string
+}
+
 /**
  * Union type for all menu item variants
  */
