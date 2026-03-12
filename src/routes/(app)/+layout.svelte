@@ -8,7 +8,7 @@
   import type { OnNavigate } from '@sveltejs/kit'
   import type { LayoutProps } from './$types'
 
-  let { children, data }: LayoutProps = $props()
+  let { children }: LayoutProps = $props()
 
   // Initialize language context for i18n
   initLanguageContext()

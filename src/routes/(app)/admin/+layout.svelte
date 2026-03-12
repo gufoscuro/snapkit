@@ -1,9 +1,9 @@
 <script lang="ts">
   import Logo from '$components/icons/Logo.svelte'
   import Button from '$components/ui/button/button.svelte'
-  import { confirmArchive } from '$lib/components/ui/confirm-archive-dialog'
   import LegalEntitySelector from '$lib/components/features/form/LegalEntitySelector.svelte'
   import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js'
+  import { confirmArchive } from '$lib/components/ui/confirm-archive-dialog'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity } from '$lib/types/api-types'
   import { pushScaffoldConfig } from '$lib/utils/admin-config'
@@ -11,9 +11,9 @@
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import Database from '@tabler/icons-svelte/icons/database'
   import { setContext } from 'svelte'
-  import type { PageProps } from '../$types'
+  import type { LayoutProps } from '../$types'
 
-  let { data, children }: PageProps & { children?: () => any } = $props()
+  let { data, children }: LayoutProps = $props()
   let { pageDetails, routeDetails, entityConfig, legalEntity, user } = $derived(data)
 
   async function onLegalEntityChoose(entity: LegalEntity) {
