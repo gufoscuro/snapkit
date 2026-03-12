@@ -197,22 +197,145 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               componentKey: 'globals.sidebars.IndexSidebar',
               enabled: true,
             },
-          },
-        },
-        {
-          $id: 'settings',
-          title: 'settings',
-          route: '/settings',
-          layout: {
-            componentKey: 'layouts.LeftSidebar',
-            enabled: true,
-          },
-          snippets: {
-            sidebar: {
-              componentKey: 'globals.sidebars.SettingsSidebar',
+            filters: {
+              componentKey: 'common.filters.SuppliersFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'suppliers.supplierstable.default.SuppliersTable',
               enabled: true,
             },
           },
+          subpages: [
+            {
+              $id: 'supplier-details',
+              title: 'suppliers',
+              route: '/contacts/suppliers/upsert{/:uuid}',
+              layout: {
+                componentKey: 'layouts.LeftSidebar',
+                enabled: true,
+              },
+              snippets: {
+                sidebar: {
+                  componentKey: 'globals.sidebars.SupplierSidebar',
+                  enabled: true,
+                },
+                content: {
+                  componentKey: 'suppliers.supplierdetails.default.SupplierDetails',
+                  enabled: true,
+                },
+              },
+              subpages: [
+                {
+                  $id: 'supplier-addresses',
+                  title: 'addresses',
+                  route: '/contacts/suppliers/upsert/:uuid/addresses',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.SupplierSidebar',
+                      enabled: true,
+                    },
+                    filters: {
+                      componentKey: 'common.filters.SupplierAddressesFilters',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'suppliers.supplieraddressestable.default.SupplierAddressesTable',
+                      enabled: true,
+                    },
+                  },
+                  subpages: [
+                    {
+                      $id: 'supplier-address-details',
+                      title: 'addresses',
+                      route: '/contacts/suppliers/upsert/:uuid/addresses/upsert{/:aid}',
+                      layout: {
+                        componentKey: 'layouts.LeftSidebar',
+                        enabled: true,
+                      },
+                      snippets: {
+                        sidebar: {
+                          componentKey: 'globals.sidebars.SimpleSidebar',
+                          enabled: true,
+                        },
+                        content: {
+                          componentKey: 'suppliers.supplieraddressdetails.default.SupplierAddressDetails',
+                          enabled: true,
+                        },
+                      },
+                    },
+                  ],
+                },
+                {
+                  $id: 'supplier-contacts',
+                  title: 'contacts',
+                  route: '/contacts/suppliers/upsert/:uuid/contacts',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.SupplierSidebar',
+                      enabled: true,
+                    },
+                    filters: {
+                      componentKey: 'common.filters.SupplierContactsFilters',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'suppliers.suppliercontactstable.default.SupplierContactsTable',
+                      enabled: true,
+                    },
+                  },
+                  subpages: [
+                    {
+                      $id: 'supplier-contact-details',
+                      title: 'contacts',
+                      route: '/contacts/suppliers/upsert/:uuid/contact/upsert{/:cid}',
+                      layout: {
+                        componentKey: 'layouts.LeftSidebar',
+                        enabled: true,
+                      },
+                      snippets: {
+                        sidebar: {
+                          componentKey: 'globals.sidebars.SimpleSidebar',
+                          enabled: true,
+                        },
+                        content: {
+                          componentKey: 'suppliers.suppliercontactdetails.default.SupplierContactDetails',
+                          enabled: true,
+                        },
+                      },
+                    },
+                  ],
+                },
+                {
+                  $id: 'supplier-documents',
+                  title: 'documents',
+                  route: '/contacts/suppliers/upsert/:uuid/documents',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.SupplierSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'suppliers.supplierdocumentstable.default.SupplierDocumentsTable',
+                      enabled: true,
+                    },
+                  },
+                },
+              ],
+            },
+          ],
         },
       ],
       menus: {

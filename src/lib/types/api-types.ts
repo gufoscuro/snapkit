@@ -689,6 +689,8 @@ export type Permission =
 
 export type CustomerType = 'company' | 'individual' | 'public_entity' | 'consortium' | 'association'
 export type CustomerStatus = 'active' | 'suspended' | 'ceased' | 'prospect'
+export type SupplierType = 'courier'
+export type SupplierStatus = 'active' | 'suspended' | 'ceased' | 'prospect'
 export type AtecoCode =
   | 'A'
   | 'B'
@@ -799,6 +801,64 @@ export type Customer = {
   version: number
   addresses?: CustomerAddress[]
   contacts?: CustomerContact[]
+}
+
+export type SupplierAddress = {
+  id: string
+  type: 'billing' | 'shipping' | 'legal'
+  is_default: boolean
+  address_line_1: string
+  address_line_2: string
+  city: string
+  province: string
+  region: string
+  postal_code: string
+  country_code: string
+  receiving_hours: string
+  delivery_instructions: string
+  warehouse_assignment: string
+  version: number
+}
+
+export type SupplierContact = {
+  id: string
+  type: 'primary' | 'technical_support' | 'administrative' | 'logistics' | 'quality' | 'purchasing' | 'sales'
+  name: string
+  job_title: string
+  phone: string
+  mobile_phone: string
+  email: string
+  version: number
+}
+
+/**
+ * Supplier from Moddo API GET /api/legal-entities/{legalEntity}/suppliers
+ */
+export type Supplier = {
+  id: string
+  type: SupplierType
+  status: SupplierStatus
+  name: string
+  trade_name: string
+  ateco_code: AtecoCode | null
+  parent_id: string
+  company_size: CompanySize | null
+  employee_count_range: EmployeeCountRange | null
+  language_code: string
+  registration_country_code: string
+  default_currency: Currency
+  vat_number: string
+  tax_id: string
+  pec: string
+  email: string
+  phone: string
+  fax: string
+  website: string
+  notes: string
+  custom_fields: Record<string, unknown>
+  version: number
+  addresses?: SupplierAddress[]
+  contacts?: SupplierContact[]
 }
 
 export type LegalEntityAddress = {

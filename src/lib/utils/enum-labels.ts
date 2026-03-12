@@ -12,6 +12,9 @@ import type {
   EmployeeCountRange,
   LegalEntityWarehouse,
   SalesOrderSummary,
+  Supplier,
+  SupplierAddress,
+  SupplierContact,
   SupplyOrderSummary,
   ValuationMethod,
   WarehouseBin,
@@ -283,4 +286,67 @@ export const binLocationTypeLabels: EnumLabelMap<BinLocationType> = {
 
 export function getBinLocationTypeLabel(type: WarehouseBin['location_type']): string {
   return binLocationTypeLabels[type]?.() ?? type
+}
+
+// Supplier Type
+export const supplierTypeConfig: Record<Supplier['type'], EnumDisplayConfig> = {
+  courier: { label: m.enum_supplier_type_courier, variant: 'default' },
+}
+
+export function getSupplierTypeLabel(type: Supplier['type']): string {
+  return supplierTypeConfig[type]?.label() ?? type
+}
+
+export function getSupplierTypeVariant(type: Supplier['type']): BadgeVariant {
+  return supplierTypeConfig[type]?.variant ?? 'default'
+}
+
+// Supplier Status
+export const supplierStatusConfig: Record<Supplier['status'], EnumDisplayConfig> = {
+  active: { label: m.enum_supplier_status_active, variant: 'default' },
+  suspended: { label: m.enum_supplier_status_suspended, variant: 'outline' },
+  ceased: { label: m.enum_supplier_status_ceased, variant: 'secondary' },
+  prospect: { label: m.enum_supplier_status_prospect, variant: 'secondary' },
+}
+
+export function getSupplierStatusLabel(status: Supplier['status']): string {
+  return supplierStatusConfig[status]?.label() ?? status
+}
+
+export function getSupplierStatusVariant(status: Supplier['status']): BadgeVariant {
+  return supplierStatusConfig[status]?.variant ?? 'default'
+}
+
+// Supplier Address Type (reuses same address types as customer)
+export const supplierAddressTypeConfig: Record<SupplierAddress['type'], EnumDisplayConfig> = {
+  billing: { label: m.enum_address_type_billing, variant: 'default' },
+  shipping: { label: m.enum_address_type_shipping, variant: 'secondary' },
+  legal: { label: m.enum_address_type_legal, variant: 'outline' },
+}
+
+export function getSupplierAddressTypeLabel(type: SupplierAddress['type']): string {
+  return supplierAddressTypeConfig[type]?.label() ?? type
+}
+
+export function getSupplierAddressTypeVariant(_type: SupplierAddress['type']): BadgeVariant {
+  return 'outline'
+}
+
+// Supplier Contact Type (reuses same contact types as customer)
+export const supplierContactTypeConfig: Record<SupplierContact['type'], EnumDisplayConfig> = {
+  primary: { label: m.enum_contact_type_primary, variant: 'default' },
+  technical_support: { label: m.enum_contact_type_technical_support, variant: 'secondary' },
+  administrative: { label: m.enum_contact_type_administrative, variant: 'outline' },
+  logistics: { label: m.enum_contact_type_logistics, variant: 'secondary' },
+  quality: { label: m.enum_contact_type_quality, variant: 'outline' },
+  purchasing: { label: m.enum_contact_type_purchasing, variant: 'secondary' },
+  sales: { label: m.enum_contact_type_sales, variant: 'secondary' },
+}
+
+export function getSupplierContactTypeLabel(type: SupplierContact['type']): string {
+  return supplierContactTypeConfig[type]?.label() ?? type
+}
+
+export function getSupplierContactTypeVariant(_type: SupplierContact['type']): BadgeVariant {
+  return 'outline'
 }
