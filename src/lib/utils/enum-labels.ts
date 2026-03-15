@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as m from '$lib/paraglide/messages.js'
 import type {
+  AbcClass,
   AnnualRevenueRange,
   AtecoCode,
   BinLocationType,
@@ -9,17 +10,23 @@ import type {
   Customer,
   CustomerAddress,
   CustomerContact,
+  DimensionUnit,
   EmployeeCountRange,
+  Item,
+  ItemCategory,
+  ItemStatus,
   LegalEntityWarehouse,
   SalesOrderSummary,
   Supplier,
   SupplierAddress,
   SupplierContact,
   SupplyOrderSummary,
+  UnitOfMeasure,
   ValuationMethod,
   WarehouseBin,
   WarehouseType,
   WarehouseZone,
+  WeightUnit,
   ZoneType,
 } from '$lib/types/api-types'
 
@@ -349,4 +356,90 @@ export function getSupplierContactTypeLabel(type: SupplierContact['type']): stri
 
 export function getSupplierContactTypeVariant(_type: SupplierContact['type']): BadgeVariant {
   return 'outline'
+}
+
+// Item Category
+export const itemCategoryConfig: Record<ItemCategory, EnumDisplayConfig> = {
+  finished_good: { label: m.enum_item_category_finished_good, variant: 'default' },
+  raw_material: { label: m.enum_item_category_raw_material, variant: 'secondary' },
+  semi_finished: { label: m.enum_item_category_semi_finished, variant: 'outline' },
+  component: { label: m.enum_item_category_component, variant: 'secondary' },
+  phantom: { label: m.enum_item_category_phantom, variant: 'outline' },
+  packaging: { label: m.enum_item_category_packaging, variant: 'secondary' },
+  subcontract: { label: m.enum_item_category_subcontract, variant: 'outline' },
+  service_expense: { label: m.enum_item_category_service_expense, variant: 'secondary' },
+  kit: { label: m.enum_item_category_kit, variant: 'outline' },
+}
+
+export function getItemCategoryLabel(category: ItemCategory): string {
+  return itemCategoryConfig[category]?.label() ?? category
+}
+
+export function getItemCategoryVariant(category: ItemCategory): BadgeVariant {
+  return itemCategoryConfig[category]?.variant ?? 'default'
+}
+
+// Item Status
+export const itemStatusConfig: Record<ItemStatus, EnumDisplayConfig> = {
+  active: { label: m.enum_item_status_active, variant: 'default' },
+  inactive: { label: m.enum_item_status_inactive, variant: 'secondary' },
+  obsolete: { label: m.enum_item_status_obsolete, variant: 'destructive' },
+}
+
+export function getItemStatusLabel(status: ItemStatus): string {
+  return itemStatusConfig[status]?.label() ?? status
+}
+
+export function getItemStatusVariant(status: ItemStatus): BadgeVariant {
+  return itemStatusConfig[status]?.variant ?? 'default'
+}
+
+// ABC Class
+export const abcClassLabels: EnumLabelMap<AbcClass> = {
+  A: m.enum_abc_class_A,
+  B: m.enum_abc_class_B,
+  C: m.enum_abc_class_C,
+  D: m.enum_abc_class_D,
+}
+
+// Unit of Measure
+export const unitOfMeasureLabels: EnumLabelMap<UnitOfMeasure> = {
+  PZ: m.enum_uom_PZ,
+  KG: m.enum_uom_KG,
+  G: m.enum_uom_G,
+  T: m.enum_uom_T,
+  LT: m.enum_uom_LT,
+  ML: m.enum_uom_ML,
+  M: m.enum_uom_M,
+  CM: m.enum_uom_CM,
+  MM: m.enum_uom_MM,
+  M2: m.enum_uom_M2,
+  M3: m.enum_uom_M3,
+  SET: m.enum_uom_SET,
+  BOX: m.enum_uom_BOX,
+  PAL: m.enum_uom_PAL,
+  ROL: m.enum_uom_ROL,
+  FOG: m.enum_uom_FOG,
+  PR: m.enum_uom_PR,
+  CF: m.enum_uom_CF,
+  H: m.enum_uom_H,
+  NR: m.enum_uom_NR,
+}
+
+// Weight Unit
+export const weightUnitLabels: EnumLabelMap<WeightUnit> = {
+  KG: m.enum_weight_unit_KG,
+  G: m.enum_weight_unit_G,
+  LB: m.enum_weight_unit_LB,
+  OZ: m.enum_weight_unit_OZ,
+  T: m.enum_weight_unit_T,
+}
+
+// Dimension Unit
+export const dimensionUnitLabels: EnumLabelMap<DimensionUnit> = {
+  MM: m.enum_dimension_unit_MM,
+  CM: m.enum_dimension_unit_CM,
+  M: m.enum_dimension_unit_M,
+  IN: m.enum_dimension_unit_IN,
+  FT: m.enum_dimension_unit_FT,
 }

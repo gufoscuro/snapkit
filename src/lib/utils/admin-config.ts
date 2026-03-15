@@ -337,6 +337,50 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             },
           ],
         },
+        {
+          $id: 'items',
+          title: 'items',
+          route: '/items',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.ItemsFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'items.itemstable.default.ItemsTable',
+              enabled: true,
+            },
+          },
+          subpages: [
+            {
+              $id: 'item-details',
+              title: 'items',
+              route: '/items/upsert{/:uuid}',
+              layout: {
+                componentKey: 'layouts.LeftSidebar',
+                enabled: true,
+              },
+              snippets: {
+                sidebar: {
+                  componentKey: 'globals.sidebars.SimpleSidebar',
+                  enabled: true,
+                },
+                content: {
+                  componentKey: 'items.itemdetails.default.ItemDetails',
+                  enabled: true,
+                },
+              },
+            },
+          ],
+        },
       ],
       menus: {
         main: {
@@ -359,6 +403,12 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               label: 'suppliers',
               pageId: 'suppliers',
               icon: 'Contact',
+              type: 'link',
+            },
+            {
+              label: 'items',
+              pageId: 'items',
+              icon: 'Package',
               type: 'link',
             },
           ],

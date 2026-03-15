@@ -79,7 +79,7 @@
     warning = undefined,
     itemRendererComponent = undefined,
     selectedItemRendererComponent = undefined,
-    showSelectedOptionLabel = true,
+    showSelectedOptionLabel = false,
     onCreateNew = () => {},
     fetchFunction = undefined,
     validateAddItem = () => true,

@@ -7,6 +7,7 @@
   }
 
   // Shared cache at module level - exists once for the entire application
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
   const sharedComponentsCache = new Map<string, CachedComponent>()
 </script>
 
@@ -21,7 +22,7 @@
 
   type SnippetResolverProps = {
     snippet: SnippetDefinition
-    props?: Record<string, any>
+    props?: Record<string, never>
     children?: Snippet
     fallback?: Snippet<[snippetProps: ReturnType<SnippetPropsGetter>]>
     class?: string
@@ -39,11 +40,11 @@
   // read bindings from the wrong SnippetBindingsProvider context.
   let loaded = $state<CachedComponent | null>(null)
   let loading: boolean = $state(true)
-  let error: any = $state(null)
+  // let error: unknown = $state(null)
   let latestKey: string = $state('')
   const debugActive = false
 
-  function debugLog(...args: any[]) {
+  function debugLog(...args: unknown[]) {
     if (debugActive) console.log('[SnippetResolver]', ...args)
   }
 
@@ -79,7 +80,7 @@
       debugLog(`✓ Loaded and cached component: ${s.componentKey}`, contract ? '(with contract)' : '(no contract)')
     } catch (err) {
       console.error(`Failed to load component:`, err)
-      error = err
+      // error = err
     } finally {
       loading = false
     }

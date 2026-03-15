@@ -928,6 +928,87 @@ export type UserResource = {
 }
 
 // ============================================================================
+// Item API Types
+// ============================================================================
+
+export type ItemCategory =
+  | 'finished_good'
+  | 'raw_material'
+  | 'semi_finished'
+  | 'component'
+  | 'phantom'
+  | 'packaging'
+  | 'subcontract'
+  | 'service_expense'
+  | 'kit'
+
+export type ItemStatus = 'active' | 'inactive' | 'obsolete'
+
+export type AbcClass = 'A' | 'B' | 'C' | 'D'
+
+export type UnitOfMeasure =
+  | 'PZ'
+  | 'KG'
+  | 'G'
+  | 'T'
+  | 'LT'
+  | 'ML'
+  | 'M'
+  | 'CM'
+  | 'MM'
+  | 'M2'
+  | 'M3'
+  | 'SET'
+  | 'BOX'
+  | 'PAL'
+  | 'ROL'
+  | 'FOG'
+  | 'PR'
+  | 'CF'
+  | 'H'
+  | 'NR'
+
+export type WeightUnit = 'KG' | 'G' | 'LB' | 'OZ' | 'T'
+
+export type DimensionUnit = 'MM' | 'CM' | 'M' | 'IN' | 'FT'
+
+/**
+ * Item from Moddo API GET /api/legal-entities/{legalEntity}/items
+ */
+export type Item = {
+  id: string
+  code: string
+  alternative_code: string
+  name: string
+  description: string
+  image: string
+  item_category: ItemCategory
+  item_status: ItemStatus
+  upc_ean_code: string
+  abc_class: AbcClass | null
+  product_family: ProductFamily | null
+  product_line: ProductLine | null
+  commodity_code: CommodityCode | null
+  primary_uom: UnitOfMeasure | null
+  secondary_uom: UnitOfMeasure | null
+  uom_conversion_factor: number
+  gross_weight: number
+  net_weight: number
+  weight_uom: WeightUnit | null
+  length: number
+  width: number
+  height: number
+  dimension_uom: DimensionUnit | null
+  standard_cost: number
+  cost_currency: Currency | null
+  country_of_origin: string
+  hs_tariff_code: string
+  custom_fields: Record<string, unknown>
+  notes: string
+  version: number
+}
+
+// ============================================================================
 // Documents API Types
 // ============================================================================
 

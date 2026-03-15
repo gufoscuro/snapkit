@@ -31,7 +31,7 @@ export type ExtendedFetchOptions = RequestInit & {
   invalidateCache?: boolean
 }
 
-const MAX_CACHE_SIZE = 10
+const MAX_CACHE_SIZE = 20
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
 type CacheEntry = { data: unknown; timestamp: number }
@@ -253,18 +253,12 @@ type ApiClient = {
     url: string,
     options?: ClientOptionsWithBody<TBody>,
   ) => Promise<TResponse>
-  put: <TResponse = unknown, TBody = unknown>(
-    url: string,
-    options?: ClientOptionsWithBody<TBody>,
-  ) => Promise<TResponse>
+  put: <TResponse = unknown, TBody = unknown>(url: string, options?: ClientOptionsWithBody<TBody>) => Promise<TResponse>
   patch: <TResponse = unknown, TBody = unknown>(
     url: string,
     options?: ClientOptionsWithBody<TBody>,
   ) => Promise<TResponse>
-  upload: <TResponse = unknown>(
-    url: string,
-    options: UploadOptions & { method?: string },
-  ) => Promise<TResponse>
+  upload: <TResponse = unknown>(url: string, options: UploadOptions & { method?: string }) => Promise<TResponse>
   safe: {
     get: <TResponse = unknown>(url: string, options?: ClientOptions) => Promise<SafeApiResponse<TResponse>>
     delete: <TResponse = unknown>(url: string, options?: ClientOptions) => Promise<SafeApiResponse<TResponse>>
