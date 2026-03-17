@@ -16,7 +16,7 @@
   const tid = $derived(page.params.tid)
 
   const getWarehouse = getContext<() => LegalEntityWarehouse | null>(WAREHOUSE_CONTEXT_KEY)
-  const warehouseName = $derived(getWarehouse?.()?.name ?? m.warehouse())
+  const warehouseName = $derived(getWarehouse?.()?.code ?? m.warehouse())
 
   const recordTitle = $derived(pageState.get<string>('__breadcrumb_title'))
   const breadcrumbLabel = $derived(recordTitle ?? m.new_zone())
