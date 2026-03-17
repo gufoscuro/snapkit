@@ -17,7 +17,7 @@
   const bid = $derived(page.params.bid)
 
   const getWarehouse = getContext<() => LegalEntityWarehouse | null>(WAREHOUSE_CONTEXT_KEY)
-  const warehouseName = $derived(getWarehouse?.()?.name ?? m.warehouse())
+  const warehouseName = $derived(getWarehouse?.()?.code ?? m.warehouse())
 
   const getZone = getContext<() => WarehouseZone | null>(ZONE_CONTEXT_KEY)
   const zoneName = $derived(getZone?.()?.description ?? m.zone())

@@ -6,7 +6,12 @@
   import { setSnippetBindings } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntityWarehouse, WarehouseZone } from '$lib/types/api-types'
-  import { SNIPPET_PROPS_CONTEXT_KEY, WAREHOUSE_CONTEXT_KEY, ZONE_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
+  import {
+    SNIPPET_PROPS_CONTEXT_KEY,
+    WAREHOUSE_CONTEXT_KEY,
+    ZONE_CONTEXT_KEY,
+    type SnippetPropsGetter,
+  } from '$utils/runtime'
   import { getContext } from 'svelte'
   import type { PageProps } from './$types'
 
@@ -18,7 +23,7 @@
   const snippetProps = $derived(getSnippetProps())
 
   const getWarehouse = getContext<() => LegalEntityWarehouse | null>(WAREHOUSE_CONTEXT_KEY)
-  const warehouseName = $derived(getWarehouse?.()?.name ?? m.warehouse())
+  const warehouseName = $derived(getWarehouse?.()?.code ?? m.warehouse())
 
   const getZone = getContext<() => WarehouseZone | null>(ZONE_CONTEXT_KEY)
   const zoneName = $derived(getZone?.()?.description ?? m.zone())
