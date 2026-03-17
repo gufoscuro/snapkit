@@ -21,11 +21,7 @@
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity, LegalEntityWarehouse } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import {
-    toSelectItems,
-    warehouseTypeLabels,
-    valuationMethodLabels,
-  } from '$lib/utils/enum-labels'
+  import { toSelectItems, valuationMethodLabels, warehouseTypeLabels } from '$lib/utils/enum-labels'
   import { api } from '$lib/utils/request'
 
   let { legalEntity, uuid }: { legalEntity?: LegalEntity | null; uuid?: string } = $props()
@@ -38,14 +34,12 @@
 
   const detail = useDetailRecord<LegalEntityWarehouse>({
     getUuid: () => uuid,
-    fetch: (id) =>
-      api.safe.get<LegalEntityWarehouse>(`/legal-entities/${legalEntityId}/warehouses/${id}`),
-    create: (data) => api.post(`/legal-entities/${legalEntityId}/warehouses`, { data }),
-    update: (id, data) =>
-      api.put(`/legal-entities/${legalEntityId}/warehouses/${id}`, { data }),
-    getDetailRoute: (record) => `/settings/warehouses/upsert/${record.id}`,
-    onFetched: (data) => {
-      breadcrumbTitle.set(data.description)
+    fetch: id => api.safe.get<LegalEntityWarehouse>(`/legal-entities/${legalEntityId}/warehouses/${id}`),
+    create: data => api.post(`/legal-entities/${legalEntityId}/warehouses`, { data }),
+    update: (id, data) => api.put(`/legal-entities/${legalEntityId}/warehouses/${id}`, { data }),
+    getDetailRoute: record => `/settings/warehouses/upsert/${record.id}`,
+    onFetched: data => {
+      breadcrumbTitle.set(data.code)
     },
     cleanup: () => {
       breadcrumbTitle.clear()

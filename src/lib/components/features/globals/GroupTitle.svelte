@@ -11,7 +11,7 @@
 </script>
 
 <div class="flex gap-8 max-lg:flex-col max-lg:gap-4">
-  <div class="lg:w-1/3">
+  <div class="lg:w-1/4 lg:max-w-xs">
     <h2 class="text-lg font-semibold">{heading}</h2>
     {#if description}
       <p class="text-sm text-muted-foreground">{@render description()}</p>

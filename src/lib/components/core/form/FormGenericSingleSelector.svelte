@@ -59,7 +59,6 @@
         value: (item as Record<string, unknown>).id,
       }) as ExtendedOption,
     class: className = '',
-    ...restProps
   }: Props = $props()
 
   const form = getFormContextOptional()

@@ -17,7 +17,7 @@
   const snippetProps = $derived(getSnippetProps())
 
   const getWarehouse = getContext<() => LegalEntityWarehouse | null>(WAREHOUSE_CONTEXT_KEY)
-  const warehouseName = $derived(getWarehouse?.()?.name ?? m.warehouse())
+  const warehouseName = $derived(getWarehouse?.()?.code ?? m.warehouse())
 
   setSnippetBindings({
     provides: { filters: 'filters' },
