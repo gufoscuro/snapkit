@@ -1,20 +1,21 @@
 <script lang="ts">
   import { browser } from '$app/environment'
-  import { getFormContextOptional } from './form-context'
-  import { FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
-  import FormFieldMessages from './FormFieldMessages.svelte'
-  import FormFieldSkeleton from './FormFieldSkeleton.svelte'
   import { Input } from '$components/ui/input'
   import Label from '$components/ui/label/label.svelte'
   import { joinClassnames } from '$utils/classnames'
   import { getUserMessagingClasses } from '$utils/form'
+  import { FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
+  import { getFormContextOptional } from './form-context'
+  import FormFieldMessages from './FormFieldMessages.svelte'
+  import FormFieldSkeleton from './FormFieldSkeleton.svelte'
 
   type Props = InputFieldProps & {
-    value?: number | string
+    value?: number | string | null
     step?: number | string
     min?: number | string
     max?: number | string
     rightLabel?: string
+    allowClear?: boolean
   }
 
   let {
@@ -35,6 +36,7 @@
     min = undefined,
     max = undefined,
     rightLabel = undefined,
+    allowClear = false,
     disabled = InputFieldDefaults.disabled,
     hidden = false,
     width = InputFieldDefaults.width,
@@ -55,13 +57,7 @@
   const isDisabled = $derived(disabled || locked)
 
   const classes = $derived(
-    joinClassnames(
-      className,
-      width,
-      getUserMessagingClasses(error, warning),
-      rightLabel ? 'pr-4' : '',
-      'text-right'
-    )
+    joinClassnames(className, width, getUserMessagingClasses(error, warning), rightLabel ? 'pr-4' : '', 'text-right'),
   )
 
   const labelAria = $derived({
@@ -82,7 +78,7 @@
 
   function handleInput(e: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     const raw = e.currentTarget.value
-    const numeric = raw === '' ? 0 : Number(raw)
+    const numeric = raw === '' ? (allowClear ? null : 0) : Number(raw)
     if (form) {
       form.updateField(name, numeric)
       if (form.errors[name]) form.validateField(name)
@@ -120,15 +116,13 @@
             {...aria}
             class={classes}
             oninput={handleInput}
-            onfocus={onfocus}
+            {onfocus}
             onblur={handleBlur}
-            onkeyup={onkeyup}
-          />
+            {onkeyup} />
 
           {#if rightLabel}
             <div
-              class="pointer-events-none absolute top-0 right-0 mr-2.5 flex h-full max-w-16 items-center text-sm text-muted-foreground/60"
-            >
+              class="pointer-events-none absolute top-0 right-0 mr-2.5 flex h-full max-w-16 items-center text-sm text-muted-foreground/60">
               {rightLabel}
             </div>
           {/if}

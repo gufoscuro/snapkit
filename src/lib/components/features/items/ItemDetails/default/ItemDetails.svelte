@@ -229,19 +229,20 @@
             <NumberField
               name="uom_conversion_factor"
               label={m.uom_conversion_factor()}
-              class={FormFieldClass.MaxWidth} />
+              class={FormFieldClass.MaxWidth}
+              allowClear />
 
-            <NumberField name="gross_weight" label={m.gross_weight()} class={FormFieldClass.MaxWidth} />
-            <NumberField name="net_weight" label={m.net_weight()} class={FormFieldClass.MaxWidth} />
+            <NumberField name="gross_weight" label={m.gross_weight()} class={FormFieldClass.MaxWidth} allowClear />
+            <NumberField name="net_weight" label={m.net_weight()} class={FormFieldClass.MaxWidth} allowClear />
             <SelectField
               name="weight_uom"
               label={m.weight_uom()}
               items={weightUnitItems}
               class={FormFieldClass.MaxWidth} />
 
-            <NumberField name="length" label={m.item_length()} class={FormFieldClass.MaxWidth} />
-            <NumberField name="width" label={m.item_width()} class={FormFieldClass.MaxWidth} />
-            <NumberField name="height" label={m.item_height()} class={FormFieldClass.MaxWidth} />
+            <NumberField name="length" label={m.item_length()} class={FormFieldClass.MaxWidth} allowClear />
+            <NumberField name="width" label={m.item_width()} class={FormFieldClass.MaxWidth} allowClear />
+            <NumberField name="height" label={m.item_height()} class={FormFieldClass.MaxWidth} allowClear />
 
             <SelectField
               name="dimension_uom"
@@ -259,7 +260,7 @@
           {/snippet}
 
           {#snippet content()}
-            <NumberField name="standard_cost" label={m.standard_cost()} class={FormFieldClass.MaxWidth} />
+            <NumberField name="standard_cost" label={m.standard_cost()} class={FormFieldClass.MaxWidth} allowClear />
 
             <SelectField
               name="cost_currency"
