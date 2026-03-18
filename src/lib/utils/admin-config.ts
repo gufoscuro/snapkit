@@ -370,7 +370,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               },
               snippets: {
                 sidebar: {
-                  componentKey: 'globals.sidebars.SimpleSidebar',
+                  componentKey: 'globals.sidebars.ItemSidebar',
                   enabled: true,
                 },
                 content: {
