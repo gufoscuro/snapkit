@@ -571,5 +571,15 @@
   "enum_dimension_unit_CM": "CM – Centimeters",
   "enum_dimension_unit_M": "M – Meters",
   "enum_dimension_unit_IN": "IN – Inches",
-  "enum_dimension_unit_FT": "FT – Feet"
+  "enum_dimension_unit_FT": "FT – Feet",
+  "general_information": "General Information",
+  "general_information_description": "General details and identification",
+  "company_information": "Company Information",
+  "company_information_description": "Business profile and industry classification",
+  "fiscal_information": "Fiscal Information",
+  "fiscal_information_description": "Tax and billing identifiers",
+  "contact_information_description": "Communication channels and contact details",
+  "localization_information": "Localization",
+  "localization_information_description": "Country, currency and language preferences",
+  "notes_section_description": "Additional notes and observations"
 }
