@@ -19,6 +19,7 @@
   "administration": "Administration",
   "archiving": "Archiving...",
   "suppliers": "Suppliers",
+  "supplier_details": "Supplier details",
   "archive_supplier_confirmation": "Are you sure you want to archive the supplier \"{name}\"? This action cannot be undone.",
   "supplier_archived_success": "Supplier \"{name}\" archived successfully",
   "supplier_archive_error": "Failed to archive supplier",

@@ -25,6 +25,7 @@
   "supplier_created_success": "Fornitore creato con successo",
   "supplier_updated_success": "Fornitore aggiornato con successo",
   "supplier_save_error": "Impossibile salvare il fornitore",
+  "supplier_details": "Dettagli fornitore",
   "common_no_results": "Nessun risultato trovato",
   "common_actions": "Azioni",
   "datatable_no_data": "Nessun dato disponibile",

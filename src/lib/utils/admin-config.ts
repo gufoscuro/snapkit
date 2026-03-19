@@ -186,7 +186,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
         },
         {
           $id: 'suppliers',
-          title: 'Suppliers',
+          title: 'suppliers',
           route: '/contacts/suppliers',
           layout: {
             componentKey: 'layouts.LeftSidebar',
@@ -209,7 +209,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
           subpages: [
             {
               $id: 'supplier-details',
-              title: 'suppliers',
+              title: 'supplier_details',
               route: '/contacts/suppliers/upsert{/:uuid}',
               layout: {
                 componentKey: 'layouts.LeftSidebar',
