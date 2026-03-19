@@ -1,5 +1,6 @@
 <script lang="ts">
   import AdminChat from '$components/core/admin/AdminChat.svelte'
+  import LegalEntityConfigEditor from '$components/features/settings/LegalEntityConfigEditor.svelte'
   import * as m from '$lib/paraglide/messages'
   import { refreshAdminConfig } from '$lib/utils/admin-config'
   import { toast } from 'svelte-sonner'
@@ -15,11 +16,9 @@
 
 <div class="flex min-h-0 flex-1">
   <div class="relative flex flex-1 flex-col">
-    <pre class="flex-1 overflow-auto p-4 text-xs text-muted-foreground">{JSON.stringify(
-        props.data.legalEntityConfig?.resources,
-        null,
-        2,
-      )}</pre>
+    <div class="flex-1 overflow-auto">
+      <LegalEntityConfigEditor minHeight="" config={props.data.legalEntityConfig} />
+    </div>
 
     <div class="h-breadcrumbs w-full shrink-0 border-t bg-background"></div>
   </div>

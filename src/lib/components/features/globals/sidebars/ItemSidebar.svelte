@@ -55,7 +55,8 @@
 
       {#if item.standard_cost}
         <p class="text-sm text-muted-foreground">
-          {m.item_cost_information()}: {item.standard_cost} {item.cost_currency ?? ''}
+          {m.item_cost_information()}: {item.standard_cost}
+          {item.cost_currency ?? ''}
         </p>
       {/if}
 

@@ -150,7 +150,7 @@
       onSuccess={handleSuccess}
       onFailure={handleFailure}
       class="relative flex flex-col gap-6 pb-breadcrumbs">
-      {#snippet withContext(formAPI)}
+      {#snippet withContext()}
         <FormErrorMessage columnsLayout />
 
         <GroupTitle heading={m.general_information()}>
