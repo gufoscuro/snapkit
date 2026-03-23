@@ -378,6 +378,27 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   enabled: true,
                 },
               },
+              subpages: [
+                {
+                  $id: 'item-documents',
+                  title: 'documents',
+                  route: '/items/upsert/:uuid/documents',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.ItemSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'items.itemdocumentstable.default.ItemDocumentsTable',
+                      enabled: true,
+                    },
+                  },
+                },
+              ],
             },
           ],
         },

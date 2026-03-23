@@ -13,17 +13,44 @@
   import Skeleton from '$components/ui/skeleton/skeleton.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages'
+  import type { MenuItem } from '$lib/stores/tenant-config/types'
   import type { Item } from '$lib/types/api-types.js'
   import { getItemCategoryLabel } from '$lib/utils/enum-labels'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
   import { ItemSidebarContract } from './ItemSidebar.contract.js'
+  import SubpageMenuGroup from './SubpageMenuGroup.svelte'
   import SubpageSidebarBase from './SubpageSidebarBase.svelte'
 
   const props: SnippetProps = $props()
 
   const itemHandle = useConsumes(ItemSidebarContract, 'item')
   const item: Item | undefined = $derived(itemHandle.get())
+
+  const pageMenu = $derived.by(() => {
+    if (!item)
+      return {
+        name: m.item(),
+        items: [],
+      }
+
+    const items: MenuItem[] = [
+      {
+        type: 'link',
+        label: m.overview(),
+        pageId: 'item-details',
+        params: { uuid: item.id },
+      },
+      {
+        type: 'link',
+        label: m.documents(),
+        pageId: 'item-documents',
+        params: { uuid: item.id },
+      },
+    ]
+
+    return { name: m.item(), items }
+  })
 </script>
 
 <SubpageSidebarBase {...props} fallback={createRoute({ $id: 'items' })}>
@@ -66,6 +93,8 @@
         </Badge>
       </div>
     </div>
+
+    <SubpageMenuGroup name={pageMenu.name} items={pageMenu.items} />
   {:else}
     <div class="flex flex-col gap-1 px-4 pt-2">
       <Skeleton class="h-7 w-3/4" />
