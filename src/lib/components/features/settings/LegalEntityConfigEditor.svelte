@@ -1,16 +1,7 @@
 <script lang="ts">
   import CodeMirrorField from '$components/core/form/CodeMirrorField.svelte'
-  import type {
-    DashboardConfigData,
-    LegalEntityConfigResponse,
-    LegalEntityResourceConfig,
-  } from '$lib/stores/tenant-config/types'
+  import type { LegalEntityConfigResponse } from '$lib/stores/tenant-config/types'
   import { json } from '@codemirror/lang-json'
-
-  type EditableConfig = {
-    resources: Record<string, LegalEntityResourceConfig>
-    dashboard: DashboardConfigData
-  }
 
   type Props = {
     /** The full legal entity config object */
@@ -38,17 +29,13 @@
 
   let parseError = $state<string | undefined>(undefined)
 
-  function extractEditable(cfg: LegalEntityConfigResponse): EditableConfig {
-    return { resources: cfg.resources, dashboard: cfg.dashboard }
-  }
-
-  const jsonValue = $derived(JSON.stringify(extractEditable(config), null, 2))
+  const jsonValue = $derived(JSON.stringify(config, null, 2))
 
   function handleChange(newValue: string) {
     try {
-      const parsed: EditableConfig = JSON.parse(newValue)
+      const parsed: LegalEntityConfigResponse = JSON.parse(newValue)
       parseError = undefined
-      onchange?.({ ...config, resources: parsed.resources, dashboard: parsed.dashboard })
+      onchange?.(parsed)
     } catch {
       parseError = 'Invalid JSON'
     }
