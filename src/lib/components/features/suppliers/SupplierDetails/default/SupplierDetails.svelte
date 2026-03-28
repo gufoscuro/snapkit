@@ -58,12 +58,14 @@
     update: (id, data) => api.put(`/legal-entities/${legalEntityId}/suppliers/${id}`, { data }),
     getDetailRoute: record => createRoute({ $id: 'supplier-details', params: { uuid: record.id } }),
     onFetched: data => {
+      console.log('onFetched')
       supplierHandle.set(data)
-      breadcrumbTitle.set(data.name)
+      breadcrumbTitle.setLabel(pageDetails.config.$id, data.name)
     },
     cleanup: () => {
+      console.log('onCleanup')
       supplierHandle.unset()
-      breadcrumbTitle.clear()
+      breadcrumbTitle.clearLabel(pageDetails.config.$id)
     },
   })
 

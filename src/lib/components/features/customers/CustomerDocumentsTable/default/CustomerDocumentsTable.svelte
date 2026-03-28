@@ -19,6 +19,7 @@
 <script lang="ts">
   import { useProvides } from '$lib/contexts/page-state'
   import type { Customer, Document } from '$lib/types/api-types'
+  import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { apiRequest, apiUploadRequest } from '$lib/utils/request'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
   import type { SnippetProps } from '$utils/runtime'
@@ -32,6 +33,7 @@
   const legalEntityId = $derived(legalEntity?.id)
 
   const customerHandle = useProvides(CustomerDocumentsTableContract, 'customer')
+  const breadcrumbTitle = useBreadcrumbTitle()
 
   onMount(async () => {
     if (legalEntityId && customerId) {
@@ -39,11 +41,13 @@
         url: `/legal-entities/${legalEntityId}/customers/${customerId}`,
       })
       customerHandle.set(customer)
+      breadcrumbTitle.setLabel('customer-details', customer.name)
     }
   })
 
   onDestroy(() => {
     customerHandle.unset()
+    breadcrumbTitle.clearLabel('customer-details')
   })
 
   const fetchDocuments = $derived(

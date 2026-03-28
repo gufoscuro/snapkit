@@ -48,10 +48,14 @@
     if (legalEntityId && supplierId) {
       const supplier = await api.get<Supplier>(`/legal-entities/${legalEntityId}/suppliers/${supplierId}`)
       supplierHandle.set(supplier)
+      breadcrumbTitle.setLabel('supplier-details', supplier.name)
     }
   })
 
-  onDestroy(() => supplierHandle.unset())
+  onDestroy(() => {
+    supplierHandle.unset()
+    breadcrumbTitle.clearLabel('supplier-details')
+  })
 
   const detail = useDetailRecord<SupplierAddress>({
     getUuid: () => uuid,
@@ -60,10 +64,10 @@
     update: (id, data) => api.put(`/legal-entities/${legalEntityId}/suppliers/${supplierId}/addresses/${id}`, { data }),
     getDetailRoute: record => createRoute({ $id: 'supplier-address-details', params: { uuid: record.id } }),
     onFetched: data => {
-      breadcrumbTitle.set(data.address_line_1)
+      breadcrumbTitle.setLabel(pageDetails.config.$id, data.address_line_1)
     },
     cleanup: () => {
-      breadcrumbTitle.clear()
+      breadcrumbTitle.clearLabel(pageDetails.config.$id)
     },
   })
 

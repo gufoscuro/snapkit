@@ -23,10 +23,11 @@
   import type { FilterQuery } from '$lib/utils/filters'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
+  import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { apiRequest } from '$utils/request.js'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
-  import { onMount } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
   import { CustomerContactsTableContract } from './CustomerContactsTable.contract.js'
 
   let { legalEntity, pageDetails }: SnippetProps = $props()
@@ -38,6 +39,7 @@
   const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
 
   const customerHandle = useProvides(CustomerContactsTableContract, 'customer')
+  const breadcrumbTitle = useBreadcrumbTitle()
 
   onMount(async () => {
     if (legalEntityId && customerId) {
@@ -45,7 +47,12 @@
         url: `/legal-entities/${legalEntityId}/customers/${customerId}`,
       })
       customerHandle.set(customer)
+      breadcrumbTitle.setLabel('customer-details', customer.name)
     }
+  })
+
+  onDestroy(() => {
+    breadcrumbTitle.clearLabel('customer-details')
   })
 
   const columns: ColumnConfig<CustomerContact>[] = [

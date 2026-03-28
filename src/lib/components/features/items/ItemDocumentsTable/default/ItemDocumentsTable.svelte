@@ -21,6 +21,7 @@
   import type { Document, Item } from '$lib/types/api-types'
   import { apiRequest, apiUploadRequest } from '$lib/utils/request'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
+  import { useBreadcrumbTitle } from '$utils/breadcrumb-title.js'
   import type { SnippetProps } from '$utils/runtime'
   import { onDestroy, onMount } from 'svelte'
   import DocumentsTable from '../../../documents/DocumentsTable/default/DocumentsTable.svelte'
@@ -30,6 +31,7 @@
 
   const itemId = $derived(pageDetails.params.uuid)
   const legalEntityId = $derived(legalEntity?.id)
+  const breadcrumbTitle = useBreadcrumbTitle()
 
   const itemHandle = useProvides(ItemDocumentsTableContract, 'item')
 
@@ -39,6 +41,7 @@
         url: `/legal-entities/${legalEntityId}/items/${itemId}`,
       })
       itemHandle.set(item)
+      breadcrumbTitle.setLabel('item-details', item.name)
     }
   })
 

@@ -4,14 +4,17 @@
   import { BankDetails } from '$lib/components/features/banks/BankDetails'
   import { getPageState } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages'
+  import { getBreadcrumbLabels } from '$lib/utils/breadcrumb-title'
   import type { PageProps } from './$types'
+
+  const PAGE_ID = 'settings-bank-details'
 
   const { data }: PageProps = $props()
   const pageState = getPageState()
 
   const uuid = $derived(page.params.uuid)
-  const recordTitle = $derived(pageState.get<string>('__breadcrumb_title'))
-  const breadcrumbLabel = $derived(recordTitle ?? m.new_bank())
+  const breadcrumbLabels = $derived(getBreadcrumbLabels(pageState))
+  const breadcrumbLabel = $derived(breadcrumbLabels[PAGE_ID] ?? m.new_bank())
 </script>
 
 <SettingsHeader
@@ -22,5 +25,5 @@
   ]} />
 
 <div class="flex flex-1 flex-col gap-4 p-4">
-  <BankDetails legalEntity={data.legalEntity} {uuid} />
+  <BankDetails legalEntity={data.legalEntity} {uuid} pageId={PAGE_ID} />
 </div>

@@ -24,7 +24,7 @@
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { api } from '$lib/utils/request'
 
-  let { legalEntity, uuid }: { legalEntity?: LegalEntity | null; uuid?: string } = $props()
+  let { legalEntity, uuid, pageId }: { legalEntity?: LegalEntity | null; uuid?: string; pageId?: string } = $props()
 
   const legalEntityId = $derived(legalEntity?.id)
   const breadcrumbTitle = useBreadcrumbTitle()
@@ -36,10 +36,10 @@
     update: (id, data) => api.put(`/legal-entities/${legalEntityId}/payment-terms/${id}`, { data }),
     getDetailRoute: record => `/settings/payment-terms/upsert/${record.id}`,
     onFetched: data => {
-      breadcrumbTitle.set(data.name)
+      if (pageId) breadcrumbTitle.setLabel(pageId, data.name)
     },
     cleanup: () => {
-      breadcrumbTitle.clear()
+      if (pageId) breadcrumbTitle.clearLabel(pageId)
     },
   })
 

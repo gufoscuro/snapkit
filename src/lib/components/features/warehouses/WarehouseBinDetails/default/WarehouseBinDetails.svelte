@@ -29,7 +29,8 @@
     warehouseId,
     zoneId,
     bid,
-  }: { legalEntity?: LegalEntity | null; warehouseId?: string; zoneId?: string; bid?: string } = $props()
+    pageId,
+  }: { legalEntity?: LegalEntity | null; warehouseId?: string; zoneId?: string; bid?: string; pageId?: string } = $props()
 
   const legalEntityId = $derived(legalEntity?.id)
   const breadcrumbTitle = useBreadcrumbTitle()
@@ -52,10 +53,10 @@
     getDetailRoute: (record) =>
       `/settings/warehouses/upsert/${warehouseId}/zones/${zoneId}/bins/upsert/${record.id}`,
     onFetched: (data) => {
-      breadcrumbTitle.set(data.code)
+      if (pageId) breadcrumbTitle.setLabel(pageId, data.code)
     },
     cleanup: () => {
-      breadcrumbTitle.clear()
+      if (pageId) breadcrumbTitle.clearLabel(pageId)
     },
   })
 

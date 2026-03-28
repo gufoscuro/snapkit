@@ -23,6 +23,7 @@
   import type { FilterQuery } from '$lib/utils/filters'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
+  import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { apiRequest } from '$utils/request.js'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
@@ -38,6 +39,7 @@
   const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
 
   const supplierHandle = useProvides(SupplierAddressesTableContract, 'supplier')
+  const breadcrumbTitle = useBreadcrumbTitle()
 
   onMount(async () => {
     if (legalEntityId && supplierId) {
@@ -45,10 +47,14 @@
         url: `/legal-entities/${legalEntityId}/suppliers/${supplierId}`,
       })
       supplierHandle.set(supplier)
+      breadcrumbTitle.setLabel('supplier-details', supplier.name)
     }
   })
 
-  onDestroy(() => supplierHandle.unset())
+  onDestroy(() => {
+    supplierHandle.unset()
+    breadcrumbTitle.clearLabel('supplier-details')
+  })
 
   const columns: ColumnConfig<SupplierAddress>[] = [
     {

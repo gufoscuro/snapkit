@@ -46,10 +46,14 @@
     if (legalEntityId && customerId) {
       const customer = await api.get<Customer>(`/legal-entities/${legalEntityId}/customers/${customerId}`)
       customerHandle.set(customer)
+      breadcrumbTitle.setLabel('customer-details', customer.name)
     }
   })
 
-  onDestroy(() => customerHandle.unset())
+  onDestroy(() => {
+    customerHandle.unset()
+    breadcrumbTitle.clearLabel('customer-details')
+  })
 
   const detail = useDetailRecord<CustomerContact>({
     getUuid: () => uuid,
@@ -58,10 +62,10 @@
     update: (id, data) => api.put(`/legal-entities/${legalEntityId}/customers/${customerId}/contacts/${id}`, { data }),
     getDetailRoute: record => createRoute({ $id: 'customer-contact-details', params: { uuid: record.id } }),
     onFetched: data => {
-      breadcrumbTitle.set(data.name)
+      breadcrumbTitle.setLabel(pageDetails.config.$id, data.name)
     },
     cleanup: () => {
-      breadcrumbTitle.clear()
+      breadcrumbTitle.clearLabel(pageDetails.config.$id)
     },
   })
 

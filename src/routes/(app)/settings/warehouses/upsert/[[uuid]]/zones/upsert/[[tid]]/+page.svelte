@@ -4,10 +4,13 @@
   import { WarehouseZoneDetails } from '$lib/components/features/warehouses/WarehouseZoneDetails'
   import { getPageState } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages'
+  import { getBreadcrumbLabels } from '$lib/utils/breadcrumb-title'
   import type { LegalEntityWarehouse } from '$lib/types/api-types'
   import { WAREHOUSE_CONTEXT_KEY } from '$utils/runtime'
   import { getContext } from 'svelte'
   import type { PageProps } from './$types'
+
+  const PAGE_ID = 'settings-warehouse-zone-details'
 
   const { data }: PageProps = $props()
   const pageState = getPageState()
@@ -18,8 +21,8 @@
   const getWarehouse = getContext<() => LegalEntityWarehouse | null>(WAREHOUSE_CONTEXT_KEY)
   const warehouseName = $derived(getWarehouse?.()?.code ?? m.warehouse())
 
-  const recordTitle = $derived(pageState.get<string>('__breadcrumb_title'))
-  const breadcrumbLabel = $derived(recordTitle ?? m.new_zone())
+  const breadcrumbLabels = $derived(getBreadcrumbLabels(pageState))
+  const breadcrumbLabel = $derived(breadcrumbLabels[PAGE_ID] ?? m.new_zone())
 </script>
 
 <SettingsHeader
@@ -32,5 +35,5 @@
   ]} />
 
 <div class="flex flex-1 flex-col gap-4 p-4">
-  <WarehouseZoneDetails legalEntity={data.legalEntity} {warehouseId} {tid} />
+  <WarehouseZoneDetails legalEntity={data.legalEntity} {warehouseId} {tid} pageId={PAGE_ID} />
 </div>

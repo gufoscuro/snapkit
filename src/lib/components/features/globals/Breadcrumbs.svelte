@@ -4,6 +4,7 @@
   import * as Sidebar from '$lib/components/ui/sidebar'
   import { useSidebar } from '$lib/components/ui/sidebar'
   import { getPageState } from '$lib/contexts/page-state'
+  import { getBreadcrumbLabels } from '$lib/utils/breadcrumb-title'
   import type { PageConfig } from '$lib/utils/page-registry'
   import { getI18nLabel } from '$utils/i18n'
   import { createRoute } from '$utils/route-builder'
@@ -13,7 +14,7 @@
 
   const props: SnippetProps = $props()
   const pageState = getPageState()
-  const recordTitle = $derived(pageState.get<string>('__breadcrumb_title'))
+  const breadcrumbLabels = $derived(getBreadcrumbLabels(pageState))
   const sidebar = useSidebar()
 
   function findAncestors(pages: PageConfig[], targetId: string, trail: PageConfig[] = []): PageConfig[] | null {
@@ -55,10 +56,10 @@
           {/if}
           <Breadcrumb.Item>
             {#if i === breadcrumbItems.length - 1}
-              <Breadcrumb.Page>{recordTitle ?? getI18nLabel(page.title)}</Breadcrumb.Page>
+              <Breadcrumb.Page>{breadcrumbLabels[page.$id] ?? getI18nLabel(page.title)}</Breadcrumb.Page>
             {:else}
               <Breadcrumb.Link class="hover:text-brand hover:underline" href={createRoute({ $id: page.$id, params: props.pageDetails.params })}>
-                {getI18nLabel(page.title)}
+                {breadcrumbLabels[page.$id] ?? getI18nLabel(page.title)}
               </Breadcrumb.Link>
             {/if}
           </Breadcrumb.Item>

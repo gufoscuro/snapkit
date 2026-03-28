@@ -60,8 +60,8 @@ export type DetailRecordOptions<T extends { id: string }> = {
  *   create: (data) => api.post(`/legal-entities/${legalEntityId}/customers`, { data }),
  *   update: (id, data) => api.put(`/legal-entities/${legalEntityId}/customers/${id}`, { data }),
  *   getDetailRoute: (record) => createRoute({ $id: 'customer-details', params: { uuid: record.id } }),
- *   onFetched: (data) => { breadcrumbTitle.set(data.name) },
- *   cleanup:   ()     => { breadcrumbTitle.clear() },
+ *   onFetched: (data) => { breadcrumbTitle.setLabel(pageDetails.config.$id, data.name) },
+ *   cleanup:   ()     => { breadcrumbTitle.clearLabel(pageDetails.config.$id) },
  *   extraSubmitData: { custom_fields: {} },
  * })
  *

@@ -59,11 +59,11 @@
     getDetailRoute: record => createRoute({ $id: 'customer-details', params: { uuid: record.id } }),
     onFetched: data => {
       customerHandle.set(data)
-      breadcrumbTitle.set(data.name)
+      breadcrumbTitle.setLabel(pageDetails.config.$id, data.name)
     },
     cleanup: () => {
       customerHandle.unset()
-      breadcrumbTitle.clear()
+      breadcrumbTitle.clearLabel(pageDetails.config.$id)
     },
   })
 

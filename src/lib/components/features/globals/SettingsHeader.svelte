@@ -12,7 +12,10 @@
     href?: string
   }
 
-  let { legalEntityName, breadcrumbs = [] }: {
+  let {
+    legalEntityName,
+    breadcrumbs = [],
+  }: {
     legalEntityName?: string | null
     breadcrumbs?: BreadcrumbItem[]
   } = $props()
@@ -47,7 +50,7 @@
         <Breadcrumb.Item>
           <Breadcrumb.Link href="/settings">{m.settings()}</Breadcrumb.Link>
         </Breadcrumb.Item>
-        {#each breadcrumbs as crumb, i}
+        {#each breadcrumbs as crumb, i (crumb.href || '' + i)}
           <Breadcrumb.Separator />
           <Breadcrumb.Item>
             {#if i === breadcrumbs.length - 1}
