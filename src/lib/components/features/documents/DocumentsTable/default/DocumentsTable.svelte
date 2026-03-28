@@ -60,8 +60,7 @@
     {
       accessorKey: 'description',
       header: m.document_description(),
-      renderer: 'text',
-      meta: { cellClassName: 'text-xs line-clamp-2 max-w-xs' },
+      renderer: 'long-text',
     },
     {
       accessorKey: 'mime_type',

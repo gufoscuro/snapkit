@@ -402,6 +402,50 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             },
           ],
         },
+        {
+          $id: 'quotations',
+          title: 'quotations',
+          route: '/sales/quotations',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.QuotationsFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'quotations.quotationstable.default.QuotationsTable',
+              enabled: true,
+            },
+          },
+          subpages: [
+            {
+              $id: 'quotation-details',
+              title: 'quotation',
+              route: '/sales/quotations/upsert{/:uuid}',
+              layout: {
+                componentKey: 'layouts.LeftSidebar',
+                enabled: true,
+              },
+              snippets: {
+                sidebar: {
+                  componentKey: 'globals.sidebars.SimpleSidebar',
+                  enabled: true,
+                },
+                content: {
+                  componentKey: 'quotations.quotationdetails.default.QuotationDetails',
+                  enabled: true,
+                },
+              },
+            },
+          ],
+        },
       ],
       menus: {
         main: {
@@ -430,6 +474,12 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               label: 'items',
               pageId: 'items',
               icon: 'Package',
+              type: 'link',
+            },
+            {
+              label: 'quotations',
+              pageId: 'quotations',
+              icon: 'FileText',
               type: 'link',
             },
           ],

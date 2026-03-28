@@ -19,7 +19,7 @@
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
-  import StatusSelector, { type StatusOption } from '$components/core/form/StatusSelector.svelte'
+
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
@@ -34,7 +34,6 @@
     companySizeLabels,
     currencyLabels,
     employeeCountRangeLabels,
-    supplierStatusConfig,
     supplierTypeConfig,
     toSelectItems,
   } from '$lib/utils/enum-labels'
@@ -74,7 +73,6 @@
 
   const initialValues = $derived.by(() => ({
     type: 'courier' as const,
-    status: 'prospect' as const,
     name: '',
     trade_name: '',
     ateco_code: null,
@@ -96,23 +94,6 @@
   }))
 
   const typeItems = Object.entries(supplierTypeConfig).map(([value, cfg]) => ({ value, label: cfg.label() }))
-  const statusVariants: Record<string, StatusOption['variant']> = {
-    active: 'active',
-    prospect: 'in-progress',
-    suspended: 'paused',
-    ceased: 'neutral',
-  }
-
-  const allSupplierStatuses: StatusOption[] = Object.entries(supplierStatusConfig).map(([value, cfg]) => ({
-    value,
-    label: cfg.label(),
-    variant: statusVariants[value] ?? 'neutral',
-  }))
-
-  // On create, 'active' is not allowed by the API
-  const supplierStatuses = $derived(
-    record ? allSupplierStatuses : allSupplierStatuses.filter(s => s.value !== 'active'),
-  )
 
   const atecoItems = toSelectItems(atecoCodeLabels)
   const companySizeItems = toSelectItems(companySizeLabels)
@@ -123,7 +104,6 @@
     .schema<Partial<Supplier>>({
       type: [v.required()],
       name: [v.required()],
-      status: [v.required()],
       language_code: [v.required()],
       registration_country_code: [v.required()],
       default_currency: [v.required()],
@@ -165,15 +145,6 @@
               items={typeItems}
               class={FormFieldClass.MinWidth}
               disabled={!!record} />
-
-            <div class={FormFieldClass.MaxWidth}>
-              <StatusSelector
-                name="status"
-                label={m.status()}
-                statuses={supplierStatuses}
-                class={FormFieldClass.MinWidth}
-                allowClear={false} />
-            </div>
 
             <TextField name="name" label={m.name()} class={FormFieldClass.MaxWidth} focus={!record} />
             <TextField name="trade_name" label={m.trade_name()} class={FormFieldClass.MaxWidth} />

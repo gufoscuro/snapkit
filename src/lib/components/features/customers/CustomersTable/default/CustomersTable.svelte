@@ -20,7 +20,8 @@
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { Customer } from '$lib/types/api-types'
-  import { getCustomerStatusLabel, getCustomerTypeLabel } from '$lib/utils/enum-labels'
+  import CustomerTagBadges from '$lib/components/features/customers/CustomerTagBadges.svelte'
+  import { getCustomerCommercialStatusLabel, getCustomerTypeLabel } from '$lib/utils/enum-labels'
   import type { FilterQuery } from '$lib/utils/filters'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
@@ -43,11 +44,6 @@
       },
     },
     {
-      accessorKey: 'vat_number',
-      header: m.vat(),
-      renderer: 'text',
-    },
-    {
       accessorKey: 'email',
       header: m.email(),
       renderer: 'text',
@@ -67,18 +63,24 @@
       },
     },
     {
-      accessorKey: 'status',
+      accessorKey: 'commercial_status',
       header: m.status(),
       renderer: 'status',
       rendererConfig: {
-        variantMapper: (status: Customer['status']) => {
+        variantMapper: (status: Customer['commercial_status']) => {
           if (status === 'active') return 'active'
           if (status === 'prospect') return 'in-progress'
-          if (status === 'suspended') return 'paused'
-          if (status === 'blocked') return 'blocked'
           return 'neutral'
         },
-        labelMapper: (status: Customer['status']) => getCustomerStatusLabel(status),
+        labelMapper: (status: Customer['commercial_status']) => getCustomerCommercialStatusLabel(status),
+      },
+    },
+    {
+      accessorKey: 'tags',
+      header: '',
+      renderer: 'badges',
+      rendererConfig: {
+        component: CustomerTagBadges,
       },
     },
     {

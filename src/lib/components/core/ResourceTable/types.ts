@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { BadgeVariant } from '$lib/components/ui/badge'
 import type { ButtonVariant } from '$lib/components/ui/button'
 import type { FilterQuery, PaginatedResponse } from '$lib/utils/filters'
@@ -97,6 +98,7 @@ export type RendererType =
   | 'email' // First email from array
   | 'phone' // First phone from array
   | 'date' // Formatted date
+  | 'long-text' // Text with line-clamp truncation
   | 'currency' // Formatted currency
   | 'badge' // Single badge with variant
   | 'badges' // Multiple badges (categories, tags)

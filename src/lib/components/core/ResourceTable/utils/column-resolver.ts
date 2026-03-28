@@ -9,6 +9,7 @@ import { createCustomRenderer } from '../renderers/custom-renderer'
 import { createDateRenderer } from '../renderers/date-renderer'
 import { createEmailRenderer } from '../renderers/email-renderer'
 import { createLinkRenderer } from '../renderers/link-renderer'
+import { createLongTextRenderer } from '../renderers/long-text-renderer'
 import { createPhoneRenderer } from '../renderers/phone-renderer'
 import { createStatusRenderer } from '../renderers/status-renderer'
 import { createTextRenderer } from '../renderers/text-renderer'
@@ -63,6 +64,16 @@ export function resolveColumns<T>(columns: ColumnConfig<T>[], actionHelpers: Act
 
         case 'badges':
           return { ...base, cell: createBadgesRenderer(config) } as ColumnDef<T>
+
+        case 'long-text':
+          return {
+            ...base,
+            meta: {
+              ...config.meta,
+              cellClassName: `whitespace-normal ${config.meta?.cellClassName ?? ''}`.trim(),
+            },
+            cell: createLongTextRenderer(config),
+          } as ColumnDef<T>
 
         case 'date':
           return { ...base, cell: createDateRenderer(config) } as ColumnDef<T>

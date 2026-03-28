@@ -688,9 +688,10 @@ export type Permission =
   | 'delete-transport-documents'
 
 export type CustomerType = 'company' | 'individual' | 'public_entity' | 'consortium' | 'association'
-export type CustomerStatus = 'active' | 'suspended' | 'ceased' | 'prospect'
+export type CustomerCommercialStatus = 'active' | 'prospect'
+export type CustomerTag = 'suspended' | 'ceased'
 export type SupplierType = 'courier'
-export type SupplierStatus = 'active' | 'suspended' | 'ceased' | 'prospect'
+export type SupplierTag = 'suspended' | 'ceased'
 export type AtecoCode =
   | 'A'
   | 'B'
@@ -774,7 +775,8 @@ export type CustomerContact = {
 export type Customer = {
   id: string
   type: CustomerType
-  status: CustomerStatus
+  commercial_status: CustomerCommercialStatus
+  tags: CustomerTag[]
   name: string
   last_name: string
   trade_name: string
@@ -798,6 +800,8 @@ export type Customer = {
   website: string
   notes: string
   custom_fields: Record<string, unknown>
+  suspended_at: string
+  ceased_at: string
   version: number
   addresses?: CustomerAddress[]
   contacts?: CustomerContact[]
@@ -837,7 +841,7 @@ export type SupplierContact = {
 export type Supplier = {
   id: string
   type: SupplierType
-  status: SupplierStatus
+  tags: SupplierTag[]
   name: string
   trade_name: string
   ateco_code: AtecoCode | null
@@ -856,6 +860,8 @@ export type Supplier = {
   website: string
   notes: string
   custom_fields: Record<string, unknown>
+  suspended_at: string
+  ceased_at: string
   version: number
   addresses?: SupplierAddress[]
   contacts?: SupplierContact[]
@@ -1041,6 +1047,101 @@ export type Document = {
   }
   created_at: string
   download_url?: string
+}
+
+// ============================================================================
+// Quotations API Types
+// ============================================================================
+
+export type QuotationStatus = 'draft' | 'active' | 'approved' | 'rejected' | 'superseded'
+
+export type ConversionStatus = 'none' | 'partial' | 'full'
+
+export type Incoterm = 'EXW' | 'FCA' | 'FAS' | 'FOB' | 'CFR' | 'CIF' | 'CPT' | 'CIP' | 'DAP' | 'DPU' | 'DDP'
+
+export type SalesTransactionType =
+  | 'VEN'
+  | 'VEN-EXP'
+  | 'VEN-UE'
+  | 'VEN-TRI'
+  | 'C/VIS'
+  | 'C/VIS-RES'
+  | 'C/LAV'
+  | 'C/LAV-RES'
+  | 'RES'
+  | 'OMG'
+  | 'TRASF'
+  | 'RIP'
+  | 'RIP-RES'
+  | 'CAMP'
+
+export type QuotationItemType = 'item' | 'descriptive'
+
+/**
+ * Quotation item from Moddo API
+ */
+export type QuotationItem = {
+  id: string
+  sort_order: number
+  type: QuotationItemType
+  item_id: string
+  item_snapshot: Record<string, unknown>[]
+  description: string
+  quantity: number
+  uom: UnitOfMeasure | null
+  unit_price: number
+  discount_percent: number
+  discount_amount: number
+  net_value: number
+  vat_code_id: string
+  vat_code_snapshot: Record<string, unknown>[]
+  tax_amount: number
+  requested_delivery_date: string
+  delivery_date: string
+  rejection_reason: string
+  rejected_at: string
+  rejected_by: string
+  ordered_quantity?: number
+  conversion_status?: ConversionStatus
+  version: number
+}
+
+/**
+ * Quotation from Moddo API GET /api/legal-entities/{legalEntity}/quotations
+ */
+export type Quotation = {
+  id: string
+  document_number: string
+  revision_number: number
+  parent_id: string
+  document_date: string
+  sales_transaction_type: SalesTransactionType
+  customer_id: string
+  customer_snapshot: Record<string, unknown>[]
+  ship_to_address_id: string
+  ship_to_snapshot: Record<string, unknown>[]
+  contact_person_id: string
+  contact_person_snapshot: Record<string, unknown>[]
+  legal_entity_snapshot: Record<string, unknown>[]
+  currency: Currency
+  valid_from: string
+  valid_to: string
+  payment_term_id: string
+  payment_term_snapshot: Record<string, unknown>[]
+  incoterm: Incoterm
+  incoterm_location: string
+  sales_rep_id: string
+  status: QuotationStatus
+  pdf_path: string
+  expired_at: string
+  net_value: number
+  gross_value: number
+  notes_internal: string
+  notes_external: string
+  conversion_status?: ConversionStatus
+  version: number
+  created_by: string
+  items?: QuotationItem[]
 }
 
 /**

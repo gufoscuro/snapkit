@@ -1,44 +1,41 @@
 <!--
-  @component CustomerSelector
-  @description A single-select dropdown for choosing customers.
-  Fetches customers from GET /customer endpoint with search support.
-  Displays customer name.
-  @keywords customer, selector, picker, dropdown, client
+  @component ItemSelector
+  @description A single-select dropdown for choosing items from the item catalog.
+  Fetches items from GET /api/legal-entities/{legalEntity}/items endpoint with search support.
+  Displays item name with code as secondary info.
+  @keywords item, selector, picker, dropdown, catalog, product, quotation
   @uses FormGenericSingleSelector
-  @api GET /api/legal-entities/{legalEntity}/customers -> CustomerSummary[]
+  @api GET /api/legal-entities/{legalEntity}/items -> Item[]
 -->
-
 <script lang="ts">
   import { EntitySelectorDefaults, type EntitySelectorProps } from '$components/core/form/form'
   import FormGenericSingleSelector from '$components/core/form/FormGenericSingleSelector.svelte'
   import * as m from '$lib/paraglide/messages'
-  import type { CustomerSummary } from '$lib/types/api-types'
-  import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$lib/utils/filters'
-  import type { ExtendedOption } from '$lib/utils/generics'
-  import { api } from '$lib/utils/request'
+  import type { Item } from '$lib/types/api-types'
+  import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$utils/filters'
+  import type { ExtendedOption } from '$utils/generics'
+  import { api } from '$utils/request'
   import { getSnippetPropsContext } from '$utils/runtime'
 
   type Props = EntitySelectorProps & {
-    /** Pre-selected customer */
-    attr?: CustomerSummary
+    /** Pre-selected item */
+    attr?: Item
     /** Custom fetch function override */
-    fetchFunction?: (query: Partial<FilterQuery>) => Promise<CustomerSummary[]>
-    /** Callback when a customer is selected */
-    onChoose?: (item: CustomerSummary) => void
+    fetchFunction?: (query: Partial<FilterQuery>) => Promise<Item[]>
+    /** Callback when an item is selected */
+    onChoose?: (item: Item) => void
     /** Callback when selection changes (includes clear) */
     onChange?: (item: ExtendedOption | undefined) => void
     /** Callback when selection is cleared */
     onClear?: () => void
-    /** Callback when "create new" is clicked (requires allowNewRecord=true) */
-    onCreateRecord?: () => void
   }
 
   let {
     attr = undefined,
     fetchFunction: customFetchFunction = undefined,
-    label = m.customer(),
-    placeholder = m.select_customer_placeholder(),
-    name = 'customerId',
+    label = m.item(),
+    placeholder = m.select_item_placeholder(),
+    name = 'itemId',
     id = name,
     error = EntitySelectorDefaults.error,
     warning = EntitySelectorDefaults.warning,
@@ -55,32 +52,31 @@
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
-    onCreateRecord = () => {},
   }: Props = $props()
 
   const contextGetter = getSnippetPropsContext()
   const contextProps = contextGetter && contextGetter()
   const legalEntityId = contextProps?.legalEntity?.id as string
 
-  function optionMappingFunction(item: CustomerSummary): ExtendedOption {
+  function optionMappingFunction(item: Item): ExtendedOption {
     return {
-      label: item.name,
+      label: item.code ? `${item.name} (${item.code})` : item.name,
       value: item.id as string,
       attr: item,
     }
   }
 
-  async function defaultFetchFunction(query: Partial<FilterQuery>): Promise<CustomerSummary[]> {
+  async function defaultFetchFunction(query: Partial<FilterQuery>): Promise<Item[]> {
     const params = createQueryRequestObject(query)
 
     return (
-      await api.get<PaginatedResponse<CustomerSummary>>(`/legal-entities/${legalEntityId}/customers`, {
+      await api.get<PaginatedResponse<Item>>(`/legal-entities/${legalEntityId}/items`, {
         queryParams: params,
       })
     ).data
   }
 
-  async function fetchFunction(query: Partial<FilterQuery>): Promise<CustomerSummary[]> {
+  async function fetchFunction(query: Partial<FilterQuery>): Promise<Item[]> {
     if (customFetchFunction) {
       return customFetchFunction(query)
     }
@@ -90,8 +86,7 @@
 
 <FormGenericSingleSelector
   selectedValue={attr ? optionMappingFunction(attr) : undefined}
-  emptyText={m.no_customers_found()}
-  newRecordText={m.add_new_customer()}
+  emptyText={m.no_items_found()}
   {label}
   {placeholder}
   {name}
@@ -112,5 +107,4 @@
   {onChoose}
   {onChange}
   {onClear}
-  onCreateNew={onCreateRecord}
   class={className} />

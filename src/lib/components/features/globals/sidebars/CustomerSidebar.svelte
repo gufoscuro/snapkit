@@ -10,11 +10,13 @@
 
 <script lang="ts">
   import Skeleton from '$components/ui/skeleton/skeleton.svelte'
+  import StatusBadge from '$lib/components/core/ResourceTable/renderers/StatusBadge.svelte'
+  import CustomerTagBadges from '$lib/components/features/customers/CustomerTagBadges.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages'
   import type { MenuItem } from '$lib/stores/tenant-config/types'
   import type { Customer } from '$lib/types/api-types.js'
-  import { getCustomerTypeLabel } from '$utils/customers.js'
+  import { getCustomerCommercialStatusLabel } from '$lib/utils/enum-labels'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
   import { CustomerSidebarContract } from './CustomerSidebar.contract.js'
@@ -76,11 +78,22 @@
       <h2 class="line-clamp-2 text-lg font-semibold" title={customer.name}>
         {customer.name}
       </h2>
+      <p class="text-sm text-muted-foreground">
+        {m.email()}: <a class="font-semibold" href="mailto:{customer.email}">{customer.email}</a>
+      </p>
+      <p class="text-sm text-muted-foreground">
+        {m.phone()}: <a class="font-semibold" href="tel:{customer.phone}">{customer.phone}</a>
+      </p>
 
-      <p class="">{getCustomerTypeLabel(customer.type)}</p>
-      <p class="mt-1 text-sm text-muted-foreground">{m.vat_no()}: {customer.vat_number}</p>
-      <p class="text-sm text-muted-foreground">{m.email()}: {customer.email}</p>
-      <p class="text-sm text-muted-foreground">{m.phone()}: {customer.phone}</p>
+      <div class="mt-2 flex flex-wrap items-center gap-0.5">
+        <StatusBadge
+          variant={customer.commercial_status === 'active' ? 'active' : 'in-progress'}
+          label={getCustomerCommercialStatusLabel(customer.commercial_status)} />
+
+        {#if customer.tags.length > 0}
+          <CustomerTagBadges tags={customer.tags} />
+        {/if}
+      </div>
     </div>
 
     <SubpageMenuGroup name={pageMenu.name} items={pageMenu.items} />

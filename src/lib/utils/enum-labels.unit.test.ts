@@ -40,6 +40,26 @@ const mockModule = vi.hoisted(() => {
 		'enum_zone_type_quarantine', 'enum_zone_type_production',
 		'enum_bin_location_type_shelf', 'enum_bin_location_type_floor', 'enum_bin_location_type_cell',
 		'enum_bin_location_type_picking', 'enum_bin_location_type_bulk',
+		'enum_supplier_type_courier',
+		'enum_supplier_status_suspended', 'enum_supplier_status_ceased',
+		'enum_item_category_finished_good', 'enum_item_category_raw_material',
+		'enum_item_category_semi_finished', 'enum_item_category_component',
+		'enum_item_category_phantom', 'enum_item_category_packaging',
+		'enum_item_category_subcontract', 'enum_item_category_service_expense',
+		'enum_item_category_kit',
+		'enum_item_status_active', 'enum_item_status_inactive', 'enum_item_status_obsolete',
+		'enum_abc_class_A', 'enum_abc_class_B', 'enum_abc_class_C', 'enum_abc_class_D',
+		'enum_uom_PZ', 'enum_uom_KG', 'enum_uom_G', 'enum_uom_T', 'enum_uom_LT',
+		'enum_uom_ML', 'enum_uom_M', 'enum_uom_CM', 'enum_uom_MM', 'enum_uom_M2',
+		'enum_uom_M3', 'enum_uom_SET', 'enum_uom_BOX', 'enum_uom_PAL', 'enum_uom_ROL',
+		'enum_uom_FOG', 'enum_uom_PR', 'enum_uom_CF', 'enum_uom_H', 'enum_uom_NR',
+		'enum_weight_unit_KG', 'enum_weight_unit_G', 'enum_weight_unit_LB',
+		'enum_weight_unit_OZ', 'enum_weight_unit_T',
+		'enum_dimension_unit_MM', 'enum_dimension_unit_CM', 'enum_dimension_unit_M',
+		'enum_dimension_unit_IN', 'enum_dimension_unit_FT',
+		'enum_quotation_status_draft', 'enum_quotation_status_active',
+		'enum_quotation_status_approved', 'enum_quotation_status_rejected',
+		'enum_quotation_status_superseded',
 	]
 	return Object.fromEntries(keys.map((k) => [k, () => k]))
 })
@@ -56,8 +76,8 @@ import {
 	getSalesShippedVariant,
 	getCustomerTypeLabel,
 	getCustomerTypeVariant,
-	getCustomerStatusLabel,
-	getCustomerStatusVariant,
+	getCustomerCommercialStatusLabel,
+	getCustomerCommercialStatusVariant,
 	getAddressTypeLabel,
 	getContactTypeLabel,
 } from './enum-labels'
@@ -161,20 +181,19 @@ describe('customer type helpers', () => {
 	})
 })
 
-describe('customer status helpers', () => {
+describe('customer commercial status helpers', () => {
 	it('returns label for known status', () => {
-		expect(getCustomerStatusLabel('active')).toBe('enum_customer_status_active')
+		expect(getCustomerCommercialStatusLabel('active')).toBe('enum_customer_status_active')
 	})
 
 	it('falls back for unknown status', () => {
 		// @ts-expect-error testing invalid input
-		expect(getCustomerStatusLabel('nonexistent')).toBe('nonexistent')
+		expect(getCustomerCommercialStatusLabel('nonexistent')).toBe('nonexistent')
 	})
 
 	it('returns correct variants', () => {
-		expect(getCustomerStatusVariant('active')).toBe('default')
-		expect(getCustomerStatusVariant('suspended')).toBe('outline')
-		expect(getCustomerStatusVariant('prospect')).toBe('secondary')
+		expect(getCustomerCommercialStatusVariant('active')).toBe('default')
+		expect(getCustomerCommercialStatusVariant('prospect')).toBe('secondary')
 	})
 })
 

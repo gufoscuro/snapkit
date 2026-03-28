@@ -8,6 +8,7 @@
 
   const props: PageProps = $props()
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function onAgentMessage(message: string) {
     await refreshAdminConfig()
     toast.success(m.configuration_updated())

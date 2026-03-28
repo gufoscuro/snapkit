@@ -9,17 +9,18 @@
 </script>
 
 <script lang="ts">
+  import CustomerTagBadges from '$components/features/customers/CustomerTagBadges.svelte'
+
   import Skeleton from '$components/ui/skeleton/skeleton.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages'
   import type { MenuItem } from '$lib/stores/tenant-config/types'
   import type { Supplier } from '$lib/types/api-types.js'
-  import { getSupplierTypeLabel } from '$lib/utils/enum-labels'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
-  import { SupplierSidebarContract } from './SupplierSidebar.contract.js'
   import SubpageMenuGroup from './SubpageMenuGroup.svelte'
   import SubpageSidebarBase from './SubpageSidebarBase.svelte'
+  import { SupplierSidebarContract } from './SupplierSidebar.contract.js'
 
   const props: SnippetProps = $props()
 
@@ -77,10 +78,16 @@
         {supplier.name}
       </h2>
 
-      <p class="">{getSupplierTypeLabel(supplier.type)}</p>
+      <!-- <p class="">{getSupplierTypeLabel(supplier.type)}</p> -->
       <p class="mt-1 text-sm text-muted-foreground">{m.vat_no()}: {supplier.vat_number}</p>
-      <p class="text-sm text-muted-foreground">{m.email()}: {supplier.email}</p>
-      <p class="text-sm text-muted-foreground">{m.phone()}: {supplier.phone}</p>
+      <p class="text-sm text-muted-foreground">{m.email()}: <a href="mailto:{supplier.email}">{supplier.email}</a></p>
+      <p class="text-sm text-muted-foreground">{m.phone()}: <a href="tel:{supplier.phone}">{supplier.phone}</a></p>
+
+      <div class="mt-2 flex flex-wrap items-center gap-0.5">
+        {#if supplier.tags.length > 0}
+          <CustomerTagBadges tags={supplier.tags} />
+        {/if}
+      </div>
     </div>
 
     <SubpageMenuGroup name={pageMenu.name} items={pageMenu.items} />

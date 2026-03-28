@@ -20,7 +20,8 @@
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { Supplier } from '$lib/types/api-types'
-  import { getSupplierStatusLabel, getSupplierTypeLabel } from '$lib/utils/enum-labels'
+  import { getSupplierTypeLabel } from '$lib/utils/enum-labels'
+  import SupplierTagBadges from '$lib/components/features/suppliers/SupplierTagBadges.svelte'
   import type { FilterQuery } from '$lib/utils/filters'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
@@ -67,17 +68,11 @@
       },
     },
     {
-      accessorKey: 'status',
-      header: m.status(),
-      renderer: 'status',
+      accessorKey: 'tags',
+      header: '',
+      renderer: 'badges',
       rendererConfig: {
-        variantMapper: (status: Supplier['status']) => {
-          if (status === 'active') return 'active'
-          if (status === 'prospect') return 'in-progress'
-          if (status === 'suspended') return 'paused'
-          return 'neutral'
-        },
-        labelMapper: (status: Supplier['status']) => getSupplierStatusLabel(status),
+        component: SupplierTagBadges,
       },
     },
     {

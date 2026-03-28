@@ -12,11 +12,15 @@ import type {
   CustomerContact,
   DimensionUnit,
   EmployeeCountRange,
+  Incoterm,
   Item,
   ItemCategory,
   ItemStatus,
   LegalEntityWarehouse,
+  Quotation,
+  QuotationStatus,
   SalesOrderSummary,
+  SalesTransactionType,
   Supplier,
   SupplierAddress,
   SupplierContact,
@@ -102,19 +106,30 @@ export function getCustomerTypeVariant(type: Customer['type']): BadgeVariant {
 }
 
 // Customer Status
-export const customerStatusConfig: Record<Customer['status'], EnumDisplayConfig> = {
+export const customerCommercialStatusConfig: Record<Customer['commercial_status'], EnumDisplayConfig> = {
   active: { label: m.enum_customer_status_active, variant: 'default' },
-  suspended: { label: m.enum_customer_status_suspended, variant: 'outline' },
-  ceased: { label: m.enum_customer_status_ceased, variant: 'secondary' },
   prospect: { label: m.enum_customer_status_prospect, variant: 'secondary' },
 }
 
-export function getCustomerStatusLabel(status: Customer['status']): string {
-  return customerStatusConfig[status]?.label() ?? status
+export function getCustomerCommercialStatusLabel(status: Customer['commercial_status']): string {
+  return customerCommercialStatusConfig[status]?.label() ?? status
 }
 
-export function getCustomerStatusVariant(status: Customer['status']): BadgeVariant {
-  return customerStatusConfig[status]?.variant ?? 'default'
+export function getCustomerCommercialStatusVariant(status: Customer['commercial_status']): BadgeVariant {
+  return customerCommercialStatusConfig[status]?.variant ?? 'default'
+}
+
+export const customerTagConfig: Record<Customer['tags'][number], EnumDisplayConfig> = {
+  suspended: { label: m.enum_customer_status_suspended, variant: 'outline' },
+  ceased: { label: m.enum_customer_status_ceased, variant: 'secondary' },
+}
+
+export function getCustomerTagLabel(tag: Customer['tags'][number]): string {
+  return customerTagConfig[tag]?.label() ?? tag
+}
+
+export function getCustomerTagVariant(tag: Customer['tags'][number]): BadgeVariant {
+  return customerTagConfig[tag]?.variant ?? 'default'
 }
 
 // Address Type
@@ -309,19 +324,17 @@ export function getSupplierTypeVariant(type: Supplier['type']): BadgeVariant {
 }
 
 // Supplier Status
-export const supplierStatusConfig: Record<Supplier['status'], EnumDisplayConfig> = {
-  active: { label: m.enum_supplier_status_active, variant: 'default' },
+export const supplierTagConfig: Record<Supplier['tags'][number], EnumDisplayConfig> = {
   suspended: { label: m.enum_supplier_status_suspended, variant: 'outline' },
   ceased: { label: m.enum_supplier_status_ceased, variant: 'secondary' },
-  prospect: { label: m.enum_supplier_status_prospect, variant: 'secondary' },
 }
 
-export function getSupplierStatusLabel(status: Supplier['status']): string {
-  return supplierStatusConfig[status]?.label() ?? status
+export function getSupplierTagLabel(tag: Supplier['tags'][number]): string {
+  return supplierTagConfig[tag]?.label() ?? tag
 }
 
-export function getSupplierStatusVariant(status: Supplier['status']): BadgeVariant {
-  return supplierStatusConfig[status]?.variant ?? 'default'
+export function getSupplierTagVariant(tag: Supplier['tags'][number]): BadgeVariant {
+  return supplierTagConfig[tag]?.variant ?? 'default'
 }
 
 // Supplier Address Type (reuses same address types as customer)
@@ -442,4 +455,54 @@ export const dimensionUnitLabels: EnumLabelMap<DimensionUnit> = {
   M: m.enum_dimension_unit_M,
   IN: m.enum_dimension_unit_IN,
   FT: m.enum_dimension_unit_FT,
+}
+
+// Quotation Status
+export const quotationStatusConfig: Record<QuotationStatus, EnumDisplayConfig> = {
+  draft: { label: m.enum_quotation_status_draft, variant: 'secondary' },
+  active: { label: m.enum_quotation_status_active, variant: 'default' },
+  approved: { label: m.enum_quotation_status_approved, variant: 'default' },
+  rejected: { label: m.enum_quotation_status_rejected, variant: 'destructive' },
+  superseded: { label: m.enum_quotation_status_superseded, variant: 'outline' },
+}
+
+export function getQuotationStatusLabel(status: Quotation['status']): string {
+  return quotationStatusConfig[status]?.label() ?? status
+}
+
+export function getQuotationStatusVariant(status: Quotation['status']): BadgeVariant {
+  return quotationStatusConfig[status]?.variant ?? 'default'
+}
+
+// Incoterm Labels
+export const incotermLabels: EnumLabelMap<Incoterm> = {
+  EXW: () => 'EXW - Ex Works',
+  FCA: () => 'FCA - Free Carrier',
+  FAS: () => 'FAS - Free Alongside Ship',
+  FOB: () => 'FOB - Free on Board',
+  CFR: () => 'CFR - Cost and Freight',
+  CIF: () => 'CIF - Cost, Insurance and Freight',
+  CPT: () => 'CPT - Carriage Paid To',
+  CIP: () => 'CIP - Carriage and Insurance Paid To',
+  DAP: () => 'DAP - Delivered at Place',
+  DPU: () => 'DPU - Delivered at Place Unloaded',
+  DDP: () => 'DDP - Delivered Duty Paid',
+}
+
+// Sales Transaction Type Labels
+export const salesTransactionTypeLabels: EnumLabelMap<SalesTransactionType> = {
+  'VEN': () => 'VEN - Vendita',
+  'VEN-EXP': () => 'VEN-EXP - Vendita Export',
+  'VEN-UE': () => 'VEN-UE - Vendita UE',
+  'VEN-TRI': () => 'VEN-TRI - Vendita Triangolazione',
+  'C/VIS': () => 'C/VIS - Conto Visione',
+  'C/VIS-RES': () => 'C/VIS-RES - Reso Conto Visione',
+  'C/LAV': () => 'C/LAV - Conto Lavoro',
+  'C/LAV-RES': () => 'C/LAV-RES - Reso Conto Lavoro',
+  'RES': () => 'RES - Reso',
+  'OMG': () => 'OMG - Omaggio',
+  'TRASF': () => 'TRASF - Trasferimento',
+  'RIP': () => 'RIP - Riparazione',
+  'RIP-RES': () => 'RIP-RES - Reso Riparazione',
+  'CAMP': () => 'CAMP - Campionatura',
 }
