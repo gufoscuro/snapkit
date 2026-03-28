@@ -121,11 +121,11 @@ export const EntityDetailsContract = {
     getDetailRoute: (record) => createRoute({ $id: 'entity-details', params: { uuid: record.id } }),
     onFetched: (data) => {
       entityHandle.set(data)
-      breadcrumbTitle.set(data.name)
+      breadcrumbTitle.setLabel(pageDetails.config.$id, data.name)
     },
     cleanup: () => {
       entityHandle.unset()
-      breadcrumbTitle.clear()
+      breadcrumbTitle.clearLabel(pageDetails.config.$id)
     },
     extraSubmitData: { custom_fields: {} },  // ← include if entity supports custom fields
   })
@@ -386,7 +386,7 @@ Before considering the component complete:
 - [ ] `validateUpdate` contains only format/business rules
 - [ ] `resourceConfig` passed to `FormUtil`
 - [ ] `useProvides` + contract in place (if siblings need the record)
-- [ ] `breadcrumbTitle.set(data.name)` in `onFetched` (for detail pages)
+- [ ] `breadcrumbTitle.setLabel(pageDetails.config.$id, data.name)` in `onFetched` (for detail pages)
 - [ ] All labels use `m.*()` i18n keys — add missing keys to both `en.json` and `it.json`
 - [ ] Mock data file created (`<Entity>Details.mock.ts`)
 - [ ] Barrel export file created (`index.ts`)

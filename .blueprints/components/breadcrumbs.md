@@ -6,14 +6,14 @@ Dynamic breadcrumbs built from the page hierarchy configuration, rendered in the
 
 `Breadcrumbs.svelte` reads `entityConfig.dashboard.pages` (the full page tree), finds the path from the root to the current page (`pageDetails.config.$id`), and renders one crumb per level.
 
-- **Ancestor pages** (all but the last) → clickable `Breadcrumb.Link`, URL built with `createRoute({ $id })`
-- **Current page** (last) → non-clickable `Breadcrumb.Page`, label from `getI18nLabel(page.title)` **or** a record title override (see below)
+For **every** crumb (both ancestors and current page), the label is resolved as:
 
-The crumbs are only shown when the page is found in the hierarchy (even root pages with no ancestors show a single crumb).
+1. `breadcrumbLabels[page.$id]` — a custom label set via `setLabel(pageId, label)`
+2. `getI18nLabel(page.title)` — the default i18n page title
 
-## Record Title Override
+This means any crumb in the chain can display a dynamic label (e.g. entity name) instead of the generic page title.
 
-By default the last crumb shows the page title (e.g. `customer_details`). Detail components can override it to show the actual record name (e.g. `Acme Inc.`).
+## Setting Breadcrumb Labels
 
 ### Utility: `useBreadcrumbTitle`
 
@@ -22,63 +22,108 @@ By default the last crumb shows the page title (e.g. `customer_details`). Detail
 import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
 ```
 
-Returns `{ set(title: string), clear() }`. Must be called **synchronously during component initialisation** (like `useProvides`), because it calls `getContext` internally. The returned handles are then safe to use anywhere, including inside async functions.
+Must be called **synchronously during component initialisation** (like `useProvides`), because it calls `getContext` internally. The returned handles are safe to use anywhere, including inside async functions.
 
-### Implementing It in a Detail Component
+### API
+
+| Method | Description |
+|--------|-------------|
+| `setLabel(pageId, label)` | Set label for a page by its `$id` |
+| `clearLabel(pageId)` | Clear label for a specific page |
+
+### Setting the Current Page Label (Config-Driven Detail Components)
+
+Use `setLabel` with `pageDetails.config.$id`:
 
 ```svelte
 <script lang="ts">
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import { onMount } from 'svelte'
+  import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
+  import type { SnippetProps } from '$utils/runtime'
 
-  // ✅ Called synchronously at init — getContext works here
+  let { pageDetails, legalEntity }: SnippetProps = $props()
   const breadcrumbTitle = useBreadcrumbTitle()
 
-  async function fetchRecord() {
-    const { data } = await safeApiRequest({ ... })
-    if (data) {
-      // ✅ Safe to call inside async — uses the handle captured above
-      breadcrumbTitle.set(data.name)
-    }
-  }
-
-  onMount(() => {
-    fetchRecord()
-
-    return () => {
-      // Clean up when the component unmounts
-      breadcrumbTitle.clear()
-    }
+  const detail = useDetailRecord<Customer>({
+    // ...
+    onFetched: data => {
+      breadcrumbTitle.setLabel(pageDetails.config.$id, data.name)
+    },
+    cleanup: () => {
+      breadcrumbTitle.clearLabel(pageDetails.config.$id)
+    },
   })
 </script>
 ```
 
-> **Important:** Do **not** call `useBreadcrumbTitle()` inside an async function or a callback. The returned `set`/`clear` handles can be called anywhere, but `useBreadcrumbTitle()` itself must run at component init time.
+### Setting the Current Page Label (Settings Detail Components)
 
-### What the User Sees
+Settings components receive `pageId` as a prop from their `+page.svelte`:
 
-| Situation | Last crumb |
-|-----------|------------|
-| Page loaded, fetch pending | `customer_details` (i18n title) |
-| Fetch resolved | `Acme Inc.` (record name) |
-| Component unmounted (navigated away) | title cleared, next page shows its own crumb |
+```svelte
+<script lang="ts">
+  let { legalEntity, uuid, pageId }: { ...; pageId?: string } = $props()
+  const breadcrumbTitle = useBreadcrumbTitle()
+
+  const detail = useDetailRecord<Entity>({
+    // ...
+    onFetched: data => {
+      if (pageId) breadcrumbTitle.setLabel(pageId, data.name)
+    },
+    cleanup: () => {
+      if (pageId) breadcrumbTitle.clearLabel(pageId)
+    },
+  })
+</script>
+```
+
+### Setting a Parent Page Label (Sub-Page Components)
+
+Use `setLabel(pageId, label)` to set a label for an ancestor crumb. This is used by sub-page components (tables and detail forms) that fetch the parent entity:
+
+```svelte
+<script lang="ts">
+  import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
+  import { onDestroy, onMount } from 'svelte'
+
+  const breadcrumbTitle = useBreadcrumbTitle()
+
+  onMount(async () => {
+    const supplier = await api.get<Supplier>(...)
+    breadcrumbTitle.setLabel('supplier-details', supplier.name)
+  })
+
+  onDestroy(() => {
+    breadcrumbTitle.clearLabel('supplier-details')
+  })
+</script>
+```
+
+This ensures that when viewing e.g. supplier addresses, the breadcrumb shows:
+`Fornitori > Express Logistics S.r.l. > Indirizzi`
+instead of:
+`Fornitori > Dettagli fornitore > Indirizzi`
+
+> **Important:** Do **not** call `useBreadcrumbTitle()` inside an async function or a callback. The returned handles can be called anywhere, but `useBreadcrumbTitle()` itself must run at component init time.
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/lib/components/features/globals/Breadcrumbs.svelte` | Renders the breadcrumb bar; reads page hierarchy and record title override |
-| `src/lib/utils/breadcrumb-title.ts` | `useBreadcrumbTitle()` factory — bridges detail components and the breadcrumb bar via page state |
+| `src/lib/components/features/globals/Breadcrumbs.svelte` | Renders the breadcrumb bar; reads page hierarchy and label overrides |
+| `src/lib/utils/breadcrumb-title.ts` | `useBreadcrumbTitle()` factory — bridges components and the breadcrumb bar via page state |
 | `src/lib/components/features/layouts/LeftSidebar.svelte` | Mounts `Breadcrumbs` as fallback for the `header` snippet slot |
 
-## Architecture Note
+## Architecture
 
-The record title is stored in the shared `PageState` under the reserved key `__breadcrumb_title`. Both `Breadcrumbs` and the detail component live under the same `+page.svelte` that calls `initPageState()`, so they share the same reactive registry. When a detail component calls `breadcrumbTitle.set(...)`, `Breadcrumbs` updates automatically because it reads from `$derived(pageState.get('__breadcrumb_title'))`.
+Labels are stored in the shared `PageState` under the reserved key `__breadcrumb_labels` as a `Record<string, string>` map (page `$id` → label).
 
 ```
 +page.svelte  ──  initPageState()
     │
-    ├── Breadcrumbs.svelte           reads  __breadcrumb_title  (reactive)
+    ├── Breadcrumbs.svelte              reads  __breadcrumb_labels  (reactive)
     │
-    └── CustomerDetails.svelte       writes __breadcrumb_title  via useBreadcrumbTitle()
+    ├── SupplierDetails.svelte          writes __breadcrumb_labels['supplier-details']  via setLabel()
+    │
+    └── SupplierAddressesTable.svelte   writes __breadcrumb_labels['supplier-details']  via setLabel()
 ```

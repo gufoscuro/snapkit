@@ -199,12 +199,14 @@ The detail page gets the `uuid` from SvelteKit route params, not from `pageDetai
   import * as m from '$lib/paraglide/messages'
   import type { PageProps } from './$types'
 
+  const PAGE_ID = 'settings-entity-details'
+
   const { data }: PageProps = $props()
   const pageState = getPageState()
 
   const uuid = $derived(page.params.uuid)
-  const recordTitle = $derived(pageState.get<string>('__breadcrumb_title'))
-  const breadcrumbLabel = $derived(recordTitle ?? m.new_entity())
+  const breadcrumbLabels = $derived(pageState.get<Record<string, string>>('__breadcrumb_labels') ?? {})
+  const breadcrumbLabel = $derived(breadcrumbLabels[PAGE_ID] ?? m.new_entity())
 </script>
 
 <!-- Header with breadcrumbs (hardcoded, not dynamic) -->
@@ -214,7 +216,7 @@ The detail page gets the `uuid` from SvelteKit route params, not from `pageDetai
 </header>
 
 <div class="flex flex-1 flex-col gap-4 p-4">
-  <EntityDetails legalEntity={data.legalEntity} {uuid} />
+  <EntityDetails legalEntity={data.legalEntity} {uuid} pageId={PAGE_ID} />
 </div>
 ```
 
@@ -259,8 +261,8 @@ const detail = useDetailRecord<Entity>({
   create: (data) => api.post(`/legal-entities/${legalEntityId}/entities`, { data }),
   update: (id, data) => api.put(`/legal-entities/${legalEntityId}/entities/${id}`, { data }),
   getDetailRoute: (record) => `/settings/entity-name/upsert/${record.id}`,
-  onFetched: (data) => { breadcrumbTitle.set(data.name) },
-  cleanup: () => { breadcrumbTitle.clear() },
+  onFetched: (data) => { if (pageId) breadcrumbTitle.setLabel(pageId, data.name) },
+  cleanup: () => { if (pageId) breadcrumbTitle.clearLabel(pageId) },
 })
 
 const { handleSubmit, handleSuccess, handleFailure } = detail
@@ -280,19 +282,26 @@ If the detail form is the only component on the page, **skip the contract and `u
 
 Fixed pages define breadcrumbs **directly in the page template** with hardcoded links. They do not use the `Breadcrumbs.svelte` component (which relies on `entityConfig.dashboard.pages` to build the trail).
 
-For detail pages, use `useBreadcrumbTitle()` in the component and read the title via `pageState.get('__breadcrumb_title')` in the page:
+For detail pages, define a `PAGE_ID`, read the label from the `__breadcrumb_labels` map in page state, and pass `pageId` to the detail component. The component calls `breadcrumbTitle.setLabel(pageId, data.name)` on fetch:
 
 ```svelte
 <!-- In the page -->
 <script>
+  import { getPageState } from '$lib/contexts/page-state'
+
+  const PAGE_ID = 'settings-entity-details'
   const pageState = getPageState()
-  const recordTitle = $derived(pageState.get<string>('__breadcrumb_title'))
-  const breadcrumbLabel = $derived(recordTitle ?? m.new_entity())
+
+  const breadcrumbLabels = $derived(pageState.get<Record<string, string>>('__breadcrumb_labels') ?? {})
+  const breadcrumbLabel = $derived(breadcrumbLabels[PAGE_ID] ?? m.new_entity())
 </script>
 
 <Breadcrumb.Link href="/settings/entities">{m.entities()}</Breadcrumb.Link>
 <Breadcrumb.Separator />
 <Breadcrumb.Page>{breadcrumbLabel}</Breadcrumb.Page>
+
+<!-- Pass pageId to the detail component -->
+<EntityDetails legalEntity={data.legalEntity} {uuid} pageId={PAGE_ID} />
 ```
 
 ---
