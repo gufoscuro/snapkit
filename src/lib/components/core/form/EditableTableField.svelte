@@ -173,6 +173,9 @@
       onItemsChange?.(completedItems)
 
       if (form) {
+        // Update lastSyncedJson BEFORE writing to the form so the
+        // sync-from-form $effect recognises this as a self-write and skips it.
+        lastSyncedJson = JSON.stringify(output)
         form.updateField(name, output)
         if (error) form.validateField(name)
       }
