@@ -48,7 +48,7 @@ snapkit-content/
 
 ### Testing
 
-- **strategy.md**: Complete testing guide covering Vitest project configuration, file naming conventions, mocking patterns (SvelteKit modules, i18n, fetch, Svelte components), testing reactive code with `flushSync`, component testing with `@testing-library/svelte`, and what to test vs what not to test
+- **strategy.md**: Complete testing guide covering Vitest project configuration, file naming conventions, mocking patterns (SvelteKit modules, i18n, fetch, Svelte components), testing reactive code with `flushSync`, component testing with `@testing-library/svelte`, and what to test vs what not to test.
 
 ### API
 
