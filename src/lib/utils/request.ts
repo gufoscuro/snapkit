@@ -49,11 +49,18 @@ function getParentPath(path: string): string | null {
 
 export function invalidateCacheByBasePath(url: string): void {
   const basePath = getBaseUrl(url)
-  const parentPath = getParentPath(basePath)
+
+  // Collect the mutation path and all ancestor paths.
+  // e.g. PUT /foo/bar/123/flags → invalidates /foo/bar/123/flags, /foo/bar/123, /foo/bar
+  const pathsToInvalidate = new Set<string>()
+  let current: string | null = basePath
+  while (current) {
+    pathsToInvalidate.add(current)
+    current = getParentPath(current)
+  }
 
   for (const key of apiCache.keys()) {
-    const keyBase = getBaseUrl(key)
-    if (keyBase === basePath || keyBase === parentPath) {
+    if (pathsToInvalidate.has(getBaseUrl(key))) {
       apiCache.delete(key)
     }
   }
