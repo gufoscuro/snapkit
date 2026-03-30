@@ -23,7 +23,9 @@
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
+  import { createSupplierFlagActions, type SupplierFlagOptions } from '$components/features/suppliers/supplier-actions'
   import Separator from '$components/ui/separator/separator.svelte'
+  import { RecordActionMenu } from '$lib/components/ui/record-action-menu'
   import { useProvides } from '$lib/contexts/page-state'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
@@ -58,12 +60,10 @@
     update: (id, data) => api.put(`/legal-entities/${legalEntityId}/suppliers/${id}`, { data }),
     getDetailRoute: record => createRoute({ $id: 'supplier-details', params: { uuid: record.id } }),
     onFetched: data => {
-      console.log('onFetched')
       supplierHandle.set(data)
       breadcrumbTitle.setLabel(pageDetails.config.$id, data.name)
     },
     cleanup: () => {
-      console.log('onCleanup')
       supplierHandle.unset()
       breadcrumbTitle.clearLabel(pageDetails.config.$id)
     },
@@ -72,6 +72,20 @@
   const { handleSubmit, handleSuccess, handleFailure } = detail
   const record = $derived(detail.record)
   const promise = $derived(detail.promise)
+
+  const flagActions = $derived(
+    legalEntityId ? createSupplierFlagActions({ legalEntityId, onSuccess: detail.refetch }) : [],
+  )
+  const actionOptions = $derived.by((): SupplierFlagOptions | null => {
+    if (!record) return null
+    return {
+      targetId: record.id,
+      name: record.name,
+      version: record.version,
+      suspendedAt: record.suspended_at || null,
+      ceasedAt: record.ceased_at || null,
+    }
+  })
 
   const initialValues = $derived.by(() => ({
     type: 'courier' as const,
@@ -239,7 +253,11 @@
       {/snippet}
 
       {#snippet bottom()}
-        <div class="fixed right-0 bottom-0 flex h-14 w-full items-center justify-end px-4">
+        <div class="fixed right-0 bottom-0 flex h-14 w-full items-center justify-end gap-2 px-4">
+          {#if actionOptions}
+            <RecordActionMenu buttonVariant="outline" actions={flagActions} {actionOptions} />
+          {/if}
+
           <BusyButton type="submit">{m.save_changes()}</BusyButton>
         </div>
       {/snippet}

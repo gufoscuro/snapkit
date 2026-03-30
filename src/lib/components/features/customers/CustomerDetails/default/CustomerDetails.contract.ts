@@ -78,6 +78,16 @@ const CurrencySchema = Type.Union([
   Type.Literal('SAR'),
 ])
 
+const CustomerCommercialStatusSchema = Type.Union([
+  Type.Literal('active'),
+  Type.Literal('prospect'),
+])
+
+const CustomerTagSchema = Type.Union([
+  Type.Literal('suspended'),
+  Type.Literal('ceased'),
+])
+
 export const CustomerDataSchema = Type.Object({
   id: Type.String(),
   type: Type.Union([
@@ -87,13 +97,8 @@ export const CustomerDataSchema = Type.Object({
     Type.Literal('consortium'),
     Type.Literal('association'),
   ]),
-  status: Type.Union([
-    Type.Literal('active'),
-    Type.Literal('suspended'),
-    Type.Literal('blocked'),
-    Type.Literal('ceased'),
-    Type.Literal('prospect'),
-  ]),
+  commercial_status: CustomerCommercialStatusSchema,
+  tags: Type.Array(CustomerTagSchema),
   name: Type.String(),
   last_name: Type.String(),
   trade_name: Type.String(),
@@ -117,6 +122,8 @@ export const CustomerDataSchema = Type.Object({
   website: Type.String(),
   notes: Type.String(),
   custom_fields: Type.Record(Type.String(), Type.Unknown()),
+  suspended_at: Type.String(),
+  ceased_at: Type.String(),
   version: Type.Number(),
 })
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { afterNavigate, onNavigate } from '$app/navigation'
   import DevtoolsPanel from '$lib/components/runtime/devtools/DevtoolsPanel.svelte'
+  import ConfirmActionDialog from '$lib/components/ui/confirm-action-dialog/confirm-action-dialog.svelte'
   import ConfirmArchiveDialog from '$lib/components/ui/confirm-archive-dialog/confirm-archive-dialog.svelte'
   import { Toaster } from '$lib/components/ui/sonner'
   import { initLanguageContext } from '$lib/contexts/language'
@@ -68,4 +69,5 @@
 
 <Toaster position="top-right" swipeDirections={['right']} />
 <ConfirmArchiveDialog />
+<ConfirmActionDialog />
 <DevtoolsPanel />

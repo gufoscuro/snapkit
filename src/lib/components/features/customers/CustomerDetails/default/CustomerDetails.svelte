@@ -21,8 +21,10 @@
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
+  import { createCustomerFlagActions, type CustomerFlagOptions } from '$components/features/customers/customer-actions'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
   import Separator from '$components/ui/separator/separator.svelte'
+  import { RecordActionMenu } from '$lib/components/ui/record-action-menu'
   import { useProvides } from '$lib/contexts/page-state'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
@@ -70,6 +72,18 @@
   const { handleSubmit, handleSuccess, handleFailure } = detail
   const record = $derived(detail.record)
   const promise = $derived(detail.promise)
+
+  const flagActions = $derived(legalEntityId ? createCustomerFlagActions({ legalEntityId, onSuccess: detail.refetch }) : [])
+  const actionOptions = $derived.by((): CustomerFlagOptions | null => {
+    if (!record) return null
+    return {
+      targetId: record.id,
+      name: record.name,
+      version: record.version,
+      suspendedAt: record.suspended_at || null,
+      ceasedAt: record.ceased_at || null,
+    }
+  })
 
   const initialValues = $derived.by(() => ({
     type: 'company' as const,
@@ -256,7 +270,11 @@
       {/snippet}
 
       {#snippet bottom()}
-        <div class="fixed right-0 bottom-0 flex h-14 w-full items-center justify-end px-4">
+        <div class="fixed right-0 bottom-0 flex h-14 w-full items-center justify-end gap-2 px-4">
+          {#if actionOptions}
+            <RecordActionMenu buttonVariant="outline" actions={flagActions} {actionOptions} />
+          {/if}
+
           <BusyButton type="submit">{m.save_changes()}</BusyButton>
         </div>
       {/snippet}

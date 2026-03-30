@@ -70,17 +70,17 @@ const CurrencySchema = Type.Union([
   Type.Literal('SAR'),
 ])
 
+const SupplierTagSchema = Type.Union([
+  Type.Literal('suspended'),
+  Type.Literal('ceased'),
+])
+
 export const SupplierDataSchema = Type.Object({
   id: Type.String(),
   type: Type.Union([
     Type.Literal('courier'),
   ]),
-  status: Type.Union([
-    Type.Literal('active'),
-    Type.Literal('suspended'),
-    Type.Literal('ceased'),
-    Type.Literal('prospect'),
-  ]),
+  tags: Type.Array(SupplierTagSchema),
   name: Type.String(),
   trade_name: Type.String(),
   ateco_code: Type.Union([AtecoCodeSchema, Type.Null()]),
@@ -99,6 +99,8 @@ export const SupplierDataSchema = Type.Object({
   website: Type.String(),
   notes: Type.String(),
   custom_fields: Type.Record(Type.String(), Type.Unknown()),
+  suspended_at: Type.String(),
+  ceased_at: Type.String(),
   version: Type.Number(),
 })
 

@@ -137,5 +137,6 @@ export function useDetailRecord<T extends { id: string }>(options: DetailRecordO
     handleSubmit,
     handleSuccess,
     handleFailure,
+    refetch: fetchRecord,
   }
 }
