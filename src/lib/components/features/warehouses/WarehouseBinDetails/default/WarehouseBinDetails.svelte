@@ -30,7 +30,8 @@
     zoneId,
     bid,
     pageId,
-  }: { legalEntity?: LegalEntity | null; warehouseId?: string; zoneId?: string; bid?: string; pageId?: string } = $props()
+  }: { legalEntity?: LegalEntity | null; warehouseId?: string; zoneId?: string; bid?: string; pageId?: string } =
+    $props()
 
   const legalEntityId = $derived(legalEntity?.id)
   const breadcrumbTitle = useBreadcrumbTitle()
@@ -39,20 +40,16 @@
 
   const detail = useDetailRecord<WarehouseBin>({
     getUuid: () => bid,
-    fetch: (id) =>
+    fetch: id =>
       api.safe.get<WarehouseBin>(
         `/legal-entities/${legalEntityId}/warehouses/${warehouseId}/zones/${zoneId}/bins/${id}`,
       ),
-    create: (data) =>
+    create: data =>
       api.post(`/legal-entities/${legalEntityId}/warehouses/${warehouseId}/zones/${zoneId}/bins`, { data }),
     update: (id, data) =>
-      api.put(
-        `/legal-entities/${legalEntityId}/warehouses/${warehouseId}/zones/${zoneId}/bins/${id}`,
-        { data },
-      ),
-    getDetailRoute: (record) =>
-      `/settings/warehouses/upsert/${warehouseId}/zones/${zoneId}/bins/upsert/${record.id}`,
-    onFetched: (data) => {
+      api.put(`/legal-entities/${legalEntityId}/warehouses/${warehouseId}/zones/${zoneId}/bins/${id}`, { data }),
+    getDetailRoute: record => `/settings/warehouses/upsert/${warehouseId}/zones/${zoneId}/bins/upsert/${record.id}`,
+    onUpdated: data => {
       if (pageId) breadcrumbTitle.setLabel(pageId, data.code)
     },
     cleanup: () => {

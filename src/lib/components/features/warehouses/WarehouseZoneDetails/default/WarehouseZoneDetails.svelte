@@ -37,14 +37,12 @@
 
   const detail = useDetailRecord<WarehouseZone>({
     getUuid: () => tid,
-    fetch: (id) =>
-      api.safe.get<WarehouseZone>(`/legal-entities/${legalEntityId}/warehouses/${warehouseId}/zones/${id}`),
-    create: (data) => api.post(`/legal-entities/${legalEntityId}/warehouses/${warehouseId}/zones`, { data }),
-    update: (id, data) =>
-      api.put(`/legal-entities/${legalEntityId}/warehouses/${warehouseId}/zones/${id}`, { data }),
-    getDetailRoute: (record) => `/settings/warehouses/upsert/${warehouseId}/zones/upsert/${record.id}`,
-    onFetched: (data) => {
-      if (pageId) breadcrumbTitle.setLabel(pageId, data.description)
+    fetch: id => api.safe.get<WarehouseZone>(`/legal-entities/${legalEntityId}/warehouses/${warehouseId}/zones/${id}`),
+    create: data => api.post(`/legal-entities/${legalEntityId}/warehouses/${warehouseId}/zones`, { data }),
+    update: (id, data) => api.put(`/legal-entities/${legalEntityId}/warehouses/${warehouseId}/zones/${id}`, { data }),
+    getDetailRoute: record => `/settings/warehouses/upsert/${warehouseId}/zones/upsert/${record.id}`,
+    onUpdated: data => {
+      if (pageId) breadcrumbTitle.setLabel(pageId, data.code)
     },
     cleanup: () => {
       if (pageId) breadcrumbTitle.clearLabel(pageId)
@@ -94,11 +92,7 @@
 
         <TextField name="code" label={m.code()} class={FormFieldClass.MaxWidth} focus={!record} />
         <TextField name="description" label={m.description()} class={FormFieldClass.MaxWidth} />
-        <SelectField
-          name="zone_type"
-          label={m.zone_type()}
-          items={zoneTypeItems}
-          class={FormFieldClass.MinWidth} />
+        <SelectField name="zone_type" label={m.zone_type()} items={zoneTypeItems} class={FormFieldClass.MinWidth} />
 
         <div class="fixed right-0 bottom-0 flex h-14 w-full items-center justify-end px-4">
           <BusyButton type="submit">{m.save_changes()}</BusyButton>

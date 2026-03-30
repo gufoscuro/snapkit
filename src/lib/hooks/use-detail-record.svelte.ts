@@ -31,6 +31,8 @@ export type DetailRecordOptions<T extends { id: string }> = {
   getDetailRoute: (record: T) => string
   /** Called after a successful GET with the retrieved record. */
   onFetched?: (record: T) => void
+  /** Called after a successful GET or an update of the record */
+  onUpdated?: (record: T) => void
   /** Called on component unmount (breadcrumb clear, page-state unset, etc.). */
   cleanup?: () => void
   /** Extra data merged into every submit payload (e.g. `{ custom_fields: {} }`). */
@@ -88,7 +90,10 @@ export function useDetailRecord<T extends { id: string }>(options: DetailRecordO
 
     const { data } = await req
     record = data
-    if (data) options.onFetched?.(data)
+    if (data) {
+      options.onFetched?.(data)
+      options.onUpdated?.(data)
+    }
   }
 
   $effect(() => {
@@ -116,7 +121,10 @@ export function useDetailRecord<T extends { id: string }>(options: DetailRecordO
       return
     }
 
-    if (result) record = result as T
+    if (result) {
+      record = result as T
+      options.onUpdated?.(record)
+    }
   }
 
   function handleFailure(payload: FailurePayload) {

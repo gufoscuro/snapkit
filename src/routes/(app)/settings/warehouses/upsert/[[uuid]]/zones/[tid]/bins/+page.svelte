@@ -26,7 +26,7 @@
   const warehouseName = $derived(getWarehouse?.()?.code ?? m.warehouse())
 
   const getZone = getContext<() => WarehouseZone | null>(ZONE_CONTEXT_KEY)
-  const zoneName = $derived(getZone?.()?.description ?? m.zone())
+  const zoneName = $derived(getZone?.()?.code ?? m.zone())
 
   setSnippetBindings({
     provides: { filters: 'filters' },

@@ -38,7 +38,7 @@
     create: data => api.post(`/legal-entities/${legalEntityId}/warehouses`, { data }),
     update: (id, data) => api.put(`/legal-entities/${legalEntityId}/warehouses/${id}`, { data }),
     getDetailRoute: record => `/settings/warehouses/upsert/${record.id}`,
-    onFetched: data => {
+    onUpdated: data => {
       if (pageId) breadcrumbTitle.setLabel(pageId, data.code)
     },
     cleanup: () => {

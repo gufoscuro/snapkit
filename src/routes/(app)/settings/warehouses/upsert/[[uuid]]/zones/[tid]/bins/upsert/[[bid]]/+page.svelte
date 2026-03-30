@@ -4,8 +4,8 @@
   import { WarehouseBinDetails } from '$lib/components/features/warehouses/WarehouseBinDetails'
   import { getPageState } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages'
-  import { getBreadcrumbLabels } from '$lib/utils/breadcrumb-title'
   import type { LegalEntityWarehouse, WarehouseZone } from '$lib/types/api-types'
+  import { getBreadcrumbLabels } from '$lib/utils/breadcrumb-title'
   import { WAREHOUSE_CONTEXT_KEY, ZONE_CONTEXT_KEY } from '$utils/runtime'
   import { getContext } from 'svelte'
   import type { PageProps } from './$types'
@@ -23,7 +23,7 @@
   const warehouseName = $derived(getWarehouse?.()?.code ?? m.warehouse())
 
   const getZone = getContext<() => WarehouseZone | null>(ZONE_CONTEXT_KEY)
-  const zoneName = $derived(getZone?.()?.description ?? m.zone())
+  const zoneName = $derived(getZone?.()?.code ?? m.zone())
 
   const breadcrumbLabels = $derived(getBreadcrumbLabels(pageState))
   const breadcrumbLabel = $derived(breadcrumbLabels[PAGE_ID] ?? m.new_bin())
