@@ -3,12 +3,13 @@
   import Label from '$components/ui/label/label.svelte'
   import { type FilterQuery, type MinimalFilterQuery } from '$utils/filters'
   import type { ExtendedOption } from '$utils/generics'
-  import { EntitySelectorDefaults, FormFieldClass, FormLabelClass, type EntitySelectorProps } from './form'
+  import { EntitySelectorDefaults, FormLabelClass, type EntitySelectorProps } from './form'
   import { getFormContextOptional } from './form-context'
   import FormFieldMessages from './FormFieldMessages.svelte'
   import FormFieldSkeleton from './FormFieldSkeleton.svelte'
   import MultiSelect from './multiselect/MultiSelect.svelte'
   import ReadOnlyMultiselect from './multiselect/ReadOnlyMultiselect.svelte'
+  import type { Component } from 'svelte'
 
   type Props = Omit<EntitySelectorProps, 'name'> & {
     /** Campo name per form e identificazione - richiesto */
@@ -17,6 +18,8 @@
     emptyText?: string
     newRecordText?: string
     allowClear?: boolean
+    /** Custom renderer for dropdown items */
+    itemRendererComponent?: Component<{ option: ExtendedOption }>
     onChoose?: (item: T) => void
     onChange?: (item: ExtendedOption | undefined) => void
     onClear?: () => void
@@ -47,6 +50,7 @@
     hidden = false,
     allowNewRecord = EntitySelectorDefaults.allowNewRecord,
     allowClear = true,
+    itemRendererComponent = undefined,
     onChoose = () => {},
     onChange = () => {},
     onClear: onClearCallback = () => {},
@@ -95,7 +99,7 @@
 </script>
 
 {#if !isHidden && readonly}
-  <ReadOnlyMultiselect {selectedValue} width={FormFieldClass.MinWidth} {label} {placeholder} {name} {id} {showLabel} />
+  <ReadOnlyMultiselect {selectedValue} {width} class={className} {label} {placeholder} {name} {id} {showLabel} />
 {:else if !isHidden && browser}
   <div>
     <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
@@ -118,6 +122,7 @@
         multiselection={false}
         shouldFilter={false}
         {allowClear}
+        {itemRendererComponent}
         {onCreateNew}
         onChange={onSelectionChange} />
     </FormFieldMessages>

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { getFormContextOptional } from './form-context'
-  import { FormLabelClass, SwitchFieldDefaults, type SwitchFieldProps } from './form'
-  import { Switch } from '$components/ui/switch'
   import Label from '$components/ui/label/label.svelte'
+  import { Switch } from '$components/ui/switch'
   import * as m from '$lib/paraglide/messages'
   import type { Snippet } from 'svelte'
+  import { FormLabelClass, SwitchFieldDefaults, type SwitchFieldProps } from './form'
+  import { getFormContextOptional } from './form-context'
 
   type Props = SwitchFieldProps & {
     checked?: boolean
@@ -22,6 +22,7 @@
     showLabel = SwitchFieldDefaults.showLabel,
     labelPosition = SwitchFieldDefaults.labelPosition,
     labelClass = SwitchFieldDefaults.labelClass,
+    tabindex = undefined,
     onChange,
     children,
     class: className = '',
@@ -37,9 +38,7 @@
   const isDisabled = $derived(disabled || locked)
 
   // Single source of truth: form context OR bindable prop
-  const currentChecked = $derived(
-    form ? (form.values[name] as boolean | undefined) ?? false : checked
-  )
+  const currentChecked = $derived(form ? ((form.values[name] as boolean | undefined) ?? false) : checked)
 
   function handleCheckedChange(value: boolean) {
     if (form) {
@@ -54,24 +53,20 @@
 </script>
 
 {#if !isHidden}
-<div class="flex gap-2 {className} {labelPosition === 'left' ? 'flex-row-reverse justify-end' : 'items-center'}">
-  <Switch
-    {id}
-    {name}
-    disabled={isDisabled}
-    checked={currentChecked}
-    onCheckedChange={handleCheckedChange}
-  />
-  <Label
-    for={name}
-    id="label-{id}"
-    class="{showLabel ? FormLabelClass : 'sr-only'} {labelClass}"
-  >
-    {#if children}
-      {@render children()}
-    {:else}
-      {label}
-    {/if}
-  </Label>
-</div>
+  <div class="flex gap-2 {className} {labelPosition === 'left' ? 'flex-row-reverse justify-end' : 'items-center'}">
+    <Switch
+      {id}
+      {name}
+      {tabindex}
+      disabled={isDisabled}
+      checked={currentChecked}
+      onCheckedChange={handleCheckedChange} />
+    <Label for={name} id="label-{id}" class="{showLabel ? FormLabelClass : 'sr-only'} {labelClass}">
+      {#if children}
+        {@render children()}
+      {:else}
+        {label}
+      {/if}
+    </Label>
+  </div>
 {/if}

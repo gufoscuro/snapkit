@@ -1,32 +1,31 @@
 <!--
-  @component ItemSelector
-  @description A single-select dropdown for choosing items from the item catalog.
-  Fetches items from GET /api/legal-entities/{legalEntity}/items endpoint with search support.
-  Displays item name with code as secondary info.
-  @keywords item, selector, picker, dropdown, catalog, product, quotation
+  @component CustomerAddressSelector
+  @description A single-select dropdown for choosing customer addresses.
+  Fetches addresses from GET /customers/{customer}/addresses endpoint with search support.
+  Displays address as "address_line_1, city (type)".
+  Requires a customerId prop to scope addresses to the selected customer.
+  @keywords customer, address, selector, picker, dropdown, shipping
   @uses FormGenericSingleSelector
-  @api GET /api/legal-entities/{legalEntity}/items -> Item[]
+  @api GET /api/legal-entities/{legalEntity}/customers/{customer}/addresses -> CustomerAddress[]
 -->
+
 <script lang="ts">
   import { EntitySelectorDefaults, type EntitySelectorProps } from '$components/core/form/form'
   import FormGenericSingleSelector from '$components/core/form/FormGenericSingleSelector.svelte'
-  import ItemSelectorRenderer from '$components/features/form/ItemSelectorRenderer.svelte'
   import * as m from '$lib/paraglide/messages'
-  import type { Item } from '$lib/types/api-types'
-  import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$utils/filters'
-  import type { ExtendedOption } from '$utils/generics'
-  import { api } from '$utils/request'
+  import type { CustomerAddress } from '$lib/types/api-types'
+  import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$lib/utils/filters'
+  import type { ExtendedOption } from '$lib/utils/generics'
+  import { api } from '$lib/utils/request'
   import { getSnippetPropsContext } from '$utils/runtime'
 
   type Props = EntitySelectorProps & {
-    /** Pre-selected item */
-    attr?: Item
-    /** Custom fetch function override */
-    fetchFunction?: (query: Partial<FilterQuery>) => Promise<Item[]>
-    /** Filter items by mode */
-    mode?: 'sellable'
-    /** Callback when an item is selected */
-    onChoose?: (item: Item) => void
+    /** The customer ID to scope addresses to */
+    customerId: string | undefined
+    /** Pre-selected address */
+    attr?: CustomerAddress
+    /** Callback when an address is selected */
+    onChoose?: (item: CustomerAddress) => void
     /** Callback when selection changes (includes clear) */
     onChange?: (item: ExtendedOption | undefined) => void
     /** Callback when selection is cleared */
@@ -34,12 +33,11 @@
   }
 
   let {
+    customerId,
     attr = undefined,
-    fetchFunction: customFetchFunction = undefined,
-    mode = undefined,
-    label = m.item(),
-    placeholder = m.select_item_placeholder(),
-    name = 'itemId',
+    label = m.ship_to_address(),
+    placeholder = m.select_address_placeholder(),
+    name = 'ship_to_address_id',
     id = name,
     error = EntitySelectorDefaults.error,
     warning = EntitySelectorDefaults.warning,
@@ -62,38 +60,35 @@
   const contextProps = contextGetter && contextGetter()
   const legalEntityId = contextProps?.legalEntity?.id as string
 
-  function optionMappingFunction(item: Item): ExtendedOption {
+  function formatAddressLabel(address: CustomerAddress): string {
+    const parts = [address.address_line_1, address.city].filter(Boolean)
+    return `${parts.join(', ')} (${address.type})`
+  }
+
+  function optionMappingFunction(item: CustomerAddress): ExtendedOption {
     return {
-      label: item.name,
+      label: formatAddressLabel(item),
       value: item.id as string,
       attr: item,
     }
   }
 
-  async function defaultFetchFunction(query: Partial<FilterQuery>): Promise<Item[]> {
+  async function fetchFunction(query: Partial<FilterQuery>): Promise<CustomerAddress[]> {
+    if (!customerId) return []
     const params = createQueryRequestObject(query)
-    if (mode) {
-      params.mode = mode
-    }
 
     return (
-      await api.get<PaginatedResponse<Item>>(`/legal-entities/${legalEntityId}/items`, {
-        queryParams: params,
-      })
+      await api.get<PaginatedResponse<CustomerAddress>>(
+        `/legal-entities/${legalEntityId}/customers/${customerId}/addresses`,
+        { queryParams: params },
+      )
     ).data
-  }
-
-  async function fetchFunction(query: Partial<FilterQuery>): Promise<Item[]> {
-    if (customFetchFunction) {
-      return customFetchFunction(query)
-    }
-    return defaultFetchFunction(query)
   }
 </script>
 
 <FormGenericSingleSelector
   selectedValue={attr ? optionMappingFunction(attr) : undefined}
-  emptyText={m.no_items_found()}
+  emptyText={m.no_addresses_found()}
   {label}
   {placeholder}
   {name}
@@ -107,9 +102,8 @@
   {contentWidth}
   {align}
   {readonly}
-  {disabled}
+  disabled={disabled || !customerId}
   {allowNewRecord}
-  itemRendererComponent={ItemSelectorRenderer}
   {optionMappingFunction}
   {fetchFunction}
   {onChoose}

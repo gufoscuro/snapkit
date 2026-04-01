@@ -1,32 +1,31 @@
 <!--
-  @component ItemSelector
-  @description A single-select dropdown for choosing items from the item catalog.
-  Fetches items from GET /api/legal-entities/{legalEntity}/items endpoint with search support.
-  Displays item name with code as secondary info.
-  @keywords item, selector, picker, dropdown, catalog, product, quotation
+  @component CustomerContactSelector
+  @description A single-select dropdown for choosing customer contacts.
+  Fetches contacts from GET /customers/{customer}/contacts endpoint with search support.
+  Displays contact as "name - job_title".
+  Requires a customerId prop to scope contacts to the selected customer.
+  @keywords customer, contact, selector, picker, dropdown, person
   @uses FormGenericSingleSelector
-  @api GET /api/legal-entities/{legalEntity}/items -> Item[]
+  @api GET /api/legal-entities/{legalEntity}/customers/{customer}/contacts -> CustomerContact[]
 -->
+
 <script lang="ts">
   import { EntitySelectorDefaults, type EntitySelectorProps } from '$components/core/form/form'
   import FormGenericSingleSelector from '$components/core/form/FormGenericSingleSelector.svelte'
-  import ItemSelectorRenderer from '$components/features/form/ItemSelectorRenderer.svelte'
   import * as m from '$lib/paraglide/messages'
-  import type { Item } from '$lib/types/api-types'
-  import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$utils/filters'
-  import type { ExtendedOption } from '$utils/generics'
-  import { api } from '$utils/request'
+  import type { CustomerContact } from '$lib/types/api-types'
+  import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$lib/utils/filters'
+  import type { ExtendedOption } from '$lib/utils/generics'
+  import { api } from '$lib/utils/request'
   import { getSnippetPropsContext } from '$utils/runtime'
 
   type Props = EntitySelectorProps & {
-    /** Pre-selected item */
-    attr?: Item
-    /** Custom fetch function override */
-    fetchFunction?: (query: Partial<FilterQuery>) => Promise<Item[]>
-    /** Filter items by mode */
-    mode?: 'sellable'
-    /** Callback when an item is selected */
-    onChoose?: (item: Item) => void
+    /** The customer ID to scope contacts to */
+    customerId: string | undefined
+    /** Pre-selected contact */
+    attr?: CustomerContact
+    /** Callback when a contact is selected */
+    onChoose?: (item: CustomerContact) => void
     /** Callback when selection changes (includes clear) */
     onChange?: (item: ExtendedOption | undefined) => void
     /** Callback when selection is cleared */
@@ -34,12 +33,11 @@
   }
 
   let {
+    customerId,
     attr = undefined,
-    fetchFunction: customFetchFunction = undefined,
-    mode = undefined,
-    label = m.item(),
-    placeholder = m.select_item_placeholder(),
-    name = 'itemId',
+    label = m.contact_person(),
+    placeholder = m.select_contact_placeholder(),
+    name = 'contact_person_id',
     id = name,
     error = EntitySelectorDefaults.error,
     warning = EntitySelectorDefaults.warning,
@@ -62,38 +60,34 @@
   const contextProps = contextGetter && contextGetter()
   const legalEntityId = contextProps?.legalEntity?.id as string
 
-  function optionMappingFunction(item: Item): ExtendedOption {
+  function formatContactLabel(contact: CustomerContact): string {
+    return [contact.name, contact.job_title].filter(Boolean).join(' - ')
+  }
+
+  function optionMappingFunction(item: CustomerContact): ExtendedOption {
     return {
-      label: item.name,
+      label: formatContactLabel(item),
       value: item.id as string,
       attr: item,
     }
   }
 
-  async function defaultFetchFunction(query: Partial<FilterQuery>): Promise<Item[]> {
+  async function fetchFunction(query: Partial<FilterQuery>): Promise<CustomerContact[]> {
+    if (!customerId) return []
     const params = createQueryRequestObject(query)
-    if (mode) {
-      params.mode = mode
-    }
 
     return (
-      await api.get<PaginatedResponse<Item>>(`/legal-entities/${legalEntityId}/items`, {
-        queryParams: params,
-      })
+      await api.get<PaginatedResponse<CustomerContact>>(
+        `/legal-entities/${legalEntityId}/customers/${customerId}/contacts`,
+        { queryParams: params },
+      )
     ).data
-  }
-
-  async function fetchFunction(query: Partial<FilterQuery>): Promise<Item[]> {
-    if (customFetchFunction) {
-      return customFetchFunction(query)
-    }
-    return defaultFetchFunction(query)
   }
 </script>
 
 <FormGenericSingleSelector
   selectedValue={attr ? optionMappingFunction(attr) : undefined}
-  emptyText={m.no_items_found()}
+  emptyText={m.no_contacts_found()}
   {label}
   {placeholder}
   {name}
@@ -107,9 +101,8 @@
   {contentWidth}
   {align}
   {readonly}
-  {disabled}
+  disabled={disabled || !customerId}
   {allowNewRecord}
-  itemRendererComponent={ItemSelectorRenderer}
   {optionMappingFunction}
   {fetchFunction}
   {onChoose}

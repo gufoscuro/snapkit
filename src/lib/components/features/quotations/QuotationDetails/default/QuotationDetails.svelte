@@ -24,9 +24,12 @@
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
+  import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
+  import CustomerAddressSelector from '$components/features/form/CustomerAddressSelector.svelte'
+  import CustomerContactSelector from '$components/features/form/CustomerContactSelector.svelte'
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
   import PaymentTermSelector from '$components/features/form/PaymentTermSelector.svelte'
-  import QuotationItemsEditor from '$components/features/form/QuotationItemsEditor.svelte'
+  import QuotationItemsListEditor from '$components/features/form/QuotationItemsListEditor.svelte'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
   import Separator from '$components/ui/separator/separator.svelte'
   import { useProvides } from '$lib/contexts/page-state'
@@ -37,6 +40,7 @@
   import { currencyLabels, incotermLabels, salesTransactionTypeLabels, toSelectItems } from '$lib/utils/enum-labels'
   import { api } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
+  import { getCurrencySymbol } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import { QuotationDetailsContract } from './QuotationDetails.contract.js'
 
@@ -53,9 +57,11 @@
     getUuid: () => uuid,
     fetch: id => api.safe.get<Quotation>(`/legal-entities/${legalEntityId}/quotations/${id}`),
     create: data => api.post(`/legal-entities/${legalEntityId}/quotations`, { data }),
-    update: (id, data) => api.put(`/legal-entities/${legalEntityId}/quotations/${id}`, { data }),
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    update: (id, { document_number, ...data }) =>
+      api.put(`/legal-entities/${legalEntityId}/quotations/${id}`, { data }),
     getDetailRoute: record => createRoute({ $id: 'quotation-details', params: { uuid: record.id } }),
-    onFetched: data => {
+    onUpdated: data => {
       quotationHandle.set(data)
       breadcrumbTitle.setLabel(pageDetails.config.$id, data.document_number || m.new_quotation())
     },
@@ -139,6 +145,32 @@
     }
     return undefined
   })
+
+  // Resolve ship-to address snapshot for pre-populating selector in edit mode
+  const shipToAddressAttr = $derived.by(() => {
+    if (!record) return undefined
+    const snapshot = record.ship_to_snapshot
+    if (Array.isArray(snapshot) && snapshot.length > 0) {
+      return snapshot[0] as Record<string, unknown>
+    }
+    if (snapshot && !Array.isArray(snapshot)) {
+      return snapshot as unknown as Record<string, unknown>
+    }
+    return undefined
+  })
+
+  // Resolve contact person snapshot for pre-populating selector in edit mode
+  const contactPersonAttr = $derived.by(() => {
+    if (!record) return undefined
+    const snapshot = record.contact_person_snapshot
+    if (Array.isArray(snapshot) && snapshot.length > 0) {
+      return snapshot[0] as Record<string, unknown>
+    }
+    if (snapshot && !Array.isArray(snapshot)) {
+      return snapshot as unknown as Record<string, unknown>
+    }
+    return undefined
+  })
 </script>
 
 <RequestPlaceholder {promise}>
@@ -151,7 +183,7 @@
       onSuccess={handleSuccess}
       onFailure={handleFailure}
       class="relative flex flex-col gap-6 pb-breadcrumbs">
-      {#snippet withContext()}
+      {#snippet withContext(formAPI)}
         <FormErrorMessage columnsLayout />
 
         <!-- General Information -->
@@ -186,6 +218,48 @@
                     default_currency: '',
                     emails: [],
                     phones: [],
+                  }
+                : undefined}
+              onChange={() => {
+                formAPI.updateField('ship_to_address_id', '' as never)
+                formAPI.updateField('contact_person_id', '' as never)
+              }}
+              class={FormFieldClass.MaxWidth} />
+
+            <CustomerAddressSelector
+              customerId={formAPI.values.customer_id}
+              attr={shipToAddressAttr
+                ? {
+                    id: shipToAddressAttr.id as string,
+                    type: (shipToAddressAttr.type as 'billing' | 'shipping' | 'legal') ?? 'shipping',
+                    is_default: (shipToAddressAttr.is_default as boolean) ?? false,
+                    address_line_1: (shipToAddressAttr.address_line_1 as string) ?? '',
+                    address_line_2: (shipToAddressAttr.address_line_2 as string) ?? '',
+                    city: (shipToAddressAttr.city as string) ?? '',
+                    province: (shipToAddressAttr.province as string) ?? '',
+                    region: (shipToAddressAttr.region as string) ?? '',
+                    postal_code: (shipToAddressAttr.postal_code as string) ?? '',
+                    country_code: (shipToAddressAttr.country_code as string) ?? '',
+                    receiving_hours: (shipToAddressAttr.receiving_hours as string) ?? '',
+                    delivery_instructions: (shipToAddressAttr.delivery_instructions as string) ?? '',
+                    warehouse_assignment: (shipToAddressAttr.warehouse_assignment as string) ?? '',
+                    version: (shipToAddressAttr.version as number) ?? 0,
+                  }
+                : undefined}
+              class={FormFieldClass.MaxWidth} />
+
+            <CustomerContactSelector
+              customerId={formAPI.values.customer_id}
+              attr={contactPersonAttr
+                ? {
+                    id: contactPersonAttr.id as string,
+                    type: (contactPersonAttr.type as 'primary' | 'technical_support' | 'administrative' | 'logistics' | 'quality' | 'purchasing' | 'sales') ?? 'primary',
+                    name: (contactPersonAttr.name as string) ?? '',
+                    job_title: (contactPersonAttr.job_title as string) ?? '',
+                    phone: (contactPersonAttr.phone as string) ?? '',
+                    mobile_phone: (contactPersonAttr.mobile_phone as string) ?? '',
+                    email: (contactPersonAttr.email as string) ?? '',
+                    version: (contactPersonAttr.version as number) ?? 0,
                   }
                 : undefined}
               class={FormFieldClass.MaxWidth} />
@@ -234,13 +308,29 @@
         <Separator />
 
         <!-- Line Items -->
-        <GroupTitle heading={m.quotation_line_items()} class="flex-col">
+        <GroupTitle heading={m.quotation_line_items()} class="max-[11rem]:flex-col">
           {#snippet description()}
             {m.quotation_line_items_description()}
           {/snippet}
 
           {#snippet content()}
-            <QuotationItemsEditor name="items" currency={record?.currency ?? 'EUR'} required={!record} />
+            <QuotationItemsListEditor
+              name="items"
+              showLabel={false}
+              currency={formAPI?.values?.currency ?? 'EUR'}
+              required={!record}
+              refreshKey={record?.version}
+              showDeliveryDates />
+
+            {@const currencySymbol = getCurrencySymbol(formAPI.values.currency)}
+            <div class="pr-14">
+              <StackedAmountValues
+                title={m.total()}
+                rows={[
+                  { label: m.net_total(), value: record?.net_value || 0, currencySymbol },
+                  { label: m.gross_total(), value: record?.gross_value || 0, currencySymbol },
+                ]} />
+            </div>
           {/snippet}
         </GroupTitle>
 

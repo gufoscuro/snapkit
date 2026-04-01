@@ -18,6 +18,8 @@
     minHeight?: string
     /** Show formatting toolbar (default: true) */
     toolbar?: boolean
+    /** Callback when content changes (receives markdown string) */
+    onChange?: (value: string) => void
   }
 
   let {
@@ -37,6 +39,7 @@
     class: className = '',
     minHeight = 'min-h-40 max-h-120 overflow-y-auto bg-input/10 dark:bg-input/30',
     toolbar = true,
+    onChange,
   }: Props = $props()
 
   // Autowire to form context
@@ -92,6 +95,7 @@
         } else {
           valueProp = md
         }
+        onChange?.(md)
         tick++
       },
       onSelectionUpdate: () => {

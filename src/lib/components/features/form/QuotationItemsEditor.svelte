@@ -23,15 +23,26 @@
     id?: string
     type: QuotationItemType
     item_id?: string
+    item_snapshot?: Record<string, unknown>
     description?: string
     quantity?: number
     uom?: string
     unit_price?: number
     discount_percent?: number
     discount_amount?: number
+    net_value?: number
     vat_code_id?: string
+    vat_code_snapshot?: Record<string, unknown>
+    tax_amount?: number
     requested_delivery_date?: string
     delivery_date?: string
+    sort_order?: number
+    rejection_reason?: string
+    rejected_at?: string
+    rejected_by?: string
+    ordered_quantity?: number
+    conversion_status?: 'none' | 'partial' | 'full'
+    version?: number
   }
 
   /**
@@ -56,7 +67,8 @@
       if (!items || items.length === 0) return undefined
       const hasInvalid = items.some(
         item =>
-          item.type === 'item' && (!item.item_id || !item.quantity || item.quantity <= 0 || !item.unit_price || !item.vat_code_id),
+          item.type === 'item' &&
+          (!item.item_id || !item.quantity || item.quantity <= 0 || !item.unit_price || !item.vat_code_id),
       )
       if (hasInvalid) {
         return message ?? m.validation_required_generic()
@@ -67,8 +79,9 @@
 </script>
 
 <script lang="ts">
-  import EditableTableField from '$components/core/form/EditableTableField.svelte'
+  import ActionButton from '$components/core/ActionButton.svelte'
   import DateField from '$components/core/form/DateField.svelte'
+  import EditableTableField from '$components/core/form/EditableTableField.svelte'
   import NumberField from '$components/core/form/NumberField.svelte'
   import PriceField from '$components/core/form/PriceField.svelte'
   import QuantityField from '$components/core/form/QuantityField.svelte'
@@ -82,6 +95,7 @@
   import { UnitOfMeasures } from '$lib/config/uoms'
   import type { Item } from '$lib/types/api-types'
   import type { BasicOption } from '$utils/generics'
+  import { X } from '@lucide/svelte'
 
   /**
    * Internal line item type for editing
@@ -177,11 +191,9 @@
     }
   }
 
-  // Check if item is empty
+  // Check if item is empty — a row explicitly set to "descriptive" is never auto-removed
   function isEmptyItem(item: InternalLineItem): boolean {
-    if (item.type === 'descriptive') {
-      return !item.description
-    }
+    if (item.type === 'descriptive') return false
     return !item.itemId && !item.description
   }
 
@@ -221,12 +233,12 @@
   // Load initial value
   $effect(() => {
     const initialValue = (form?.values[name] as QuotationLineItem[] | undefined) ?? value
-    if (initialValue && initialValue.length > 0 && items.length === 0) {
+    if (initialValue && initialValue.length > 0 && (items.length === 0 || items.every(isEmptyItem))) {
       items = initialValue.map(item => ({
         type: item.type || 'item',
         itemId: item.item_id ?? '',
         itemName: '',
-        itemCode: '',
+        itemCode: (item.item_snapshot?.code as string) ?? '',
         description: item.description ?? '',
         quantity: item.quantity ?? 0,
         uom: item.uom || UnitOfMeasures.Default,
@@ -235,10 +247,12 @@
         discountAmount: item.discount_amount ?? 0,
         vatCodeId: item.vat_code_id ?? '',
         vatCodeRate: 0,
-        vatCodeAttr: undefined,
+        vatCodeAttr: item.vat_code_snapshot
+          ? { ...(item.vat_code_snapshot as VatCodeSummary), id: item.vat_code_id }
+          : undefined,
         requestedDeliveryDate: item.requested_delivery_date ?? '',
         deliveryDate: item.delivery_date ?? '',
-        itemAttr: undefined,
+        itemAttr: item.item_snapshot ? ({ id: item.item_id, ...item.item_snapshot } as Item) : undefined,
       }))
     }
   })
@@ -257,6 +271,7 @@
       itemCode: selectedItem.code,
       uom: selectedItem.primary_uom || UnitOfMeasures.Default,
       quantity: 1,
+      unitPrice: selectedItem.standard_cost,
       itemAttr: selectedItem,
     })
   }
@@ -338,6 +353,7 @@
   {isCompleteItem}
   {transformOutput}
   disabled={isDisabled}
+  syncFromForm={false}
   minWidth="1100px"
   onItemsChange={handleItemsChange}
   class={className}>
@@ -354,9 +370,10 @@
       <Table.Head class="w-36">{m.requested_delivery_date()}</Table.Head>
       <Table.Head class="w-36">{m.delivery_date()}</Table.Head>
     {/if}
+    <Table.Head class="w-10"></Table.Head>
   {/snippet}
 
-  {#snippet row({ item, index, updateItem, onFocus, onBlur })}
+  {#snippet row({ item, index, updateItem, removeItem, onFocus, onBlur })}
     <!-- Type -->
     <Table.Cell class={EditableTableFieldClass.TableCell}>
       <SelectField
@@ -392,6 +409,7 @@
       <Table.Cell class={EditableTableFieldClass.TableCell}>
         <ItemSelector
           name="item-{index}"
+          mode="sellable"
           attr={item.itemAttr}
           class={FormFieldClass.TableCell}
           showLabel={false}
@@ -433,7 +451,7 @@
         <PriceField
           name="unitPrice-{index}"
           value={item.unitPrice}
-          currency={currency}
+          {currency}
           showLabel={false}
           showErrorMessage={false}
           disabled={!item.itemId || isDisabled}
@@ -467,7 +485,7 @@
           direction="vendita"
           showLabel={false}
           showErrorMessage={false}
-          width={FormFieldClass.SelectorTableCellWidth}
+          width="w-60 max-w-60"
           contentWidth={FormFieldClass.SelectorContentTableCellWidth}
           readonly={!item.itemId || isDisabled}
           onChoose={vatCode => handleVatCodeSelect(index, vatCode, updateItem)}
@@ -510,5 +528,20 @@
         </Table.Cell>
       {/if}
     {/if}
+
+    <!-- Delete row -->
+    <Table.Cell class="{EditableTableFieldClass.TableCell} px-0 text-center">
+      {#if !isEmptyItem(item)}
+        <ActionButton
+          variant="ghost"
+          size="icon"
+          class="h-8 w-8 text-muted-foreground hover:text-destructive"
+          tooltip={m.remove_table_resource_line()}
+          disabled={isDisabled}
+          onclick={() => removeItem(index)}>
+          <X class="size-4" />
+        </ActionButton>
+      {/if}
+    </Table.Cell>
   {/snippet}
 </EditableTableField>

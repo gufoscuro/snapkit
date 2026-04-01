@@ -1,9 +1,10 @@
 <script lang="ts">
+  import ActionButton from '$components/core/ActionButton.svelte'
   import Logo from '$components/icons/Logo.svelte'
-  import Button from '$components/ui/button/button.svelte'
   import LegalEntitySelector from '$lib/components/features/form/LegalEntitySelector.svelte'
   import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js'
   import { confirmArchive } from '$lib/components/ui/confirm-archive-dialog'
+  import * as Tooltip from '$lib/components/ui/tooltip'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity } from '$lib/types/api-types'
   import { pushScaffoldConfig } from '$lib/utils/admin-config'
@@ -48,42 +49,44 @@
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col" data-scrollable-content>
-  <header class="flex h-14 w-full shrink-0 items-center justify-between border-b bg-background px-4">
-    <div class="flex items-center gap-4">
-      <div class="flex cursor-default items-center gap-2">
-        <Logo class="size-5 text-brand" />
-        <div>
-          Moddo<span class="font-semibold text-brand">Admin</span>
+  <Tooltip.Provider delayDuration={0}>
+    <header class="flex h-14 w-full shrink-0 items-center justify-between border-b bg-background px-4">
+      <div class="flex items-center gap-4">
+        <div class="flex cursor-default items-center gap-2">
+          <Logo class="size-5 text-brand" />
+          <div>
+            Moddo<span class="font-semibold text-brand">Admin</span>
+          </div>
         </div>
+
+        <Breadcrumb.Root>
+          <Breadcrumb.List>
+            <Breadcrumb.Item>
+              <Breadcrumb.Link href="/">Moddo</Breadcrumb.Link>
+            </Breadcrumb.Item>
+            <Breadcrumb.Separator />
+            <Breadcrumb.Item>
+              <Breadcrumb.Page>{m.administration()}</Breadcrumb.Page>
+            </Breadcrumb.Item>
+          </Breadcrumb.List>
+        </Breadcrumb.Root>
       </div>
 
-      <Breadcrumb.Root>
-        <Breadcrumb.List>
-          <Breadcrumb.Item>
-            <Breadcrumb.Link href="/">Moddo</Breadcrumb.Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Separator />
-          <Breadcrumb.Item>
-            <Breadcrumb.Page>{m.administration()}</Breadcrumb.Page>
-          </Breadcrumb.Item>
-        </Breadcrumb.List>
-      </Breadcrumb.Root>
-    </div>
+      <div class="flex items-center gap-2">
+        <ActionButton variant="ghost" size="icon" tooltip={m.admin_init_config()} onclick={onScaffoldClick}>
+          <Database />
+        </ActionButton>
 
-    <div class="flex items-center gap-2">
-      <Button variant="ghost" size="icon" onclick={onScaffoldClick}>
-        <Database />
-      </Button>
+        <LegalEntitySelector
+          attr={legalEntity || undefined}
+          showLabel={false}
+          width="w-64"
+          onChoose={onLegalEntityChoose} />
+      </div>
+    </header>
 
-      <LegalEntitySelector
-        attr={legalEntity || undefined}
-        showLabel={false}
-        width="w-64"
-        onChoose={onLegalEntityChoose} />
-    </div>
-  </header>
-
-  <main class="flex min-h-0 flex-1">
-    {@render children?.()}
-  </main>
+    <main class="flex min-h-0 flex-1">
+      {@render children?.()}
+    </main>
+  </Tooltip.Provider>
 </div>

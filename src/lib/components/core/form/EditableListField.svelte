@@ -1,15 +1,20 @@
 <!--
-  @component EditableTableField
-  @description Base component for editable table fields with add/remove row pattern.
-  Provides structure for multi-line editors (e.g., order line items).
-  Uses snippets for header and row customization.
+  @component EditableListField
+  @description Base component for editable list fields with card layout.
+  Alternative to EditableTableField for cases where horizontal space is limited.
+  Each item renders as a card with free-form layout via snippets.
+  Provides add/remove management, form context autowiring, and debounced updates.
+  @keywords editable, list, card, form, array, line-items
+  @uses ActionButton
 -->
 <script lang="ts" generics="T extends Record<string, unknown>">
+  import ActionButton from '$components/core/ActionButton.svelte'
+  import Button from '$components/ui/button/button.svelte'
   import Label from '$components/ui/label/label.svelte'
-  import * as Table from '$components/ui/table'
-  import { ArrowUp } from '@lucide/svelte'
+  import * as m from '$lib/paraglide/messages'
+  import { ArrowUp, Plus, X } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
-  import { EditableTableFieldClass } from './form'
+  import { EditableListFieldClass } from './form'
   import { clearFormContext, getFormContextOptional } from './form-context'
 
   type Props = {
@@ -25,8 +30,6 @@
     items: T[]
     /** Function to create an empty item */
     createEmptyItem: () => T
-    /** Function to check if an item is empty */
-    isEmptyItem: (item: T) => boolean
     /** Function to check if an item is complete (valid for output) */
     isCompleteItem: (item: T) => boolean
     /** Transform items to form output format */
@@ -37,29 +40,31 @@
     error?: string
     /** Show required indicator (*) on label */
     required?: boolean
-    /** Minimum table width for horizontal scroll (e.g., '800px') */
-    minWidth?: string
     /** Callback when items change */
     onItemsChange?: (items: T[]) => void
     /** Whether to sync items from form context (disable when parent manages initialization) */
     syncFromForm?: boolean
-    /** Header snippet */
-    header: Snippet
-    /** Row snippet - receives item, index, and handlers */
-    row: Snippet<
+    /** Item snippet - receives item, index, and handlers */
+    item: Snippet<
       [
         {
           item: T
           index: number
           updateItem: (index: number, updates: Partial<T>) => void
           removeItem: (index: number) => void
-          onFocus: () => void
-          onBlur: () => void
         },
       ]
     >
+    /** Optional custom add button snippet */
+    addButton?: Snippet<[{ addItem: (options?: Partial<T>) => void; disabled: boolean }]>
+    /** Optional custom remove button snippet */
+    removeButton?: Snippet<[{ removeItem: () => void; index: number; disabled: boolean }]>
+    /** Optional empty state snippet */
+    empty?: Snippet
     /** Additional CSS classes */
     class?: string
+    /** CSS class applied to each card */
+    itemClass?: string
   }
 
   let {
@@ -69,26 +74,25 @@
     id = name,
     items = $bindable<T[]>([]),
     createEmptyItem,
-    isEmptyItem,
     isCompleteItem,
     transformOutput,
     disabled = false,
     error: errorProp = undefined,
     required = false,
-    minWidth = '600px',
     onItemsChange,
     syncFromForm = true,
-    header,
-    row,
+    item: itemSnippet,
+    addButton,
+    removeButton,
+    empty,
     class: className = '',
+    itemClass = '',
   }: Props = $props()
 
   // Autowire to form context (for this component only)
   const form = getFormContextOptional()
 
   // Clear context for children - they should not autowire to the parent form
-  // The EditableTableField manages its own internal state and communicates
-  // with the parent form via transformOutput
   clearFormContext()
 
   // Derived state
@@ -101,51 +105,10 @@
   const DEBOUNCE_MS = 300
 
   /**
-   * Get completed items for output
-   */
-  function getCompletedItems(): T[] {
-    return items.filter(isCompleteItem)
-  }
-
-  /**
-   * Get empty items
-   */
-  function getEmptyItems(): T[] {
-    return items.filter(isEmptyItem)
-  }
-
-  /**
-   * Ensure there's always one empty row at the end when editing
-   */
-  function ensureEmptyRow() {
-    if (isDisabled) return
-
-    const emptyItems = getEmptyItems()
-    if (emptyItems.length < 1) {
-      items = [...items, createEmptyItem()]
-    }
-  }
-
-  /**
-   * Remove extra empty rows (keep only one)
-   */
-  function trimEmptyRows() {
-    const emptyItems = getEmptyItems()
-    if (emptyItems.length > 1) {
-      // Remove last item if it's empty and there are multiple empty rows
-      const lastItem = items[items.length - 1]
-      if (isEmptyItem(lastItem)) {
-        items = items.slice(0, -1)
-      }
-    }
-  }
-
-  /**
    * Update a single item at index
    */
-  function updateItem(index: number, updates: Partial<T>) {
+  function handleUpdate(index: number, updates: Partial<T>) {
     if (index < 0 || index >= items.length) return
-
     items[index] = { ...items[index], ...updates }
     scheduleFormUpdate()
   }
@@ -153,25 +116,21 @@
   /**
    * Remove an item at index
    */
-  function removeItem(index: number) {
+  function handleRemove(index: number) {
     if (index < 0 || index >= items.length) return
-
     items = items.filter((_, i) => i !== index)
     scheduleFormUpdate()
   }
 
   /**
-   * Handle focus on any field - ensure empty row exists
+   * Add a new empty item — only if all existing items are complete
    */
-  function handleFocus() {
-    ensureEmptyRow()
-  }
-
-  /**
-   * Handle blur on any field - trim extra empty rows
-   */
-  function handleBlur() {
-    trimEmptyRows()
+  function handleAdd(options?: Partial<T>) {
+    if (items.length > 0 && items.some(item => !isCompleteItem(item))) {
+      return
+    }
+    const newItem = options ? { ...createEmptyItem(), ...options } : createEmptyItem()
+    items = [...items, newItem]
   }
 
   /**
@@ -181,7 +140,7 @@
     if (updateTimer) clearTimeout(updateTimer)
 
     updateTimer = setTimeout(() => {
-      const completedItems = getCompletedItems()
+      const completedItems = items.filter(isCompleteItem)
       const output = transformOutput ? transformOutput(completedItems) : completedItems
 
       onItemsChange?.(completedItems)
@@ -209,36 +168,14 @@
     // Only sync if the form value has actually changed since last sync
     if (formValueJson !== lastSyncedJson && formValue && formValue.length > 0) {
       lastSyncedJson = formValueJson
-      items = [...(formValue as T[]), createEmptyItem()]
+      items = [...(formValue as T[])]
     }
   })
 
-  // Initialize with empty row if needed (runs once on mount)
+  // Initialize with one empty row if items are empty (runs once on mount)
   $effect.pre(() => {
     if (items.length === 0) {
       items = [createEmptyItem()]
-    }
-  })
-
-  // Auto-manage empty rows: add when needed, remove extras
-  $effect(() => {
-    if (isDisabled) return
-
-    // Check if there are any empty rows
-    const emptyItems = getEmptyItems()
-
-    // If no empty rows exist and we have at least one item, add a new empty row
-    if (emptyItems.length === 0 && items.length > 0) {
-      items = [...items, createEmptyItem()]
-    }
-    // If there are multiple empty rows, keep only the last one
-    else if (emptyItems.length > 1) {
-      // Find indices of empty items
-      const emptyIndices = items.map((item, idx) => (isEmptyItem(item) ? idx : -1)).filter((idx) => idx !== -1)
-
-      // Keep all non-empty items and only the last empty item
-      const lastEmptyIndex = emptyIndices[emptyIndices.length - 1]
-      items = items.filter((item, idx) => !isEmptyItem(item) || idx === lastEmptyIndex)
     }
   })
 </script>
@@ -248,28 +185,57 @@
     {label}{#if required}<span class="text-destructive"> *</span>{/if}
   </Label>
 
-  <div class="w-full overflow-x-auto">
-    <Table.Root class="min-w-[{minWidth}]">
-      <Table.Header>
-        <Table.Row class={EditableTableFieldClass.TableHeadCell}>
-          {@render header()}
-        </Table.Row>
-      </Table.Header>
-      <Table.Body class={EditableTableFieldClass.Body}>
-        {#each items as item, index (index)}
-          <Table.Row class="hover:[&,&>svelte-css-wrapper]:[&>th,td]:bg-transparent">
-            {@render row({
-              item,
+  <div class={EditableListFieldClass.List}>
+    {#each items as currentItem, index (index)}
+      <div class="border-b pb-8 {itemClass} relative pr-6">
+        {#if !isDisabled}
+          {#if removeButton}
+            {@render removeButton({
+              removeItem: () => handleRemove(index),
               index,
-              updateItem,
-              removeItem,
-              onFocus: handleFocus,
-              onBlur: handleBlur,
+              disabled: isDisabled,
             })}
-          </Table.Row>
-        {/each}
-      </Table.Body>
-    </Table.Root>
+          {:else}
+            <ActionButton
+              variant="ghost"
+              size="icon"
+              class="{EditableListFieldClass.RemoveButton} h-8 w-8 text-muted-foreground hover:text-destructive"
+              tooltip={m.remove_table_resource_line()}
+              disabled={isDisabled}
+              onclick={() => handleRemove(index)}>
+              <X class="size-4" />
+            </ActionButton>
+          {/if}
+        {/if}
+
+        {@render itemSnippet({
+          item: currentItem,
+          index,
+          updateItem: handleUpdate,
+          removeItem: handleRemove,
+        })}
+      </div>
+    {/each}
+
+    {#if items.length === 0 && empty}
+      {@render empty()}
+    {/if}
+
+    {#if !isDisabled}
+      {#if addButton}
+        {@render addButton({ addItem: handleAdd, disabled: isDisabled })}
+      {:else}
+        <Button
+          variant="outline"
+          size="sm"
+          class={EditableListFieldClass.AddButton}
+          disabled={isDisabled}
+          onclick={() => handleAdd()}>
+          <Plus class="mr-1 size-4" />
+          {m.add_line()}
+        </Button>
+      {/if}
+    {/if}
   </div>
 
   {#if error}

@@ -7,7 +7,8 @@
   @uses DropdownMenu, Button, executeRecordAction
 -->
 <script lang="ts" generics="T extends RecordActionRequestOptions">
-  import { Button, type ButtonVariant } from '$lib/components/ui/button'
+  import ActionButton from '$components/core/ActionButton.svelte'
+  import { type ButtonVariant } from '$lib/components/ui/button'
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
   import * as m from '$lib/paraglide/messages.js'
   import { executeRecordAction, type RecordAction, type RecordActionRequestOptions } from '$lib/utils/record-actions'
@@ -19,6 +20,8 @@
     actions: RecordAction<T>[]
     /** Options passed to each action's onAction callback */
     actionOptions: T
+    /** Button label */
+    label?: string
     /** Dropdown content alignment */
     align?: 'start' | 'end'
     /** Trigger button size */
@@ -37,6 +40,7 @@
     align = 'end',
     size = 'icon',
     buttonVariant = 'ghost',
+    label = m.quick_actions(),
     triggerIcon,
     class: className,
   }: Props = $props()
@@ -61,14 +65,14 @@
   <DropdownMenu.Root>
     <DropdownMenu.Trigger>
       {#snippet child({ props })}
-        <Button variant={buttonVariant} {size} class={className} {...props}>
+        <ActionButton variant={buttonVariant} tooltip={label} {size} class={className} {...props}>
           {#if triggerIcon}
             {@render triggerIcon()}
           {:else}
             <EllipsisVerticalIcon class="h-4 w-4" />
           {/if}
           <span class="sr-only">{m.common_actions()}</span>
-        </Button>
+        </ActionButton>
       {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="min-w-44" {align}>

@@ -24,6 +24,18 @@ export const EditableTableFieldClass = Object.freeze({
   TableCell: 'p-0 group-last:border-b border-r border-l last:border-r-0 first:border-l-0',
 })
 
+/** Classes for EditableListField component */
+export const EditableListFieldClass = Object.freeze({
+  /** Wrapper for the list of cards */
+  List: 'flex flex-col gap-6',
+  /** Individual card item */
+  Card: 'relative rounded-lg border bg-card p-4',
+  /** Remove button positioned top-right */
+  RemoveButton: 'absolute top-2 right-2',
+  /** Add button at the bottom */
+  AddButton: 'mt-1',
+})
+
 export type FormFieldMessagePosition = 'top' | 'bottom' | 'floating-top' | 'floating-bottom'
 
 // =============================================================================
@@ -60,6 +72,8 @@ export type BaseFieldProps = {
   class?: string
   /** Nasconde il campo (override locale) */
   hidden?: boolean
+
+  tabindex?: number
 }
 
 // =============================================================================
@@ -133,6 +147,8 @@ export type SwitchFieldProps = {
   class?: string
   /** Nasconde il campo (override locale) */
   hidden?: boolean
+
+  tabindex?: number
 }
 
 /** Props base per multi selectors */
