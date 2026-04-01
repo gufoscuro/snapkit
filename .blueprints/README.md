@@ -14,7 +14,9 @@ snapkit-content/
 │   ├── state-sharing.md           # Sibling component state sharing architecture
 │   ├── forms.md                   # Form system with context API and validation
 │   ├── detail-record-form.md      # Create/update record form guide (useDetailRecord)
-│   └── resource-table.md          # ResourceTable component and renderers
+│   ├── resource-table.md          # ResourceTable component and renderers
+│   ├── editable-table-field.md    # EditableTableField (table-based array editor)
+│   └── editable-list-field.md     # EditableListField (card-based array editor)
 ├── pages/                # Page architecture and CRUD patterns
 │   ├── crud-workflow.md           # End-to-end CRUD workflow (list + form + filters)
 │   └── fixed-pages.md            # Fixed pages (settings, admin) vs configurable pages
@@ -35,11 +37,13 @@ snapkit-content/
 ### Components
 
 - **development-guidelines.md**: Rules for creating, organizing, and documenting components. Covers file locations, composition patterns, and the decision flow for new components
-- **patterns.md**: Specific patterns like selector components, with implementation examples
+- **patterns.md**: Specific patterns: record actions (RecordActionMenu, flag toggles, confirmAction), selector components, enum translations
 - **state-sharing.md**: Architecture for sharing state between sibling components using contracts and bindings. Covers PageState, useProvides/useConsumes hooks, and database-driven configuration
 - **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, and scaffolding examples
 - **detail-record-form.md**: Step-by-step guide for creating create/update detail form components using `useDetailRecord`. Covers the full workflow: entity type discovery, contract, `useDetailRecord` setup, validation schemas, resource config, page state sharing, and the component checklist
 - **resource-table.md**: Generic ResourceTable component for data tables. Covers declarative column configuration, 11 built-in renderers, utilities (createApiFetcher, createArchiveAction), table variants, and best practices
+- **editable-table-field.md**: EditableTableField pattern for editing arrays as table rows. Covers auto-empty-row management, row snippet API, form context isolation, styling constants, and existing editors
+- **editable-list-field.md**: EditableListField pattern for editing arrays as vertical cards. Alternative to EditableTableField for items with many fields. Covers explicit add/remove, multi-type lists with custom add buttons, responsive card layout, rich text in cards, and styling constants
 
 ### Pages
 
@@ -80,6 +84,9 @@ When updating guidelines:
 - "How to fetch data from API?" → `api/integration-guidelines.md`
 - "What MCP server should I use for icons?" → `mcp-servers/overview.md`
 - "How to create links?" → `routing/navigation.md`
+- "How to add actions to a record?" → `components/patterns.md`
+- "How to create a flag toggle action?" → `components/patterns.md`
+- "How to use RecordActionMenu?" → `components/patterns.md`
 - "How to make a selector component?" → `components/patterns.md`
 - "How do components share state?" → `components/state-sharing.md`
 - "How to create a form?" → `components/forms.md`

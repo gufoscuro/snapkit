@@ -256,6 +256,7 @@ const detail = useDetailRecord<T extends { id: string }>({
 | `detail.handleSubmit` | `function` | Safe to destructure |
 | `detail.handleSuccess` | `function` | Safe to destructure |
 | `detail.handleFailure` | `function` | Safe to destructure |
+| `detail.refetch` | `function` | Re-fetches the record from the API and updates local state. Use after external mutations (e.g. flag toggles via RecordActionMenu). Safe to destructure. |
 
 **⚠️ Reactivity rule — CRITICAL:**
 
