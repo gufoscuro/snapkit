@@ -15,6 +15,7 @@
 
 <script lang="ts">
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
+  import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
   import DateField from '$components/core/form/DateField.svelte'
   import { FormFieldClass } from '$components/core/form/form.js'
@@ -38,7 +39,7 @@
   import type { Quotation } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { currencyLabels, incotermLabels, salesTransactionTypeLabels, toSelectItems } from '$lib/utils/enum-labels'
-  import { api } from '$lib/utils/request'
+  import { api, apiDownload } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import { getCurrencySymbol } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
@@ -354,7 +355,15 @@
       {/snippet}
 
       {#snippet bottom()}
-        <div class="fixed right-0 bottom-0 flex h-14 w-full items-center justify-end px-4">
+        <div class="fixed right-0 bottom-0 flex h-14 w-full items-center justify-end gap-2 px-4">
+          {#if record}
+            <DownloadActionButton
+              onDownload={() =>
+                apiDownload({
+                  url: `/legal-entities/${legalEntityId}/quotations/${record.id}/pdf`,
+                  filename: `${record.document_number}.pdf`,
+                })} />
+          {/if}
           <BusyButton type="submit">{m.save_changes()}</BusyButton>
         </div>
       {/snippet}

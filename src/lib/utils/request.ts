@@ -181,6 +181,48 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
 }
 
 /**
+ * Client-side API request that downloads a binary response (e.g. PDF) and
+ * triggers a browser file-save dialog.
+ *
+ * Unlike apiRequest, this reads the response as a Blob instead of JSON.
+ */
+export async function apiDownload(options: {
+  url: string
+  filename: string
+  redirectOnUnauthorized?: boolean
+}): Promise<void> {
+  const { url, filename, redirectOnUnauthorized = true } = options
+  const fullUrl = `${API_GATEWAY}/api${url}`
+
+  const xsrfToken = getXsrfToken()
+  const headers: HeadersInit = {
+    Accept: 'application/pdf, application/octet-stream',
+    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+  }
+
+  const result = await fetch(fullUrl, { method: 'GET', headers, credentials: 'include' })
+
+  if (result.status === 401) {
+    if (redirectOnUnauthorized) goto(resolve('/login'))
+    throw new ApiError('Unauthorized', result.status, null, result)
+  }
+
+  if (!result.ok) {
+    throw new ApiError('Download failed', result.status, null, result)
+  }
+
+  const blob = await result.blob()
+  const blobUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = blobUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(blobUrl)
+}
+
+/**
  * Client-side API request for multipart/form-data uploads (e.g. file uploads).
  * Unlike apiRequest, this does NOT set Content-Type so the browser can set it
  * automatically with the correct multipart boundary.

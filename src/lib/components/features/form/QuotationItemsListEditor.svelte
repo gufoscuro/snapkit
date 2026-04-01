@@ -407,6 +407,7 @@
         <Plus class="mr-1 size-4" />
         {m.add_item_line()}
       </Button>
+
       <Button variant="ghost" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'descriptive' })}>
         <Plus class="mr-1 size-4" />
         {m.add_description_line()}

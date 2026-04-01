@@ -676,5 +676,7 @@
   "switch_to_discount_amount": "Indica importo",
   "switch_to_discount_percent": "Indica %",
   "add_item_line": "Aggiungi articolo",
-  "add_description_line": "Aggiungi descrizione"
+  "add_description_line": "Aggiungi descrizione",
+  "download_pdf": "Scarica PDF",
+  "download_pdf_error": "Impossibile scaricare il PDF"
 }
