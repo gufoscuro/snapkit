@@ -41,7 +41,7 @@
   import { currencyLabels, incotermLabels, salesTransactionTypeLabels, toSelectItems } from '$lib/utils/enum-labels'
   import { api, apiDownload } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
-  import { getCurrencySymbol } from '$utils/prices.js'
+  import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import { QuotationDetailsContract } from './QuotationDetails.contract.js'
 
@@ -82,13 +82,13 @@
 
   const initialValues = $derived.by(() => ({
     document_number: '',
-    document_date: '',
+    document_date: new Date().toISOString(),
     sales_transaction_type: 'VEN' as const,
     customer_id: '',
     ship_to_address_id: '',
     contact_person_id: '',
-    currency: 'EUR' as const,
-    valid_from: '',
+    currency: DEFAULT_CURRENCY_CODE,
+    valid_from: new Date().toISOString(),
     valid_to: '',
     payment_term_id: '',
     incoterm: 'EXW' as const,
@@ -254,7 +254,15 @@
               attr={contactPersonAttr
                 ? {
                     id: contactPersonAttr.id as string,
-                    type: (contactPersonAttr.type as 'primary' | 'technical_support' | 'administrative' | 'logistics' | 'quality' | 'purchasing' | 'sales') ?? 'primary',
+                    type:
+                      (contactPersonAttr.type as
+                        | 'primary'
+                        | 'technical_support'
+                        | 'administrative'
+                        | 'logistics'
+                        | 'quality'
+                        | 'purchasing'
+                        | 'sales') ?? 'primary',
                     name: (contactPersonAttr.name as string) ?? '',
                     job_title: (contactPersonAttr.job_title as string) ?? '',
                     phone: (contactPersonAttr.phone as string) ?? '',
@@ -318,18 +326,28 @@
             <QuotationItemsListEditor
               name="items"
               showLabel={false}
-              currency={formAPI?.values?.currency ?? 'EUR'}
+              currency={formAPI?.values?.currency ?? DEFAULT_CURRENCY_CODE}
               required={!record}
               refreshKey={record?.version}
               showDeliveryDates />
 
-            {@const currencySymbol = getCurrencySymbol(formAPI.values.currency)}
+            {@const currencyCode = formAPI.values.currency}
             <div class="pr-14">
               <StackedAmountValues
                 title={m.total()}
                 rows={[
-                  { label: m.net_total(), value: record?.net_value || 0, currencySymbol },
-                  { label: m.gross_total(), value: record?.gross_value || 0, currencySymbol },
+                  { label: m.net_total(), value: record?.net_value || 0, currencyCode },
+                  {
+                    label: m.tax_total(),
+                    value: (record?.gross_value || 0) - (record?.net_value || 0),
+                    currencyCode,
+                  },
+                  {
+                    type: 'grandtotal',
+                    label: m.total(),
+                    value: record?.gross_value || 0,
+                    currencyCode,
+                  },
                 ]} />
             </div>
           {/snippet}

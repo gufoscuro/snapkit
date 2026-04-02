@@ -6,12 +6,14 @@
 -->
 <script lang="ts">
   import * as m from '$lib/paraglide/messages'
+  import { formatPriceDisplay, getCurrencySymbol } from '$lib/utils/prices'
   import { fade } from 'svelte/transition'
 
   type AmountRow = {
     label: string
     value: number | undefined | null
-    currencySymbol?: string
+    currencyCode?: string
+    type?: 'grandtotal' | 'regular'
     hidden?: boolean
   }
 
@@ -31,17 +33,15 @@
 
 {#if visibleRows.length > 0}
   <div class="flex flex-col justify-end {className}">
-    <!-- <div class="mb-1 border-b text-right text-sm leading-6 font-medium">{title}</div> -->
+    <div class="mb-1 hidden border-b text-right text-sm leading-6 font-medium">{title}</div>
     {#key JSON.stringify(visibleRows)}
       <div in:fade={{ duration: 200, delay: 100 }}>
         {#each visibleRows as row, index (row.label + index)}
-          <div class="flex items-center justify-end gap-2 text-sm">
+          <div class="flex items-center justify-end gap-2 {row.type === 'grandtotal' ? 'text-md mt-2' : 'text-sm'}">
             <div class="text-muted-foreground">{row.label}</div>
-            <div class="min-w-24 text-right font-medium tabular-nums">
-              {row.value
-                ? row.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                : '-'}
-              {row.value && row.currencySymbol ? row.currencySymbol : ''}
+            <div class="min-w-28 text-right font-medium tabular-nums">
+              {row.value ? formatPriceDisplay(row.value, row.currencyCode) : '-'}
+              {row.value && row.currencyCode ? getCurrencySymbol(row.currencyCode) : ''}
             </div>
           </div>
         {/each}

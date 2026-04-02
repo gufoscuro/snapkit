@@ -23,7 +23,7 @@ export const QuotationDataSchema = Type.Object({
   payment_term_id: Type.String(),
   incoterm: Type.String(),
   incoterm_location: Type.String(),
-  status: QuotationStatusSchema,
+  state: QuotationStatusSchema,
   net_value: Type.Number(),
   gross_value: Type.Number(),
   notes_internal: Type.String(),

@@ -30,11 +30,12 @@
   import ItemSelector from '$components/features/form/ItemSelector.svelte'
   import VatCodeSelector, { type VatCodeSummary } from '$components/features/form/VatCodeSelector.svelte'
   import Button from '$components/ui/button/button.svelte'
+  import Separator from '$components/ui/separator/separator.svelte'
   import * as Tooltip from '$components/ui/tooltip'
   import { UnitOfMeasures } from '$lib/config/uoms'
   import * as m from '$lib/paraglide/messages'
   import type { Item } from '$lib/types/api-types'
-  import { getCurrencySymbol } from '$utils/prices'
+  import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol } from '$utils/prices'
   import { Plus } from '@lucide/svelte'
   import type { QuotationLineItem } from './QuotationItemsEditor.svelte'
 
@@ -48,6 +49,8 @@
     itemAttr?: Item
     /** Cached VAT code entity for the selector */
     vatCodeAttr?: VatCodeSummary
+    /** Item base price from catalog (shown as suggestion, not auto-filled) */
+    itemBasePrice?: number
   }
 
   type Props = {
@@ -80,7 +83,7 @@
     label = m.quotation_items(),
     showLabel = true,
     value = [],
-    currency = 'EUR',
+    currency = DEFAULT_CURRENCY_CODE,
     showDeliveryDates = false,
     required = false,
     disabled = false,
@@ -93,7 +96,17 @@
   const form = getFormContextOptional()
   const locked = $derived(form?.locked ?? false)
   const isDisabled = $derived(disabled || locked)
-  const currencySymbol = $derived(getCurrencySymbol(currency))
+  const currencyCode = $derived(currency)
+
+  // Bulk delivery date
+  let bulkDeliveryDate = $state<Date | string>(new Date())
+
+  function applyBulkDeliveryDate(date: Date | null) {
+    if (!date) return
+    const iso = date.toISOString()
+    bulkDeliveryDate = date
+    items = items.map(item => (item.type === 'item' ? { ...item, delivery_date: iso } : item))
+  }
 
   // Internal items state
   let items = $state<InternalLineItem[]>([])
@@ -110,7 +123,7 @@
       discount_amount: 0,
       vat_code_id: '',
       requested_delivery_date: '',
-      delivery_date: '',
+      delivery_date: bulkDeliveryDate instanceof Date ? bulkDeliveryDate.toISOString() : bulkDeliveryDate,
       useDiscountAmount: false,
       itemAttr: undefined,
       vatCodeAttr: undefined,
@@ -121,12 +134,12 @@
     if (item.type === 'descriptive') {
       return !!item.description
     }
-    return !!item.item_id && !!item.quantity && item.quantity > 0
+    return !!item.item_id && !!item.quantity && item.quantity > 0 && !!item.vat_code_id
   }
 
   function transformOutput(internalItems: InternalLineItem[]): QuotationLineItem[] {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return internalItems.map(({ useDiscountAmount, itemAttr, vatCodeAttr, ...rest }) => {
+    return internalItems.map(({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, ...rest }) => {
       if (rest.type === 'descriptive')
         return {
           type: 'descriptive',
@@ -141,15 +154,19 @@
    * Map API line items to internal format (add UI-only fields)
    */
   function mapFromApi(apiItems: QuotationLineItem[]): InternalLineItem[] {
-    return apiItems.map(item => ({
-      ...item,
-      useDiscountAmount: !!(item.discount_amount && !item.discount_percent),
-      itemAttr: item.item_snapshot ? ({ id: item.item_id, ...item.item_snapshot } as Item) : undefined,
-      vatCodeAttr:
-        item.vat_code_snapshot && item.vat_code_id
-          ? { ...(item.vat_code_snapshot as VatCodeSummary), id: item.vat_code_id }
-          : undefined,
-    }))
+    return apiItems.map(item => {
+      const itemSnapshot = item.item_snapshot as Record<string, unknown> | undefined
+      return {
+        ...item,
+        useDiscountAmount: !!(item.discount_amount && !item.discount_percent),
+        itemAttr: itemSnapshot ? ({ id: item.item_id, ...itemSnapshot } as Item) : undefined,
+        vatCodeAttr:
+          item.vat_code_snapshot && item.vat_code_id
+            ? { ...(item.vat_code_snapshot as VatCodeSummary), id: item.vat_code_id }
+            : undefined,
+        itemBasePrice: (itemSnapshot?.standard_cost as number) ?? undefined,
+      }
+    })
   }
 
   // Load initial value from form context
@@ -187,7 +204,7 @@
       item_snapshot: selectedItem as unknown as Record<string, unknown>,
       uom: selectedItem.primary_uom || UnitOfMeasures.Default,
       quantity: 1,
-      unit_price: selectedItem.standard_cost,
+      itemBasePrice: selectedItem.standard_cost ?? undefined,
       itemAttr: selectedItem,
     })
   }
@@ -205,6 +222,7 @@
       discount_percent: 0,
       discount_amount: 0,
       itemAttr: undefined,
+      itemBasePrice: undefined,
     })
   }
 
@@ -245,6 +263,23 @@
   syncFromForm={false}
   onItemsChange={handleItemsChange}
   class={className}>
+  {#snippet header()}
+    {#if showDeliveryDates}
+      <div class="max-w-xs">
+        <DateField
+          name="bulkDeliveryDate"
+          label={m.set_delivery_date()}
+          value={bulkDeliveryDate}
+          width="w-full"
+          disabled={isDisabled}
+          onChange={applyBulkDeliveryDate} />
+      </div>
+      <div class="my-8">
+        <Separator />
+      </div>
+    {/if}
+  {/snippet}
+
   {#snippet item({ item, index, updateItem })}
     <div class="absolute -left-8 hidden h-6 text-sm leading-6 font-semibold text-primary md:block">
       <span class="opacity-60">#</span>{index + 1}
@@ -306,15 +341,33 @@
           onChange={qty => updateItem(index, { quantity: qty })} />
 
         <!-- Row 2: Unit Price, Discount (with toggle), VAT -->
-        <PriceField
-          name="unitPrice-{index}"
-          label={m.unit_price()}
-          value={item.unit_price ?? 0}
-          {currency}
-          showErrorMessage={false}
-          disabled={!item.item_id || isDisabled}
-          width="w-full"
-          onChange={price => updateItem(index, { unit_price: price })} />
+        <div class="flex flex-col">
+          <div class="flex items-baseline justify-between gap-2">
+            <span class="block text-sm leading-6 font-medium">{m.unit_price()}</span>
+            {#if item.itemBasePrice != null && item.itemBasePrice > 0}
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <button
+                    type="button"
+                    class="cursor-pointer text-xs text-muted-foreground hover:text-primary hover:underline"
+                    onclick={() => updateItem(index, { unit_price: item.itemBasePrice })}>
+                    {m.item_price()}: {floatToPriceString(item.itemBasePrice, currency, 4)}{getCurrencySymbol(currency)}
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>{m.copy_price_to_field()}</Tooltip.Content>
+              </Tooltip.Root>
+            {/if}
+          </div>
+          <PriceField
+            name="unitPrice-{index}"
+            value={item.unit_price ?? 0}
+            {currency}
+            showLabel={false}
+            showErrorMessage={false}
+            disabled={!item.item_id || isDisabled}
+            width="w-full"
+            onChange={price => updateItem(index, { unit_price: price })} />
+        </div>
 
         <div class="flex flex-col">
           <div class="flex items-baseline justify-between gap-2">
@@ -394,8 +447,8 @@
 
         <StackedAmountValues
           rows={[
-            { label: m.net_value(), value: item.net_value, currencySymbol },
-            { label: m.tax_value(), value: item.tax_amount, currencySymbol },
+            { label: m.net_value(), value: item.net_value, currencyCode },
+            { label: m.tax_value(), value: item.tax_amount, currencyCode },
           ]} />
       </div>
     {/if}

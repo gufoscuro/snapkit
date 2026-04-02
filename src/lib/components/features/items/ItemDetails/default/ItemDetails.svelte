@@ -18,6 +18,7 @@
   import FormErrorMessage from '$components/core/form/FormErrorMessage.svelte'
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import NumberField from '$components/core/form/NumberField.svelte'
+  import PriceField from '$components/core/form/PriceField.svelte'
   import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
   import StatusSelector, { type StatusOption } from '$components/core/form/StatusSelector.svelte'
@@ -45,6 +46,7 @@
   } from '$lib/utils/enum-labels'
   import { api } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
+  import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import { ItemDetailsContract } from './ItemDetails.contract.js'
 
@@ -159,7 +161,7 @@
       onSuccess={handleSuccess}
       onFailure={handleFailure}
       class="relative flex flex-col gap-6 pb-breadcrumbs">
-      {#snippet withContext()}
+      {#snippet withContext(formAPI)}
         <FormErrorMessage columnsLayout />
 
         <GroupTitle heading={m.item_general_information()}>
@@ -260,7 +262,11 @@
           {/snippet}
 
           {#snippet content()}
-            <NumberField name="standard_cost" label={m.standard_cost()} class={FormFieldClass.MaxWidth} allowClear />
+            <PriceField
+              name="standard_cost"
+              label={m.standard_cost()}
+              class={FormFieldClass.MaxWidth}
+              currency={formAPI?.values?.cost_currency || record?.cost_currency || DEFAULT_CURRENCY_CODE} />
 
             <SelectField
               name="cost_currency"

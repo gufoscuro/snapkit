@@ -55,6 +55,8 @@
         },
       ]
     >
+    /** Optional header snippet rendered between label and list (inside cleared form context) */
+    header?: Snippet
     /** Optional custom add button snippet */
     addButton?: Snippet<[{ addItem: (options?: Partial<T>) => void; disabled: boolean }]>
     /** Optional custom remove button snippet */
@@ -82,6 +84,7 @@
     onItemsChange,
     syncFromForm = true,
     item: itemSnippet,
+    header,
     addButton,
     removeButton,
     empty,
@@ -184,6 +187,10 @@
   <Label for={name} id="label-{id}" class="mb-1.5 block {showLabel ? '' : 'sr-only'}">
     {label}{#if required}<span class="text-destructive"> *</span>{/if}
   </Label>
+
+  {#if header}
+    {@render header()}
+  {/if}
 
   <div class={EditableListFieldClass.List}>
     {#each items as currentItem, index (index)}

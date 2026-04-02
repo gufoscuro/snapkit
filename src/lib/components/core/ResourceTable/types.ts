@@ -103,6 +103,7 @@ export type RendererType =
   | 'badge' // Single badge with variant
   | 'badges' // Multiple badges (categories, tags)
   | 'status' // Status badge with icon + label
+  | 'state-indicator' // Icon-only state indicator with tooltip
   | 'actions' // Action buttons/dropdown
   | 'component' // Custom component
   | 'custom' // Custom render function
@@ -118,6 +119,7 @@ export type RendererConfig<T> =
   | BadgeConfig<T>
   | BadgesConfig<T>
   | StatusConfig<T>
+  | StateIndicatorConfig<T>
   | DateConfig<T>
   | CurrencyConfig<T>
   | ActionsConfig<T>
@@ -219,6 +221,26 @@ export type StatusConfig<T> = {
 
   /**
    * Optional label transformation
+   */
+  labelMapper?: (value: any) => string
+}
+
+/**
+ * State indicator variant — icon-only indicator with tooltip
+ */
+export type StateIndicatorVariant = 'default' | 'success' | 'error'
+
+/**
+ * State indicator renderer configuration
+ */
+export type StateIndicatorConfig<T> = {
+  /**
+   * Map value to state indicator variant (determines icon)
+   */
+  variantMapper: (value: any) => StateIndicatorVariant
+
+  /**
+   * Optional label transformation (shown in tooltip)
    */
   labelMapper?: (value: any) => string
 }

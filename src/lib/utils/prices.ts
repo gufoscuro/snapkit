@@ -37,8 +37,9 @@ export function getCurrencySymbol(currencyCode: string): string {
  * @param currencyCode - Currency code to determine decimal separator
  * @returns Formatted string suitable for display in input
  */
-export function formatPriceInput(input: string, currencyCode: string = DEFAULT_CURRENCY_CODE): string {
+export function formatPriceInput(input: string, currencyCode: string = DEFAULT_CURRENCY_CODE, decimals?: number): string {
   const currency = findCurrency(currencyCode) ?? DEFAULT_CURRENCY
+  const maxDecimals = decimals ?? currency.decimals
   const decimalSep = currency.decimalSeparator
 
   // Remove all non-numeric characters except decimal separator
@@ -51,7 +52,7 @@ export function formatPriceInput(input: string, currencyCode: string = DEFAULT_C
     const beforeSep = cleaned.substring(0, sepIndex)
     const afterSep = cleaned.substring(sepIndex + 1).replace(new RegExp(`\\${decimalSep}`, 'g'), '')
     // Limit decimal places
-    const limitedDecimals = afterSep.substring(0, currency.decimals)
+    const limitedDecimals = afterSep.substring(0, maxDecimals)
     cleaned = `${beforeSep}${decimalSep}${limitedDecimals}`
   }
 
@@ -72,11 +73,11 @@ export function parsePriceToFloat(input: string): number {
  * @param currencyCode - Currency code for formatting
  * @returns Formatted price string (e.g., "1.234,56" for EUR)
  */
-export function floatToPriceString(value: number, currencyCode: string = DEFAULT_CURRENCY_CODE): string {
+export function floatToPriceString(value: number, currencyCode: string = DEFAULT_CURRENCY_CODE, decimals?: number): string {
   const currency = findCurrency(currencyCode) ?? DEFAULT_CURRENCY
 
   return formatNumber(value, {
-    decimals: currency.decimals,
+    decimals: decimals ?? currency.decimals,
     decimalSeparator: currency.decimalSeparator,
     thousandsSeparator: currency.thousandsSeparator,
     useGrouping: false, // Don't use thousands separator in input fields

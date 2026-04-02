@@ -20,6 +20,7 @@
   type Props = InputFieldProps & {
     value?: number
     currency?: string
+    decimals?: number
     rounded?: boolean
     onChange?: (value: number) => void
   }
@@ -31,6 +32,7 @@
     id = name,
     value = $bindable<number | undefined>(undefined),
     currency = DEFAULT_CURRENCY_CODE,
+    decimals = 4,
     error: errorProp = undefined,
     warning = undefined,
     errorPosition = InputFieldDefaults.errorPosition,
@@ -72,7 +74,7 @@
     if (!isFocused) {
       displayValue =
         numericValue !== undefined && numericValue !== null
-          ? floatToPriceString(numericValue, currency)
+          ? floatToPriceString(numericValue, currency, decimals)
           : ''
     }
   })
@@ -110,7 +112,7 @@
 
   function handleInput(e: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     const rawValue = e.currentTarget.value
-    displayValue = formatPriceInput(rawValue, currency)
+    displayValue = formatPriceInput(rawValue, currency, decimals)
 
     // Update the input element's value to the formatted version
     e.currentTarget.value = displayValue
@@ -134,7 +136,7 @@
     const numericVal = parsePriceToFloat(displayValue)
 
     if (displayValue.trim() !== '') {
-      displayValue = floatToPriceString(numericVal, currency)
+      displayValue = floatToPriceString(numericVal, currency, decimals)
     }
 
     onChange?.(numericVal)

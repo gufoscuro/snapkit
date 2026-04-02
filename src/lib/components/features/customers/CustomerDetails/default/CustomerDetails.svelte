@@ -41,6 +41,7 @@
   } from '$lib/utils/enum-labels'
   import { api } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
+  import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import { CustomerDetailsContract } from './CustomerDetails.contract.js'
 
@@ -73,7 +74,9 @@
   const record = $derived(detail.record)
   const promise = $derived(detail.promise)
 
-  const flagActions = $derived(legalEntityId ? createCustomerFlagActions({ legalEntityId, onSuccess: detail.refetch }) : [])
+  const flagActions = $derived(
+    legalEntityId ? createCustomerFlagActions({ legalEntityId, onSuccess: detail.refetch }) : [],
+  )
   const actionOptions = $derived.by((): CustomerFlagOptions | null => {
     if (!record) return null
     return {
@@ -99,7 +102,7 @@
     founded_year: null,
     language_code: '',
     registration_country_code: '',
-    default_currency: 'EUR' as const,
+    default_currency: DEFAULT_CURRENCY_CODE,
     vat_number: '',
     tax_id: '',
     sdi_code: '',

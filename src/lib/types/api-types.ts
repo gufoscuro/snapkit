@@ -1053,7 +1053,9 @@ export type Document = {
 // Quotations API Types
 // ============================================================================
 
-export type QuotationStatus = 'draft' | 'active' | 'approved' | 'rejected' | 'superseded'
+export type QuotationTag = 'expired' | 'sent'
+
+export type QuotationStatus = 'open' | 'approved' | 'rejected' | 'superseded'
 
 export type ConversionStatus = 'none' | 'partial' | 'full'
 
@@ -1131,9 +1133,10 @@ export type Quotation = {
   incoterm: Incoterm
   incoterm_location: string
   sales_rep_id: string
-  status: QuotationStatus
-  pdf_path: string
+  state: QuotationStatus
+  tags: QuotationTag[]
   expired_at: string
+  sent_at: string
   net_value: number
   gross_value: number
   notes_internal: string

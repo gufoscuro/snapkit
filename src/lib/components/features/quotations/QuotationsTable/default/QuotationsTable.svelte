@@ -21,10 +21,11 @@
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { Quotation } from '$lib/types/api-types'
-  import { getQuotationStatusLabel, getQuotationStatusVariant } from '$lib/utils/enum-labels'
+  import { getQuotationStatusLabel } from '$lib/utils/enum-labels'
   import type { FilterQuery } from '$lib/utils/filters'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
+  import QuotationTagBadges from '$lib/components/features/quotations/QuotationTagBadges.svelte'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
   import { QuotationsTableContract } from './QuotationsTable.contract.js'
@@ -35,6 +36,20 @@
   const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
 
   const columns: ColumnConfig<Quotation>[] = [
+    {
+      accessorKey: 'state',
+      header: '',
+      renderer: 'state-indicator',
+      rendererConfig: {
+        variantMapper: (state: Quotation['state']) => {
+          if (state === 'approved') return 'success'
+          if (state === 'rejected') return 'error'
+          return 'default'
+        },
+        labelMapper: (state: Quotation['state']) => getQuotationStatusLabel(state),
+      },
+      meta: { cellClassName: 'w-10 px-0' },
+    },
     {
       accessorKey: 'document_number',
       header: m.document_number(),
@@ -51,22 +66,13 @@
         cellRenderer: (row: Quotation) => {
           const snapshot = row.customer_snapshot
           if (Array.isArray(snapshot) && snapshot.length > 0) {
-            return (snapshot[0] as Record<string, unknown>)?.name as string ?? '-'
+            return ((snapshot[0] as Record<string, unknown>)?.name as string) ?? '-'
           }
           if (snapshot && !Array.isArray(snapshot)) {
-            return (snapshot as Record<string, unknown>)?.name as string ?? '-'
+            return ((snapshot as Record<string, unknown>)?.name as string) ?? '-'
           }
           return '-'
         },
-      },
-    },
-    {
-      accessorKey: 'status',
-      header: m.status(),
-      renderer: 'badge',
-      rendererConfig: {
-        variantMapper: (status: Quotation['status']) => getQuotationStatusVariant(status),
-        labelMapper: (status: Quotation['status']) => getQuotationStatusLabel(status),
       },
     },
     {
@@ -75,32 +81,25 @@
       renderer: 'date',
     },
     {
-      accessorKey: 'valid_from',
-      header: m.valid_from(),
-      renderer: 'date',
-    },
-    {
       accessorKey: 'valid_to',
       header: m.valid_to(),
       renderer: 'date',
     },
     {
-      accessorKey: 'currency',
-      header: m.currency_label(),
-      renderer: 'text',
-    },
-    {
       accessorKey: 'net_value',
-      header: m.net_value(),
+      header: m.net_total(),
       renderer: 'currency',
       rendererConfig: {
         currencyAccessor: (row: Quotation) => row.currency,
       },
     },
     {
-      accessorKey: 'incoterm',
-      header: m.incoterm(),
-      renderer: 'text',
+      accessorKey: 'tags',
+      header: '',
+      renderer: 'badges',
+      rendererConfig: {
+        component: QuotationTagBadges,
+      },
     },
     {
       header: '',
@@ -109,10 +108,8 @@
         actions: [
           createArchiveAction<Quotation>({
             apiUrl: quotation => `/legal-entities/${legalEntity?.id}/quotations/${quotation.id}`,
-            confirmMessage: quotation =>
-              m.archive_quotation_confirmation({ name: quotation.document_number }),
-            successMessage: quotation =>
-              m.quotation_archived_success({ name: quotation.document_number }),
+            confirmMessage: quotation => m.archive_quotation_confirmation({ name: quotation.document_number }),
+            successMessage: quotation => m.quotation_archived_success({ name: quotation.document_number }),
             errorMessage: m.quotation_archive_error(),
           }),
         ],
@@ -121,12 +118,8 @@
     },
   ]
 
-  const quotationApiUrl = $derived(
-    legalEntity?.id ? `/legal-entities/${legalEntity.id}/quotations` : null,
-  )
-  const fetchQuotations = $derived(
-    quotationApiUrl ? createApiFetcher<Quotation>(quotationApiUrl) : null,
-  )
+  const quotationApiUrl = $derived(legalEntity?.id ? `/legal-entities/${legalEntity.id}/quotations` : null)
+  const fetchQuotations = $derived(quotationApiUrl ? createApiFetcher<Quotation>(quotationApiUrl) : null)
 </script>
 
 {#if legalEntity && fetchQuotations}

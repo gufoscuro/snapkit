@@ -94,6 +94,7 @@
   import * as Table from '$components/ui/table'
   import { UnitOfMeasures } from '$lib/config/uoms'
   import type { Item } from '$lib/types/api-types'
+  import { formatPriceDisplay } from '$utils/prices'
   import type { BasicOption } from '$utils/generics'
   import { X } from '@lucide/svelte'
 
@@ -496,7 +497,7 @@
       <!-- Net Value (computed, read-only) -->
       <Table.Cell class="{EditableTableFieldClass.TableCell} px-2">
         <span class="text-sm tabular-nums">
-          {computeNetValue(item).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {formatPriceDisplay(computeNetValue(item), currency)}
         </span>
       </Table.Cell>
 

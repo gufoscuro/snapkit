@@ -11,6 +11,7 @@ import { createEmailRenderer } from '../renderers/email-renderer'
 import { createLinkRenderer } from '../renderers/link-renderer'
 import { createLongTextRenderer } from '../renderers/long-text-renderer'
 import { createPhoneRenderer } from '../renderers/phone-renderer'
+import { createStateIndicatorRenderer } from '../renderers/state-indicator-renderer'
 import { createStatusRenderer } from '../renderers/status-renderer'
 import { createTextRenderer } from '../renderers/text-renderer'
 import type { ActionHelpers, ColumnConfig } from '../types'
@@ -61,6 +62,9 @@ export function resolveColumns<T>(columns: ColumnConfig<T>[], actionHelpers: Act
 
         case 'status':
           return { ...base, cell: createStatusRenderer(config) } as ColumnDef<T>
+
+        case 'state-indicator':
+          return { ...base, cell: createStateIndicatorRenderer(config) } as ColumnDef<T>
 
         case 'badges':
           return { ...base, cell: createBadgesRenderer(config) } as ColumnDef<T>

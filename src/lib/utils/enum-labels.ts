@@ -19,6 +19,7 @@ import type {
   LegalEntityWarehouse,
   Quotation,
   QuotationStatus,
+  QuotationTag,
   SalesOrderSummary,
   SalesTransactionType,
   Supplier,
@@ -459,19 +460,28 @@ export const dimensionUnitLabels: EnumLabelMap<DimensionUnit> = {
 
 // Quotation Status
 export const quotationStatusConfig: Record<QuotationStatus, EnumDisplayConfig> = {
-  draft: { label: m.enum_quotation_status_draft, variant: 'secondary' },
-  active: { label: m.enum_quotation_status_active, variant: 'default' },
-  approved: { label: m.enum_quotation_status_approved, variant: 'default' },
+  open: { label: m.enum_quotation_status_open, variant: 'default' },
+  approved: { label: m.enum_quotation_status_approved, variant: 'success' },
   rejected: { label: m.enum_quotation_status_rejected, variant: 'destructive' },
-  superseded: { label: m.enum_quotation_status_superseded, variant: 'outline' },
+  superseded: { label: m.enum_quotation_status_superseded, variant: 'default' },
 }
 
-export function getQuotationStatusLabel(status: Quotation['status']): string {
+export function getQuotationStatusLabel(status: Quotation['state']): string {
   return quotationStatusConfig[status]?.label() ?? status
 }
 
-export function getQuotationStatusVariant(status: Quotation['status']): BadgeVariant {
+export function getQuotationStatusVariant(status: Quotation['state']): BadgeVariant {
   return quotationStatusConfig[status]?.variant ?? 'default'
+}
+
+// Quotation Tags
+export const quotationTagConfig: Record<QuotationTag, EnumDisplayConfig> = {
+  expired: { label: m.enum_quotation_tag_expired, variant: 'destructive' },
+  sent: { label: m.enum_quotation_tag_sent, variant: 'default' },
+}
+
+export function getQuotationTagLabel(tag: QuotationTag): string {
+  return quotationTagConfig[tag]?.label() ?? tag
 }
 
 // Incoterm Labels

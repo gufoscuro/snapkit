@@ -81,6 +81,7 @@
   import * as Tooltip from '$components/ui/tooltip'
   import { UnitOfMeasures } from '$lib/config/uoms'
   import type { CalculatePriceResult, ProductInventoryItemSummary, ProductSummary } from '$lib/types/api-types'
+  import { formatNumber } from '$utils/numbers'
   import { DEFAULT_CURRENCY_CODE, renderPrice } from '$utils/prices'
   import { apiRequest } from '$utils/request'
   import { createRoute } from '$utils/route-builder.js'
@@ -692,7 +693,7 @@
         </div>
         {#if item.margin !== undefined}
           <div class="text-right text-xs text-muted-foreground">
-            {m.margin()}: {item.margin.toFixed(2)}%
+            {m.margin()}: {formatNumber(item.margin, { decimals: 2, useGrouping: false })}%
           </div>
         {/if}
 
