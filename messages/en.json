@@ -679,6 +679,8 @@
   "add_line": "Add line",
   "switch_to_discount_amount": "Use amount",
   "switch_to_discount_percent": "Use %",
+  "reorder_items": "Reorder",
+  "done_reordering": "Done",
   "add_item_line": "Add item",
   "add_description_line": "Add description",
   "download_pdf": "Download PDF",

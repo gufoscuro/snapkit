@@ -92,6 +92,7 @@
 		"lucide-svelte": "^0.562.0",
 		"path-to-regexp": "^8.3.0",
 		"svelte-codemirror-editor": "^2.1.0",
+		"svelte-dnd-action": "^0.9.69",
 		"svelte-fullcalendar": "^3.0.0",
 		"tiptap-markdown": "^0.9.0"
 	}

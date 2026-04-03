@@ -18,7 +18,7 @@
       <p class="text-sm text-muted-foreground">{@render description()}</p>
     {/if}
   </div>
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-1 flex-col gap-4">
     {@render content()}
   </div>
 </div>

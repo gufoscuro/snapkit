@@ -36,7 +36,7 @@
   import * as m from '$lib/paraglide/messages'
   import type { Item } from '$lib/types/api-types'
   import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol } from '$utils/prices'
-  import { Plus } from '@lucide/svelte'
+  import { ArrowUpDown, GripVertical, Plus } from '@lucide/svelte'
   import type { QuotationLineItem } from './QuotationItemsEditor.svelte'
 
   /**
@@ -139,14 +139,14 @@
 
   function transformOutput(internalItems: InternalLineItem[]): QuotationLineItem[] {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return internalItems.map(({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, ...rest }) => {
+    return internalItems.map(({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, ...rest }, index) => {
       if (rest.type === 'descriptive')
         return {
           type: 'descriptive',
           description: rest.description,
         }
 
-      return rest
+      return { ...rest }
     })
   }
 
@@ -245,9 +245,20 @@
    * Handle items change callback
    */
   function handleItemsChange(completedItems: InternalLineItem[]) {
+    console.log(
+      'handleItemsChange',
+      completedItems.map(it => it.description || it.itemAttr?.name || it.item_snapshot?.name),
+    )
     const output = transformOutput(completedItems)
     onChange?.(output)
   }
+
+  $inspect(
+    'form?.values[name]',
+    (form?.values[name] || []).map(
+      it => `${it.description || it.itemAttr?.name || it.item_snapshot?.name} - index ${it.sort_order}`,
+    ),
+  )
 </script>
 
 <EditableListField
@@ -262,22 +273,51 @@
   disabled={isDisabled}
   syncFromForm={false}
   onItemsChange={handleItemsChange}
+  allowReorder
   class={className}>
-  {#snippet header()}
-    {#if showDeliveryDates}
-      <div class="max-w-xs">
-        <DateField
-          name="bulkDeliveryDate"
-          label={m.set_delivery_date()}
-          value={bulkDeliveryDate}
-          width="w-full"
-          disabled={isDisabled}
-          onChange={applyBulkDeliveryDate} />
-      </div>
-      <div class="my-8">
-        <Separator />
-      </div>
-    {/if}
+  {#snippet header({ options })}
+    <div class="flex w-full items-end justify-between gap-4">
+      {#if showDeliveryDates}
+        <div class="max-w-xs flex-1">
+          <DateField
+            name="bulkDeliveryDate"
+            label={m.set_delivery_date()}
+            value={bulkDeliveryDate}
+            width="w-full"
+            disabled={isDisabled || options.dragAndDropActive}
+            onChange={applyBulkDeliveryDate} />
+        </div>
+      {/if}
+      {#if !isDisabled}
+        <Button
+          variant={options.dragAndDropActive ? 'outline' : 'outline'}
+          size="sm"
+          onclick={options.toggleDragAndDrop}>
+          <ArrowUpDown class="mr-1 size-4" />
+          {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
+        </Button>
+      {/if}
+    </div>
+    <div class="my-8">
+      <Separator />
+    </div>
+  {/snippet}
+
+  {#snippet dragItem({ item, index })}
+    <div class="flex w-full cursor-grab items-center gap-3 rounded border bg-muted/50 px-3 py-2">
+      <GripVertical class="size-4 text-muted-foreground" />
+      <span class="font-semibold text-primary"><span class="opacity-60">#</span>{index + 1}</span>
+      {#if item.type === 'descriptive'}
+        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
+      {:else}
+        <span class="truncate text-sm">
+          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        </span>
+        {#if item.quantity}
+          <span class="text-xs text-muted-foreground">x{item.quantity}</span>
+        {/if}
+      {/if}
+    </div>
   {/snippet}
 
   {#snippet item({ item, index, updateItem })}
@@ -446,17 +486,19 @@
     {/if}
   {/snippet}
 
-  {#snippet addButton({ addItem, disabled: addDisabled })}
-    <div class="mt-1 gap-2 md:flex">
-      <Button variant="outline" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'item' })}>
-        <Plus class="mr-1 size-4" />
-        {m.add_item_line()}
-      </Button>
+  {#snippet addButton({ addItem, disabled: addDisabled, options: opts })}
+    {#if !opts.dragAndDropActive}
+      <div class="mt-1 gap-2 md:flex">
+        <Button variant="outline" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'item' })}>
+          <Plus class="mr-1 size-4" />
+          {m.add_item_line()}
+        </Button>
 
-      <Button variant="ghost" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'descriptive' })}>
-        <Plus class="mr-1 size-4" />
-        {m.add_description_line()}
-      </Button>
-    </div>
+        <Button variant="ghost" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'descriptive' })}>
+          <Plus class="mr-1 size-4" />
+          {m.add_description_line()}
+        </Button>
+      </div>
+    {/if}
   {/snippet}
 </EditableListField>
