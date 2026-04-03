@@ -30,13 +30,12 @@ describe('createCurrencyRenderer', () => {
     expect(render(mockCellContext(''))).toBe('-')
   })
 
-  it('formats number with default EUR currency and en-US locale', () => {
+  it('formats number with default EUR currency', () => {
     const config: ColumnConfig<TestRow> = { accessorKey: 'total', header: 'Total', renderer: 'currency' }
     const render = createCurrencyRenderer(config)
     const result = render(mockCellContext(1234.56))
-    // Default is EUR with en-US locale
-    expect(result).toContain('1,234.56')
-    expect(result).toMatch(/EUR|€/)
+    // EUR: comma decimal, period thousands, symbol after
+    expect(result).toBe('1.234,56 €')
   })
 
   it('formats with custom currency from accessor', () => {
@@ -46,36 +45,20 @@ describe('createCurrencyRenderer', () => {
       renderer: 'currency',
       rendererConfig: {
         currencyAccessor: (row: TestRow) => row.default_currency || 'USD',
-        locale: 'en-US',
       },
     }
     const render = createCurrencyRenderer(config)
     const row: TestRow = { total: 100, default_currency: 'USD' }
     const result = render(mockCellContext(100, row))
-    expect(result).toContain('$')
-    expect(result).toContain('100.00')
-  })
-
-  it('formats with custom locale', () => {
-    const config: ColumnConfig<TestRow> = {
-      accessorKey: 'total',
-      header: 'Total',
-      renderer: 'currency',
-      rendererConfig: {
-        locale: 'de-DE',
-      },
-    }
-    const render = createCurrencyRenderer(config)
-    const result = render(mockCellContext(1234.56))
-    // German locale uses period as thousands separator and comma as decimal
-    expect(result).toContain('1.234,56')
+    // USD: period decimal, comma thousands, symbol before
+    expect(result).toBe('$ 100.00')
   })
 
   it('handles string numeric values', () => {
     const config: ColumnConfig<TestRow> = { accessorKey: 'total', header: 'Total', renderer: 'currency' }
     const render = createCurrencyRenderer(config)
     const result = render(mockCellContext('99.99'))
-    expect(result).toContain('99.99')
+    expect(result).toBe('99,99 €')
   })
 
   it('returns raw string for non-numeric values', () => {
@@ -88,7 +71,7 @@ describe('createCurrencyRenderer', () => {
     const config: ColumnConfig<TestRow> = { accessorKey: 'total', header: 'Total', renderer: 'currency' }
     const render = createCurrencyRenderer(config)
     const result = render(mockCellContext(0))
-    expect(result).toContain('0.00')
+    expect(result).toBe('0,00 €')
   })
 
   it('formats negative numbers', () => {
@@ -96,10 +79,12 @@ describe('createCurrencyRenderer', () => {
       accessorKey: 'total',
       header: 'Total',
       renderer: 'currency',
-      rendererConfig: { locale: 'en-US' },
+      rendererConfig: {
+        currencyAccessor: (row: TestRow) => 'USD',
+      },
     }
     const render = createCurrencyRenderer(config)
     const result = render(mockCellContext(-50.25))
-    expect(result).toContain('50.25')
+    expect(result).toBe('$ -50.25')
   })
 })

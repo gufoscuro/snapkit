@@ -1,8 +1,9 @@
 import type { CellContext } from '@tanstack/table-core'
 import type { ColumnConfig, CurrencyConfig } from '../types'
+import { renderPrice } from '$lib/utils/prices'
 
 /**
- * Currency renderer - formats currency using Intl.NumberFormat
+ * Currency renderer - formats currency using the shared renderPrice utility
  *
  * @example
  * {
@@ -11,7 +12,6 @@ import type { ColumnConfig, CurrencyConfig } from '../types'
  *   renderer: 'currency',
  *   rendererConfig: {
  *     currencyAccessor: (row) => row.default_currency || 'EUR',
- *     locale: 'it-IT'
  *   }
  * }
  */
@@ -39,15 +39,6 @@ export function createCurrencyRenderer<T>(config: ColumnConfig<T>) {
 			? currencyConfig.currencyAccessor(row)
 			: 'EUR'
 
-		// Get locale
-		const locale = currencyConfig?.locale || 'en-US'
-
-		// Format currency
-		const formatter = new Intl.NumberFormat(locale, {
-			style: 'currency',
-			currency
-		})
-
-		return formatter.format(numericValue)
+		return renderPrice(numericValue, currency)
 	}
 }
