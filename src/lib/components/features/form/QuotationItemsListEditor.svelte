@@ -245,20 +245,9 @@
    * Handle items change callback
    */
   function handleItemsChange(completedItems: InternalLineItem[]) {
-    console.log(
-      'handleItemsChange',
-      completedItems.map(it => it.description || it.itemAttr?.name || it.item_snapshot?.name),
-    )
     const output = transformOutput(completedItems)
     onChange?.(output)
   }
-
-  $inspect(
-    'form?.values[name]',
-    (form?.values[name] || []).map(
-      it => `${it.description || it.itemAttr?.name || it.item_snapshot?.name} - index ${it.sort_order}`,
-    ),
-  )
 </script>
 
 <EditableListField
