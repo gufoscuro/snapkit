@@ -345,17 +345,9 @@
           <div class="flex items-baseline justify-between gap-2">
             <span class="block text-sm leading-6 font-medium">{m.unit_price()}</span>
             {#if item.itemBasePrice != null && item.itemBasePrice > 0}
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  <button
-                    type="button"
-                    class="cursor-pointer text-xs text-muted-foreground hover:text-primary hover:underline"
-                    onclick={() => updateItem(index, { unit_price: item.itemBasePrice })}>
-                    {m.item_price()}: {floatToPriceString(item.itemBasePrice, currency, 4)}{getCurrencySymbol(currency)}
-                  </button>
-                </Tooltip.Trigger>
-                <Tooltip.Content>{m.copy_price_to_field()}</Tooltip.Content>
-              </Tooltip.Root>
+              <span class="text-xs text-muted-foreground">
+                {m.item_cost()}: {floatToPriceString(item.itemBasePrice, currency, 4)}{getCurrencySymbol(currency)}
+              </span>
             {/if}
           </div>
           <PriceField

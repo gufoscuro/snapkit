@@ -134,6 +134,7 @@
   "prices": "Prezzi",
   "unit_price": "Prezzo Unitario",
   "item_price": "Prezzo Articolo",
+  "item_cost": "Costo articolo",
   "copy_price_to_field": "Clicca per copiare nel campo prezzo",
   "price_type": "Tipo Prezzo",
   "min_quantity": "Qtà Minima",
