@@ -8,6 +8,7 @@
   import * as m from '$lib/paraglide/messages'
   import { getLocale } from '$lib/paraglide/runtime'
   import { cn } from '$lib/utils.js'
+  import { renderMarkdown } from '$utils/markdown'
   import { apiRequest } from '$utils/request'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import { getUserInitials } from '$utils/strings'
@@ -177,7 +178,13 @@
         </Chat.BubbleAvatar>
         <Chat.BubbleMessage
           class={cn('flex flex-col gap-1', msg.isError && 'border border-destructive/30 bg-destructive/10')}>
-          <p>{msg.message}</p>
+          <div class="chat-markdown prose prose-sm dark:prose-invert max-w-none">
+            {#if msg.senderId === ASSISTANT_ID}
+              {@html renderMarkdown(msg.message)}
+            {:else}
+              <p>{msg.message}</p>
+            {/if}
+          </div>
           <div class="w-full text-xs group-data-[variant='sent']/chat-bubble:text-end">
             {msg.sentAt}
           </div>
@@ -248,3 +255,34 @@
     </Button>
   </form>
 </div>
+
+<style>
+  :global(.chat-markdown > :first-child) {
+    margin-top: 0;
+  }
+  :global(.chat-markdown > :last-child) {
+    margin-bottom: 0;
+  }
+  :global(.chat-markdown table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5em 0;
+    font-size: 0.85em;
+  }
+  :global(.chat-markdown th) {
+    text-align: left;
+    font-weight: 600;
+    padding: 0.35em 0.75em;
+    border-bottom: 2px solid var(--border);
+  }
+  :global(.chat-markdown td) {
+    padding: 0.35em 0.75em;
+    border-bottom: 1px solid var(--border);
+  }
+  :global(.chat-markdown tr:last-child td) {
+    border-bottom: none;
+  }
+  :global(.chat-markdown tbody tr:nth-child(even)) {
+    background: color-mix(in oklch, var(--muted), transparent 50%);
+  }
+</style>
