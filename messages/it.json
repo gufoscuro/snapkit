@@ -686,5 +686,7 @@
   "add_item_line": "Aggiungi articolo",
   "add_description_line": "Aggiungi descrizione",
   "download_pdf": "Scarica PDF",
-  "download_pdf_error": "Impossibile scaricare il PDF"
+  "download_pdf_error": "Impossibile scaricare il PDF",
+  "customize_columns": "Personalizza colonne",
+  "reset_defaults": "Ripristina predefiniti"
 }

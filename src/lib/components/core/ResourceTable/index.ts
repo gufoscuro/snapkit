@@ -19,3 +19,4 @@ export { createCustomRenderer } from './renderers/custom-renderer'
 
 // Utilities
 export { resolveColumns } from './utils/column-resolver'
+export type { ColumnPreference } from './utils/column-preferences'

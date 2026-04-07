@@ -1,7 +1,13 @@
 <script lang="ts" generics="T extends Record<string, any>">
+  import { browser } from '$app/environment'
   import { DataTable } from '$lib/components/core/DataTable'
+  import * as StorageUtil from '$lib/utils/storage'
   import type { ResourceTableProps } from './types'
   import { resolveColumns } from './utils/column-resolver'
+  import { applyPreferences, type ColumnPreference } from './utils/column-preferences'
+  import { renderComponent } from '$lib/components/ui/data-table/render-helpers'
+  import ColumnCustomizer from './ColumnCustomizer.svelte'
+  import ColumnSettingsHeader from './ColumnSettingsHeader.svelte'
 
   let {
     fetchFunction,
@@ -11,6 +17,7 @@
     emptyState,
     loadMoreLabel,
     stickyHeader = true,
+    columnsStorageId,
   }: ResourceTableProps<T> = $props()
 
   // --- State Management ---
@@ -19,6 +26,21 @@
   let loadingMore = $state(false)
   let hasMore = $state(true)
   let currentPage = $state(1)
+
+  // --- Column Customization ---
+  let columnPreferences = $state<ColumnPreference[] | null>(null)
+  let customizerOpen = $state(false)
+
+  // Load saved preferences on mount
+  $effect(() => {
+    if (browser && columnsStorageId) {
+      columnPreferences = StorageUtil.getByUser<ColumnPreference[]>(`columns:${columnsStorageId}`)
+    }
+  })
+
+  function handlePreferencesApply(preferences: ColumnPreference[] | null) {
+    columnPreferences = preferences
+  }
 
   // --- Fetch Logic ---
   async function loadInitial() {
@@ -65,8 +87,25 @@
   }
 
   // --- Column Resolution ---
-  // Converts ColumnConfig[] to ColumnDef[] (TanStack Table format)
-  const resolvedColumns = $derived(resolveColumns(columns, actionHelpers))
+  const effectiveColumns = $derived(
+    columnsStorageId ? applyPreferences(columns, columnPreferences) : columns
+  )
+  const resolvedColumns = $derived.by(() => {
+    const resolved = resolveColumns(effectiveColumns, actionHelpers)
+    // Inject settings icon into the last column header when customization is enabled
+    if (columnsStorageId && resolved.length > 0) {
+      const last = resolved[resolved.length - 1]
+      const originalHeader = last.header
+      resolved[resolved.length - 1] = {
+        ...last,
+        header: () => renderComponent(ColumnSettingsHeader, {
+          originalHeader: typeof originalHeader === 'string' ? originalHeader : '',
+          onclick: () => { customizerOpen = true },
+        }),
+      } as (typeof resolved)[number]
+    }
+    return resolved
+  })
 
   // --- Reactive Reload on Filter Change ---
   $effect(() => {
@@ -86,3 +125,12 @@
   {loadMoreLabel}
   {stickyHeader}
   class={className} />
+
+{#if columnsStorageId}
+  <ColumnCustomizer
+    {columns}
+    storageId={columnsStorageId}
+    open={customizerOpen}
+    onApply={handlePreferencesApply}
+    onOpenChange={(v) => { customizerOpen = v }} />
+{/if}

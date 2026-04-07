@@ -684,5 +684,7 @@
   "add_item_line": "Add item",
   "add_description_line": "Add description",
   "download_pdf": "Download PDF",
-  "download_pdf_error": "Failed to download PDF"
+  "download_pdf_error": "Failed to download PDF",
+  "customize_columns": "Customize columns",
+  "reset_defaults": "Reset to defaults"
 }

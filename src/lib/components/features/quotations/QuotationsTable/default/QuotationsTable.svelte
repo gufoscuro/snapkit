@@ -18,6 +18,7 @@
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import QuotationTagBadges from '$lib/components/features/quotations/QuotationTagBadges.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { Quotation } from '$lib/types/api-types'
@@ -25,7 +26,6 @@
   import type { FilterQuery } from '$lib/utils/filters'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
-  import QuotationTagBadges from '$lib/components/features/quotations/QuotationTagBadges.svelte'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
   import { QuotationsTableContract } from './QuotationsTable.contract.js'
@@ -123,5 +123,5 @@
 </script>
 
 {#if legalEntity && fetchQuotations}
-  <ResourceTable {columns} fetchFunction={fetchQuotations} {filters} />
+  <ResourceTable {columns} fetchFunction={fetchQuotations} {filters} columnsStorageId="quotation-table" />
 {/if}

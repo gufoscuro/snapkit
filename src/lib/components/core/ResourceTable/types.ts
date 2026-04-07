@@ -49,6 +49,13 @@ export type ResourceTableProps<T extends Record<string, any>> = {
    * Enable sticky header (default: true)
    */
   stickyHeader?: boolean
+
+  /**
+   * Storage ID for column customization persistence.
+   * When provided, enables column reorder/visibility UI.
+   * Preferences are persisted per-user in localStorage under this key.
+   */
+  columnsStorageId?: string
 }
 
 /**

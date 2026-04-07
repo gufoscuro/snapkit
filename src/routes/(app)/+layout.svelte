@@ -6,10 +6,18 @@
   import { Toaster } from '$lib/components/ui/sonner'
   import { initLanguageContext } from '$lib/contexts/language'
   import { pushUrl } from '$lib/contexts/navigation-history.svelte'
+  import * as StorageUtil from '$lib/utils/storage'
   import type { OnNavigate } from '@sveltejs/kit'
   import type { LayoutProps } from './$types'
 
-  let { children }: LayoutProps = $props()
+  let { data, children }: LayoutProps = $props()
+
+  // Set user key for per-user localStorage storage
+  $effect(() => {
+    if (data.user?.id) {
+      StorageUtil.setUserKey(data.user.id)
+    }
+  })
 
   // Initialize language context for i18n
   initLanguageContext()
