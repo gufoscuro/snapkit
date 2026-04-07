@@ -14,6 +14,7 @@
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
   import CountryField from '$components/core/form/CountryField.svelte'
+  import LanguageCodeField from '$components/core/form/LanguageCodeField.svelte'
   import { FormFieldClass } from '$components/core/form/form.js'
   import FormErrorMessage from '$components/core/form/FormErrorMessage.svelte'
   import FormUtil from '$components/core/form/FormUtil.svelte'
@@ -235,7 +236,7 @@
               label={m.default_currency()}
               items={currencyItems}
               class={FormFieldClass.MinWidth} />
-            <TextField name="language_code" label={m.language_code()} class={FormFieldClass.MaxWidth} />
+            <LanguageCodeField name="language_code" label={m.language_code()} class={FormFieldClass.MinWidth} />
           {/snippet}
         </GroupTitle>
 
