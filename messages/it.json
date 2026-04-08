@@ -711,5 +711,17 @@
   "enum_billing_frequency_per_event": "Per Evento",
   "enum_billing_frequency_weekly": "Settimanale",
   "enum_billing_frequency_biweekly": "Quindicinale",
-  "enum_billing_frequency_monthly": "Mensile"
+  "enum_billing_frequency_monthly": "Mensile",
+  "mark_as_sent": "Segna come inviato",
+  "mark_as_not_sent": "Rimuovi stato inviato",
+  "mark_as_sent_confirmation": "Sei sicuro di voler segnare il preventivo \"{name}\" come inviato?",
+  "mark_as_not_sent_confirmation": "Sei sicuro di voler rimuovere lo stato inviato dal preventivo \"{name}\"?",
+  "quotation_marked_as_sent": "Preventivo \"{name}\" segnato come inviato",
+  "quotation_marked_as_not_sent": "Stato inviato rimosso dal preventivo \"{name}\"",
+  "approve_quotation": "Approva",
+  "reject_quotation": "Rifiuta",
+  "approve_quotation_confirmation": "Sei sicuro di voler approvare il preventivo \"{name}\"?",
+  "reject_quotation_confirmation": "Sei sicuro di voler rifiutare il preventivo \"{name}\"?",
+  "quotation_approved_success": "Preventivo \"{name}\" approvato",
+  "quotation_rejected_success": "Preventivo \"{name}\" rifiutato"
 }

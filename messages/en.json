@@ -709,5 +709,17 @@
   "enum_billing_frequency_per_event": "Per Event",
   "enum_billing_frequency_weekly": "Weekly",
   "enum_billing_frequency_biweekly": "Biweekly",
-  "enum_billing_frequency_monthly": "Monthly"
+  "enum_billing_frequency_monthly": "Monthly",
+  "mark_as_sent": "Mark as sent",
+  "mark_as_not_sent": "Mark as not sent",
+  "mark_as_sent_confirmation": "Are you sure you want to mark quotation \"{name}\" as sent?",
+  "mark_as_not_sent_confirmation": "Are you sure you want to remove the sent status from quotation \"{name}\"?",
+  "quotation_marked_as_sent": "Quotation \"{name}\" marked as sent",
+  "quotation_marked_as_not_sent": "Sent status removed from quotation \"{name}\"",
+  "approve_quotation": "Approve",
+  "reject_quotation": "Reject",
+  "approve_quotation_confirmation": "Are you sure you want to approve quotation \"{name}\"?",
+  "reject_quotation_confirmation": "Are you sure you want to reject quotation \"{name}\"?",
+  "quotation_approved_success": "Quotation \"{name}\" approved",
+  "quotation_rejected_success": "Quotation \"{name}\" rejected"
 }
