@@ -447,10 +447,8 @@
       {#snippet bottom()}
         <BottomBar>
           {#if !record}
-            <!-- Create mode -->
             <BusyButton type="submit">{m.save_changes()}</BusyButton>
           {:else if record.state === 'open'}
-            <!-- Edit mode, open state -->
             {#if actionOptions}
               <RecordActionMenu buttonVariant="outline" actions={quotationActions} {actionOptions} />
             {/if}
@@ -474,7 +472,6 @@
               <RecordActionButton action={approveAction} {actionOptions} />
             {/if}
           {:else}
-            <!-- Read-only (approved/rejected/superseded) -->
             <DownloadActionButton
               onDownload={() =>
                 apiDownload({
