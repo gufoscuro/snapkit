@@ -317,12 +317,76 @@ For each entity + flag combination, add these keys:
 }
 ```
 
+### RecordActionButton component
+
+For cases where an action should appear as a standalone button (not inside the dropdown menu), use `RecordActionButton`. It uses the same `RecordAction` type and `executeRecordAction()` for confirmation/toast handling.
+
+**File:** `src/lib/components/ui/record-action-button/`
+
+```svelte
+<RecordActionButton action={approveAction} {actionOptions} variant="default" />
+<RecordActionButton action={rejectAction} {actionOptions} variant="outline" />
+```
+
+**Props:**
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `action` | `RecordAction<T>` | required | The action to execute |
+| `actionOptions` | `T` | required | Options passed to the action callbacks |
+| `variant` | `ButtonVariant` | `'default'` | Button variant |
+| `size` | `'sm' \| 'default' \| 'lg' \| 'icon'` | `'default'` | Button size |
+| `class` | `string` | — | Additional CSS class |
+| `children` | `Snippet` | — | Custom button content (overrides action label) |
+
+The button respects `visible()` and `disabled()` from the action definition — it won't render if the action is not visible.
+
+**Common pattern:** Use both `RecordActionMenu` (dropdown for all actions) and `RecordActionButton` (prominent buttons for key actions) together in the bottom bar:
+
+```svelte
+{#if actionOptions}
+  <RecordActionMenu buttonVariant="outline" actions={allActions} {actionOptions} />
+{/if}
+
+{#if rejectAction && actionOptions}
+  <RecordActionButton action={rejectAction} {actionOptions} variant="outline" />
+{/if}
+{#if approveAction && actionOptions}
+  <RecordActionButton action={approveAction} {actionOptions} />
+{/if}
+```
+
+### Custom (non-flag) actions
+
+Not all actions are flag toggles. For state transitions, API calls with different methods, or non-boolean operations, define a plain `RecordAction` object:
+
+```typescript
+const approveAction: RecordAction<MyOptions> = {
+  id: 'approve',
+  label: m.approve(),
+  confirmation: true,
+  confirmationText: (opts) => m.approve_confirmation({ name: opts.name }),
+  successMessage: (opts) => m.approved_success({ name: opts.name }),
+  errorMessage: m.flag_action_error(),
+  visible: (opts) => opts.state === 'open',
+  onAction: async (opts) => {
+    await api.post(`/endpoint/${opts.targetId}/transition`, {
+      data: { transition: 'approve' },
+    })
+    await onSuccess?.()
+  },
+}
+```
+
+These can be mixed with `createFlagToggleAction` results in the same actions array.
+
 ### Existing implementations
 
 | Entity | Actions file | Detail component |
 |---|---|---|
 | Customer | `src/lib/components/features/customers/customer-actions.ts` | `CustomerDetails.svelte` |
 | Supplier | `src/lib/components/features/suppliers/supplier-actions.ts` | `SupplierDetails.svelte` |
+| Quotation | `src/lib/components/features/quotations/quotation-actions.ts` | `QuotationDetails.svelte` |
 
 ### Best practices
 
