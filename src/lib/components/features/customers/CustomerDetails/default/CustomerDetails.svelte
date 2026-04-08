@@ -12,6 +12,7 @@
 
 <script lang="ts">
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
+  import BottomBar from '$components/core/form/BottomBar.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
   import CountryField from '$components/core/form/CountryField.svelte'
   import LanguageCodeField from '$components/core/form/LanguageCodeField.svelte'
@@ -274,13 +275,13 @@
       {/snippet}
 
       {#snippet bottom()}
-        <div class="fixed right-0 bottom-0 flex h-14 w-full items-center justify-end gap-2 px-4">
+        <BottomBar>
           {#if actionOptions}
             <RecordActionMenu buttonVariant="outline" actions={flagActions} {actionOptions} />
           {/if}
 
           <BusyButton type="submit">{m.save_changes()}</BusyButton>
-        </div>
+        </BottomBar>
       {/snippet}
     </FormUtil>
   {/snippet}

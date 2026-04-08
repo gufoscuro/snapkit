@@ -122,5 +122,5 @@
 </script>
 
 {#if legalEntity && supplierId && fetchAddresses}
-  <ResourceTable {columns} fetchFunction={fetchAddresses} {filters} />
+  <ResourceTable {columns} fetchFunction={fetchAddresses} {filters} columnsStorageId="supplier-addresses-table" />
 {/if}

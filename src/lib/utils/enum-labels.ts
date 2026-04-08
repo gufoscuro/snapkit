@@ -4,6 +4,8 @@ import type {
   AbcClass,
   AnnualRevenueRange,
   AtecoCode,
+  BillingFrequency,
+  BillingType,
   BinLocationType,
   CompanySize,
   Currency,
@@ -13,7 +15,6 @@ import type {
   DimensionUnit,
   EmployeeCountRange,
   Incoterm,
-  Item,
   ItemCategory,
   ItemStatus,
   LegalEntityWarehouse,
@@ -471,7 +472,7 @@ export function getQuotationStatusLabel(status: Quotation['state']): string {
 }
 
 export function getQuotationStatusVariant(status: Quotation['state']): BadgeVariant {
-  return quotationStatusConfig[status]?.variant ?? 'default'
+  return 'outline'
 }
 
 // Quotation Tags
@@ -499,9 +500,25 @@ export const incotermLabels: EnumLabelMap<Incoterm> = {
   DDP: () => 'DDP - Delivered Duty Paid',
 }
 
+// Billing Type Labels
+export const billingTypeLabels: EnumLabelMap<BillingType> = {
+  by_order: m.enum_billing_type_by_order,
+  by_delivery: m.enum_billing_type_by_delivery,
+  monthly_summary: m.enum_billing_type_monthly_summary,
+  pro_forma: m.enum_billing_type_pro_forma,
+}
+
+// Billing Frequency Labels
+export const billingFrequencyLabels: EnumLabelMap<BillingFrequency> = {
+  per_event: m.enum_billing_frequency_per_event,
+  weekly: m.enum_billing_frequency_weekly,
+  biweekly: m.enum_billing_frequency_biweekly,
+  monthly: m.enum_billing_frequency_monthly,
+}
+
 // Sales Transaction Type Labels
 export const salesTransactionTypeLabels: EnumLabelMap<SalesTransactionType> = {
-  'VEN': () => 'VEN - Vendita',
+  VEN: () => 'VEN - Vendita',
   'VEN-EXP': () => 'VEN-EXP - Vendita Export',
   'VEN-UE': () => 'VEN-UE - Vendita UE',
   'VEN-TRI': () => 'VEN-TRI - Vendita Triangolazione',
@@ -509,10 +526,10 @@ export const salesTransactionTypeLabels: EnumLabelMap<SalesTransactionType> = {
   'C/VIS-RES': () => 'C/VIS-RES - Reso Conto Visione',
   'C/LAV': () => 'C/LAV - Conto Lavoro',
   'C/LAV-RES': () => 'C/LAV-RES - Reso Conto Lavoro',
-  'RES': () => 'RES - Reso',
-  'OMG': () => 'OMG - Omaggio',
-  'TRASF': () => 'TRASF - Trasferimento',
-  'RIP': () => 'RIP - Riparazione',
+  RES: () => 'RES - Reso',
+  OMG: () => 'OMG - Omaggio',
+  TRASF: () => 'TRASF - Trasferimento',
+  RIP: () => 'RIP - Riparazione',
   'RIP-RES': () => 'RIP-RES - Reso Riparazione',
-  'CAMP': () => 'CAMP - Campionatura',
+  CAMP: () => 'CAMP - Campionatura',
 }

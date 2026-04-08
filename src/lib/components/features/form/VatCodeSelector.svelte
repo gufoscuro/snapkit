@@ -22,11 +22,13 @@
 
 <script lang="ts">
   import { EntitySelectorDefaults, type EntitySelectorProps } from '$components/core/form/form'
+  import { getFormContextOptional } from '$components/core/form/form-context'
   import FormGenericSingleSelector from '$components/core/form/FormGenericSingleSelector.svelte'
   import * as m from '$lib/paraglide/messages'
   import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$utils/filters'
   import type { ExtendedOption } from '$utils/generics'
   import { api } from '$utils/request'
+  import { onMount } from 'svelte'
 
   type Props = EntitySelectorProps & {
     /** Pre-selected VAT code */
@@ -65,6 +67,24 @@
     onClear = () => {},
   }: Props = $props()
 
+  const form = getFormContextOptional()
+
+  let defaultAttr = $state<VatCodeSummary | undefined>(undefined)
+  const resolvedAttr = $derived(attr ?? defaultAttr)
+
+  onMount(async () => {
+    if (attr) return
+    const currentValue = form?.values[name]
+    if (currentValue) return
+
+    const items = await fetchFunction({})
+    const defaultItem = items.find(item => item.is_default)
+    if (defaultItem) {
+      defaultAttr = defaultItem
+      form?.updateField(name, defaultItem.id as never)
+    }
+  })
+
   function optionMappingFunction(item: VatCodeSummary): ExtendedOption {
     return {
       label: `${item.code} - ${item.description} (${item.rate}%)`,
@@ -73,26 +93,19 @@
     }
   }
 
-  function filterFunction(item: VatCodeSummary): boolean {
-    if (direction && item.direction !== direction) return false
-    return true
-  }
-
   async function fetchFunction(query: Partial<FilterQuery>): Promise<VatCodeSummary[]> {
     const params = createQueryRequestObject(query)
 
-    const items = (
+    return (
       await api.get<PaginatedResponse<VatCodeSummary>>('/vat-codes', {
-        queryParams: params,
+        queryParams: { ...params, ...(direction ? { direction } : {}) },
       })
     ).data
-
-    return items.filter(filterFunction)
   }
 </script>
 
 <FormGenericSingleSelector
-  selectedValue={attr ? optionMappingFunction(attr) : undefined}
+  selectedValue={resolvedAttr ? optionMappingFunction(resolvedAttr) : undefined}
   emptyText={m.no_vat_codes_found()}
   {label}
   {placeholder}

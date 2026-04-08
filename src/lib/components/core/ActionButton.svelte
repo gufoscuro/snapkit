@@ -13,12 +13,31 @@
 
   type BusyButtonProps = ComponentProps<typeof BusyButton>
 
+  type TooltipSide = 'top' | 'right' | 'bottom' | 'left'
+  type TooltipAlign = 'start' | 'center' | 'end'
+
   type Props = BusyButtonProps & {
     /** Tooltip text. Also sets aria-label for accessibility. */
     tooltip?: string
+    /** Tooltip placement side. @default 'top' */
+    tooltipSide?: TooltipSide
+    /** Tooltip side offset in px. @default 0 */
+    tooltipSideOffset?: number
+    /** Tooltip alignment. @default 'center' */
+    tooltipAlign?: TooltipAlign
+    /** Tooltip alignment offset in px. @default 0 */
+    tooltipAlignOffset?: number
   }
 
-  let { tooltip, children, ...restProps }: Props = $props()
+  let {
+    tooltip,
+    tooltipSide,
+    tooltipSideOffset,
+    tooltipAlign,
+    tooltipAlignOffset,
+    children,
+    ...restProps
+  }: Props = $props()
 </script>
 
 {#if tooltip}
@@ -30,7 +49,7 @@
         </BusyButton>
       {/snippet}
     </Tooltip.Trigger>
-    <Tooltip.Content>
+    <Tooltip.Content side={tooltipSide} sideOffset={tooltipSideOffset} align={tooltipAlign} alignOffset={tooltipAlignOffset}>
       {tooltip}
     </Tooltip.Content>
   </Tooltip.Root>

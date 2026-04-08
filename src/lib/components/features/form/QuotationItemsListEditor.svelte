@@ -37,6 +37,7 @@
   import type { Item } from '$lib/types/api-types'
   import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol } from '$utils/prices'
   import { ArrowUpDown, GripVertical, Plus } from '@lucide/svelte'
+  import { untrack } from 'svelte'
   import type { QuotationLineItem } from './QuotationItemsEditor.svelte'
 
   /**
@@ -74,6 +75,8 @@
     onChange?: (items: QuotationLineItem[]) => void
     /** When this value changes, items are re-hydrated from the form context */
     refreshKey?: unknown
+    /** Default VAT code from customer commercial terms (overrides global is_default) */
+    defaultVatCode?: import('$components/features/form/VatCodeSelector.svelte').VatCodeSummary
     /** Additional CSS classes */
     class?: string
   }
@@ -89,6 +92,7 @@
     disabled = false,
     onChange,
     refreshKey = undefined,
+    defaultVatCode = undefined,
     class: className = '',
   }: Props = $props()
 
@@ -121,14 +125,34 @@
       unit_price: 0,
       discount_percent: 0,
       discount_amount: 0,
-      vat_code_id: '',
+      vat_code_id: defaultVatCode?.id ?? '',
+      vat_code_snapshot: defaultVatCode ? (defaultVatCode as unknown as Record<string, unknown>) : undefined,
       requested_delivery_date: '',
       delivery_date: bulkDeliveryDate instanceof Date ? bulkDeliveryDate.toISOString() : bulkDeliveryDate,
       useDiscountAmount: false,
       itemAttr: undefined,
-      vatCodeAttr: undefined,
+      vatCodeAttr: defaultVatCode ?? undefined,
     }
   }
+
+  // When defaultVatCode arrives (async from commercial terms), apply to items with empty vat_code_id.
+  // Uses untrack on items to avoid read→write loop.
+  $effect(() => {
+    const vatCode = defaultVatCode
+    if (!vatCode) return
+    const current = untrack(() => items)
+    const needsUpdate = current.some(item => item.type === 'item' && !item.vat_code_id)
+    if (!needsUpdate) return
+    items = current.map(item => {
+      if (item.type !== 'item' || item.vat_code_id) return item
+      return {
+        ...item,
+        vat_code_id: vatCode.id,
+        vat_code_snapshot: vatCode as unknown as Record<string, unknown>,
+        vatCodeAttr: vatCode,
+      }
+    })
+  })
 
   function isCompleteItem(item: InternalLineItem): boolean {
     if (item.type === 'descriptive') {
@@ -435,7 +459,7 @@
         <VatCodeSelector
           name="vatCode-{index}"
           label={m.vat_code()}
-          attr={item.vatCodeAttr}
+          attr={item.vatCodeAttr || defaultVatCode}
           direction="vendita"
           showErrorMessage={false}
           width="w-full"

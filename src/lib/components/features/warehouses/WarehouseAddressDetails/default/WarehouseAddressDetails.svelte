@@ -7,6 +7,7 @@
   @api PUT /api/legal-entities/{legalEntity}/warehouses/{warehouse}/address (Moddo API)
 -->
 <script lang="ts">
+  import BottomBar from '$components/core/form/BottomBar.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
   import CountryField from '$components/core/form/CountryField.svelte'
   import { FormFieldClass } from '$components/core/form/form.js'
@@ -96,9 +97,9 @@
       <TextField name="postal_code" label={m.postal_code()} class={FormFieldClass.MaxWidth} />
       <CountryField name="country_code" label={m.country_code()} class={FormFieldClass.MinWidth} />
 
-      <div class="fixed right-0 bottom-0 flex h-14 w-full items-center justify-end px-4">
+      <BottomBar>
         <BusyButton type="submit">{m.save_changes()}</BusyButton>
-      </div>
+      </BottomBar>
     {/snippet}
   </FormUtil>
 {/if}

@@ -1050,6 +1050,76 @@ export type Document = {
 }
 
 // ============================================================================
+// Customer Commercial Terms Types
+// ============================================================================
+
+export type BillingType = 'by_order' | 'by_delivery' | 'monthly_summary' | 'pro_forma'
+
+export type BillingFrequency = 'per_event' | 'weekly' | 'biweekly' | 'monthly'
+
+/**
+ * Customer commercial terms from Moddo API
+ * GET /api/legal-entities/{legalEntity}/customers/{customer}/commercial-terms
+ */
+export type VatCode = {
+  id: string
+  code: string
+  description: string
+  rate: number
+  nature: string
+  legal_reference: string
+  type: string
+  direction: 'vendita' | 'acquisto'
+  applies_to: 'beni' | 'servizi' | 'beni_servizi'
+  requires_intent_declaration: boolean
+  requires_stamp_duty: boolean
+  note: string
+  is_default: boolean
+}
+
+export type CustomerCommercialTerms = {
+  id: string
+  payment_term_id: string
+  payment_term?: PaymentTerm
+  vat_code_id: string
+  vat_code?: VatCode
+  iban: string
+  bic_swift: string
+  support_bank: string
+  trade_discount: number
+  incoterm: Incoterm
+  incoterm_place: string
+  free_shipping_threshold: number
+  minimum_order_value: number
+  billing_type: BillingType
+  billing_frequency: BillingFrequency | null
+  version: number
+}
+
+/**
+ * Supplier commercial terms from Moddo API
+ * GET /api/legal-entities/{legalEntity}/suppliers/{supplier}/commercial-terms
+ */
+export type SupplierCommercialTerms = {
+  id: string
+  payment_term_id: string
+  payment_term?: PaymentTerm
+  vat_code_id: string
+  vat_code?: VatCode
+  iban: string
+  bic_swift: string
+  support_bank: string
+  trade_discount: number
+  incoterm: Incoterm
+  incoterm_place: string
+  free_shipping_threshold: number
+  minimum_order_value: number
+  billing_type: BillingType
+  billing_frequency: BillingFrequency | null
+  version: number
+}
+
+// ============================================================================
 // Quotations API Types
 // ============================================================================
 

@@ -180,6 +180,25 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                     },
                   },
                 },
+                {
+                  $id: 'customer-commercial-terms',
+                  title: 'customer_commercial_terms',
+                  route: '/contacts/customers/upsert/:uuid/commercial-terms',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.CustomerSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'customers.customercommercialterms.default.CustomerCommercialTerms',
+                      enabled: true,
+                    },
+                  },
+                },
               ],
             },
           ],
@@ -333,6 +352,25 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                     },
                   },
                 },
+                {
+                  $id: 'supplier-commercial-terms',
+                  title: 'supplier_commercial_terms',
+                  route: '/contacts/suppliers/upsert/:uuid/commercial-terms',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.SupplierSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'suppliers.suppliercommercialterms.default.SupplierCommercialTerms',
+                      enabled: true,
+                    },
+                  },
+                },
               ],
             },
           ],
@@ -435,7 +473,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               },
               snippets: {
                 sidebar: {
-                  componentKey: 'globals.sidebars.SimpleSidebar',
+                  componentKey: 'globals.sidebars.QuotationSidebar',
                   enabled: true,
                 },
                 content: {

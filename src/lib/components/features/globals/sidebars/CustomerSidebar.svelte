@@ -60,6 +60,12 @@
         pageId: 'customer-documents',
         params: { uuid: customer.id },
       },
+      {
+        type: 'link',
+        label: m.commercial_terms(),
+        pageId: 'customer-commercial-terms',
+        params: { uuid: customer.id },
+      },
     ]
 
     return { name: m.customer(), items }

@@ -1,13 +1,13 @@
 <script lang="ts" generics="T extends Record<string, any>">
   import { browser } from '$app/environment'
   import { DataTable } from '$lib/components/core/DataTable'
-  import * as StorageUtil from '$lib/utils/storage'
-  import type { ResourceTableProps } from './types'
-  import { resolveColumns } from './utils/column-resolver'
-  import { applyPreferences, type ColumnPreference } from './utils/column-preferences'
   import { renderComponent } from '$lib/components/ui/data-table/render-helpers'
+  import * as StorageUtil from '$lib/utils/storage'
   import ColumnCustomizer from './ColumnCustomizer.svelte'
   import ColumnSettingsHeader from './ColumnSettingsHeader.svelte'
+  import type { ResourceTableProps } from './types'
+  import { applyPreferences, type ColumnPreference } from './utils/column-preferences'
+  import { resolveColumns } from './utils/column-resolver'
 
   let {
     fetchFunction,
@@ -87,9 +87,7 @@
   }
 
   // --- Column Resolution ---
-  const effectiveColumns = $derived(
-    columnsStorageId ? applyPreferences(columns, columnPreferences) : columns
-  )
+  const effectiveColumns = $derived(columnsStorageId ? applyPreferences(columns, columnPreferences) : columns)
   const resolvedColumns = $derived.by(() => {
     const resolved = resolveColumns(effectiveColumns, actionHelpers)
     // Inject settings icon into the last column header when customization is enabled
@@ -98,10 +96,13 @@
       const originalHeader = last.header
       resolved[resolved.length - 1] = {
         ...last,
-        header: () => renderComponent(ColumnSettingsHeader, {
-          originalHeader: typeof originalHeader === 'string' ? originalHeader : '',
-          onclick: () => { customizerOpen = true },
-        }),
+        header: () =>
+          renderComponent(ColumnSettingsHeader, {
+            originalHeader: typeof originalHeader === 'string' ? originalHeader : '',
+            onclick: () => {
+              customizerOpen = true
+            },
+          }),
       } as (typeof resolved)[number]
     }
     return resolved
@@ -132,5 +133,7 @@
     storageId={columnsStorageId}
     open={customizerOpen}
     onApply={handlePreferencesApply}
-    onOpenChange={(v) => { customizerOpen = v }} />
+    onOpenChange={v => {
+      customizerOpen = v
+    }} />
 {/if}

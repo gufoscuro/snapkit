@@ -99,5 +99,5 @@
 </script>
 
 {#if legalEntity && fetchSuppliers}
-  <ResourceTable {columns} fetchFunction={fetchSuppliers} {filters} />
+  <ResourceTable {columns} fetchFunction={fetchSuppliers} {filters} columnsStorageId="suppliers-table" />
 {/if}

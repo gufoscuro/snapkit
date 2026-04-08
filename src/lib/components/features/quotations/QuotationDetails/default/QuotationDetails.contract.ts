@@ -2,11 +2,15 @@ import { Type } from '@sinclair/typebox'
 import type { ComponentContract } from '$lib/contexts/page-state'
 
 const QuotationStatusSchema = Type.Union([
-  Type.Literal('draft'),
-  Type.Literal('active'),
+  Type.Literal('open'),
   Type.Literal('approved'),
   Type.Literal('rejected'),
   Type.Literal('superseded'),
+])
+
+const QuotationTagSchema = Type.Union([
+  Type.Literal('expired'),
+  Type.Literal('sent'),
 ])
 
 export const QuotationDataSchema = Type.Object({
@@ -24,6 +28,7 @@ export const QuotationDataSchema = Type.Object({
   incoterm: Type.String(),
   incoterm_location: Type.String(),
   state: QuotationStatusSchema,
+  tags: Type.Array(QuotationTagSchema),
   net_value: Type.Number(),
   gross_value: Type.Number(),
   notes_internal: Type.String(),

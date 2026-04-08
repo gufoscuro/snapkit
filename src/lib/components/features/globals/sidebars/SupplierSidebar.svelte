@@ -59,6 +59,12 @@
         pageId: 'supplier-documents',
         params: { uuid: supplier.id },
       },
+      {
+        type: 'link',
+        label: m.commercial_terms(),
+        pageId: 'supplier-commercial-terms',
+        params: { uuid: supplier.id },
+      },
     ]
 
     return { name: m.supplier(), items }

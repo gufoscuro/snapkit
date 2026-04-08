@@ -14,8 +14,10 @@
 </script>
 
 <script lang="ts">
+  import ActionButton from '$components/core/ActionButton.svelte'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
+  import BottomBar from '$components/core/form/BottomBar.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
   import DateField from '$components/core/form/DateField.svelte'
   import { FormFieldClass } from '$components/core/form/form.js'
@@ -31,18 +33,26 @@
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
   import PaymentTermSelector from '$components/features/form/PaymentTermSelector.svelte'
   import QuotationItemsListEditor from '$components/features/form/QuotationItemsListEditor.svelte'
+  import type { VatCodeSummary } from '$components/features/form/VatCodeSelector.svelte'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
+  import {
+    createQuotationActions,
+    type QuotationActionOptions,
+  } from '$components/features/quotations/quotation-actions'
   import Separator from '$components/ui/separator/separator.svelte'
+  import { RecordActionButton } from '$lib/components/ui/record-action-button'
+  import { RecordActionMenu } from '$lib/components/ui/record-action-menu'
   import { useProvides } from '$lib/contexts/page-state'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
-  import type { Quotation } from '$lib/types/api-types'
+  import type { Currency, CustomerCommercialTerms, PaymentTerm, Quotation } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { currencyLabels, incotermLabels, salesTransactionTypeLabels, toSelectItems } from '$lib/utils/enum-labels'
   import { api, apiDownload } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
+  import { IconDeviceFloppy } from '@tabler/icons-svelte'
   import { QuotationDetailsContract } from './QuotationDetails.contract.js'
 
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
@@ -75,6 +85,52 @@
   const { handleSubmit, handleSuccess, handleFailure } = detail
   const record = $derived(detail.record)
   const promise = $derived(detail.promise)
+  const isReadOnly = $derived(!!record && record.state !== 'open')
+
+  // Quotation actions (sent flag, approve, reject)
+  const quotationActions = $derived(
+    legalEntityId ? createQuotationActions({ legalEntityId, onSuccess: detail.refetch }) : [],
+  )
+  const actionOptions = $derived.by((): QuotationActionOptions | null => {
+    if (!record) return null
+    return {
+      targetId: record.id,
+      documentNumber: record.document_number,
+      version: record.version,
+      state: record.state,
+      sentAt: record.sent_at || null,
+    }
+  })
+  const approveAction = $derived(quotationActions.find(a => a.id === 'approve'))
+  const rejectAction = $derived(quotationActions.find(a => a.id === 'reject'))
+
+  // Commercial terms state (populated when a customer is selected in create mode)
+  let commercialTermsPaymentTerm = $state<PaymentTerm | undefined>(undefined)
+  let commercialTermsVatCode = $state<VatCodeSummary | undefined>(undefined)
+
+  async function fetchCustomerCommercialTerms(customerId: string, setPaymentTermId: (id: string) => void) {
+    if (!customerId || !legalEntityId) {
+      commercialTermsPaymentTerm = undefined
+      commercialTermsVatCode = undefined
+      return
+    }
+
+    const { data } = await api.safe.get<CustomerCommercialTerms>(
+      `/legal-entities/${legalEntityId}/customers/${customerId}/commercial-terms`,
+    )
+
+    if (data) {
+      commercialTermsPaymentTerm = data.payment_term
+      commercialTermsVatCode = data.vat_code as VatCodeSummary | undefined
+
+      if (data.payment_term) {
+        setPaymentTermId(data.payment_term.id)
+      }
+    } else {
+      commercialTermsPaymentTerm = undefined
+      commercialTermsVatCode = undefined
+    }
+  }
 
   const currencyItems = toSelectItems(currencyLabels)
   const incotermItems = toSelectItems(incotermLabels)
@@ -87,7 +143,7 @@
     customer_id: '',
     ship_to_address_id: '',
     contact_person_id: '',
-    currency: DEFAULT_CURRENCY_CODE,
+    currency: DEFAULT_CURRENCY_CODE as Currency,
     valid_from: new Date().toISOString(),
     valid_to: '',
     payment_term_id: '',
@@ -134,15 +190,20 @@
     return undefined
   })
 
-  // Resolve payment term snapshot for pre-populating selector in edit mode
+  // Resolve payment term: edit mode uses snapshot, create mode uses commercial terms
   const paymentTermAttr = $derived.by(() => {
-    if (!record) return undefined
-    const snapshot = record.payment_term_snapshot
-    if (Array.isArray(snapshot) && snapshot.length > 0) {
-      return snapshot[0] as Record<string, unknown>
+    if (record) {
+      const snapshot = record.payment_term_snapshot
+      if (Array.isArray(snapshot) && snapshot.length > 0) {
+        return snapshot[0] as Record<string, unknown>
+      }
+      if (snapshot && !Array.isArray(snapshot)) {
+        return snapshot as unknown as Record<string, unknown>
+      }
+      return undefined
     }
-    if (snapshot && !Array.isArray(snapshot)) {
-      return snapshot as unknown as Record<string, unknown>
+    if (commercialTermsPaymentTerm) {
+      return commercialTermsPaymentTerm as unknown as Record<string, unknown>
     }
     return undefined
   })
@@ -180,6 +241,7 @@
       {initialValues}
       {validate}
       {resourceConfig}
+      locked={isReadOnly}
       onSubmit={handleSubmit}
       onSuccess={handleSuccess}
       onFailure={handleFailure}
@@ -221,9 +283,18 @@
                     phones: [],
                   }
                 : undefined}
-              onChange={() => {
+              onChange={item => {
                 formAPI.updateField('ship_to_address_id', '' as never)
                 formAPI.updateField('contact_person_id', '' as never)
+
+                commercialTermsPaymentTerm = undefined
+                commercialTermsVatCode = undefined
+
+                if (!record && item?.value) {
+                  fetchCustomerCommercialTerms(item.value as string, id =>
+                    formAPI.updateField('payment_term_id', id as never),
+                  )
+                }
               }}
               class={FormFieldClass.MaxWidth} />
 
@@ -329,7 +400,8 @@
               currency={formAPI?.values?.currency ?? DEFAULT_CURRENCY_CODE}
               required={!record}
               refreshKey={record?.version}
-              showDeliveryDates />
+              showDeliveryDates
+              defaultVatCode={!record ? commercialTermsVatCode : undefined} />
 
             {@const currencyCode = formAPI.values.currency}
             <div class="pr-14">
@@ -373,8 +445,36 @@
       {/snippet}
 
       {#snippet bottom()}
-        <div class="fixed right-0 bottom-0 flex h-14 w-full items-center justify-end gap-2 px-4">
-          {#if record}
+        <BottomBar>
+          {#if !record}
+            <!-- Create mode -->
+            <BusyButton type="submit">{m.save_changes()}</BusyButton>
+          {:else if record.state === 'open'}
+            <!-- Edit mode, open state -->
+            {#if actionOptions}
+              <RecordActionMenu buttonVariant="outline" actions={quotationActions} {actionOptions} />
+            {/if}
+
+            <DownloadActionButton
+              onDownload={() =>
+                apiDownload({
+                  url: `/legal-entities/${legalEntityId}/quotations/${record.id}/pdf`,
+                  filename: `${record.document_number}.pdf`,
+                })} />
+
+            <ActionButton type="submit" variant="outline" size="icon" busyLabel="" tooltip={m.save_changes()}>
+              <IconDeviceFloppy class="size-4" />
+            </ActionButton>
+
+            {#if rejectAction && actionOptions}
+              <RecordActionButton action={rejectAction} {actionOptions} variant="outline" />
+            {/if}
+
+            {#if approveAction && actionOptions}
+              <RecordActionButton action={approveAction} {actionOptions} />
+            {/if}
+          {:else}
+            <!-- Read-only (approved/rejected/superseded) -->
             <DownloadActionButton
               onDownload={() =>
                 apiDownload({
@@ -382,8 +482,7 @@
                   filename: `${record.document_number}.pdf`,
                 })} />
           {/if}
-          <BusyButton type="submit">{m.save_changes()}</BusyButton>
-        </div>
+        </BottomBar>
       {/snippet}
     </FormUtil>
   {/snippet}
