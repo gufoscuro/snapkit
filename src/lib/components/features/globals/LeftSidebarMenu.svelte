@@ -8,11 +8,52 @@
   import { createRoute } from '$utils/route-builder'
   import type { SnippetProps } from '$utils/runtime'
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right'
-  import * as LucideIcons from 'lucide-svelte'
   import type { Component } from 'svelte'
 
-  const { entityConfig }: SnippetProps = $props()
-  const mainMenu = $derived(entityConfig?.dashboard.menus.main || { name: 'Unnamed Menu', items: [] })
+  // Supported menu icons — import individually to avoid bundling the entire lucide library
+  import HouseIcon from '@lucide/svelte/icons/house'
+  import UsersIcon from '@lucide/svelte/icons/users'
+  import ContactIcon from '@lucide/svelte/icons/contact'
+  import PackageIcon from '@lucide/svelte/icons/package'
+  import FileTextIcon from '@lucide/svelte/icons/file-text'
+  import SettingsIcon from '@lucide/svelte/icons/settings'
+  import ShoppingCartIcon from '@lucide/svelte/icons/shopping-cart'
+  import WarehouseIcon from '@lucide/svelte/icons/warehouse'
+  import TruckIcon from '@lucide/svelte/icons/truck'
+  import ReceiptIcon from '@lucide/svelte/icons/receipt'
+  import CreditCardIcon from '@lucide/svelte/icons/credit-card'
+  import BarChartIcon from '@lucide/svelte/icons/bar-chart'
+  import CalendarIcon from '@lucide/svelte/icons/calendar'
+  import FolderIcon from '@lucide/svelte/icons/folder'
+  import TagIcon from '@lucide/svelte/icons/tag'
+  import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
+  import BuildingIcon from '@lucide/svelte/icons/building'
+  import MailIcon from '@lucide/svelte/icons/mail'
+  import GlobeIcon from '@lucide/svelte/icons/globe'
+  import LayersIcon from '@lucide/svelte/icons/layers'
+
+  const SUPPORTED_ICONS: Record<string, Component> = {
+    House: HouseIcon,
+    Users: UsersIcon,
+    Contact: ContactIcon,
+    Package: PackageIcon,
+    FileText: FileTextIcon,
+    Settings: SettingsIcon,
+    ShoppingCart: ShoppingCartIcon,
+    Warehouse: WarehouseIcon,
+    Truck: TruckIcon,
+    Receipt: ReceiptIcon,
+    CreditCard: CreditCardIcon,
+    BarChart: BarChartIcon,
+    Calendar: CalendarIcon,
+    Folder: FolderIcon,
+    Tag: TagIcon,
+    ClipboardList: ClipboardListIcon,
+    Building: BuildingIcon,
+    Mail: MailIcon,
+    Globe: GlobeIcon,
+    Layers: LayersIcon,
+  }
 
   const STORAGE_KEY = 'left-sidebar-menu-open'
 
@@ -34,12 +75,7 @@
 
   function getIcon(name?: string): Component | null {
     if (!name) return null
-    const key =
-      name
-        .split('-')
-        .map(w => w[0].toUpperCase() + w.slice(1))
-        .join('') + 'Icon'
-    return ((LucideIcons as Record<string, unknown>)[key] as Component) ?? null
+    return SUPPORTED_ICONS[name] ?? null
   }
 
   function getHref(item: MenuItem): string {

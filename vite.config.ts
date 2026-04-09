@@ -5,6 +5,7 @@ import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  logLevel: 'warn',
   plugins: [
     tailwindcss(),
     paraglideVitePlugin({
