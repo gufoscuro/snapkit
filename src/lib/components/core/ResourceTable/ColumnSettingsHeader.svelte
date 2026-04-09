@@ -1,7 +1,7 @@
 <script lang="ts">
   import ActionButton from '$lib/components/core/ActionButton.svelte'
   import * as m from '$lib/paraglide/messages.js'
-  import { IconSettings } from '@tabler/icons-svelte'
+  import IconSettings from '@tabler/icons-svelte/icons/settings'
 
   type Props = {
     originalHeader: string

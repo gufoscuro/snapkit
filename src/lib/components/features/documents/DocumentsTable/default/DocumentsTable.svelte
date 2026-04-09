@@ -17,7 +17,8 @@
   import * as m from '$lib/paraglide/messages.js'
   import type { Document } from '$lib/types/api-types'
   import type { FilterQuery, PaginatedResponse } from '$lib/utils/filters'
-  import { Trash2, Upload } from 'lucide-svelte'
+  import Trash2 from '@lucide/svelte/icons/trash-2'
+  import Upload from '@lucide/svelte/icons/upload'
   import UploadDocumentDialog from '../../UploadDocumentDialog/default/UploadDocumentDialog.svelte'
   import DownloadLink from './DownloadLink.svelte'
 

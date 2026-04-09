@@ -8,7 +8,7 @@
 <script lang="ts">
   import ActionButton from '$components/core/ActionButton.svelte'
   import * as m from '$lib/paraglide/messages'
-  import DownloadIcon from 'lucide-svelte/icons/download'
+  import DownloadIcon from '@lucide/svelte/icons/download'
   import type { ComponentProps } from 'svelte'
   import { toast } from 'svelte-sonner'
 

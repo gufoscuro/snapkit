@@ -12,7 +12,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
   import * as m from '$lib/paraglide/messages.js'
   import { executeRecordAction, type RecordAction, type RecordActionRequestOptions } from '$lib/utils/record-actions'
-  import EllipsisVerticalIcon from 'lucide-svelte/icons/ellipsis-vertical'
+  import EllipsisVerticalIcon from '@lucide/svelte/icons/ellipsis-vertical'
   import type { Component, Snippet } from 'svelte'
 
   type Props = {

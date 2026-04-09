@@ -2,7 +2,7 @@
   import { dev } from '$app/environment'
   import { Button } from '$components/ui/button'
   import { shortcut } from '$lib/actions/shortcut.svelte'
-  import { IconX } from '@tabler/icons-svelte'
+  import IconX from '@tabler/icons-svelte/icons/x'
   import { fly } from 'svelte/transition'
   import { getForms, getPageDetails, getPageState } from './devtools-registry.svelte'
   import { loadDevtoolsState, saveDevtoolsState } from './devtools-storage'

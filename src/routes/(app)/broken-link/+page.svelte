@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state'
   import * as m from '$lib/paraglide/messages'
-  import { Bug } from 'lucide-svelte'
+  import Bug from '@lucide/svelte/icons/bug'
 </script>
 
 <div

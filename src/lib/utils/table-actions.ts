@@ -1,7 +1,7 @@
 import type { Action } from '$lib/components/core/ResourceTable/types'
 import { confirmArchive } from '$lib/components/ui/confirm-archive-dialog'
 import * as m from '$lib/paraglide/messages.js'
-import { Archive } from 'lucide-svelte'
+import Archive from '@lucide/svelte/icons/archive'
 import { apiRequest } from './request'
 
 /**

@@ -5,7 +5,7 @@
   import { joinClassnames } from '$utils/classnames'
   import { getUserMessagingClasses } from '$utils/form'
   import type { BasicOption } from '$utils/generics'
-  import { X } from 'lucide-svelte'
+  import X from '@lucide/svelte/icons/x'
   import { FormLabelClass, SelectorFieldDefaults, type SelectorFieldProps } from './form'
   import { getFormContextOptional } from './form-context'
   import FormFieldMessages from './FormFieldMessages.svelte'

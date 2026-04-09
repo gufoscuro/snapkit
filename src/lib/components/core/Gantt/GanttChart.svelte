@@ -13,9 +13,9 @@
   import duration from 'dayjs/plugin/duration'
   import isBetween from 'dayjs/plugin/isBetween'
   import weekOfYear from 'dayjs/plugin/weekOfYear'
-  import ChevronLeft from 'lucide-svelte/icons/chevron-left'
-  import ChevronRight from 'lucide-svelte/icons/chevron-right'
-  import Calendar from 'lucide-svelte/icons/calendar'
+  import ChevronLeft from '@lucide/svelte/icons/chevron-left'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  import Calendar from '@lucide/svelte/icons/calendar'
   import GanttSkeleton from './GanttSkeleton.svelte'
   import type {
     GanttItem,

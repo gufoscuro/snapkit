@@ -52,7 +52,7 @@
   import { createRoute } from '$lib/utils/route-builder'
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
-  import { IconDeviceFloppy } from '@tabler/icons-svelte'
+  import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
   import { QuotationDetailsContract } from './QuotationDetails.contract.js'
 
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()

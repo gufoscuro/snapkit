@@ -9,8 +9,8 @@
   import { getI18nLabel } from '$utils/i18n'
   import { createRoute } from '$utils/route-builder'
   import type { SnippetProps } from '$utils/runtime'
-  import { ChevronRight } from '@lucide/svelte'
-  import { PanelLeftIcon } from 'lucide-svelte'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  import PanelLeftIcon from '@lucide/svelte/icons/panel-left'
 
   const props: SnippetProps = $props()
   const pageState = getPageState()

@@ -4,8 +4,8 @@
   import * as Sidebar from '$lib/components/ui/sidebar'
   import { useSidebar } from '$lib/components/ui/sidebar'
   import * as m from '$lib/paraglide/messages'
-  import { ChevronRight } from '@lucide/svelte'
-  import { PanelLeftIcon } from 'lucide-svelte'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  import PanelLeftIcon from '@lucide/svelte/icons/panel-left'
 
   type BreadcrumbItem = {
     label: string

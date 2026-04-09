@@ -2,7 +2,7 @@
   import Button from '$components/ui/button/button.svelte'
   import Label from '$components/ui/label/label.svelte'
   import type { ExtendedOption } from '$utils/generics'
-  import ChevronsUpDown from 'lucide-svelte/icons/chevrons-up-down'
+  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
   import { FormLabelClass } from '../form'
 
   type Props = {

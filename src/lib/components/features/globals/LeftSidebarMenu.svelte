@@ -32,6 +32,9 @@
   import GlobeIcon from '@lucide/svelte/icons/globe'
   import LayersIcon from '@lucide/svelte/icons/layers'
 
+  const { entityConfig }: SnippetProps = $props()
+  const mainMenu = $derived(entityConfig?.dashboard.menus.main || { name: 'Unnamed Menu', items: [] })
+
   const SUPPORTED_ICONS: Record<string, Component> = {
     House: HouseIcon,
     Users: UsersIcon,

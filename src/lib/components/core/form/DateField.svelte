@@ -23,8 +23,8 @@
     today,
     type DateValue,
   } from '@internationalized/date'
-  import CalendarIcon from 'lucide-svelte/icons/calendar'
-  import XIcon from 'lucide-svelte/icons/x'
+  import CalendarIcon from '@lucide/svelte/icons/calendar'
+  import XIcon from '@lucide/svelte/icons/x'
   import * as m from '$lib/paraglide/messages'
 
   type Props = Omit<InputFieldProps, 'type' | 'focus' | 'autoWidth'> & {

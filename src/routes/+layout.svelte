@@ -2,7 +2,7 @@
   import favicon from '$lib/assets/favicon.svg'
   import * as m from '$lib/paraglide/messages'
   import '@fontsource-variable/geist'
-  import { Bug } from 'lucide-svelte'
+  import Bug from '@lucide/svelte/icons/bug'
   import { ModeWatcher } from 'mode-watcher'
   import { onMount } from 'svelte'
   import { fade } from 'svelte/transition'

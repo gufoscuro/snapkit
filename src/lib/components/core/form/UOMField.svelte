@@ -10,7 +10,7 @@
   import { UnitOfMeasures } from '$lib/config/uoms'
   import * as m from '$lib/paraglide/messages'
   import { getAggregateUnitOfMeasureOptions, getUnitOfMeasureOptions } from '$utils/uom'
-  import { Info } from 'lucide-svelte'
+  import Info from '@lucide/svelte/icons/info'
 
   type Props = Omit<SelectorFieldProps, 'placeholder'> & {
     /** Use aggregate UOM options instead of base */

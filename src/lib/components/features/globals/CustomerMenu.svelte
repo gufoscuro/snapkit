@@ -21,7 +21,7 @@
   import SunIcon from '@lucide/svelte/icons/sun'
   import SunMoonIcon from '@lucide/svelte/icons/sun-moon'
   import BrandPowershell from '@tabler/icons-svelte/icons/brand-powershell'
-  import { Cog } from 'lucide-svelte'
+  import Cog from '@lucide/svelte/icons/cog'
   import { resetMode, setMode, userPrefersMode } from 'mode-watcher'
 
   let { user }: SnippetProps = $props()

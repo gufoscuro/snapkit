@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { Button } from '$lib/components/ui/button'
-  import { Trash } from 'lucide-svelte'
+  import Trash from '@lucide/svelte/icons/trash'
 
   interface Props {
     onclick: () => void
