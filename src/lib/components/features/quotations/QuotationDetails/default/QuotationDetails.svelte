@@ -79,6 +79,9 @@
         fetchCustomerCommercialTerms(data.customer_id)
       }
     },
+    onCreateMode: () => {
+      breadcrumbTitle.setLabel(pageDetails.config.$id, m.new_quotation())
+    },
     cleanup: () => {
       quotationHandle.unset()
       breadcrumbTitle.clearLabel(pageDetails.config.$id)

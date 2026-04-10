@@ -2,6 +2,7 @@ import { goto } from '$app/navigation'
 import type { FailurePayload, SuccessPayload } from '$components/core/form/FormUtil.svelte'
 import * as m from '$lib/paraglide/messages'
 import type { SafeApiResponse } from '$lib/utils/request'
+import { untrack } from 'svelte'
 import { toast } from 'svelte-sonner'
 
 export type DetailRecordOptions<T extends { id: string }> = {
@@ -33,6 +34,8 @@ export type DetailRecordOptions<T extends { id: string }> = {
   onFetched?: (record: T) => void
   /** Called after a successful GET or an update of the record */
   onUpdated?: (record: T) => void
+  /** Called when the page is in create mode (no UUID). Useful for setting breadcrumb labels. */
+  onCreateMode?: () => void
   /** Called on component unmount (breadcrumb clear, page-state unset, etc.). */
   cleanup?: () => void
   /** Extra data merged into every submit payload (e.g. `{ custom_fields: {} }`). */
@@ -62,8 +65,9 @@ export type DetailRecordOptions<T extends { id: string }> = {
  *   create: (data) => api.post(`/legal-entities/${legalEntityId}/customers`, { data }),
  *   update: (id, data) => api.put(`/legal-entities/${legalEntityId}/customers/${id}`, { data }),
  *   getDetailRoute: (record) => createRoute({ $id: 'customer-details', params: { uuid: record.id } }),
- *   onFetched: (data) => { breadcrumbTitle.setLabel(pageDetails.config.$id, data.name) },
- *   cleanup:   ()     => { breadcrumbTitle.clearLabel(pageDetails.config.$id) },
+ *   onFetched:    (data) => { breadcrumbTitle.setLabel(pageDetails.config.$id, data.name) },
+ *   onCreateMode: ()     => { breadcrumbTitle.setLabel(pageDetails.config.$id, 'New customer') },
+ *   cleanup:      ()     => { breadcrumbTitle.clearLabel(pageDetails.config.$id) },
  *   extraSubmitData: { custom_fields: {} },
  * })
  *
@@ -97,7 +101,14 @@ export function useDetailRecord<T extends { id: string }>(options: DetailRecordO
   }
 
   $effect(() => {
-    fetchRecord()
+    const uuid = options.getUuid()
+    untrack(() => {
+      if (uuid) {
+        fetchRecord()
+      } else {
+        options.onCreateMode?.()
+      }
+    })
     return () => options.cleanup?.()
   })
 
