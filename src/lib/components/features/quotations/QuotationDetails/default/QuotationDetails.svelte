@@ -75,6 +75,9 @@
     onUpdated: data => {
       quotationHandle.set(data)
       breadcrumbTitle.setLabel(pageDetails.config.$id, data.document_number || m.new_quotation())
+      if (data.customer_id) {
+        fetchCustomerCommercialTerms(data.customer_id)
+      }
     },
     cleanup: () => {
       quotationHandle.unset()
@@ -104,11 +107,17 @@
   const approveAction = $derived(quotationActions.find(a => a.id === 'approve'))
   const rejectAction = $derived(quotationActions.find(a => a.id === 'reject'))
 
-  // Commercial terms state (populated when a customer is selected in create mode)
+  // Commercial terms state (always populated when a customer is known)
   let commercialTermsPaymentTerm = $state<PaymentTerm | undefined>(undefined)
   let commercialTermsVatCode = $state<VatCodeSummary | undefined>(undefined)
 
-  async function fetchCustomerCommercialTerms(customerId: string, setPaymentTermId: (id: string) => void) {
+  type FormFieldUpdater = (name: string, value: unknown) => void
+
+  /**
+   * Fetches commercial terms for a customer and populates state.
+   * When updateField is provided and we're in create mode, also precompiles form fields.
+   */
+  async function fetchCustomerCommercialTerms(customerId: string, updateField?: FormFieldUpdater) {
     if (!customerId || !legalEntityId) {
       commercialTermsPaymentTerm = undefined
       commercialTermsVatCode = undefined
@@ -123,12 +132,27 @@
       commercialTermsPaymentTerm = data.payment_term
       commercialTermsVatCode = data.vat_code as VatCodeSummary | undefined
 
-      if (data.payment_term) {
-        setPaymentTermId(data.payment_term.id)
+      if (updateField && !record && data.payment_term) {
+        updateField('payment_term_id', data.payment_term.id)
+      }
+      if (updateField && !record && data.incoterm) {
+        updateField('incoterm', data.incoterm)
       }
     } else {
       commercialTermsPaymentTerm = undefined
       commercialTermsVatCode = undefined
+    }
+  }
+
+  function handleCustomerChange(item: { value?: unknown } | undefined, updateField: FormFieldUpdater) {
+    updateField('ship_to_address_id', '')
+    updateField('contact_person_id', '')
+
+    commercialTermsPaymentTerm = undefined
+    commercialTermsVatCode = undefined
+
+    if (item?.value) {
+      fetchCustomerCommercialTerms(item.value as string, updateField)
     }
   }
 
@@ -139,7 +163,7 @@
   const initialValues = $derived.by(() => ({
     document_number: '',
     document_date: new Date().toISOString(),
-    sales_transaction_type: 'VEN' as const,
+    sales_transaction_type: undefined,
     customer_id: '',
     ship_to_address_id: '',
     contact_person_id: '',
@@ -147,7 +171,7 @@
     valid_from: new Date().toISOString(),
     valid_to: '',
     payment_term_id: '',
-    incoterm: 'EXW' as const,
+    incoterm: undefined,
     incoterm_location: '',
     notes_internal: '',
     notes_external: '',
@@ -256,11 +280,9 @@
           {/snippet}
 
           {#snippet content()}
-            <TextField
-              name="document_number"
-              label={m.document_number()}
-              class={FormFieldClass.MaxWidth}
-              disabled={!!record} />
+            {#if !!record}
+              <TextField name="document_number" label={m.document_number()} class={FormFieldClass.MaxWidth} disabled />
+            {/if}
 
             <DateField name="document_date" label={m.document_date()} class={FormFieldClass.MinWidth} allowClear />
 
@@ -283,19 +305,7 @@
                     phones: [],
                   }
                 : undefined}
-              onChange={item => {
-                formAPI.updateField('ship_to_address_id', '' as never)
-                formAPI.updateField('contact_person_id', '' as never)
-
-                commercialTermsPaymentTerm = undefined
-                commercialTermsVatCode = undefined
-
-                if (!record && item?.value) {
-                  fetchCustomerCommercialTerms(item.value as string, id =>
-                    formAPI.updateField('payment_term_id', id as never),
-                  )
-                }
-              }}
+              onChange={item => handleCustomerChange(item, formAPI.updateField as FormFieldUpdater)}
               class={FormFieldClass.MaxWidth} />
 
             <CustomerAddressSelector
@@ -401,7 +411,7 @@
               required={!record}
               refreshKey={record?.version}
               showDeliveryDates
-              defaultVatCode={!record ? commercialTermsVatCode : undefined} />
+              defaultVatCode={commercialTermsVatCode} />
 
             {@const currencyCode = formAPI.values.currency}
             <div class="pr-14">

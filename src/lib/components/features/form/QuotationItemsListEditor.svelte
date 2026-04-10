@@ -123,8 +123,8 @@
       quantity: 0,
       uom: UnitOfMeasures.Default,
       unit_price: 0,
-      discount_percent: 0,
-      discount_amount: 0,
+      discount_percent: undefined,
+      discount_amount: undefined,
       vat_code_id: defaultVatCode?.id ?? '',
       vat_code_snapshot: defaultVatCode ? (defaultVatCode as unknown as Record<string, unknown>) : undefined,
       requested_delivery_date: '',
@@ -145,6 +145,7 @@
     if (!needsUpdate) return
     items = current.map(item => {
       if (item.type !== 'item' || item.vat_code_id) return item
+
       return {
         ...item,
         vat_code_id: vatCode.id,
@@ -446,7 +447,7 @@
           {:else}
             <NumberField
               name="discountPercent-{index}"
-              value={item.discount_percent ?? 0}
+              value={item.discount_percent}
               showLabel={false}
               showErrorMessage={false}
               disabled={!item.item_id || isDisabled}
