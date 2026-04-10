@@ -9,13 +9,12 @@
 </script>
 
 <script lang="ts">
-  import Badge from '$components/ui/badge/badge.svelte'
+  import QuotationStatusBadge from '$components/features/quotations/QuotationStatusBadge.svelte'
   import QuotationTagBadges from '$components/features/quotations/QuotationTagBadges.svelte'
   import Skeleton from '$components/ui/skeleton/skeleton.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages'
   import type { MenuItem } from '$lib/stores/tenant-config/types'
-  import { getQuotationStatusLabel, getQuotationStatusVariant } from '$lib/utils/enum-labels'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
   import { QuotationSidebarContract } from './QuotationSidebar.contract.js'
@@ -68,9 +67,7 @@
       </h2>
 
       <div class="mt-2 flex flex-wrap items-center gap-1">
-        <Badge variant={getQuotationStatusVariant(quotation.state)}>
-          {getQuotationStatusLabel(quotation.state)}
-        </Badge>
+        <QuotationStatusBadge state={quotation.state} />
 
         {#if quotation.tags?.length > 0}
           <QuotationTagBadges tags={quotation.tags} />
