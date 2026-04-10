@@ -21,7 +21,11 @@ import type {
   Quotation,
   QuotationStatus,
   QuotationTag,
+  SalesOrder,
+  SalesOrderFulfillmentStatus,
+  SalesOrderStatus,
   SalesOrderSummary,
+  SalesOrderTag,
   SalesTransactionType,
   Supplier,
   SupplierAddress,
@@ -483,6 +487,42 @@ export const quotationTagConfig: Record<QuotationTag, EnumDisplayConfig> = {
 
 export function getQuotationTagLabel(tag: QuotationTag): string {
   return quotationTagConfig[tag]?.label() ?? tag
+}
+
+// Sales Order State (for SalesOrder entity from /sales-orders API)
+export const salesOrderStateConfig: Record<SalesOrderStatus, EnumDisplayConfig> = {
+  open: { label: m.enum_sales_order_status_open, variant: 'default' },
+  approved: { label: m.enum_sales_order_status_approved, variant: 'success' as BadgeVariant },
+  rejected: { label: m.enum_sales_order_status_rejected, variant: 'destructive' },
+}
+
+export function getSalesOrderStatusLabel(status: SalesOrder['state']): string {
+  return salesOrderStateConfig[status]?.label() ?? status
+}
+
+export function getSalesOrderStatusVariant(status: SalesOrder['state']): BadgeVariant {
+  return 'outline'
+}
+
+// Sales Order Tags
+export const salesOrderTagConfig: Record<SalesOrderTag, EnumDisplayConfig> = {
+  sent: { label: m.enum_sales_order_tag_sent, variant: 'default' },
+}
+
+export function getSalesOrderTagLabel(tag: SalesOrderTag): string {
+  return salesOrderTagConfig[tag]?.label() ?? tag
+}
+
+// Sales Order Fulfillment Status
+export const salesOrderFulfillmentStatusConfig: Record<SalesOrderFulfillmentStatus, EnumDisplayConfig> = {
+  in_progress: { label: m.enum_sales_order_fulfillment_in_progress, variant: 'default' },
+  picked: { label: m.enum_sales_order_fulfillment_picked, variant: 'default' },
+  partially_shipped: { label: m.enum_sales_order_fulfillment_partially_shipped, variant: 'secondary' },
+  fully_shipped: { label: m.enum_sales_order_fulfillment_fully_shipped, variant: 'default' },
+}
+
+export function getSalesOrderFulfillmentStatusLabel(status: SalesOrderFulfillmentStatus): string {
+  return salesOrderFulfillmentStatusConfig[status]?.label() ?? status
 }
 
 // Incoterm Labels

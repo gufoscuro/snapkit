@@ -1217,6 +1217,78 @@ export type Quotation = {
   items?: QuotationItem[]
 }
 
+// ============================================================================
+// Sales Orders API Types
+// ============================================================================
+
+export type SalesOrderTag = 'sent'
+
+export type SalesOrderStatus = 'open' | 'approved' | 'rejected'
+
+export type SalesOrderFulfillmentStatus = 'in_progress' | 'picked' | 'partially_shipped' | 'fully_shipped'
+
+export type SalesOrderItemType = 'item' | 'descriptive'
+
+export type SalesOrderItem = {
+  id: string
+  quotation_item_id: string
+  sort_order: number
+  type: SalesOrderItemType
+  item_id: string
+  item_snapshot: Record<string, unknown>[]
+  description: string
+  quantity: number
+  uom: UnitOfMeasure | null
+  unit_price: number
+  discount_percent: number
+  discount_amount: number
+  net_value: number
+  vat_code_id: string
+  vat_code_snapshot: Record<string, unknown>[]
+  tax_amount: number
+  requested_delivery_date: string
+  confirmed_delivery_date: string
+  is_editable: boolean
+  version: number
+}
+
+export type SalesOrder = {
+  id: string
+  document_number: string
+  document_date: string
+  sales_transaction_type: SalesTransactionType
+  customer_id: string
+  customer_snapshot: Record<string, unknown>[]
+  ship_to_address_id: string
+  ship_to_snapshot: Record<string, unknown>[]
+  contact_person_id: string
+  contact_person_snapshot: Record<string, unknown>[]
+  legal_entity_snapshot: Record<string, unknown>[]
+  legal_entity_bank_id: string
+  legal_entity_bank_snapshot: Record<string, unknown>[]
+  currency: Currency
+  payment_term_id: string
+  payment_term_snapshot: Record<string, unknown>[]
+  incoterm: Incoterm
+  incoterm_location: string
+  customer_purchase_order: string
+  customer_purchase_order_date: string
+  sales_rep_id: string
+  state: SalesOrderStatus
+  tags: SalesOrderTag[]
+  fulfillment_status: SalesOrderFulfillmentStatus | null
+  confirmation_date: string
+  sent_at: string
+  requested_delivery_date: string
+  net_value: number
+  gross_value: number
+  notes_internal: string
+  notes_external: string
+  version: number
+  created_by: string
+  items?: SalesOrderItem[]
+}
+
 /**
  * Price calculation result from sales-api POST /customer/{customerId}/products/{productId}/_calculate-price
  */

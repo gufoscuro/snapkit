@@ -484,6 +484,50 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             },
           ],
         },
+        {
+          $id: 'sales-orders',
+          title: 'sales_orders',
+          route: '/sales/sales-orders',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.SalesOrdersFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'sales-orders.salesorderstable.default.SalesOrdersTable',
+              enabled: true,
+            },
+          },
+          subpages: [
+            {
+              $id: 'sales-order-details',
+              title: 'sales_order',
+              route: '/sales/sales-orders/upsert{/:uuid}',
+              layout: {
+                componentKey: 'layouts.LeftSidebar',
+                enabled: true,
+              },
+              snippets: {
+                sidebar: {
+                  componentKey: 'globals.sidebars.SalesOrderSidebar',
+                  enabled: true,
+                },
+                content: {
+                  componentKey: 'sales-orders.salesorderdetails.default.SalesOrderDetails',
+                  enabled: true,
+                },
+              },
+            },
+          ],
+        },
       ],
       menus: {
         main: {
@@ -518,6 +562,12 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               label: 'quotations',
               pageId: 'quotations',
               icon: 'FileText',
+              type: 'link',
+            },
+            {
+              label: 'sales_orders',
+              pageId: 'sales-orders',
+              icon: 'ClipboardList',
               type: 'link',
             },
           ],
