@@ -689,6 +689,8 @@
   "download_pdf_error": "Impossibile scaricare il PDF",
   "customize_columns": "Personalizza colonne",
   "reset_defaults": "Ripristina predefiniti",
+  "customer_commercial_terms": "Condizioni commerciali cliente",
+  "supplier_commercial_terms": "Condizioni commerciali fornitore",
   "commercial_terms": "Condizioni Commerciali",
   "commercial_terms_description": "Condizioni di pagamento, fatturazione e consegna",
   "payment_information": "Informazioni di Pagamento",

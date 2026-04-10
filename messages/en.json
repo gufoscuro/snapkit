@@ -687,6 +687,8 @@
   "download_pdf_error": "Failed to download PDF",
   "customize_columns": "Customize columns",
   "reset_defaults": "Reset to defaults",
+  "customer_commercial_terms": "Customer commercial terms",
+  "supplier_commercial_terms": "Supplier commercial terms",
   "commercial_terms": "Commercial Terms",
   "commercial_terms_description": "Payment, billing and delivery conditions",
   "payment_information": "Payment Information",
