@@ -12,21 +12,28 @@
 </script>
 
 <script lang="ts">
+  import { FilterDropdown } from '$components/core/common/filter-dropdown'
   import { Input } from '$lib/components/ui/input'
   import { useProvides } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
+  import type { FilterConfig, QueryObject } from '$lib/utils/filters'
   import type { SnippetProps } from '$utils/runtime.js'
   import { Search } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
   import { GenericFiltersContract } from './GenericFilters.contract.js'
 
-  const { children, hideSearch = false }: SnippetProps & { children?: Snippet; hideSearch?: boolean } = $props()
+  const {
+    children,
+    hideSearch = false,
+    config,
+  }: SnippetProps & { children?: Snippet; hideSearch?: boolean; config?: FilterConfig } = $props()
 
   // Get handle to provide filter state
   const filtersHandle = useProvides(GenericFiltersContract, 'filters')
 
-  // Local state for the search input
+  // Local state for the search input and query
   let searchValue = $state('')
+  let currentQuery = $state<QueryObject | undefined>(undefined)
 
   // Debounce timeout reference
   let debounceTimeout: ReturnType<typeof setTimeout> | undefined
@@ -45,9 +52,18 @@
     debounceTimeout = setTimeout(() => {
       filtersHandle.set({
         search: searchValue || undefined,
-        query: undefined,
+        query: currentQuery,
       })
     }, 300)
+  }
+
+  // Handle query changes from the filter dropdown
+  function handleQueryChange(query: QueryObject | undefined) {
+    currentQuery = query
+    filtersHandle.set({
+      search: searchValue || undefined,
+      query: currentQuery,
+    })
   }
 
   // Initialize state on mount
@@ -68,6 +84,10 @@
 </script>
 
 <div class="flex w-full items-center justify-end gap-4">
+  {#if config}
+    <FilterDropdown {config} query={currentQuery} onchange={handleQueryChange} />
+  {/if}
+
   {#if !hideSearch}
     <div class="relative w-64">
       <Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
