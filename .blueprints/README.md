@@ -16,7 +16,8 @@ snapkit-content/
 │   ├── detail-record-form.md      # Create/update record form guide (useDetailRecord)
 │   ├── resource-table.md          # ResourceTable component and renderers
 │   ├── editable-table-field.md    # EditableTableField (table-based array editor)
-│   └── editable-list-field.md     # EditableListField (card-based array editor)
+│   ├── editable-list-field.md     # EditableListField (card-based array editor)
+│   └── table-filters.md           # Table filters (enum, tags, date) for listing pages
 ├── pages/                # Page architecture and CRUD patterns
 │   ├── crud-workflow.md           # End-to-end CRUD workflow (list + form + filters)
 │   └── fixed-pages.md            # Fixed pages (settings, admin) vs configurable pages
@@ -44,6 +45,7 @@ snapkit-content/
 - **resource-table.md**: Generic ResourceTable component for data tables. Covers declarative column configuration, 11 built-in renderers, utilities (createApiFetcher, createArchiveAction), table variants, and best practices
 - **editable-table-field.md**: EditableTableField pattern for editing arrays as table rows. Covers auto-empty-row management, row snippet API, form context isolation, styling constants, and existing editors
 - **editable-list-field.md**: EditableListField pattern for editing arrays as vertical cards. Alternative to EditableTableField for items with many fields. Covers explicit add/remove, multi-type lists with custom add buttons, responsive card layout, rich text in cards, and styling constants
+- **table-filters.md**: Structured filter system for listing pages. Covers FilterConfig definition (enum, tags, date types), FilterDropdown component, standalone vs grouped modes, data flow through the contract system, serialization, and step-by-step guide for adding filters to any listing page
 
 ### Pages
 
@@ -102,6 +104,11 @@ When updating guidelines:
 - "What test file naming convention?" → `testing/strategy.md`
 - "How to test a Svelte component?" → `testing/strategy.md`
 - "Do I need to write tests for a new component?" → `components/development-guidelines.md` (Section 4: Testing)
+- "How to add filters to a listing page?" → `components/table-filters.md`
+- "How to create a filter dropdown?" → `components/table-filters.md`
+- "How to add enum/tags/date filters?" → `components/table-filters.md`
+- "How does FilterConfig work?" → `components/table-filters.md`
+- "How to add standalone date filters?" → `components/table-filters.md`
 - "How to build a CRUD?" → `pages/crud-workflow.md`
 - "What is the anatomy of a CRUD?" → `pages/crud-workflow.md`
 - "How to create a settings page?" → `pages/fixed-pages.md`
