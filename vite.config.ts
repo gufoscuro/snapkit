@@ -64,6 +64,14 @@ export default defineConfig({
     ],
   },
 
+  build: {
+    sourcemap: false,
+    rollupOptions: {
+      // Limit parallel processing to reduce memory peak during build
+      maxParallelFileOps: 5,
+    },
+  },
+
   server: {
     allowedHosts: ['moddo.moddo.local', 'unknown.moddo.local'],
     watch: {
