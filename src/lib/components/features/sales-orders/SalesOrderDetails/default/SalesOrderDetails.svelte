@@ -32,7 +32,7 @@
   import CustomerContactSelector from '$components/features/form/CustomerContactSelector.svelte'
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
   import PaymentTermSelector from '$components/features/form/PaymentTermSelector.svelte'
-  import QuotationItemsListEditor from '$components/features/form/QuotationItemsListEditor.svelte'
+  import SalesOrderItemsListEditor from '$components/features/form/SalesOrderItemsListEditor.svelte'
   import type { VatCodeSummary } from '$components/features/form/VatCodeSelector.svelte'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
   import {
@@ -449,9 +449,11 @@
           {/snippet}
 
           {#snippet content()}
-            <QuotationItemsListEditor
+            <SalesOrderItemsListEditor
               name="items"
               showLabel={false}
+              legalEntityId={legalEntityId}
+              customerId={formAPI?.values?.customer_id}
               currency={formAPI?.values?.currency ?? DEFAULT_CURRENCY_CODE}
               required={!record}
               refreshKey={record?.version}

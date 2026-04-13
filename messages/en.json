@@ -7,6 +7,8 @@
   "common_cancel": "Cancel",
   "common_delete": "Delete",
   "common_edit": "Edit",
+  "common_import": "Import",
+  "import_from_quotation": "Import from quotation",
   "common_loading": "Loading...",
   "common_error": "An error occurred",
   "common_select_all": "Select all",

@@ -37,7 +37,7 @@
   import type { Item } from '$lib/types/api-types'
   import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol } from '$utils/prices'
   import { ArrowUpDown, GripVertical, Plus } from '@lucide/svelte'
-  import { untrack } from 'svelte'
+  import { untrack, type Snippet } from 'svelte'
   import type { QuotationLineItem } from './QuotationItemsEditor.svelte'
 
   /**
@@ -77,6 +77,10 @@
     refreshKey?: unknown
     /** Default VAT code from customer commercial terms (overrides global is_default) */
     defaultVatCode?: import('$components/features/form/VatCodeSelector.svelte').VatCodeSummary
+    /** Additional actions snippet rendered in the header (e.g. ImportMenu) */
+    headerActions?: Snippet
+    /** API field name for the delivery date. Quotations use 'delivery_date', sales orders use 'confirmed_delivery_date'. */
+    deliveryDateKey?: 'delivery_date' | 'confirmed_delivery_date'
     /** Additional CSS classes */
     class?: string
   }
@@ -93,6 +97,8 @@
     onChange,
     refreshKey = undefined,
     defaultVatCode = undefined,
+    headerActions,
+    deliveryDateKey = 'delivery_date',
     class: className = '',
   }: Props = $props()
 
@@ -105,11 +111,21 @@
   // Bulk delivery date
   let bulkDeliveryDate = $state<Date | string>(new Date())
 
+  /**
+   * Format a Date as a local ISO-like string (YYYY-MM-DDTHH:mm:ss.sss)
+   * to avoid UTC timezone shift (e.g. Apr 30 CET → Apr 29 22:00 UTC).
+   */
+  function toLocalISOString(date: Date): string {
+    const pad = (n: number, len = 2) => String(n).padStart(len, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`
+  }
+
   function applyBulkDeliveryDate(date: Date | null) {
     if (!date) return
-    const iso = date.toISOString()
+    const iso = toLocalISOString(date)
     bulkDeliveryDate = date
     items = items.map(item => (item.type === 'item' ? { ...item, delivery_date: iso } : item))
+    notifyFormUpdate()
   }
 
   // Internal items state
@@ -128,7 +144,7 @@
       vat_code_id: defaultVatCode?.id ?? '',
       vat_code_snapshot: defaultVatCode ? (defaultVatCode as unknown as Record<string, unknown>) : undefined,
       requested_delivery_date: '',
-      delivery_date: bulkDeliveryDate instanceof Date ? bulkDeliveryDate.toISOString() : bulkDeliveryDate,
+      delivery_date: bulkDeliveryDate instanceof Date ? toLocalISOString(bulkDeliveryDate) : bulkDeliveryDate,
       useDiscountAmount: false,
       itemAttr: undefined,
       vatCodeAttr: defaultVatCode ?? undefined,
@@ -164,15 +180,17 @@
 
   function transformOutput(internalItems: InternalLineItem[]): QuotationLineItem[] {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return internalItems.map(({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, ...rest }, index) => {
-      if (rest.type === 'descriptive')
-        return {
-          type: 'descriptive',
-          description: rest.description,
-        }
+    return internalItems.map(
+      ({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, delivery_date, ...rest }, index) => {
+        if (rest.type === 'descriptive')
+          return {
+            type: 'descriptive',
+            description: rest.description,
+          }
 
-      return { ...rest }
-    })
+        return { ...rest, [deliveryDateKey]: delivery_date }
+      },
+    )
   }
 
   /**
@@ -181,8 +199,11 @@
   function mapFromApi(apiItems: QuotationLineItem[]): InternalLineItem[] {
     return apiItems.map(item => {
       const itemSnapshot = item.item_snapshot as Record<string, unknown> | undefined
+      // Normalize: internally always use `delivery_date`, read from the correct API field
+      const deliveryDateValue = item.delivery_date ?? item.confirmed_delivery_date ?? ''
       return {
         ...item,
+        delivery_date: deliveryDateValue,
         useDiscountAmount: !!(item.discount_amount && !item.discount_percent),
         itemAttr: itemSnapshot ? ({ id: item.item_id, ...itemSnapshot } as Item) : undefined,
         vatCodeAttr:
@@ -267,11 +288,35 @@
   }
 
   /**
-   * Handle items change callback
+   * Notify onChange and form context of the current items state.
+   * EditableListField calls this internally via onItemsChange for its own mutations,
+   * but external mutations (addItems, applyBulkDeliveryDate) must call this directly.
+   */
+  function notifyFormUpdate() {
+    const output = transformOutput(items.filter(isCompleteItem))
+    onChange?.(output)
+    if (form) {
+      form.updateField(name, output as never)
+    }
+  }
+
+  /**
+   * Handle items change callback from EditableListField
    */
   function handleItemsChange(completedItems: InternalLineItem[]) {
     const output = transformOutput(completedItems)
     onChange?.(output)
+  }
+
+  /**
+   * Append imported line items to the current list.
+   * Called by wrapper components (e.g. SalesOrderItemsListEditor) after import.
+   */
+  export function addItems(newItems: QuotationLineItem[]) {
+    const mapped = mapFromApi(newItems)
+    const nonEmpty = items.filter(i => isCompleteItem(i))
+    items = [...nonEmpty, ...mapped]
+    notifyFormUpdate()
   }
 </script>
 
@@ -303,13 +348,18 @@
         </div>
       {/if}
       {#if !isDisabled}
-        <Button
-          variant={options.dragAndDropActive ? 'outline' : 'outline'}
-          size="sm"
-          onclick={options.toggleDragAndDrop}>
-          <ArrowUpDown class="mr-1 size-4" />
-          {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
-        </Button>
+        <div class="flex items-center gap-2">
+          {#if headerActions}
+            {@render headerActions()}
+          {/if}
+          <Button
+            variant={options.dragAndDropActive ? 'outline' : 'outline'}
+            size="sm"
+            onclick={options.toggleDragAndDrop}>
+            <ArrowUpDown class="mr-1 size-4" />
+            {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
+          </Button>
+        </div>
       {/if}
     </div>
     <div class="my-8">
@@ -479,7 +529,7 @@
             showErrorMessage={false}
             disabled={!item.item_id || isDisabled}
             width="w-full"
-            onChange={date => updateItem(index, { requested_delivery_date: date?.toISOString() ?? '' })} />
+            onChange={date => updateItem(index, { requested_delivery_date: date ? toLocalISOString(date) : '' })} />
 
           <DateField
             name="deliveryDate-{index}"
@@ -488,7 +538,7 @@
             showErrorMessage={false}
             disabled={!item.item_id || isDisabled}
             width="w-full"
-            onChange={date => updateItem(index, { delivery_date: date?.toISOString() ?? '' })} />
+            onChange={date => updateItem(index, { delivery_date: date ? toLocalISOString(date) : '' })} />
         {/if}
 
         <StackedAmountValues

@@ -17,7 +17,8 @@
   export type QuotationItemType = 'item' | 'descriptive'
 
   /**
-   * Output line item type (matches API schema for create/update)
+   * Output line item type (matches API schema for create/update).
+   * Superset of quotation and sales order item fields.
    */
   export type QuotationLineItem = {
     id?: string
@@ -43,6 +44,10 @@
     ordered_quantity?: number
     conversion_status?: 'none' | 'partial' | 'full'
     version?: number
+    // Sales order specific fields
+    quotation_item_id?: string
+    confirmed_delivery_date?: string
+    is_editable?: boolean
   }
 
   /**
@@ -94,8 +99,8 @@
   import * as Table from '$components/ui/table'
   import { UnitOfMeasures } from '$lib/config/uoms'
   import type { Item } from '$lib/types/api-types'
-  import { formatPriceDisplay } from '$utils/prices'
   import type { BasicOption } from '$utils/generics'
+  import { formatPriceDisplay } from '$utils/prices'
   import { X } from '@lucide/svelte'
 
   /**
@@ -215,6 +220,7 @@
           description: item.description,
         }
       }
+
       return {
         type: 'item' as const,
         item_id: item.itemId || undefined,
