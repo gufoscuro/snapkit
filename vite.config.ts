@@ -5,7 +5,7 @@ import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  logLevel: 'warn',
+  logLevel: process.env.VITE_VERBOSE ? 'info' : 'error',
   plugins: [
     tailwindcss(),
     paraglideVitePlugin({
