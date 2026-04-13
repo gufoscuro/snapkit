@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { version } from '$app/environment'
   /* eslint-disable svelte/no-navigation-without-resolve */
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
@@ -11,9 +12,9 @@
   import { apiRequest } from '$utils/request'
   import type { SnippetProps } from '$utils/runtime'
   import { getUserInitials } from '$utils/strings'
-  import BellIcon from '@lucide/svelte/icons/bell'
   import CheckIcon from '@lucide/svelte/icons/check'
   import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down'
+  import Cog from '@lucide/svelte/icons/cog'
   import LanguagesIcon from '@lucide/svelte/icons/languages'
   import LogOutIcon from '@lucide/svelte/icons/log-out'
   import MonitorIcon from '@lucide/svelte/icons/monitor'
@@ -21,7 +22,6 @@
   import SunIcon from '@lucide/svelte/icons/sun'
   import SunMoonIcon from '@lucide/svelte/icons/sun-moon'
   import BrandPowershell from '@tabler/icons-svelte/icons/brand-powershell'
-  import Cog from '@lucide/svelte/icons/cog'
   import { resetMode, setMode, userPrefersMode } from 'mode-watcher'
 
   let { user }: SnippetProps = $props()
@@ -82,19 +82,13 @@
               <Avatar.Image src={user?.id} alt={user?.name} />
               <Avatar.Fallback class="rounded-md">{getUserInitials(user?.name || 'JD')}</Avatar.Fallback>
             </Avatar.Root>
-            <div class="grid flex-1 text-start text-sm leading-tight">
+            <div class="grid flex-1 cursor-default text-start text-sm leading-tight">
               <span class="truncate font-medium">{user?.name || 'John Doe'}</span>
-              <span class="truncate text-xs text-muted-foreground/80">{user?.email || 'john.doe@example.com'}</span>
+              <span class="truncate text-xs text-muted-foreground/80">Moddo {version}</span>
             </div>
           </div>
         </DropdownMenu.Label>
-        <!-- <DropdownMenu.Separator />
-        <DropdownMenu.Group>
-          <DropdownMenu.Item disabled>
-            <SparklesIcon />
-            Upgrade to Pro
-          </DropdownMenu.Item>
-        </DropdownMenu.Group> -->
+
         <DropdownMenu.Separator />
         <DropdownMenu.Group>
           {#if user?.is_superadmin}
@@ -107,10 +101,10 @@
             <Cog />
             {m.settings()}
           </DropdownMenu.Item>
-          <DropdownMenu.Item disabled>
+          <!-- <DropdownMenu.Item disabled>
             <BellIcon />
             {m.notifications()}
-          </DropdownMenu.Item>
+          </DropdownMenu.Item> -->
           <DropdownMenu.Sub>
             <DropdownMenu.SubTrigger>
               <LanguagesIcon />
