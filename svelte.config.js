@@ -1,5 +1,11 @@
+import { readFileSync } from 'node:fs';
 import adapter from '@sveltejs/adapter-node';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+
+function getVersion() {
+	const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
+	return `v${pkg.version}`;
+}
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -22,6 +28,11 @@ const config = {
 
 	kit: {
 		adapter: adapter(),
+
+		version: {
+			name: getVersion(),
+			pollInterval: 60_000,
+		},
 
 		alias: {
 			$components: 'src/lib/components',

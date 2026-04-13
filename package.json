@@ -16,7 +16,8 @@
 		"test:server": "vitest --project server",
 		"test:browser": "vitest --project client",
 		"test": "vitest --project unit --project server --run",
-		"generate:components-registry": "node scripts/generate-components-registry.js"
+		"generate:components-registry": "node scripts/generate-components-registry.js",
+		"release:app": "node scripts/release.js"
 	},
 	"devDependencies": {
 		"@emoji-mart/data": "^1.2.1",
