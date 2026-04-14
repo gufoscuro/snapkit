@@ -37,14 +37,23 @@ export function getCurrencySymbol(currencyCode: string): string {
  * @param currencyCode - Currency code to determine decimal separator
  * @returns Formatted string suitable for display in input
  */
-export function formatPriceInput(input: string, currencyCode: string = DEFAULT_CURRENCY_CODE, decimals?: number): string {
+export function formatPriceInput(input: string, currencyCode: string = DEFAULT_CURRENCY_CODE, decimals?: number, allowNegative: boolean = false): string {
   const currency = findCurrency(currencyCode) ?? DEFAULT_CURRENCY
   const maxDecimals = decimals ?? currency.decimals
   const decimalSep = currency.decimalSeparator
 
-  // Remove all non-numeric characters except decimal separator
-  const allowedChars = decimalSep === ',' ? /[^\d,]/g : /[^\d.]/g
+  // Remove all non-numeric characters except decimal separator (and minus if allowed)
+  const allowedChars = allowNegative
+    ? (decimalSep === ',' ? /[^\d,-]/g : /[^\d.-]/g)
+    : (decimalSep === ',' ? /[^\d,]/g : /[^\d.]/g)
   let cleaned = input.replace(allowedChars, '')
+
+  // If negative allowed, preserve leading minus and strip any others
+  if (allowNegative && cleaned.includes('-')) {
+    const hasLeadingMinus = cleaned.startsWith('-')
+    cleaned = cleaned.replace(/-/g, '')
+    if (hasLeadingMinus) cleaned = '-' + cleaned
+  }
 
   // Handle multiple decimal separators - keep only the first
   const sepIndex = cleaned.indexOf(decimalSep)

@@ -81,6 +81,8 @@
     headerActions?: Snippet
     /** API field name for the delivery date. Quotations use 'delivery_date', sales orders use 'confirmed_delivery_date'. */
     deliveryDateKey?: 'delivery_date' | 'confirmed_delivery_date'
+    /** Allow negative prices in PriceField inputs */
+    allowNegativePrices?: boolean
     /** Additional CSS classes */
     class?: string
   }
@@ -98,6 +100,7 @@
     refreshKey = undefined,
     defaultVatCode = undefined,
     headerActions,
+    allowNegativePrices = true,
     deliveryDateKey = 'delivery_date',
     class: className = '',
   }: Props = $props()
@@ -179,8 +182,8 @@
   }
 
   function transformOutput(internalItems: InternalLineItem[]): QuotationLineItem[] {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return internalItems.map(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       ({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, delivery_date, ...rest }, index) => {
         if (rest.type === 'descriptive')
           return {
@@ -458,6 +461,7 @@
             name="unitPrice-{index}"
             value={item.unit_price ?? 0}
             {currency}
+            allowNegative={allowNegativePrices}
             showLabel={false}
             showErrorMessage={false}
             disabled={!item.item_id || isDisabled}
@@ -489,6 +493,7 @@
               name="discountAmount-{index}"
               value={item.discount_amount ?? 0}
               {currency}
+              allowNegative={allowNegativePrices}
               showLabel={false}
               showErrorMessage={false}
               disabled={!item.item_id || isDisabled}

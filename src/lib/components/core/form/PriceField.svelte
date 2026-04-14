@@ -22,6 +22,8 @@
     currency?: string
     decimals?: number
     rounded?: boolean
+    /** Allow negative price values */
+    allowNegative?: boolean
     onChange?: (value: number) => void
   }
 
@@ -43,6 +45,7 @@
     autoWidth = InputFieldDefaults.autoWidth,
     disabled = InputFieldDefaults.disabled,
     rounded = true,
+    allowNegative = false,
     width = InputFieldDefaults.width,
     onChange,
     oninput,
@@ -112,7 +115,7 @@
 
   function handleInput(e: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     const rawValue = e.currentTarget.value
-    displayValue = formatPriceInput(rawValue, currency, decimals)
+    displayValue = formatPriceInput(rawValue, currency, decimals, allowNegative)
 
     // Update the input element's value to the formatted version
     e.currentTarget.value = displayValue

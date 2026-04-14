@@ -71,6 +71,8 @@
     refreshKey?: unknown
     /** Default VAT code from customer commercial terms */
     defaultVatCode?: VatCodeSummary
+    /** Allow negative prices in PriceField inputs */
+    allowNegativePrices?: boolean
     /** Additional CSS classes */
     class?: string
   }
@@ -89,6 +91,7 @@
     onChange,
     refreshKey = undefined,
     defaultVatCode = undefined,
+    allowNegativePrices = true,
     class: className = '',
   }: Props = $props()
 
@@ -156,6 +159,7 @@
   {onChange}
   {refreshKey}
   {defaultVatCode}
+  {allowNegativePrices}
   class={className}>
   {#snippet headerActions()}
     {#if canImport}
