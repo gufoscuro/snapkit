@@ -5,7 +5,7 @@
   import * as m from '$lib/paraglide/messages'
   import { cn } from '$lib/utils'
   import type { FilterOption, TagsFilterConfig } from '$lib/utils/filters'
-  import { IconX } from '@tabler/icons-svelte'
+  import IconX from '@tabler/icons-svelte/icons/x'
   import Check from '@lucide/svelte/icons/check'
 
   interface Props {

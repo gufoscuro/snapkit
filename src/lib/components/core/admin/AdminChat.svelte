@@ -1,10 +1,9 @@
 <script lang="ts">
+  /* eslint-disable svelte/no-at-html-tags */
   import * as Avatar from '$lib/components/ui/avatar'
-  import { Button, buttonVariants } from '$lib/components/ui/button'
+  import { Button } from '$lib/components/ui/button'
   import * as Chat from '$lib/components/ui/chat'
-  import * as EmojiPicker from '$lib/components/ui/emoji-picker'
   import { Input } from '$lib/components/ui/input'
-  import * as Popover from '$lib/components/ui/popover'
   import * as m from '$lib/paraglide/messages'
   import { getLocale } from '$lib/paraglide/runtime'
   import { cn } from '$lib/utils.js'
@@ -13,7 +12,6 @@
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import { getUserInitials } from '$utils/strings'
   import SendIcon from '@lucide/svelte/icons/send'
-  import SmilePlusIcon from '@lucide/svelte/icons/smile-plus'
   import Sparkles from '@tabler/icons-svelte/icons/sparkles'
   import { getContext, tick, untrack } from 'svelte'
 
@@ -55,7 +53,6 @@
   let conversationId = $state<string | null>(null)
   let message = $state('')
   let loading = $state(false)
-  let open = $state(false)
   const messages = $state<Message[]>([])
 
   async function fetchSplashMessage(entityId: string) {
@@ -178,7 +175,7 @@
         </Chat.BubbleAvatar>
         <Chat.BubbleMessage
           class={cn('flex flex-col gap-1', msg.isError && 'border border-destructive/30 bg-destructive/10')}>
-          <div class="chat-markdown prose prose-sm dark:prose-invert max-w-none">
+          <div class="chat-markdown prose prose-sm max-w-none dark:prose-invert">
             {#if msg.senderId === ASSISTANT_ID}
               {@html renderMarkdown(msg.message)}
             {:else}
@@ -210,35 +207,6 @@
       sendMessage()
     }}
     class="flex h-breadcrumbs place-items-center gap-2 p-2">
-    <EmojiPicker.Root
-      showRecents
-      recentsKey="emoji-picker-recents"
-      disableInitialScroll
-      onSelect={selected => {
-        open = false
-        message += selected.emoji
-      }}>
-      <Popover.Root bind:open>
-        <Popover.Trigger class={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'shrink-0 rounded-full')}>
-          <SmilePlusIcon />
-        </Popover.Trigger>
-        <Popover.Content class="w-auto p-0" side="top" align="start">
-          <EmojiPicker.Search />
-          <EmojiPicker.List class="h-[175px]" />
-          <EmojiPicker.Footer class="relative flex max-w-[232px] place-items-center gap-2 px-2">
-            {#snippet children({ active })}
-              <div class="flex w-[calc(100%-40px)] items-center gap-2">
-                <span class="text-lg">{active?.emoji}</span>
-                <span class="truncate text-xs text-muted-foreground">
-                  {active?.data.name}
-                </span>
-              </div>
-              <EmojiPicker.SkinToneSelector />
-            {/snippet}
-          </EmojiPicker.Footer>
-        </Popover.Content>
-      </Popover.Root>
-    </EmojiPicker.Root>
     <Input
       bind:ref={inputRef}
       bind:value={message}

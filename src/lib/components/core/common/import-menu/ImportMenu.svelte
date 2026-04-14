@@ -8,7 +8,7 @@
   import { cn } from '$lib/utils'
   import type { BasicOption } from '$lib/utils/generics'
   import Check from '@lucide/svelte/icons/check'
-  import { IconDatabaseImport } from '@tabler/icons-svelte'
+  import IconDatabaseImport from '@tabler/icons-svelte/icons/database-import'
   import type { Snippet } from 'svelte'
   import { SvelteSet } from 'svelte/reactivity'
 
