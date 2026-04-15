@@ -287,7 +287,7 @@
               <TextField name="document_number" label={m.document_number()} class={FormFieldClass.MaxWidth} disabled />
             {/if}
 
-            <DateField name="document_date" label={m.document_date()} class={FormFieldClass.MinWidth} allowClear />
+            <DateField name="document_date" label={m.document_date()} class={FormFieldClass.MaxWidth} allowClear />
 
             <SelectField
               name="sales_transaction_type"
@@ -374,9 +374,9 @@
           {/snippet}
 
           {#snippet content()}
-            <DateField name="valid_from" label={m.valid_from()} class={FormFieldClass.MinWidth} allowClear />
+            <DateField name="valid_from" label={m.valid_from()} class={FormFieldClass.MaxWidth} allowClear />
 
-            <DateField name="valid_to" label={m.valid_to()} class={FormFieldClass.MinWidth} allowClear />
+            <DateField name="valid_to" label={m.valid_to()} class={FormFieldClass.MaxWidth} allowClear />
 
             <PaymentTermSelector
               name="payment_term_id"

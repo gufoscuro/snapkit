@@ -31,6 +31,7 @@
   import CustomerAddressSelector from '$components/features/form/CustomerAddressSelector.svelte'
   import CustomerContactSelector from '$components/features/form/CustomerContactSelector.svelte'
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
+  import LegalEntityBankSelector from '$components/features/form/LegalEntityBankSelector.svelte'
   import PaymentTermSelector from '$components/features/form/PaymentTermSelector.svelte'
   import SalesOrderItemsListEditor from '$components/features/form/SalesOrderItemsListEditor.svelte'
   import type { VatCodeSummary } from '$components/features/form/VatCodeSelector.svelte'
@@ -45,7 +46,6 @@
   import { useProvides } from '$lib/contexts/page-state'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
-  import LegalEntityBankSelector from '$components/features/form/LegalEntityBankSelector.svelte'
   import type { Currency, CustomerCommercialTerms, PaymentTerm, SalesOrder } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { currencyLabels, incotermLabels, salesTransactionTypeLabels, toSelectItems } from '$lib/utils/enum-labels'
@@ -302,7 +302,7 @@
               <TextField name="document_number" label={m.document_number()} class={FormFieldClass.MaxWidth} disabled />
             {/if}
 
-            <DateField name="document_date" label={m.document_date()} class={FormFieldClass.MinWidth} allowClear />
+            <DateField name="document_date" label={m.document_date()} class={FormFieldClass.MaxWidth} allowClear />
 
             <SelectField
               name="sales_transaction_type"
@@ -378,9 +378,16 @@
               items={currencyItems}
               class={FormFieldClass.MinWidth} />
 
-            <TextField name="customer_purchase_order" label={m.customer_purchase_order()} class={FormFieldClass.MaxWidth} />
+            <TextField
+              name="customer_purchase_order"
+              label={m.customer_purchase_order()}
+              class={FormFieldClass.MaxWidth} />
 
-            <DateField name="customer_purchase_order_date" label={m.customer_purchase_order_date()} class={FormFieldClass.MinWidth} allowClear />
+            <DateField
+              name="customer_purchase_order_date"
+              label={m.customer_purchase_order_date()}
+              class={FormFieldClass.MaxWidth}
+              allowClear />
           {/snippet}
         </GroupTitle>
 
@@ -434,9 +441,17 @@
                 : undefined}
               class={FormFieldClass.MaxWidth} />
 
-            <DateField name="requested_delivery_date" label={m.requested_delivery_date()} class={FormFieldClass.MinWidth} allowClear />
+            <DateField
+              name="requested_delivery_date"
+              label={m.requested_delivery_date()}
+              class={FormFieldClass.MaxWidth}
+              allowClear />
 
-            <DateField name="confirmation_date" label={m.confirmation_date()} class={FormFieldClass.MinWidth} allowClear />
+            <DateField
+              name="confirmation_date"
+              label={m.confirmation_date()}
+              class={FormFieldClass.MaxWidth}
+              allowClear />
           {/snippet}
         </GroupTitle>
 
@@ -452,7 +467,7 @@
             <SalesOrderItemsListEditor
               name="items"
               showLabel={false}
-              legalEntityId={legalEntityId}
+              {legalEntityId}
               customerId={formAPI?.values?.customer_id}
               currency={formAPI?.values?.currency ?? DEFAULT_CURRENCY_CODE}
               required={!record}

@@ -1,8 +1,8 @@
 <!--
   @component DateField
-  @description Date picker field with calendar popover and form context autowiring.
-  Uses @internationalized/date for date handling and shadcn-svelte calendar component.
-  @keywords date, calendar, picker, form, field
+  @description Date picker field with calendar popover and keyboard-typeable date segments.
+  Uses bits-ui DateField primitive for guided keyboard input and @internationalized/date for date handling.
+  @keywords date, calendar, picker, form, field, keyboard, segments
 -->
 <script lang="ts">
   import { browser } from '$app/environment'
@@ -10,7 +10,7 @@
   import { FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
   import FormFieldMessages from './FormFieldMessages.svelte'
   import FormFieldSkeleton from './FormFieldSkeleton.svelte'
-  import { Button } from '$components/ui/button'
+  import { DateField as DateFieldPrimitive } from 'bits-ui'
   import Label from '$components/ui/label/label.svelte'
   import Calendar from '$components/ui/calendar/calendar.svelte'
   import * as Popover from '$components/ui/popover'
@@ -18,14 +18,19 @@
   import { getUserMessagingClasses } from '$utils/form'
   import {
     CalendarDate,
-    DateFormatter,
     getLocalTimeZone,
     today,
     type DateValue,
   } from '@internationalized/date'
+  import { getLocale } from '$lib/paraglide/runtime'
   import CalendarIcon from '@lucide/svelte/icons/calendar'
   import XIcon from '@lucide/svelte/icons/x'
   import * as m from '$lib/paraglide/messages'
+
+  const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    it: 'it-IT',
+  }
 
   type Props = Omit<InputFieldProps, 'type' | 'focus' | 'autoWidth'> & {
     /** Date value (can be Date or ISO string) */
@@ -64,7 +69,7 @@
     minDaysFromNow = 0,
     maxDaysFromNow,
     allowClear = false,
-    locale = 'en-US',
+    locale = LOCALE_MAP[getLocale()] ?? 'en-US',
     dateStyle = 'medium',
     onChange,
     oninput,
@@ -88,9 +93,6 @@
   const error = $derived(errorProp ?? (form?.errors[name] as string | undefined))
   const locked = $derived(form?.locked ?? false)
   const isDisabled = $derived(disabled || locked)
-
-  // Date formatter (reactive to locale and dateStyle changes)
-  const df = $derived.by(() => new DateFormatter(locale, { dateStyle }))
 
   // Calculate calendar min/max values
   const calendarMin = $derived(
@@ -126,13 +128,14 @@
     }
   })
 
-  const classes = $derived(
+  const wrapperClasses = $derived(
     joinClassnames(
+      'flex h-9 w-full min-w-0 items-center rounded-md border border-input bg-background px-3 py-1 text-base ring-offset-background transition-[color,box-shadow] outline-none md:text-sm dark:bg-input/30',
+      'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
       className,
       width,
-      'justify-start text-left font-normal',
       getUserMessagingClasses(error, warning),
-      !internalDateValue ? 'text-muted-foreground' : ''
+      isDisabled ? 'cursor-not-allowed opacity-50' : ''
     )
   )
 
@@ -140,10 +143,10 @@
     'aria-labelledby': `label-${id}`,
   })
 
-  function handleValueChange(dateValue: DateValue | undefined) {
+  // Keyboard input: bits-ui fires onValueChange with DateValue when complete, undefined when incomplete
+  function handleDateFieldChange(dateValue: DateValue | undefined) {
     if (!dateValue) return
 
-    open = false
     const date = dateValue.toDate(getLocalTimeZone())
 
     if (form) {
@@ -154,6 +157,13 @@
     }
 
     onChange?.(date, dateValue)
+  }
+
+  // Calendar selection: close popover + update value
+  function handleCalendarChange(dateValue: DateValue | undefined) {
+    if (!dateValue) return
+    open = false
+    handleDateFieldChange(dateValue)
   }
 
   function handleClear() {
@@ -170,7 +180,9 @@
     onChange?.(null, null)
   }
 
-  function handleBlur() {
+  function handleContainerBlur(e: FocusEvent) {
+    const container = e.currentTarget as HTMLElement
+    if (container.contains(e.relatedTarget as Node)) return
     form?.touchField(name)
   }
 </script>
@@ -188,50 +200,79 @@
       {warningPosition}
     >
       {#snippet children({ aria })}
-        <Popover.Root bind:open>
-          <Popover.Trigger id={id}>
-            {#snippet child({ props })}
-              <Button
-                {...props}
-                variant="outline"
-                class={classes}
-                disabled={isDisabled}
-                {...labelAria}
-                {...aria}
-                onblur={handleBlur}
-              >
-                <CalendarIcon class="mr-2 h-4 w-4" />
-                {internalDateValue
-                  ? df.format(internalDateValue.toDate(getLocalTimeZone()))
-                  : placeholder}
-              </Button>
-            {/snippet}
-          </Popover.Trigger>
-          <Popover.Content align="end" class="w-auto p-0">
-            <Calendar
-              type="single"
-              value={internalDateValue}
-              {locale}
-              minValue={calendarMin}
-              maxValue={calendarMax}
-              onValueChange={handleValueChange}
-              captionLayout="dropdown"
-              initialFocus
-            />
-            {#if allowClear && internalDateValue}
-              <Button
-                variant="outline"
-                size="sm"
-                class="m-3 flex h-8 items-center text-xs"
-                onclick={handleClear}
-                disabled={isDisabled}
-              >
-                <XIcon class="mr-1 h-3 w-3" />
-                {m.clear_date()}
-              </Button>
-            {/if}
-          </Popover.Content>
-        </Popover.Root>
+        <DateFieldPrimitive.Root
+          value={internalDateValue}
+          onValueChange={handleDateFieldChange}
+          minValue={calendarMin}
+          maxValue={calendarMax}
+          {locale}
+          disabled={isDisabled}
+        >
+          <Popover.Root bind:open>
+            <div
+              class={wrapperClasses}
+              {...labelAria}
+              {...aria}
+              onfocusout={handleContainerBlur}
+              role="group"
+            >
+              <DateFieldPrimitive.Input>
+                {#snippet children({ segments })}
+                  {#each segments as { part, value }, i (part + i)}
+                    {#if part === 'literal'}
+                      <DateFieldPrimitive.Segment {part} class="text-muted-foreground px-0.5">
+                        {value}
+                      </DateFieldPrimitive.Segment>
+                    {:else}
+                      <DateFieldPrimitive.Segment
+                        {part}
+                        class="rounded px-0.5 py-0.5 tabular-nums focus:bg-accent focus:text-accent-foreground focus:outline-none aria-[valuetext=Empty]:text-muted-foreground"
+                      >
+                        {value}
+                      </DateFieldPrimitive.Segment>
+                    {/if}
+                  {/each}
+                {/snippet}
+              </DateFieldPrimitive.Input>
+              <Popover.Trigger>
+                {#snippet child({ props })}
+                  <button
+                    {...props}
+                    type="button"
+                    class="ml-auto flex shrink-0 items-center text-muted-foreground hover:text-foreground disabled:pointer-events-none"
+                    disabled={isDisabled}
+                    tabindex={-1}
+                  >
+                    <CalendarIcon class="h-4 w-4" />
+                  </button>
+                {/snippet}
+              </Popover.Trigger>
+            </div>
+            <Popover.Content align="end" class="w-auto p-0">
+              <Calendar
+                type="single"
+                value={internalDateValue}
+                {locale}
+                minValue={calendarMin}
+                maxValue={calendarMax}
+                onValueChange={handleCalendarChange}
+                captionLayout="dropdown"
+                initialFocus
+              />
+              {#if allowClear && internalDateValue}
+                <button
+                  type="button"
+                  class="m-3 flex h-8 items-center rounded-md border border-input bg-background px-3 text-xs hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
+                  onclick={handleClear}
+                  disabled={isDisabled}
+                >
+                  <XIcon class="mr-1 h-3 w-3" />
+                  {m.clear_date()}
+                </button>
+              {/if}
+            </Popover.Content>
+          </Popover.Root>
+        </DateFieldPrimitive.Root>
       {/snippet}
     </FormFieldMessages>
   </div>

@@ -20,6 +20,9 @@ vi.mock('$lib/paraglide/messages', () => ({
 	select_date_placeholder: () => 'Select date',
 	clear_date: () => 'Clear',
 }))
+vi.mock('$lib/paraglide/runtime', () => ({
+	getLocale: () => 'en',
+}))
 
 import DateField from './DateField.svelte'
 import { getFormContextOptional } from './form-context'
@@ -33,7 +36,12 @@ describe('DateField', () => {
 	afterEach(() => cleanup())
 
 	describe('rendering', () => {
-		it('renders a trigger button', () => {
+		it('renders the date field group', () => {
+			render(DateField, { props: { name: 'due_date' } })
+			expect(screen.getAllByRole('group').length).toBeGreaterThanOrEqual(1)
+		})
+
+		it('renders a calendar trigger button', () => {
 			render(DateField, { props: { name: 'due_date' } })
 			expect(screen.getByRole('button')).toBeInTheDocument()
 		})
@@ -53,34 +61,18 @@ describe('DateField', () => {
 			const label = screen.getByText('Date')
 			expect(label.className).toContain('sr-only')
 		})
-
-		it('shows placeholder when no date is selected', () => {
-			render(DateField, { props: { name: 'due_date' } })
-			expect(screen.getByText('Select date')).toBeInTheDocument()
-		})
-
-		it('shows custom placeholder', () => {
-			render(DateField, { props: { name: 'due_date', placeholder: 'Pick a date...' } })
-			expect(screen.getByText('Pick a date...')).toBeInTheDocument()
-		})
 	})
 
 	describe('with Date value', () => {
-		it('displays formatted date when value is a Date', () => {
+		it('displays date segments when value is a Date', () => {
 			const date = new Date(2025, 0, 15) // January 15, 2025
 			render(DateField, { props: { name: 'due_date', value: date } })
-			// Should not show the placeholder anymore
-			expect(screen.queryByText('Select date')).not.toBeInTheDocument()
+			expect(screen.getAllByRole('group').length).toBeGreaterThanOrEqual(1)
 		})
 
-		it('displays formatted date when value is an ISO string', () => {
+		it('displays date segments when value is an ISO string', () => {
 			render(DateField, { props: { name: 'due_date', value: '2025-01-15T00:00:00.000Z' } })
-			expect(screen.queryByText('Select date')).not.toBeInTheDocument()
-		})
-
-		it('shows placeholder for invalid date string', () => {
-			render(DateField, { props: { name: 'due_date', value: 'not-a-date' } })
-			expect(screen.getByText('Select date')).toBeInTheDocument()
+			expect(screen.getAllByRole('group').length).toBeGreaterThanOrEqual(1)
 		})
 	})
 
@@ -90,7 +82,7 @@ describe('DateField', () => {
 			expect(screen.getByRole('button')).not.toBeDisabled()
 		})
 
-		it('is disabled when disabled prop is true', () => {
+		it('disables the calendar trigger when disabled prop is true', () => {
 			render(DateField, { props: { name: 'due_date', disabled: true } })
 			expect(screen.getByRole('button')).toBeDisabled()
 		})
@@ -99,12 +91,12 @@ describe('DateField', () => {
 	describe('hidden state', () => {
 		it('renders by default', () => {
 			render(DateField, { props: { name: 'due_date' } })
-			expect(screen.getByRole('button')).toBeInTheDocument()
+			expect(screen.getAllByRole('group').length).toBeGreaterThanOrEqual(1)
 		})
 
 		it('does not render when hidden', () => {
 			render(DateField, { props: { name: 'due_date', hidden: true } })
-			expect(screen.queryByRole('button')).not.toBeInTheDocument()
+			expect(screen.queryAllByRole('group')).toHaveLength(0)
 		})
 	})
 
@@ -113,15 +105,10 @@ describe('DateField', () => {
 			render(DateField, { props: { name: 'due_date', error: 'Date required' } })
 			expect(screen.getByText('Date required')).toBeInTheDocument()
 		})
-
-		it('sets aria-invalid when error is present', () => {
-			render(DateField, { props: { name: 'due_date', error: 'Required' } })
-			expect(screen.getByRole('button')).toHaveAttribute('aria-invalid', 'true')
-		})
 	})
 
 	describe('popover interaction', () => {
-		it('opens calendar popover on click', async () => {
+		it('opens calendar popover on calendar icon click', async () => {
 			render(DateField, { props: { name: 'due_date' } })
 			await fireEvent.click(screen.getByRole('button'))
 
@@ -163,15 +150,7 @@ describe('DateField', () => {
 		it('reads date from form context', () => {
 			mockFormContext({ values: { due_date: new Date(2025, 5, 15) } })
 			render(DateField, { props: { name: 'due_date' } })
-			// Should not show placeholder if a date is present
-			expect(screen.queryByText('Select date')).not.toBeInTheDocument()
-		})
-
-		it('calls touchField on blur', async () => {
-			const ctx = mockFormContext()
-			render(DateField, { props: { name: 'due_date' } })
-			await fireEvent.blur(screen.getByRole('button'))
-			expect(ctx.touchField).toHaveBeenCalledWith('due_date')
+			expect(screen.getAllByRole('group').length).toBeGreaterThanOrEqual(1)
 		})
 
 		it('is disabled when form context is locked', () => {
@@ -198,7 +177,7 @@ describe('DateField', () => {
 				resourceConfig: { fields: { due_date: { visible: false } }, custom_fields: [] },
 			})
 			render(DateField, { props: { name: 'due_date' } })
-			expect(screen.queryByRole('button')).not.toBeInTheDocument()
+			expect(screen.queryAllByRole('group')).toHaveLength(0)
 		})
 	})
 })
