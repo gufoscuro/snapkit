@@ -25,6 +25,7 @@
   import PriceField from '$components/core/form/PriceField.svelte'
   import QuantityField from '$components/core/form/QuantityField.svelte'
   import RichEditorField from '$components/core/form/RichEditorField.svelte'
+  import TextField from '$components/core/form/TextField.svelte'
   import { FormFieldClass } from '$components/core/form/form'
   import { getFormContextOptional } from '$components/core/form/form-context'
   import ItemSelector from '$components/features/form/ItemSelector.svelte'
@@ -251,6 +252,7 @@
     updateItem(index, {
       item_id: selectedItem.id,
       item_snapshot: selectedItem as unknown as Record<string, unknown>,
+      description: selectedItem.name ?? '',
       uom: selectedItem.primary_uom || UnitOfMeasures.Default,
       quantity: 1,
       itemBasePrice: selectedItem.standard_cost ?? undefined,
@@ -265,6 +267,7 @@
     updateItem(index, {
       item_id: '',
       item_snapshot: undefined,
+      description: '',
       uom: UnitOfMeasures.Default,
       quantity: 0,
       unit_price: 0,
@@ -446,6 +449,18 @@
           disabled={!item.item_id || isDisabled}
           width="w-full"
           onChange={qty => updateItem(index, { quantity: qty })} />
+
+        <!-- Description (customizable, defaults to item name) -->
+        <div class="sm:col-span-2 lg:col-span-3">
+          <TextField
+            name="description-{index}"
+            label={m.description()}
+            value={item.description ?? ''}
+            showErrorMessage={false}
+            disabled={!item.item_id || isDisabled}
+            width="w-full"
+            oninput={e => updateItem(index, { description: e.currentTarget.value })} />
+        </div>
 
         <!-- Row 2: Unit Price, Discount (with toggle), VAT -->
         <div class="flex flex-col">
