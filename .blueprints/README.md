@@ -17,7 +17,9 @@ snapkit-content/
 │   ├── resource-table.md          # ResourceTable component and renderers
 │   ├── editable-table-field.md    # EditableTableField (table-based array editor)
 │   ├── editable-list-field.md     # EditableListField (card-based array editor)
-│   └── table-filters.md           # Table filters (enum, tags, date) for listing pages
+│   ├── table-filters.md           # Table filters (enum, tags, date) for listing pages
+│   ├── quotation-items-list-editor.md  # Quotation/sales order line items editor
+│   └── import-menu.md             # Generic ImportMenu for bulk-importing records
 ├── pages/                # Page architecture and CRUD patterns
 │   ├── crud-workflow.md           # End-to-end CRUD workflow (list + form + filters)
 │   └── fixed-pages.md            # Fixed pages (settings, admin) vs configurable pages
@@ -46,6 +48,8 @@ snapkit-content/
 - **editable-table-field.md**: EditableTableField pattern for editing arrays as table rows. Covers auto-empty-row management, row snippet API, form context isolation, styling constants, and existing editors
 - **editable-list-field.md**: EditableListField pattern for editing arrays as vertical cards. Alternative to EditableTableField for items with many fields. Covers explicit add/remove, multi-type lists with custom add buttons, responsive card layout, rich text in cards, and styling constants
 - **table-filters.md**: Structured filter system for listing pages. Covers FilterConfig definition (enum, tags, date types), FilterDropdown component, standalone vs grouped modes, data flow through the contract system, serialization, and step-by-step guide for adding filters to any listing page
+- **quotation-items-list-editor.md**: Production editor for quotation/sales order line items. Covers QuotationLineItem superset type, deliveryDateKey field mapping, addItems() API, notifyFormUpdate pattern for external mutations, validators (quotationItemsRequired/Valid), date timezone handling (toLocalISOString), and the SalesOrderItemsListEditor wrapper that adds quotation import
+- **import-menu.md**: Generic core ImportMenu for bulk-importing records from any async source. Covers the typed generic pattern (fetchFunction + optionMappingFunction + onimport), debounced server-side search, optional HoverCard preview snippet, standalone vs submenu modes, and the Escape-key workaround for closing (since shadcn-svelte DropdownMenu doesn't forward open prop)
 
 ### Pages
 
@@ -109,6 +113,15 @@ When updating guidelines:
 - "How to add enum/tags/date filters?" → `components/table-filters.md`
 - "How does FilterConfig work?" → `components/table-filters.md`
 - "How to add standalone date filters?" → `components/table-filters.md`
+- "How to edit quotation/sales order line items?" → `components/quotation-items-list-editor.md`
+- "How does the QuotationItemsListEditor work?" → `components/quotation-items-list-editor.md`
+- "How to handle delivery_date vs confirmed_delivery_date?" → `components/quotation-items-list-editor.md`
+- "How to add a new line items editor for another document type?" → `components/quotation-items-list-editor.md`
+- "How to import items from quotations into sales orders?" → `components/quotation-items-list-editor.md`
+- "How to bulk import records?" → `components/import-menu.md`
+- "How to use ImportMenu?" → `components/import-menu.md`
+- "How to make a generic searchable multi-select dropdown?" → `components/import-menu.md`
+- "How to add a hover preview to dropdown items?" → `components/import-menu.md`
 - "How to build a CRUD?" → `pages/crud-workflow.md`
 - "What is the anatomy of a CRUD?" → `pages/crud-workflow.md`
 - "How to create a settings page?" → `pages/fixed-pages.md`
