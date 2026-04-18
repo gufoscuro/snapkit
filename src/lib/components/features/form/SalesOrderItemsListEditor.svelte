@@ -73,8 +73,21 @@
     defaultVatCode?: VatCodeSummary
     /** Allow negative prices in PriceField inputs */
     allowNegativePrices?: boolean
+    /**
+     * Builds the descriptive header inserted before each imported quotation's items.
+     * Defaults to `m.quotation_reference({ documentNumber, date })`.
+     * Return an empty string to skip insertion.
+     */
+    referenceMessageBuilder?: (source: QuotationWithItems) => string
     /** Additional CSS classes */
     class?: string
+  }
+
+  function defaultReferenceMessage(source: QuotationWithItems): string {
+    return m.quotation_reference({
+      documentNumber: source.document_number,
+      date: new Date(source.document_date).toLocaleDateString(),
+    })
   }
 
   let {
@@ -92,6 +105,7 @@
     refreshKey = undefined,
     defaultVatCode = undefined,
     allowNegativePrices = true,
+    referenceMessageBuilder = defaultReferenceMessage,
     class: className = '',
   }: Props = $props()
 
@@ -120,11 +134,11 @@
   function handleImport(quotations: QuotationWithItems[]) {
     if (!editorRef) return
 
-    const newItems: QuotationLineItem[] = quotations.flatMap(q =>
-      (q.items ?? [])
+    const newItems: QuotationLineItem[] = quotations.flatMap(q => {
+      const productItems: QuotationLineItem[] = (q.items ?? [])
         .filter(item => item.type === 'item')
         .map(item => ({
-          type: item.type as 'item' | 'descriptive',
+          type: 'item',
           quotation_item_id: item.id,
           item_id: item.item_id,
           item_snapshot: item.item_snapshot,
@@ -138,8 +152,17 @@
           vat_code_snapshot: item.vat_code_snapshot,
           requested_delivery_date: item.requested_delivery_date,
           delivery_date: item.delivery_date,
-        })),
-    )
+        }))
+
+      if (productItems.length === 0) return []
+
+      const referenceText = referenceMessageBuilder(q)
+      const referenceItem: QuotationLineItem[] = referenceText
+        ? [{ type: 'descriptive', description: referenceText }]
+        : []
+
+      return [...referenceItem, ...productItems]
+    })
 
     editorRef.addItems(newItems)
   }

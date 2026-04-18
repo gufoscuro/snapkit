@@ -622,6 +622,7 @@
   "set_delivery_date": "Imposta Data di Consegna",
   "descriptive": "Descrittiva",
   "quotation_items": "Righe Preventivo",
+  "quotation_reference": "Riferimento preventivo: {documentNumber} del {date}",
   "quotation": "Preventivo",
   "new_quotation": "Nuovo preventivo",
   "quotations": "Preventivi",

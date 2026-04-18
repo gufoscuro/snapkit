@@ -620,6 +620,7 @@
   "set_delivery_date": "Set Delivery Date",
   "descriptive": "Descriptive",
   "quotation_items": "Quotation Items",
+  "quotation_reference": "Quotation reference: {documentNumber} of {date}",
   "quotation": "Quotation",
   "new_quotation": "New quotation",
   "quotations": "Quotations",
