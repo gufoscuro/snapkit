@@ -15,6 +15,7 @@
   import type { Item } from '$lib/types/api-types'
   import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$utils/filters'
   import type { ExtendedOption } from '$utils/generics'
+  import { openRecordCreation } from '$lib/utils/record-creation'
   import { api } from '$utils/request'
   import { getSnippetPropsContext } from '$utils/runtime'
 
@@ -31,6 +32,8 @@
     onChange?: (item: ExtendedOption | undefined) => void
     /** Callback when selection is cleared */
     onClear?: () => void
+    /** Callback when "create new" is clicked (requires allowNewRecord=true) */
+    onCreateRecord?: () => void
   }
 
   let {
@@ -56,6 +59,8 @@
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
+    onCreateRecord = () =>
+      openRecordCreation('item-details', m.new_tab_opened_for_item(), `/legal-entities/${legalEntityId}/items`),
   }: Props = $props()
 
   const contextGetter = getSnippetPropsContext()
@@ -94,6 +99,7 @@
 <FormGenericSingleSelector
   selectedValue={attr ? optionMappingFunction(attr) : undefined}
   emptyText={m.no_items_found()}
+  newRecordText={m.add_new_item()}
   {label}
   {placeholder}
   {name}
@@ -115,4 +121,5 @@
   {onChoose}
   {onChange}
   {onClear}
+  onCreateNew={onCreateRecord}
   class={className} />

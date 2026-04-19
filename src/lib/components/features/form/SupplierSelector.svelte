@@ -15,6 +15,7 @@
   import type { SupplierSummary } from '$lib/types/api-types'
   import { createQueryRequestObject, type FilterQuery } from '$lib/utils/filters'
   import type { ExtendedOption } from '$lib/utils/generics'
+  import { openRecordCreation } from '$lib/utils/record-creation'
   import { apiRequest } from '$lib/utils/request'
 
   type Props = EntitySelectorProps & {
@@ -54,7 +55,7 @@
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
-    onCreateRecord = () => {},
+    onCreateRecord = () => openRecordCreation('supplier-details', m.new_tab_opened_for_supplier(), 'supply/supplier'),
   }: Props = $props()
 
   function optionMappingFunction(item: SupplierSummary): ExtendedOption {

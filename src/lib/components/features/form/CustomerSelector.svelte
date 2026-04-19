@@ -15,6 +15,7 @@
   import type { CustomerSummary } from '$lib/types/api-types'
   import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$lib/utils/filters'
   import type { ExtendedOption } from '$lib/utils/generics'
+  import { openRecordCreation } from '$lib/utils/record-creation'
   import { api } from '$lib/utils/request'
   import { getSnippetPropsContext } from '$utils/runtime'
 
@@ -55,7 +56,8 @@
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
-    onCreateRecord = () => {},
+    onCreateRecord = () =>
+      openRecordCreation('customer-details', m.new_tab_opened_for_customer(), `/legal-entities/${legalEntityId}/customers`),
   }: Props = $props()
 
   const contextGetter = getSnippetPropsContext()
