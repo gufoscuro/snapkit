@@ -305,6 +305,14 @@
 
             <DateField name="document_date" label={m.document_date()} class={FormFieldClass.MaxWidth} allowClear />
 
+            {#if record?.confirmation_date}
+              <DateField
+                name="confirmation_date"
+                label={m.confirmed_on()}
+                class={FormFieldClass.MaxWidth}
+                disabled />
+            {/if}
+
             <SelectField
               name="sales_transaction_type"
               label={m.sales_transaction_type()}
@@ -443,17 +451,11 @@
                 : undefined}
               class={FormFieldClass.MaxWidth} />
 
-            <DateField
+            <!-- <DateField
               name="requested_delivery_date"
               label={m.requested_delivery_date()}
               class={FormFieldClass.MaxWidth}
-              allowClear />
-
-            <DateField
-              name="confirmation_date"
-              label={m.confirmation_date()}
-              class={FormFieldClass.MaxWidth}
-              allowClear />
+              allowClear /> -->
           {/snippet}
         </GroupTitle>
 

@@ -27,6 +27,13 @@
   const salesOrderHandle = useConsumes(SalesOrderSidebarContract, 'salesOrder')
   const salesOrder = $derived(salesOrderHandle.get())
 
+  const confirmedOnLabel = $derived.by(() => {
+    if (!salesOrder?.confirmation_date) return null
+    const date = new Date(salesOrder.confirmation_date)
+    if (isNaN(date.getTime())) return null
+    return date.toLocaleDateString()
+  })
+
   const pageMenu = $derived.by(() => {
     if (!salesOrder)
       return {
@@ -71,6 +78,12 @@
           <SalesOrderFulfillmentBadge fulfillmentStatus={salesOrder.fulfillment_status} />
         {/if}
       </div>
+
+      {#if confirmedOnLabel}
+        <div class="mt-2 text-xs text-muted-foreground">
+          {m.confirmed_on()}: {confirmedOnLabel}
+        </div>
+      {/if}
     </div>
 
     <SubpageMenuGroup name={pageMenu.name} items={pageMenu.items} />

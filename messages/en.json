@@ -772,6 +772,7 @@
   "customer_purchase_order": "Customer PO",
   "customer_purchase_order_date": "Customer PO Date",
   "confirmation_date": "Confirmation Date",
+  "confirmed_on": "Approved on",
   "fulfillment_status": "Fulfillment Status",
   "app_update_available": "A new version of the app is available.",
   "app_update_action": "Refresh",

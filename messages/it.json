@@ -774,6 +774,7 @@
   "customer_purchase_order": "OdA Cliente",
   "customer_purchase_order_date": "Data OdA Cliente",
   "confirmation_date": "Data Conferma",
+  "confirmed_on": "Approvato il",
   "fulfillment_status": "Stato Evasione",
   "app_update_available": "È disponibile una nuova versione dell'app.",
   "app_update_action": "Aggiorna",
