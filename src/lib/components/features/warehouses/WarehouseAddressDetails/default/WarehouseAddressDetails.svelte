@@ -15,6 +15,7 @@
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
+  import ProvinceSelector from '$components/features/form/ProvinceSelector.svelte'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity, WarehouseAddress } from '$lib/types/api-types'
   import { api } from '$lib/utils/request'
@@ -93,7 +94,7 @@
       <TextField name="address_line_1" label={m.address_line_1()} class={FormFieldClass.MaxWidth} focus={!address} />
       <TextField name="address_line_2" label={m.address_line_2()} class={FormFieldClass.MaxWidth} />
       <TextField name="city" label={m.city()} class={FormFieldClass.MaxWidth} />
-      <TextField name="province" label={m.province()} class={FormFieldClass.MaxWidth} />
+      <ProvinceSelector name="province" label={m.province()} class={FormFieldClass.MaxWidth} />
       <TextField name="postal_code" label={m.postal_code()} class={FormFieldClass.MaxWidth} />
       <CountryField name="country_code" label={m.country_code()} class={FormFieldClass.MinWidth} />
 

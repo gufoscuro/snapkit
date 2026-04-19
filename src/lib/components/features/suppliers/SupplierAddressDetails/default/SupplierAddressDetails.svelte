@@ -24,6 +24,7 @@
   import SwitchField from '$components/core/form/SwitchField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
+  import ProvinceSelector from '$components/features/form/ProvinceSelector.svelte'
   import { useProvides } from '$lib/contexts/page-state'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
@@ -132,7 +133,7 @@
         <TextField name="address_line_1" label={m.address_line_1()} class={FormFieldClass.MaxWidth} focus={!record} />
         <TextField name="address_line_2" label={m.address_line_2()} class={FormFieldClass.MaxWidth} />
         <TextField name="city" label={m.city()} class={FormFieldClass.MaxWidth} />
-        <TextField name="province" label={m.province()} class={FormFieldClass.MaxWidth} />
+        <ProvinceSelector name="province" label={m.province()} class={FormFieldClass.MaxWidth} />
         <TextField name="region" label={m.region()} class={FormFieldClass.MaxWidth} />
         <TextField name="postal_code" label={m.postal_code()} class={FormFieldClass.MaxWidth} />
         <CountryField name="country_code" label={m.country_code()} class={FormFieldClass.MinWidth} />

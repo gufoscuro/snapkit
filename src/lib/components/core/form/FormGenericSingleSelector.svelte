@@ -18,6 +18,14 @@
     emptyText?: string
     newRecordText?: string
     allowClear?: boolean
+    /** Permette inserimento libero (free entry) di valori non presenti nella lista */
+    allowCreate?: boolean
+    /** Testo dell'azione di aggiunta inline (solo se allowCreate) */
+    addItemText?: string
+    /** Testo mostrato quando l'input non è valido per l'aggiunta inline */
+    addItemInvalidText?: string
+    /** Validatore per il valore inserito a mano (solo se allowCreate) */
+    validateAddItem?: (value: string) => boolean
     /** Custom renderer for dropdown items */
     itemRendererComponent?: Component<{ option: ExtendedOption }>
     onChoose?: (item: T) => void
@@ -50,6 +58,10 @@
     hidden = false,
     allowNewRecord = EntitySelectorDefaults.allowNewRecord,
     allowClear = true,
+    allowCreate = false,
+    addItemText = 'Add Item',
+    addItemInvalidText = 'Cannot Add Item',
+    validateAddItem = () => true,
     itemRendererComponent = undefined,
     onChoose = () => {},
     onChange = () => {},
@@ -111,6 +123,10 @@
         {align}
         {disabled}
         {allowNewRecord}
+        {allowCreate}
+        {addItemText}
+        {addItemInvalidText}
+        {validateAddItem}
         {emptyText}
         {newRecordText}
         {warning}

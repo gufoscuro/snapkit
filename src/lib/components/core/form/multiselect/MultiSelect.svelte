@@ -15,10 +15,10 @@
   import { joinClassnames } from '$utils/classnames'
   import { createQueryRequestObject } from '$utils/filters'
   import { getUserMessagingClasses } from '$utils/form'
-  import Plus from '@lucide/svelte/icons/plus'
-  import X from '@lucide/svelte/icons/x'
   import Check from '@lucide/svelte/icons/check'
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
+  import Plus from '@lucide/svelte/icons/plus'
+  import X from '@lucide/svelte/icons/x'
   import type { Component } from 'svelte'
   import { tick, untrack } from 'svelte'
   import DefaultMultiRenderer from './DefaultMultiRenderer.svelte'
@@ -246,9 +246,9 @@
 
         {#if allowNewRecord && inputValue?.trim().length === 0}
           <Command.Group>
-            <Command.Item class="aria-selected:bg-info/30 flex-col items-start" onSelect={() => onCreateNewRecord()}>
-              <div class="flex items-center justify-start">
-                <Plus class="{IconSize.Small} mr-2" />
+            <Command.Item class=" flex-col items-start" onSelect={() => onCreateNewRecord()}>
+              <div class="flex items-center justify-start gap-2">
+                <Plus class="{IconSize.Small} mr-2 shrink-0" />
                 {newRecordText}
               </div>
             </Command.Item>
@@ -281,7 +281,11 @@
               {#if itemRendererComponent}
                 <svelte:component this={itemRendererComponent} {option} />
               {:else}
-                <Check class={cn('mr-2 h-4 w-4', option.value !== value[0]?.value && 'text-transparent')} />
+                <Check
+                  class="{IconSize.Small} shrink-0 {cn(
+                    'mr-2',
+                    option.value !== value[0]?.value && 'text-transparent',
+                  )}" />
                 {option.label}
               {/if}
             </Command.Item>

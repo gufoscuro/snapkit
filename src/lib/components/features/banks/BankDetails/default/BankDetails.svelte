@@ -16,6 +16,7 @@
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
+  import ProvinceSelector from '$components/features/form/ProvinceSelector.svelte'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity, LegalEntityBank } from '$lib/types/api-types'
@@ -133,7 +134,7 @@
 
         <div class="max-w-xl gap-4 md:flex">
           <TextField name="city" label={m.bank_city()} width="w-auto" />
-          <TextField name="province" label={m.bank_province()} width="w-auto" />
+          <ProvinceSelector name="province" label={m.bank_province()} width="w-auto" />
         </div>
 
         <div class="max-w-xl gap-4 md:flex">
