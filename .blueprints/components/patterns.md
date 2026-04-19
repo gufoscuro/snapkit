@@ -368,7 +368,7 @@ const approveAction: RecordAction<MyOptions> = {
   confirmationText: (opts) => m.approve_confirmation({ name: opts.name }),
   successMessage: (opts) => m.approved_success({ name: opts.name }),
   errorMessage: m.flag_action_error(),
-  visible: (opts) => opts.state === 'open',
+  visible: (opts) => opts.availableTransitions.includes('approve'),
   onAction: async (opts) => {
     await api.post(`/endpoint/${opts.targetId}/transition`, {
       data: { transition: 'approve' },
@@ -380,6 +380,86 @@ const approveAction: RecordAction<MyOptions> = {
 
 These can be mixed with `createFlagToggleAction` results in the same actions array.
 
+### Backend-driven transition visibility
+
+When a resource exposes a state machine via a `/transition` endpoint, the backend is the source of truth for which transitions are currently allowed. Its response includes an `available_transitions: string[]` field listing the valid transitions for the record in its current state (e.g. `['approve', 'reject']` while open, `['reopen']` once approved, `[]` when terminal).
+
+**Rule of thumb:**
+
+- **State transitions** (approve/reject/reopen/...) → gate via `availableTransitions.includes('<id>')`. Do NOT infer visibility from `record.state` — let the backend decide.
+- **Non-transition actions** (flag toggles like `/flags` endpoints, downloads, etc.) → still gate locally based on `record.state` or other fields, since they aren't part of the state machine.
+
+**Implementation steps:**
+
+1. Add the field to the API type (if not already generated):
+
+    ```typescript
+    export type Quotation = {
+      // ... existing fields
+      available_transitions?: string[]
+    }
+    ```
+
+2. Extend the action options type:
+
+    ```typescript
+    export type QuotationActionOptions = RecordActionRequestOptions & {
+      documentNumber: string
+      version: number
+      state: QuotationStatus
+      sentAt: string | null
+      availableTransitions: string[]
+    }
+    ```
+
+3. Make each transition action's `visible` predicate consult `availableTransitions`. Use the **same string** as the backend transition name — it's the same identifier you POST to `/transition`, so keep the action `id`, the POST payload, and the `includes()` check aligned:
+
+    ```typescript
+    {
+      id: 'approve',
+      visible: (opts) => opts.availableTransitions.includes('approve'),
+      onAction: async (opts) => {
+        await api.post(`/legal-entities/${leId}/quotations/${opts.targetId}/transition`, {
+          data: { transition: 'approve' },
+        })
+      },
+    }
+    ```
+
+4. Pass `record.available_transitions ?? []` when building `actionOptions` in the detail component:
+
+    ```typescript
+    const actionOptions = $derived.by((): QuotationActionOptions | null => {
+      if (!record) return null
+      return {
+        targetId: record.id,
+        documentNumber: record.document_number,
+        version: record.version,
+        state: record.state,
+        sentAt: record.sent_at || null,
+        availableTransitions: record.available_transitions ?? [],
+      }
+    })
+    ```
+
+5. **Do not duplicate the gate in the BottomBar.** The `visible()` predicate is already honoured by both `RecordActionMenu` and `RecordActionButton`, so a transition button will simply not render when the backend excludes it. Avoid wrappers like `{:else if record.state === 'open'}` around transition buttons — they add a second, potentially divergent source of truth:
+
+    ```svelte
+    <!-- ❌ Don't: duplicates the gate and hides the button even when backend would allow it -->
+    {#if record.state === 'open'}
+      <RecordActionButton action={approveAction} {actionOptions} />
+    {/if}
+
+    <!-- ✅ Do: let the action's visible() predicate decide -->
+    <RecordActionButton action={approveAction} {actionOptions} />
+    ```
+
+    Reserve outer `{#if}` gates for things that genuinely aren't transitions — e.g. the Save button, which is tied to form editability, not to a backend-allowed operation.
+
+6. Adding a new transition later (e.g. `reopen`) requires no UI restructuring: just define another `RecordAction` with `id: 'reopen'` and `visible: (opts) => opts.availableTransitions.includes('reopen')`. When the backend starts returning it, it will show up automatically in the menu.
+
+**Why this matters:** frontend guards like `state === 'open'` are brittle duplicates of backend logic and go stale whenever the state machine changes. Trusting `available_transitions` keeps the UI in lock-step with the backend without coordinated releases.
+
 ### Existing implementations
 
 | Entity | Actions file | Detail component |
@@ -387,6 +467,7 @@ These can be mixed with `createFlagToggleAction` results in the same actions arr
 | Customer | `src/lib/components/features/customers/customer-actions.ts` | `CustomerDetails.svelte` |
 | Supplier | `src/lib/components/features/suppliers/supplier-actions.ts` | `SupplierDetails.svelte` |
 | Quotation | `src/lib/components/features/quotations/quotation-actions.ts` | `QuotationDetails.svelte` |
+| Sales Order | `src/lib/components/features/sales-orders/sales-order-actions.ts` | `SalesOrderDetails.svelte` |
 
 ### Best practices
 
