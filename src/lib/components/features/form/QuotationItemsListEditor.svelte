@@ -422,7 +422,8 @@
           contentWidth={FormFieldClass.SelectorContentDefaultWidth}
           readonly={isDisabled}
           onChoose={selectedItem => handleItemSelect(index, selectedItem, updateItem)}
-          onClear={() => handleItemClear(index, updateItem)} />
+          onClear={() => handleItemClear(index, updateItem)}
+          allowNewRecord />
 
         <div class="flex flex-col justify-end">
           <span class="block text-sm leading-6 font-medium">{m.code()}</span>

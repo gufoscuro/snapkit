@@ -325,7 +325,8 @@
                   }
                 : undefined}
               onChange={item => handleCustomerChange(item, formAPI.updateField as FormFieldUpdater)}
-              class={FormFieldClass.MaxWidth} />
+              class={FormFieldClass.MaxWidth}
+              allowNewRecord />
 
             <CustomerAddressSelector
               customerId={formAPI.values.customer_id}
