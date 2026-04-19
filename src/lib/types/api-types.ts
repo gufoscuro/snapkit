@@ -1215,6 +1215,7 @@ export type Quotation = {
   version: number
   created_by: string
   items?: QuotationItem[]
+  available_transitions?: string[]
 }
 
 // ============================================================================
@@ -1287,6 +1288,7 @@ export type SalesOrder = {
   version: number
   created_by: string
   items?: SalesOrderItem[]
+  available_transitions?: string[]
 }
 
 /**

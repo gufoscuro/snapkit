@@ -8,6 +8,7 @@ export type QuotationActionOptions = RecordActionRequestOptions & {
 	version: number
 	state: QuotationStatus
 	sentAt: string | null
+	availableTransitions: string[]
 }
 
 type CreateQuotationActionsOptions = {
@@ -36,6 +37,7 @@ export function createQuotationActions({ legalEntityId, onSuccess }: CreateQuota
 				unset: (opts) => m.quotation_marked_as_not_sent({ name: opts.documentNumber }),
 			},
 			errorMessage: m.flag_action_error(),
+			visible: (opts) => opts.state === 'open',
 			onSuccess,
 		}),
 		{
@@ -45,7 +47,7 @@ export function createQuotationActions({ legalEntityId, onSuccess }: CreateQuota
 			confirmationText: (opts) => m.approve_quotation_confirmation({ name: opts.documentNumber }),
 			successMessage: (opts) => m.quotation_approved_success({ name: opts.documentNumber }),
 			errorMessage: m.flag_action_error(),
-			visible: (opts) => opts.state === 'open',
+			visible: (opts) => opts.availableTransitions.includes('approve'),
 			onAction: async (opts) => {
 				await api.post(`/legal-entities/${legalEntityId}/quotations/${opts.targetId}/transition`, {
 					data: { transition: 'approve' },
@@ -61,7 +63,7 @@ export function createQuotationActions({ legalEntityId, onSuccess }: CreateQuota
 			confirmationVariant: 'destructive',
 			successMessage: (opts) => m.quotation_rejected_success({ name: opts.documentNumber }),
 			errorMessage: m.flag_action_error(),
-			visible: (opts) => opts.state === 'open',
+			visible: (opts) => opts.availableTransitions.includes('reject'),
 			onAction: async (opts) => {
 				await api.post(`/legal-entities/${legalEntityId}/quotations/${opts.targetId}/transition`, {
 					data: { transition: 'reject' },

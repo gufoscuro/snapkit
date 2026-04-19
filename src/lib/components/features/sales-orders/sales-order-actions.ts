@@ -8,6 +8,7 @@ export type SalesOrderActionOptions = RecordActionRequestOptions & {
 	version: number
 	state: SalesOrderStatus
 	sentAt: string | null
+	availableTransitions: string[]
 }
 
 type CreateSalesOrderActionsOptions = {
@@ -36,6 +37,7 @@ export function createSalesOrderActions({ legalEntityId, onSuccess }: CreateSale
 				unset: (opts) => m.sales_order_marked_as_not_sent({ name: opts.documentNumber }),
 			},
 			errorMessage: m.flag_action_error(),
+			visible: (opts) => opts.state === 'open',
 			onSuccess,
 		}),
 		{
@@ -45,7 +47,7 @@ export function createSalesOrderActions({ legalEntityId, onSuccess }: CreateSale
 			confirmationText: (opts) => m.approve_sales_order_confirmation({ name: opts.documentNumber }),
 			successMessage: (opts) => m.sales_order_approved_success({ name: opts.documentNumber }),
 			errorMessage: m.flag_action_error(),
-			visible: (opts) => opts.state === 'open',
+			visible: (opts) => opts.availableTransitions.includes('approve'),
 			onAction: async (opts) => {
 				await api.post(`/legal-entities/${legalEntityId}/sales-orders/${opts.targetId}/transition`, {
 					data: { transition: 'approve' },
@@ -61,7 +63,7 @@ export function createSalesOrderActions({ legalEntityId, onSuccess }: CreateSale
 			confirmationVariant: 'destructive',
 			successMessage: (opts) => m.sales_order_rejected_success({ name: opts.documentNumber }),
 			errorMessage: m.flag_action_error(),
-			visible: (opts) => opts.state === 'open',
+			visible: (opts) => opts.availableTransitions.includes('reject'),
 			onAction: async (opts) => {
 				await api.post(`/legal-entities/${legalEntityId}/sales-orders/${opts.targetId}/transition`, {
 					data: { transition: 'reject' },

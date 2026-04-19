@@ -106,6 +106,7 @@
       version: record.version,
       state: record.state,
       sentAt: record.sent_at || null,
+      availableTransitions: record.available_transitions ?? [],
     }
   })
   const approveAction = $derived(salesOrderActions.find(a => a.id === 'approve'))
@@ -520,7 +521,7 @@
         <BottomBar>
           {#if !record}
             <BusyButton type="submit">{m.save_changes()}</BusyButton>
-          {:else if record.state === 'open'}
+          {:else}
             {#if actionOptions}
               <RecordActionMenu buttonVariant="outline" actions={salesOrderActions} {actionOptions} />
             {/if}
@@ -532,9 +533,11 @@
                   filename: `${record.document_number}.pdf`,
                 })} />
 
-            <ActionButton type="submit" variant="outline" size="icon" busyLabel="" tooltip={m.save_changes()}>
-              <IconDeviceFloppy class="size-4" />
-            </ActionButton>
+            {#if record.state === 'open'}
+              <ActionButton type="submit" variant="outline" size="icon" busyLabel="" tooltip={m.save_changes()}>
+                <IconDeviceFloppy class="size-4" />
+              </ActionButton>
+            {/if}
 
             {#if rejectAction && actionOptions}
               <RecordActionButton action={rejectAction} {actionOptions} variant="outline" />
@@ -543,13 +546,6 @@
             {#if approveAction && actionOptions}
               <RecordActionButton action={approveAction} {actionOptions} />
             {/if}
-          {:else}
-            <DownloadActionButton
-              onDownload={() =>
-                apiDownload({
-                  url: `/legal-entities/${legalEntityId}/sales-orders/${record.id}/pdf`,
-                  filename: `${record.document_number}.pdf`,
-                })} />
           {/if}
         </BottomBar>
       {/snippet}
