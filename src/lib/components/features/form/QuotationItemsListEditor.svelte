@@ -155,6 +155,8 @@
 
   // When defaultVatCode arrives (async from commercial terms), apply to items with empty vat_code_id.
   // Uses untrack on items to avoid read→write loop.
+  // Calls notifyFormUpdate so items that become complete are pushed to the form field
+  // (EditableListField only commits on its own internal mutations).
   $effect(() => {
     const vatCode = defaultVatCode
     if (!vatCode) return
@@ -171,6 +173,27 @@
         vatCodeAttr: vatCode,
       }
     })
+    notifyFormUpdate()
+  })
+
+  // When defaultDeliveryDate changes, apply it to items still empty (no item_id yet)
+  // and without an explicit requested_delivery_date. Preserves user-filled rows.
+  // Writes to `items` do not re-trigger this effect because `items` is only read via untrack.
+  let lastAppliedDefaultDate: string | undefined = undefined
+  $effect(() => {
+    const normalized = normalizeDateInput(defaultDeliveryDate)
+    if (!normalized || normalized === lastAppliedDefaultDate) return
+    lastAppliedDefaultDate = normalized
+    const current = untrack(() => items)
+    const needsUpdate = current.some(
+      item => item.type === 'item' && !item.item_id && !item.requested_delivery_date,
+    )
+    if (!needsUpdate) return
+    items = current.map(item => {
+      if (item.type !== 'item' || item.item_id || item.requested_delivery_date) return item
+      return { ...item, requested_delivery_date: normalized }
+    })
+    notifyFormUpdate()
   })
 
   function isCompleteItem(item: InternalLineItem): boolean {
