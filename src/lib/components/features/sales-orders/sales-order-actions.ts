@@ -71,5 +71,20 @@ export function createSalesOrderActions({ legalEntityId, onSuccess }: CreateSale
 				await onSuccess?.()
 			},
 		},
+		{
+			id: 'reopen',
+			label: m.reopen_sales_order(),
+			confirmation: true,
+			confirmationText: (opts) => m.reopen_sales_order_confirmation({ name: opts.documentNumber }),
+			successMessage: (opts) => m.sales_order_reopened_success({ name: opts.documentNumber }),
+			errorMessage: m.flag_action_error(),
+			visible: (opts) => opts.availableTransitions.includes('reopen'),
+			onAction: async (opts) => {
+				await api.post(`/legal-entities/${legalEntityId}/sales-orders/${opts.targetId}/transition`, {
+					data: { transition: 'reopen' },
+				})
+				await onSuccess?.()
+			},
+		},
 	]
 }

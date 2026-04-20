@@ -306,11 +306,7 @@
             <DateField name="document_date" label={m.document_date()} class={FormFieldClass.MaxWidth} allowClear />
 
             {#if record?.confirmation_date}
-              <DateField
-                name="confirmation_date"
-                label={m.confirmed_on()}
-                class={FormFieldClass.MaxWidth}
-                disabled />
+              <DateField name="confirmation_date" label={m.confirmed_on()} class={FormFieldClass.MaxWidth} disabled />
             {/if}
 
             <SelectField
@@ -451,11 +447,10 @@
                 : undefined}
               class={FormFieldClass.MaxWidth} />
 
-            <!-- <DateField
+            <DateField
               name="requested_delivery_date"
               label={m.requested_delivery_date()}
-              class={FormFieldClass.MaxWidth}
-              allowClear /> -->
+              class={FormFieldClass.MaxWidth} />
           {/snippet}
         </GroupTitle>
 
@@ -477,7 +472,8 @@
               required={!record}
               refreshKey={record?.version}
               showDeliveryDates
-              defaultVatCode={commercialTermsVatCode} />
+              defaultVatCode={commercialTermsVatCode}
+              defaultDeliveryDate={formAPI?.values?.requested_delivery_date} />
 
             {@const currencyCode = formAPI.values.currency}
             <div class="pr-14">

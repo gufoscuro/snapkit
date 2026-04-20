@@ -82,6 +82,8 @@
     headerActions?: Snippet
     /** API field name for the delivery date. Quotations use 'delivery_date', sales orders use 'confirmed_delivery_date'. */
     deliveryDateKey?: 'delivery_date' | 'confirmed_delivery_date'
+    /** Default for requested_delivery_date on newly added items. Does not mutate existing items. */
+    defaultDeliveryDate?: Date | string
     /** Allow negative prices in PriceField inputs */
     allowNegativePrices?: boolean
     /** Additional CSS classes */
@@ -103,6 +105,7 @@
     headerActions,
     allowNegativePrices = true,
     deliveryDateKey = 'delivery_date',
+    defaultDeliveryDate = undefined,
     class: className = '',
   }: Props = $props()
 
@@ -111,9 +114,6 @@
   const locked = $derived(form?.locked ?? false)
   const isDisabled = $derived(disabled || locked)
   const currencyCode = $derived(currency)
-
-  // Bulk delivery date
-  let bulkDeliveryDate = $state<Date | string>(new Date())
 
   /**
    * Format a Date as a local ISO-like string (YYYY-MM-DDTHH:mm:ss.sss)
@@ -124,12 +124,10 @@
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`
   }
 
-  function applyBulkDeliveryDate(date: Date | null) {
-    if (!date) return
-    const iso = toLocalISOString(date)
-    bulkDeliveryDate = date
-    items = items.map(item => (item.type === 'item' ? { ...item, delivery_date: iso } : item))
-    notifyFormUpdate()
+  function normalizeDateInput(value: Date | string | undefined): string {
+    if (!value) return ''
+    if (value instanceof Date) return toLocalISOString(value)
+    return value
   }
 
   // Internal items state
@@ -147,8 +145,8 @@
       discount_amount: undefined,
       vat_code_id: defaultVatCode?.id ?? '',
       vat_code_snapshot: defaultVatCode ? (defaultVatCode as unknown as Record<string, unknown>) : undefined,
-      requested_delivery_date: '',
-      delivery_date: bulkDeliveryDate instanceof Date ? toLocalISOString(bulkDeliveryDate) : bulkDeliveryDate,
+      requested_delivery_date: normalizeDateInput(defaultDeliveryDate),
+      delivery_date: '',
       useDiscountAmount: false,
       itemAttr: undefined,
       vatCodeAttr: defaultVatCode ?? undefined,
@@ -296,7 +294,7 @@
   /**
    * Notify onChange and form context of the current items state.
    * EditableListField calls this internally via onItemsChange for its own mutations,
-   * but external mutations (addItems, applyBulkDeliveryDate) must call this directly.
+   * but external mutations (addItems) must call this directly.
    */
   function notifyFormUpdate() {
     const output = transformOutput(items.filter(isCompleteItem))
@@ -341,36 +339,23 @@
   allowReorder
   class={className}>
   {#snippet header({ options })}
-    <div class="flex w-full items-end justify-between gap-4">
-      {#if showDeliveryDates}
-        <div class="max-w-xs flex-1">
-          <DateField
-            name="bulkDeliveryDate"
-            label={m.set_delivery_date()}
-            value={bulkDeliveryDate}
-            width="w-full"
-            disabled={isDisabled || options.dragAndDropActive}
-            onChange={applyBulkDeliveryDate} />
-        </div>
-      {/if}
-      {#if !isDisabled}
-        <div class="flex items-center gap-2">
-          {#if headerActions}
-            {@render headerActions()}
-          {/if}
-          <Button
-            variant={options.dragAndDropActive ? 'outline' : 'outline'}
-            size="sm"
-            onclick={options.toggleDragAndDrop}>
-            <ArrowUpDown class="mr-1 size-4" />
-            {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
-          </Button>
-        </div>
-      {/if}
-    </div>
-    <div class="my-8">
-      <Separator />
-    </div>
+    {#if !isDisabled}
+      <div class="flex w-full items-center justify-end gap-2">
+        {#if headerActions}
+          {@render headerActions()}
+        {/if}
+        <Button
+          variant={options.dragAndDropActive ? 'outline' : 'outline'}
+          size="sm"
+          onclick={options.toggleDragAndDrop}>
+          <ArrowUpDown class="mr-1 size-4" />
+          {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
+        </Button>
+      </div>
+      <div class="my-8">
+        <Separator />
+      </div>
+    {/if}
   {/snippet}
 
   {#snippet dragItem({ item, index })}

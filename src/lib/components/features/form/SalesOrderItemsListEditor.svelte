@@ -71,6 +71,8 @@
     refreshKey?: unknown
     /** Default VAT code from customer commercial terms */
     defaultVatCode?: VatCodeSummary
+    /** Default for requested_delivery_date on newly added items. Does not mutate existing items. */
+    defaultDeliveryDate?: Date | string
     /** Allow negative prices in PriceField inputs */
     allowNegativePrices?: boolean
     /**
@@ -104,6 +106,7 @@
     onChange,
     refreshKey = undefined,
     defaultVatCode = undefined,
+    defaultDeliveryDate = undefined,
     allowNegativePrices = true,
     referenceMessageBuilder = defaultReferenceMessage,
     class: className = '',
@@ -182,6 +185,7 @@
   {onChange}
   {refreshKey}
   {defaultVatCode}
+  {defaultDeliveryDate}
   {allowNegativePrices}
   class={className}>
   {#snippet headerActions()}

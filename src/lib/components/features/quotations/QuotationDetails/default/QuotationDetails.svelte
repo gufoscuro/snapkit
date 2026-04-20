@@ -177,6 +177,7 @@
     payment_term_id: '',
     incoterm: undefined,
     incoterm_location: '',
+    requested_delivery_date: '',
     notes_internal: '',
     notes_external: '',
     items: [],
@@ -397,6 +398,12 @@
             <SelectField name="incoterm" label={m.incoterm()} items={incotermItems} class={FormFieldClass.MinWidth} />
 
             <TextField name="incoterm_location" label={m.incoterm_location()} class={FormFieldClass.MaxWidth} />
+
+            <DateField
+              name="requested_delivery_date"
+              label={m.requested_delivery_date()}
+              class={FormFieldClass.MaxWidth}
+              allowClear />
           {/snippet}
         </GroupTitle>
 
@@ -416,7 +423,8 @@
               required={!record}
               refreshKey={record?.version}
               showDeliveryDates
-              defaultVatCode={commercialTermsVatCode} />
+              defaultVatCode={commercialTermsVatCode}
+              defaultDeliveryDate={formAPI?.values?.requested_delivery_date} />
 
             {@const currencyCode = formAPI.values.currency}
             <div class="pr-14">
