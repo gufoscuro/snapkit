@@ -31,8 +31,8 @@
   import type { Customer, CustomerAddress } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { addressTypeConfig } from '$lib/utils/enum-labels'
-  import { api } from '$utils/request.js'
   import { createRoute } from '$lib/utils/route-builder'
+  import { api } from '$utils/request.js'
   import type { SnippetProps } from '$utils/runtime'
   import { onDestroy, onMount } from 'svelte'
   import { CustomerAddressDetailsContract } from './CustomerAddressDetails.contract.js'
@@ -61,10 +61,12 @@
 
   const detail = useDetailRecord<CustomerAddress>({
     getUuid: () => uuid,
-    fetch: id => api.safe.get<CustomerAddress>(`/legal-entities/${legalEntityId}/customers/${customerId}/addresses/${id}`),
+    fetch: id =>
+      api.safe.get<CustomerAddress>(`/legal-entities/${legalEntityId}/customers/${customerId}/addresses/${id}`),
     create: data => api.post(`/legal-entities/${legalEntityId}/customers/${customerId}/addresses`, { data }),
     update: (id, data) => api.put(`/legal-entities/${legalEntityId}/customers/${customerId}/addresses/${id}`, { data }),
-    getDetailRoute: record => createRoute({ $id: 'customer-address-details', params: { uuid: record.id } }),
+    getDetailRoute: record =>
+      createRoute({ $id: 'customer-address-details', params: { uuid: customerId, aid: record.id } }),
     onFetched: data => {
       breadcrumbTitle.setLabel(pageDetails.config.$id, data.address_line_1)
     },
@@ -122,11 +124,7 @@
       {#snippet withContext()}
         <FormErrorMessage />
 
-        <SelectField
-          name="type"
-          label={m.type()}
-          items={typeItems}
-          class={FormFieldClass.MinWidth} />
+        <SelectField name="type" label={m.type()} items={typeItems} class={FormFieldClass.MinWidth} />
 
         <SwitchField name="is_default" label={m.is_default()} />
 

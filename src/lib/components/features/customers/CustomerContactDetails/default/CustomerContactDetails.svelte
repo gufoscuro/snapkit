@@ -28,8 +28,8 @@
   import type { Customer, CustomerContact } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { contactTypeConfig } from '$lib/utils/enum-labels'
-  import { api } from '$utils/request.js'
   import { createRoute } from '$lib/utils/route-builder'
+  import { api } from '$utils/request.js'
   import type { SnippetProps } from '$utils/runtime'
   import { onDestroy, onMount } from 'svelte'
   import { CustomerContactDetailsContract } from './CustomerContactDetails.contract.js'
@@ -58,10 +58,12 @@
 
   const detail = useDetailRecord<CustomerContact>({
     getUuid: () => uuid,
-    fetch: id => api.safe.get<CustomerContact>(`/legal-entities/${legalEntityId}/customers/${customerId}/contacts/${id}`),
+    fetch: id =>
+      api.safe.get<CustomerContact>(`/legal-entities/${legalEntityId}/customers/${customerId}/contacts/${id}`),
     create: data => api.post(`/legal-entities/${legalEntityId}/customers/${customerId}/contacts`, { data }),
     update: (id, data) => api.put(`/legal-entities/${legalEntityId}/customers/${customerId}/contacts/${id}`, { data }),
-    getDetailRoute: record => createRoute({ $id: 'customer-contact-details', params: { uuid: record.id } }),
+    getDetailRoute: record =>
+      createRoute({ $id: 'customer-contact-details', params: { uuid: customerId, cid: record.id } }),
     onFetched: data => {
       breadcrumbTitle.setLabel(pageDetails.config.$id, data.name)
     },
@@ -117,11 +119,7 @@
       {#snippet withContext()}
         <FormErrorMessage />
 
-        <SelectField
-          name="type"
-          label={m.type()}
-          items={typeItems}
-          class={FormFieldClass.MinWidth} />
+        <SelectField name="type" label={m.type()} items={typeItems} class={FormFieldClass.MinWidth} />
 
         <TextField name="name" label={m.name()} class={FormFieldClass.MaxWidth} focus={!record} />
         <TextField name="job_title" label={m.job_title()} class={FormFieldClass.MaxWidth} />
