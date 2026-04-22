@@ -319,7 +319,7 @@
               name="customer_id"
               attr={customerAttr
                 ? {
-                    id: customerAttr.id as string,
+                    id: record?.customer_id as string,
                     name: customerAttr.name as string,
                     vat_no: '',
                     categories: [],
@@ -330,13 +330,14 @@
                 : undefined}
               onChange={item => handleCustomerChange(item, formAPI.updateField as FormFieldUpdater)}
               class={FormFieldClass.MaxWidth}
-              allowNewRecord />
+              allowNewRecord
+              allowOpenRecord />
 
             <CustomerAddressSelector
               customerId={formAPI.values.customer_id}
               attr={shipToAddressAttr
                 ? {
-                    id: shipToAddressAttr.id as string,
+                    id: record?.ship_to_address_id as string,
                     type: (shipToAddressAttr.type as 'billing' | 'shipping' | 'legal') ?? 'shipping',
                     is_default: (shipToAddressAttr.is_default as boolean) ?? false,
                     address_line_1: (shipToAddressAttr.address_line_1 as string) ?? '',
@@ -352,13 +353,14 @@
                     version: (shipToAddressAttr.version as number) ?? 0,
                   }
                 : undefined}
-              class={FormFieldClass.MaxWidth} />
+              class={FormFieldClass.MaxWidth}
+              allowOpenRecord />
 
             <CustomerContactSelector
               customerId={formAPI.values.customer_id}
               attr={contactPersonAttr
                 ? {
-                    id: contactPersonAttr.id as string,
+                    id: record?.contact_person_id as string,
                     type:
                       (contactPersonAttr.type as
                         | 'primary'
@@ -376,7 +378,8 @@
                     version: (contactPersonAttr.version as number) ?? 0,
                   }
                 : undefined}
-              class={FormFieldClass.MaxWidth} />
+              class={FormFieldClass.MaxWidth}
+              allowOpenRecord />
 
             <SelectField
               name="currency"
