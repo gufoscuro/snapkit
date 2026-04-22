@@ -104,14 +104,14 @@
       : undefined
   )
 
-  // Convert Date or ISO string to DateValue
+  // Convert Date or ISO string to DateValue (using UTC to keep day stable across timezones)
   function toDateValue(value: Date | string | undefined): DateValue | undefined {
     if (!value) return undefined
 
     const date = value instanceof Date ? value : new Date(value)
     if (isNaN(date.getTime())) return undefined
 
-    return new CalendarDate(date.getFullYear(), date.getMonth() + 1, date.getDate())
+    return new CalendarDate(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate())
   }
 
   // Sync internal date value with form/prop value when it changes externally
@@ -147,7 +147,8 @@
   function handleDateFieldChange(dateValue: DateValue | undefined) {
     if (!dateValue) return
 
-    const date = dateValue.toDate(getLocalTimeZone())
+    // Use UTC midnight so the calendar day is preserved regardless of local timezone
+    const date = new Date(Date.UTC(dateValue.year, dateValue.month - 1, dateValue.day))
 
     if (form) {
       form.updateField(name, date)

@@ -146,7 +146,7 @@
       vat_code_id: defaultVatCode?.id ?? '',
       vat_code_snapshot: defaultVatCode ? (defaultVatCode as unknown as Record<string, unknown>) : undefined,
       requested_delivery_date: normalizeDateInput(defaultDeliveryDate),
-      delivery_date: '',
+      delivery_date: normalizeDateInput(defaultDeliveryDate),
       useDiscountAmount: false,
       itemAttr: undefined,
       vatCodeAttr: defaultVatCode ?? undefined,
@@ -189,7 +189,11 @@
     if (!needsUpdate) return
     items = current.map(item => {
       if (item.type !== 'item' || item.item_id || item.requested_delivery_date) return item
-      return { ...item, requested_delivery_date: normalized }
+      return {
+        ...item,
+        requested_delivery_date: normalized,
+        delivery_date: item.delivery_date || normalized,
+      }
     })
     notifyFormUpdate()
   })
@@ -557,7 +561,12 @@
             showErrorMessage={false}
             disabled={!item.item_id || isDisabled}
             width="w-full"
-            onChange={date => updateItem(index, { requested_delivery_date: date ? toLocalISOString(date) : '' })} />
+            onChange={date => {
+              const iso = date ? toLocalISOString(date) : ''
+              const updates: Partial<InternalLineItem> = { requested_delivery_date: iso }
+              if (iso && !item.delivery_date) updates.delivery_date = iso
+              updateItem(index, updates)
+            }} />
 
           <DateField
             name="deliveryDate-{index}"
