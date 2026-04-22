@@ -185,9 +185,7 @@
     if (!normalized || normalized === lastAppliedDefaultDate) return
     lastAppliedDefaultDate = normalized
     const current = untrack(() => items)
-    const needsUpdate = current.some(
-      item => item.type === 'item' && !item.item_id && !item.requested_delivery_date,
-    )
+    const needsUpdate = current.some(item => item.type === 'item' && !item.item_id && !item.requested_delivery_date)
     if (!needsUpdate) return
     items = current.map(item => {
       if (item.type !== 'item' || item.item_id || item.requested_delivery_date) return item
@@ -431,7 +429,8 @@
           readonly={isDisabled}
           onChoose={selectedItem => handleItemSelect(index, selectedItem, updateItem)}
           onClear={() => handleItemClear(index, updateItem)}
-          allowNewRecord />
+          allowNewRecord
+          allowOpenRecord />
 
         <div class="flex flex-col justify-end">
           <span class="block text-sm leading-6 font-medium">{m.code()}</span>

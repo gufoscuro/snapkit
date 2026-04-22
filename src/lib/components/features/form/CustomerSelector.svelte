@@ -15,7 +15,7 @@
   import type { CustomerSummary } from '$lib/types/api-types'
   import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$lib/utils/filters'
   import type { ExtendedOption } from '$lib/utils/generics'
-  import { openRecordCreation } from '$lib/utils/record-creation'
+  import { openRecordCreation, openRecordEdit } from '$lib/utils/record-creation'
   import { api } from '$lib/utils/request'
   import { getSnippetPropsContext } from '$utils/runtime'
 
@@ -32,6 +32,8 @@
     onClear?: () => void
     /** Callback when "create new" is clicked (requires allowNewRecord=true) */
     onCreateRecord?: () => void
+    /** Callback when "open record" is clicked (requires allowOpenRecord=true) */
+    onOpenRecord?: (option: ExtendedOption) => void
   }
 
   let {
@@ -52,12 +54,24 @@
     readonly = EntitySelectorDefaults.readonly,
     disabled = EntitySelectorDefaults.disabled,
     allowNewRecord = EntitySelectorDefaults.allowNewRecord,
+    allowOpenRecord = EntitySelectorDefaults.allowOpenRecord,
     class: className = '',
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
     onCreateRecord = () =>
-      openRecordCreation('customer-details', m.new_tab_opened_for_customer(), `/legal-entities/${legalEntityId}/customers`),
+      openRecordCreation(
+        'customer-details',
+        m.new_tab_opened_for_customer(),
+        `/legal-entities/${legalEntityId}/customers`,
+      ),
+    onOpenRecord = (option: ExtendedOption) =>
+      openRecordEdit(
+        'customer-details',
+        { uuid: option.value as string },
+        m.new_tab_opened_for_customer_edit(),
+        `/legal-entities/${legalEntityId}/customers`,
+      ),
   }: Props = $props()
 
   const contextGetter = getSnippetPropsContext()
@@ -109,10 +123,12 @@
   {readonly}
   {disabled}
   {allowNewRecord}
+  {allowOpenRecord}
   {optionMappingFunction}
   {fetchFunction}
   {onChoose}
   {onChange}
   {onClear}
   onCreateNew={onCreateRecord}
+  {onOpenRecord}
   class={className} />

@@ -782,9 +782,15 @@
   "fulfillment_status": "Fulfillment Status",
   "app_update_available": "A new version of the app is available.",
   "app_update_action": "Refresh",
+  "open_record_in_new_tab": "Open record in new tab",
   "new_tab_opened_for_customer": "A new tab has been opened to create a customer.",
   "new_tab_opened_for_supplier": "A new tab has been opened to create a supplier.",
   "new_tab_opened_for_item": "A new tab has been opened to create an item.",
+  "new_tab_opened_for_customer_edit": "A new tab has been opened to edit the customer.",
+  "new_tab_opened_for_supplier_edit": "A new tab has been opened to edit the supplier.",
+  "new_tab_opened_for_item_edit": "A new tab has been opened to edit the item.",
+  "new_tab_opened_for_customer_address_edit": "A new tab has been opened to edit the address.",
+  "new_tab_opened_for_customer_contact_edit": "A new tab has been opened to edit the contact.",
   "popup_blocked_open_tab": "Your browser blocked the new tab. Please allow popups and try again.",
   "go_to_new_tab": "Go to tab"
 }

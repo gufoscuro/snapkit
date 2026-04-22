@@ -15,7 +15,7 @@
   import type { SupplierSummary } from '$lib/types/api-types'
   import { createQueryRequestObject, type FilterQuery } from '$lib/utils/filters'
   import type { ExtendedOption } from '$lib/utils/generics'
-  import { openRecordCreation } from '$lib/utils/record-creation'
+  import { openRecordCreation, openRecordEdit } from '$lib/utils/record-creation'
   import { apiRequest } from '$lib/utils/request'
 
   type Props = EntitySelectorProps & {
@@ -31,6 +31,8 @@
     onClear?: () => void
     /** Callback when "create new" is clicked (requires allowNewRecord=true) */
     onCreateRecord?: () => void
+    /** Callback when "open record" is clicked (requires allowOpenRecord=true) */
+    onOpenRecord?: (option: ExtendedOption) => void
   }
 
   let {
@@ -51,11 +53,19 @@
     readonly = EntitySelectorDefaults.readonly,
     disabled = EntitySelectorDefaults.disabled,
     allowNewRecord = EntitySelectorDefaults.allowNewRecord,
+    allowOpenRecord = EntitySelectorDefaults.allowOpenRecord,
     class: className = '',
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
     onCreateRecord = () => openRecordCreation('supplier-details', m.new_tab_opened_for_supplier(), 'supply/supplier'),
+    onOpenRecord = (option: ExtendedOption) =>
+      openRecordEdit(
+        'supplier-details',
+        { uuid: option.value as string },
+        m.new_tab_opened_for_supplier_edit(),
+        'supply/supplier',
+      ),
   }: Props = $props()
 
   function optionMappingFunction(item: SupplierSummary): ExtendedOption {
@@ -102,10 +112,12 @@
   {readonly}
   {disabled}
   {allowNewRecord}
+  {allowOpenRecord}
   {optionMappingFunction}
   {fetchFunction}
   {onChoose}
   {onChange}
   {onClear}
   onCreateNew={onCreateRecord}
+  {onOpenRecord}
   class={className} />

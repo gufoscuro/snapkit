@@ -219,6 +219,8 @@ export type EntitySelectorProps = {
   disabled?: boolean
   /** Permetti creazione nuovo record */
   allowNewRecord?: boolean
+  /** Permetti apertura del record selezionato in una nuova scheda per la modifica */
+  allowOpenRecord?: boolean
   /** Classi CSS aggiuntive */
   class?: string
   /** Nasconde il campo (override locale) */
@@ -303,6 +305,7 @@ export const EntitySelectorDefaults = {
   readonly: false,
   disabled: false,
   allowNewRecord: false,
+  allowOpenRecord: false,
 } as const
 
 // =============================================================================

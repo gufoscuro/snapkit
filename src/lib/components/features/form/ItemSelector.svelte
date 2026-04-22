@@ -15,7 +15,7 @@
   import type { Item } from '$lib/types/api-types'
   import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$utils/filters'
   import type { ExtendedOption } from '$utils/generics'
-  import { openRecordCreation } from '$lib/utils/record-creation'
+  import { openRecordCreation, openRecordEdit } from '$lib/utils/record-creation'
   import { api } from '$utils/request'
   import { getSnippetPropsContext } from '$utils/runtime'
 
@@ -34,6 +34,8 @@
     onClear?: () => void
     /** Callback when "create new" is clicked (requires allowNewRecord=true) */
     onCreateRecord?: () => void
+    /** Callback when "open record" is clicked (requires allowOpenRecord=true) */
+    onOpenRecord?: (option: ExtendedOption) => void
   }
 
   let {
@@ -55,12 +57,20 @@
     readonly = EntitySelectorDefaults.readonly,
     disabled = EntitySelectorDefaults.disabled,
     allowNewRecord = EntitySelectorDefaults.allowNewRecord,
+    allowOpenRecord = EntitySelectorDefaults.allowOpenRecord,
     class: className = '',
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
     onCreateRecord = () =>
       openRecordCreation('item-details', m.new_tab_opened_for_item(), `/legal-entities/${legalEntityId}/items`),
+    onOpenRecord = (option: ExtendedOption) =>
+      openRecordEdit(
+        'item-details',
+        { uuid: option.value as string },
+        m.new_tab_opened_for_item_edit(),
+        `/legal-entities/${legalEntityId}/items`,
+      ),
   }: Props = $props()
 
   const contextGetter = getSnippetPropsContext()
@@ -115,6 +125,7 @@
   {readonly}
   {disabled}
   {allowNewRecord}
+  {allowOpenRecord}
   itemRendererComponent={ItemSelectorRenderer}
   {optionMappingFunction}
   {fetchFunction}
@@ -122,4 +133,5 @@
   {onChange}
   {onClear}
   onCreateNew={onCreateRecord}
+  {onOpenRecord}
   class={className} />

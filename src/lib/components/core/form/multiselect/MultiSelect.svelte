@@ -11,7 +11,9 @@
   import * as Command from '$components/ui/command'
   import * as Popover from '$components/ui/popover/'
   import { IconSize } from '$components/ui/sizes'
+  import * as Tooltip from '$components/ui/tooltip'
   import { cn } from '$components/ui/utils'
+  import { m } from '$lib/paraglide/messages'
   import { joinClassnames } from '$utils/classnames'
   import { createQueryRequestObject } from '$utils/filters'
   import { getUserMessagingClasses } from '$utils/form'
@@ -19,6 +21,7 @@
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
   import Plus from '@lucide/svelte/icons/plus'
   import X from '@lucide/svelte/icons/x'
+  import { IconExternalLink } from '@tabler/icons-svelte'
   import type { Component } from 'svelte'
   import { tick, untrack } from 'svelte'
   import DefaultMultiRenderer from './DefaultMultiRenderer.svelte'
@@ -31,6 +34,7 @@
     allowCreate?: boolean
     allowClear?: boolean
     allowNewRecord?: boolean
+    allowOpenRecord?: boolean
     value?: Array<ExtendedOption>
     triggerAutoWidth?: boolean
     width?: string
@@ -52,6 +56,7 @@
     }>
     showSelectedOptionLabel?: boolean
     onCreateNew?: () => void
+    onOpenRecord?: (option: ExtendedOption) => void
     fetchFunction?: MultiselectFetchFunction
     validateAddItem?: (value: string) => boolean
     onChange?: (value: Array<ExtendedOption>) => void
@@ -65,6 +70,7 @@
     allowCreate = false,
     allowClear = false,
     allowNewRecord = false,
+    allowOpenRecord = false,
     value = $bindable([]),
     triggerAutoWidth = false,
     width = 'w-[200px]',
@@ -85,6 +91,7 @@
     fetchFunction = undefined,
     validateAddItem = () => true,
     onChange = () => {},
+    onOpenRecord = () => {},
     class: className = '',
   }: Props = $props()
 
@@ -143,6 +150,15 @@
   function onCreateNewRecord() {
     onCreateNew()
     closeAndFocusTrigger()
+  }
+
+  function handleOpenRecord(event?: MouseEvent) {
+    event?.stopPropagation()
+    event?.preventDefault()
+
+    if (value?.[0]) {
+      onOpenRecord?.(value[0])
+    }
   }
 
   function addItem(nextValue: ExtendedOption) {
@@ -210,7 +226,7 @@
           aria-expanded={open}
           aria-label={placeholder}
           {...props}
-          class="h-auto min-h-9 justify-between py-1.5 {classes}">
+          class="h-auto min-h-9 justify-between px-3 py-1.5 {classes}">
           {#if selectedItemRendererComponent}
             <svelte:component this={selectedItemRendererComponent} items={value} {removeItem} {placeholder} />
           {:else if multiselection}
@@ -218,7 +234,28 @@
           {:else}
             <DefaultSingleRenderer items={value} {removeItem} {placeholder} />
           {/if}
-          <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <div class="flex items-center gap-2">
+            {#if allowOpenRecord && value?.[0]}
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  {#snippet child({ props })}
+                    <button
+                      {...props}
+                      class="text-muted-foreground hover:text-foreground"
+                      onclick={e => handleOpenRecord(e)}
+                      disabled={!value?.[0]}
+                      tabindex={-1}>
+                      <IconExternalLink class="size-4 shrink-0" />
+                    </button>
+                  {/snippet}
+                </Tooltip.Trigger>
+                <Tooltip.Content side="top">
+                  {m.open_record_in_new_tab()}
+                </Tooltip.Content>
+              </Tooltip.Root>
+            {/if}
+            <ChevronsUpDown class="h-4 w-4 shrink-0 opacity-50" />
+          </div>
         </Button>
       {/snippet}
     </Popover.Trigger>

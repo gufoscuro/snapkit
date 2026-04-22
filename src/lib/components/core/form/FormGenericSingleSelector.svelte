@@ -32,6 +32,7 @@
     onChange?: (item: ExtendedOption | undefined) => void
     onClear?: () => void
     onCreateNew?: () => void
+    onOpenRecord?: (option: ExtendedOption) => void
     fetchFunction?: (query: Partial<FilterQuery>) => Promise<T[]>
     filterFunction?: (item: T, query: Partial<MinimalFilterQuery>) => boolean
     optionMappingFunction?: (item: T) => ExtendedOption
@@ -57,6 +58,7 @@
     disabled = EntitySelectorDefaults.disabled,
     hidden = false,
     allowNewRecord = EntitySelectorDefaults.allowNewRecord,
+    allowOpenRecord = EntitySelectorDefaults.allowOpenRecord,
     allowClear = true,
     allowCreate = false,
     addItemText = 'Add Item',
@@ -67,6 +69,7 @@
     onChange = () => {},
     onClear: onClearCallback = () => {},
     onCreateNew = () => {},
+    onOpenRecord = () => {},
     fetchFunction = () => Promise.resolve([]),
     filterFunction = () => true,
     optionMappingFunction = item =>
@@ -123,6 +126,7 @@
         {align}
         {disabled}
         {allowNewRecord}
+        {allowOpenRecord}
         {allowCreate}
         {addItemText}
         {addItemInvalidText}
@@ -140,6 +144,7 @@
         {allowClear}
         {itemRendererComponent}
         {onCreateNew}
+        {onOpenRecord}
         onChange={onSelectionChange} />
     </FormFieldMessages>
   </div>

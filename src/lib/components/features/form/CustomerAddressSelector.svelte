@@ -16,6 +16,7 @@
   import type { CustomerAddress } from '$lib/types/api-types'
   import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$lib/utils/filters'
   import type { ExtendedOption } from '$lib/utils/generics'
+  import { openRecordEdit } from '$lib/utils/record-creation'
   import { api } from '$lib/utils/request'
   import { getSnippetPropsContext } from '$utils/runtime'
 
@@ -30,6 +31,8 @@
     onChange?: (item: ExtendedOption | undefined) => void
     /** Callback when selection is cleared */
     onClear?: () => void
+    /** Callback when "open record" is clicked (requires allowOpenRecord=true and a customerId) */
+    onOpenRecord?: (option: ExtendedOption) => void
   }
 
   let {
@@ -50,10 +53,20 @@
     readonly = EntitySelectorDefaults.readonly,
     disabled = EntitySelectorDefaults.disabled,
     allowNewRecord = EntitySelectorDefaults.allowNewRecord,
+    allowOpenRecord = EntitySelectorDefaults.allowOpenRecord,
     class: className = '',
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
+    onOpenRecord = (option: ExtendedOption) => {
+      if (!customerId) return
+      openRecordEdit(
+        'customer-address-details',
+        { uuid: customerId, aid: option.value as string },
+        m.new_tab_opened_for_customer_address_edit(),
+        `/legal-entities/${legalEntityId}/customers/${customerId}/addresses`,
+      )
+    },
   }: Props = $props()
 
   const contextGetter = getSnippetPropsContext()
@@ -104,9 +117,11 @@
   {readonly}
   disabled={disabled || !customerId}
   {allowNewRecord}
+  allowOpenRecord={allowOpenRecord && !!customerId}
   {optionMappingFunction}
   {fetchFunction}
   {onChoose}
   {onChange}
   {onClear}
+  {onOpenRecord}
   class={className} />

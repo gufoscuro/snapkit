@@ -784,9 +784,15 @@
   "fulfillment_status": "Stato Evasione",
   "app_update_available": "È disponibile una nuova versione dell'app.",
   "app_update_action": "Aggiorna",
+  "open_record_in_new_tab": "Apri in nuova scheda",
   "new_tab_opened_for_customer": "È stata aperta una nuova scheda per creare un cliente.",
   "new_tab_opened_for_supplier": "È stata aperta una nuova scheda per creare un fornitore.",
   "new_tab_opened_for_item": "È stata aperta una nuova scheda per creare un articolo.",
+  "new_tab_opened_for_customer_edit": "È stata aperta una nuova scheda per modificare il cliente.",
+  "new_tab_opened_for_supplier_edit": "È stata aperta una nuova scheda per modificare il fornitore.",
+  "new_tab_opened_for_item_edit": "È stata aperta una nuova scheda per modificare l'articolo.",
+  "new_tab_opened_for_customer_address_edit": "È stata aperta una nuova scheda per modificare l'indirizzo.",
+  "new_tab_opened_for_customer_contact_edit": "È stata aperta una nuova scheda per modificare il contatto.",
   "popup_blocked_open_tab": "Il browser ha bloccato la nuova scheda. Abilita i popup e riprova.",
   "go_to_new_tab": "Vai alla scheda"
 }
