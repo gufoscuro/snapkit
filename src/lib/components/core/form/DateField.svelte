@@ -3,29 +3,25 @@
   @description Date picker field with calendar popover and keyboard-typeable date segments.
   Uses bits-ui DateField primitive for guided keyboard input and @internationalized/date for date handling.
   @keywords date, calendar, picker, form, field, keyboard, segments
--->
+  -->
 <script lang="ts">
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   import { browser } from '$app/environment'
-  import { getFormContextOptional } from './form-context'
-  import { FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
-  import FormFieldMessages from './FormFieldMessages.svelte'
-  import FormFieldSkeleton from './FormFieldSkeleton.svelte'
-  import { DateField as DateFieldPrimitive } from 'bits-ui'
-  import Label from '$components/ui/label/label.svelte'
   import Calendar from '$components/ui/calendar/calendar.svelte'
+  import Label from '$components/ui/label/label.svelte'
   import * as Popover from '$components/ui/popover'
+  import * as m from '$lib/paraglide/messages'
+  import { getLocale } from '$lib/paraglide/runtime'
   import { joinClassnames } from '$utils/classnames'
   import { getUserMessagingClasses } from '$utils/form'
-  import {
-    CalendarDate,
-    getLocalTimeZone,
-    today,
-    type DateValue,
-  } from '@internationalized/date'
-  import { getLocale } from '$lib/paraglide/runtime'
+  import { CalendarDate, getLocalTimeZone, today, type DateValue } from '@internationalized/date'
   import CalendarIcon from '@lucide/svelte/icons/calendar'
   import XIcon from '@lucide/svelte/icons/x'
-  import * as m from '$lib/paraglide/messages'
+  import { DateField as DateFieldPrimitive } from 'bits-ui'
+  import { FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
+  import { getFormContextOptional } from './form-context'
+  import FormFieldMessages from './FormFieldMessages.svelte'
+  import FormFieldSkeleton from './FormFieldSkeleton.svelte'
 
   const LOCALE_MAP: Record<string, string> = {
     en: 'en-US',
@@ -95,13 +91,9 @@
   const isDisabled = $derived(disabled || locked)
 
   // Calculate calendar min/max values
-  const calendarMin = $derived(
-    minDaysFromNow > 0 ? today(getLocalTimeZone()).add({ days: minDaysFromNow }) : undefined
-  )
+  const calendarMin = $derived(minDaysFromNow > 0 ? today(getLocalTimeZone()).add({ days: minDaysFromNow }) : undefined)
   const calendarMax = $derived(
-    maxDaysFromNow !== undefined
-      ? today(getLocalTimeZone()).add({ days: maxDaysFromNow })
-      : undefined
+    maxDaysFromNow !== undefined ? today(getLocalTimeZone()).add({ days: maxDaysFromNow }) : undefined,
   )
 
   // Convert Date or ISO string to DateValue (using UTC to keep day stable across timezones)
@@ -120,9 +112,7 @@
     // Only update if the value is actually different to avoid unnecessary re-renders
     if (
       (!newDateValue && internalDateValue) ||
-      (newDateValue &&
-        (!internalDateValue ||
-          newDateValue.compare(internalDateValue) !== 0))
+      (newDateValue && (!internalDateValue || newDateValue.compare(internalDateValue) !== 0))
     ) {
       internalDateValue = newDateValue
     }
@@ -135,8 +125,8 @@
       className,
       width,
       getUserMessagingClasses(error, warning),
-      isDisabled ? 'cursor-not-allowed opacity-50' : ''
-    )
+      isDisabled ? 'cursor-not-allowed opacity-50' : '',
+    ),
   )
 
   const labelAria = $derived({
@@ -190,16 +180,8 @@
 
 {#if browser && !isHidden}
   <div>
-    <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label
-    >
-    <FormFieldMessages
-      {id}
-      {error}
-      {warning}
-      {showErrorMessage}
-      {errorPosition}
-      {warningPosition}
-    >
+    <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
+    <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
       {#snippet children({ aria })}
         <DateFieldPrimitive.Root
           value={internalDateValue}
@@ -207,28 +189,20 @@
           minValue={calendarMin}
           maxValue={calendarMax}
           {locale}
-          disabled={isDisabled}
-        >
+          disabled={isDisabled}>
           <Popover.Root bind:open>
-            <div
-              class={wrapperClasses}
-              {...labelAria}
-              {...aria}
-              onfocusout={handleContainerBlur}
-              role="group"
-            >
+            <div class={wrapperClasses} {...labelAria} {...aria} onfocusout={handleContainerBlur} role="group">
               <DateFieldPrimitive.Input>
                 {#snippet children({ segments })}
                   {#each segments as { part, value }, i (part + i)}
                     {#if part === 'literal'}
-                      <DateFieldPrimitive.Segment {part} class="text-muted-foreground px-0.5">
+                      <DateFieldPrimitive.Segment {part} class="px-0.5 text-muted-foreground">
                         {value}
                       </DateFieldPrimitive.Segment>
                     {:else}
                       <DateFieldPrimitive.Segment
                         {part}
-                        class="rounded px-0.5 py-0.5 tabular-nums focus:bg-accent focus:text-accent-foreground focus:outline-none aria-[valuetext=Empty]:text-muted-foreground"
-                      >
+                        class="rounded px-0.5 py-0.5 tabular-nums focus:bg-accent focus:text-accent-foreground focus:outline-none aria-[valuetext=Empty]:text-muted-foreground">
                         {value}
                       </DateFieldPrimitive.Segment>
                     {/if}
@@ -242,8 +216,7 @@
                     type="button"
                     class="ml-auto flex shrink-0 items-center text-muted-foreground hover:text-foreground disabled:pointer-events-none"
                     disabled={isDisabled}
-                    tabindex={-1}
-                  >
+                    tabindex={-1}>
                     <CalendarIcon class="h-4 w-4" />
                   </button>
                 {/snippet}
@@ -258,15 +231,13 @@
                 maxValue={calendarMax}
                 onValueChange={handleCalendarChange}
                 captionLayout="dropdown"
-                initialFocus
-              />
+                initialFocus />
               {#if allowClear && internalDateValue}
                 <button
                   type="button"
                   class="m-3 flex h-8 items-center rounded-md border border-input bg-background px-3 text-xs hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
                   onclick={handleClear}
-                  disabled={isDisabled}
-                >
+                  disabled={isDisabled}>
                   <XIcon class="mr-1 h-3 w-3" />
                   {m.clear_date()}
                 </button>

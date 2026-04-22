@@ -33,6 +33,7 @@
   import { useProvides } from '$lib/contexts/page-state'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
+  import { getPolicy, ItemCodeGeneration } from '$lib/stores/tenant-config'
   import type { Item } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import {
@@ -54,6 +55,7 @@
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
 
   const resourceConfig = $derived(entityConfig?.resources?.['items'])
+  const isManualCode = $derived(getPolicy(entityConfig, 'item_code_generation') === ItemCodeGeneration.Manual)
   const uuid = $derived(pageDetails.params.uuid)
   const legalEntityId = $derived(legalEntity?.id)
 
@@ -139,13 +141,16 @@
   const dimensionUnitItems = toSelectItems(dimensionUnitLabels)
   const currencyItems = toSelectItems(currencyLabels)
 
-  const validateCreate = v
-    .schema<Partial<Item>>({
-      item_category: [v.required()],
-      item_status: [v.required()],
-      name: [v.required()],
-    })
-    .build()
+  const validateCreate = $derived(
+    v
+      .schema<Partial<Item>>({
+        item_category: [v.required()],
+        item_status: [v.required()],
+        name: [v.required()],
+        ...(isManualCode ? { code: [v.required()] } : {}),
+      })
+      .build(),
+  )
 
   const validateUpdate = v.schema<Partial<Item>>({}).build()
 
@@ -187,7 +192,11 @@
                 allowClear={false} />
             </div>
 
-            <TextField name="code" label={m.code()} class={FormFieldClass.MaxWidth} disabled />
+            <TextField
+              name="code"
+              label={m.code()}
+              class={FormFieldClass.MaxWidth}
+              disabled={!isManualCode || !!record} />
             <TextField name="alternative_code" label={m.alternative_code()} class={FormFieldClass.MaxWidth} />
             <TextField name="name" label={m.name()} class={FormFieldClass.MaxWidth} focus={!record} />
             <TextField name="description" label={m.description()} class={FormFieldClass.MaxWidth} />
@@ -263,11 +272,12 @@
           {/snippet}
 
           {#snippet content()}
-            <PriceField
-              name="standard_cost"
-              label={m.standard_cost()}
-              class={FormFieldClass.MaxWidth}
-              currency={formAPI?.values?.cost_currency || record?.cost_currency || DEFAULT_CURRENCY_CODE} />
+            <div class={FormFieldClass.MaxWidth}>
+              <PriceField
+                name="standard_cost"
+                label={m.standard_cost()}
+                currency={formAPI?.values?.cost_currency || record?.cost_currency || DEFAULT_CURRENCY_CODE} />
+            </div>
 
             <SelectField
               name="cost_currency"

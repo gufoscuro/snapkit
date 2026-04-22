@@ -1,4 +1,5 @@
 import type { PageConfig } from '$lib/utils/page-registry'
+import type { LegalEntityPolicies } from './policies'
 
 // =============================================================================
 // LEGAL ENTITY RESOURCE CONFIG
@@ -127,6 +128,8 @@ export type LegalEntityConfigResponse = {
   resources: Record<string, LegalEntityResourceConfig>
   /** The UI configuration payload (pages, menus) */
   dashboard: DashboardConfigData
+  /** Behavioral policies (e.g. item code generation mode) */
+  policies: Partial<LegalEntityPolicies>
   created_by: string | null
   created_at: string | null
 }
