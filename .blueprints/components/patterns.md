@@ -552,6 +552,137 @@ const fetchCustomers = async (searchTerm: string): Promise<Customer[]> => {
 - Use meaningful labels and include relevant metadata for display
 - Consider implementing debouncing for search-heavy selectors
 
+## Selector Record Actions (Create / Edit in New Tab)
+
+Entity selectors (single-selection) can expose two complementary record actions surfaced inside the `MultiSelect` dropdown / trigger:
+
+- **Create new** — adds a `+` row inside the dropdown that opens the entity's upsert page in a new tab. Activated by `allowNewRecord`, callback `onCreateNew` (`onCreateRecord` on the thin wrappers).
+- **Open / edit selected** — adds a pencil icon next to the trigger's chevron that opens the *currently selected* record's upsert page in a new tab. Activated by `allowOpenRecord`, callback `onOpenRecord(option)`.
+
+Both actions are intentionally one-way: the user edits in the new tab and manually returns. The originating tab only invalidates its per-tab API cache for the entity's listing URL (POST/PATCH from the other tab invalidates cache only there).
+
+### Utilities
+
+`src/lib/utils/record-creation.ts`:
+
+```typescript
+openRecordCreation(routeId: string, successMessage: string, listingUrl?: string): void
+openRecordEdit(
+  routeId: string,
+  params: Record<string, string | number>,
+  successMessage: string,
+  listingUrl?: string,
+): void
+```
+
+Both:
+1. Build the URL with `createRoute({ $id: routeId, params? })`
+2. `window.open(url, '_blank')` (toast error if popup is blocked)
+3. Invalidate the per-tab cache for `listingUrl` if provided
+4. Show a toast in the originating tab with a "Go to tab" action
+
+`openRecordEdit` is the gemello with `params` support — required because edit pages always have at least an `:uuid` (and may have additional path params for nested resources, e.g. `customer-address-details` uses `{ uuid: customerId, aid: addressId }`).
+
+### Wrapper Pattern
+
+In each thin wrapper (e.g. `CustomerSelector`, `SupplierSelector`):
+
+```svelte
+<script lang="ts">
+  import { openRecordCreation, openRecordEdit } from '$lib/utils/record-creation'
+  import { EntitySelectorDefaults, type EntitySelectorProps } from '$components/core/form/form'
+
+  type Props = EntitySelectorProps & {
+    // ...
+    onCreateRecord?: () => void
+    onOpenRecord?: (option: ExtendedOption) => void
+  }
+
+  let {
+    // ...
+    allowNewRecord = EntitySelectorDefaults.allowNewRecord,
+    allowOpenRecord = EntitySelectorDefaults.allowOpenRecord,
+    onCreateRecord = () =>
+      openRecordCreation('customer-details', m.new_tab_opened_for_customer(), `/legal-entities/${legalEntityId}/customers`),
+    onOpenRecord = (option: ExtendedOption) =>
+      openRecordEdit(
+        'customer-details',
+        { uuid: option.value as string },
+        m.new_tab_opened_for_customer_edit(),
+        `/legal-entities/${legalEntityId}/customers`,
+      ),
+  }: Props = $props()
+</script>
+
+<FormGenericSingleSelector
+  {allowNewRecord}
+  {allowOpenRecord}
+  onCreateNew={onCreateRecord}
+  {onOpenRecord}
+  ...
+/>
+```
+
+The wrapper's default callbacks know the entity's page `$id` and `listingUrl`. Consumers only need to flip the prop:
+
+```svelte
+<CustomerSelector allowNewRecord allowOpenRecord />
+```
+
+### Multi-Param Records (Nested Resources)
+
+When the edit page requires a parent id in addition to the record id (e.g. `CustomerAddressSelector`, `CustomerContactSelector`), pass all params and gate `allowOpenRecord` on the parent's presence — symmetrically to how `disabled` is gated:
+
+```svelte
+<FormGenericSingleSelector
+  disabled={disabled || !customerId}
+  allowOpenRecord={allowOpenRecord && !!customerId}
+  onOpenRecord={(option) => {
+    if (!customerId) return
+    openRecordEdit(
+      'customer-address-details',
+      { uuid: customerId, aid: option.value as string },
+      m.new_tab_opened_for_customer_address_edit(),
+      `/legal-entities/${legalEntityId}/customers/${customerId}/addresses`,
+    )
+  }}
+  ...
+/>
+```
+
+The `if (!customerId) return` inside the callback is a defensive guard — under normal flow the prop-level gate already hides the pencil button.
+
+### Disabled State Rules
+
+The pencil button is rendered only when `allowOpenRecord` is `true`, and is disabled when there is no current selection (`disabled={!value?.[0]}`, handled inside `MultiSelect`). Wrappers add a second gate at prop level when a parent id is required (`allowOpenRecord && !!parentId`). No additional logic is needed inside the consumer.
+
+### Required Translations
+
+For each entity that supports the action, add (in both `messages/en.json` and `messages/it.json`):
+
+```json
+{
+  "new_tab_opened_for_<entity>": "A new tab has been opened to create a <entity>.",
+  "new_tab_opened_for_<entity>_edit": "A new tab has been opened to edit the <entity>."
+}
+```
+
+Reuse the existing `popup_blocked_open_tab` and `go_to_new_tab` keys — these are shared by both utilities.
+
+### Page Registry Prerequisite
+
+Both `openRecordCreation` and `openRecordEdit` resolve the URL through `createRoute`, which looks up the page `$id` in `tenantConfigStore`. **The page must be registered in `src/lib/utils/admin-config.ts`** (or whatever feeds `tenantConfigStore`) — otherwise `createRoute` returns `/broken-link?link-id=<id>`. Before cabling `allowOpenRecord` on a new wrapper, verify the corresponding `*-details` page exists.
+
+### Wrappers Currently Cabled
+
+| Wrapper | Page `$id` | Params |
+|---|---|---|
+| `CustomerSelector` | `customer-details` | `{ uuid }` |
+| `SupplierSelector` | `supplier-details` | `{ uuid }` |
+| `ItemSelector` | `item-details` | `{ uuid }` |
+| `CustomerAddressSelector` | `customer-address-details` | `{ uuid, aid }` |
+| `CustomerContactSelector` | `customer-contact-details` | `{ uuid, cid }` |
+
 ## Translating Enum Values with Paraglide
 
 API endpoints often return enum values (e.g., `'draft' | 'sent' | 'accepted'`) that need to be displayed as human-readable, localized labels.
