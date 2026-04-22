@@ -19,7 +19,8 @@ snapkit-content/
 │   ├── editable-list-field.md     # EditableListField (card-based array editor)
 │   ├── table-filters.md           # Table filters (enum, tags, date) for listing pages
 │   ├── quotation-items-list-editor.md  # Quotation/sales order line items editor
-│   └── import-menu.md             # Generic ImportMenu for bulk-importing records
+│   ├── import-menu.md             # Generic ImportMenu for bulk-importing records
+│   └── legal-entity-policies.md   # Accessing and extending legal entity behavioral policies
 ├── pages/                # Page architecture and CRUD patterns
 │   ├── crud-workflow.md           # End-to-end CRUD workflow (list + form + filters)
 │   └── fixed-pages.md            # Fixed pages (settings, admin) vs configurable pages
@@ -50,6 +51,7 @@ snapkit-content/
 - **table-filters.md**: Structured filter system for listing pages. Covers FilterConfig definition (enum, tags, date types), FilterDropdown component, standalone vs grouped modes, data flow through the contract system, serialization, and step-by-step guide for adding filters to any listing page
 - **quotation-items-list-editor.md**: Production editor for quotation/sales order line items. Covers QuotationLineItem superset type, deliveryDateKey field mapping, addItems() API, notifyFormUpdate pattern for external mutations, validators (quotationItemsRequired/Valid), date timezone handling (toLocalISOString), and the SalesOrderItemsListEditor wrapper that adds quotation import
 - **import-menu.md**: Generic core ImportMenu for bulk-importing records from any async source. Covers the typed generic pattern (fetchFunction + optionMappingFunction + onimport), debounced server-side search, optional HoverCard preview snippet, standalone vs submenu modes, and the Escape-key workaround for closing (since shadcn-svelte DropdownMenu doesn't forward open prop)
+- **legal-entity-policies.md**: How to read and extend `entityConfig.policies` (behavioral flags, not per-resource fields). Covers the `getPolicy` helper, typed constants to avoid magic literals, `$derived` integration with validation schemas and field enablement, step-by-step for adding a new policy, and when to promote comparisons into predicate helpers
 
 ### Pages
 
@@ -122,6 +124,11 @@ When updating guidelines:
 - "How to use ImportMenu?" → `components/import-menu.md`
 - "How to make a generic searchable multi-select dropdown?" → `components/import-menu.md`
 - "How to add a hover preview to dropdown items?" → `components/import-menu.md`
+- "How to read a legal entity policy?" → `components/legal-entity-policies.md`
+- "How to use getPolicy?" → `components/legal-entity-policies.md`
+- "How to add a new legal entity policy?" → `components/legal-entity-policies.md`
+- "How to handle item_code_generation?" → `components/legal-entity-policies.md`
+- "What is the difference between policies and custom fields?" → `components/legal-entity-policies.md`
 - "How to build a CRUD?" → `pages/crud-workflow.md`
 - "What is the anatomy of a CRUD?" → `pages/crud-workflow.md`
 - "How to create a settings page?" → `pages/fixed-pages.md`
