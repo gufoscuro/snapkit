@@ -15,6 +15,7 @@
   import { joinClassnames } from '$utils/classnames'
   import { getUserMessagingClasses } from '$utils/form'
   import { CalendarDate, getLocalTimeZone, today, type DateValue } from '@internationalized/date'
+  import { untrack } from 'svelte'
   import CalendarIcon from '@lucide/svelte/icons/calendar'
   import XIcon from '@lucide/svelte/icons/x'
   import { DateField as DateFieldPrimitive } from 'bits-ui'
@@ -83,6 +84,8 @@
   // Internal state
   let open = $state(false)
   let internalDateValue = $state<DateValue | undefined>(undefined)
+  // Last value we wrote to the form; used to ignore echoes in the external-sync effect
+  let lastWrittenValue: Date | null | undefined = undefined
 
   // Single source of truth: form context OR bindable prop
   const formValue = $derived(form ? (form.values[name] as Date | string | undefined) : valueProp)
@@ -106,16 +109,23 @@
     return new CalendarDate(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate())
   }
 
-  // Sync internal date value with form/prop value when it changes externally
+  // Sync internal date value with form/prop value when it changes externally.
+  // Only `formValue` is tracked — reads/writes of internalDateValue go through untrack
+  // to prevent the effect from re-running when we update it from keystrokes.
   $effect(() => {
-    const newDateValue = toDateValue(formValue)
-    // Only update if the value is actually different to avoid unnecessary re-renders
-    if (
-      (!newDateValue && internalDateValue) ||
-      (newDateValue && (!internalDateValue || newDateValue.compare(internalDateValue) !== 0))
-    ) {
-      internalDateValue = newDateValue
-    }
+    const v: unknown = formValue
+    if (v instanceof Date && lastWrittenValue instanceof Date && v.getTime() === lastWrittenValue.getTime()) return
+    if (v == null && lastWrittenValue === null) return
+
+    untrack(() => {
+      const newDateValue = toDateValue(formValue)
+      if (
+        (!newDateValue && internalDateValue) ||
+        (newDateValue && (!internalDateValue || newDateValue.compare(internalDateValue) !== 0))
+      ) {
+        internalDateValue = newDateValue
+      }
+    })
   })
 
   const wrapperClasses = $derived(
@@ -135,10 +145,16 @@
 
   // Keyboard input: bits-ui fires onValueChange with DateValue when complete, undefined when incomplete
   function handleDateFieldChange(dateValue: DateValue | undefined) {
-    if (!dateValue) return
+    // Keep the UI in sync with every keystroke so partial years aren't reset
+    internalDateValue = dateValue
+
+    // Partial/empty states aren't propagated here — a clear is committed on blur instead,
+    // so mid-edit transient undefined states don't wipe the form value
+    if (!dateValue || dateValue.year < 1000) return
 
     // Use UTC midnight so the calendar day is preserved regardless of local timezone
     const date = new Date(Date.UTC(dateValue.year, dateValue.month - 1, dateValue.day))
+    lastWrittenValue = date
 
     if (form) {
       form.updateField(name, date)
@@ -148,6 +164,17 @@
     }
 
     onChange?.(date, dateValue)
+  }
+
+  function clearFormValue() {
+    lastWrittenValue = null
+    if (form) {
+      form.updateField(name, null)
+      if (form.errors[name]) form.validateField(name)
+    } else {
+      valueProp = undefined
+    }
+    onChange?.(null, null)
   }
 
   // Calendar selection: close popover + update value
@@ -160,20 +187,19 @@
   function handleClear() {
     open = false
     internalDateValue = undefined
-
-    if (form) {
-      form.updateField(name, null)
-      if (form.errors[name]) form.validateField(name)
-    } else {
-      valueProp = undefined
-    }
-
-    onChange?.(null, null)
+    clearFormValue()
   }
 
   function handleContainerBlur(e: FocusEvent) {
     const container = e.currentTarget as HTMLElement
     if (container.contains(e.relatedTarget as Node)) return
+
+    // If the user wiped all segments but the form still holds a value, commit the clear on blur
+    if (!internalDateValue) {
+      const currentFormValue = form ? form.values[name] : valueProp
+      if (currentFormValue) clearFormValue()
+    }
+
     form?.touchField(name)
   }
 </script>

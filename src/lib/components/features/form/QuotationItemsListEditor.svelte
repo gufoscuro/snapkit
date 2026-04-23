@@ -176,23 +176,28 @@
     notifyFormUpdate()
   })
 
-  // When defaultDeliveryDate changes, apply it to items still empty (no item_id yet)
-  // and without an explicit requested_delivery_date. Preserves user-filled rows.
-  // Writes to `items` do not re-trigger this effect because `items` is only read via untrack.
+  // When defaultDeliveryDate changes, propagate it to empty items (no item_id yet) whose
+  // current date is either unset or still matches the previously applied default. A date
+  // that differs from the previous default is treated as user-set and preserved.
   let lastAppliedDefaultDate: string | undefined = undefined
   $effect(() => {
     const normalized = normalizeDateInput(defaultDeliveryDate)
     if (!normalized || normalized === lastAppliedDefaultDate) return
+    const prevDefault = lastAppliedDefaultDate
     lastAppliedDefaultDate = normalized
     const current = untrack(() => items)
-    const needsUpdate = current.some(item => item.type === 'item' && !item.item_id && !item.requested_delivery_date)
+    const followsDefault = (value: string | undefined) => !value || value === prevDefault
+    const needsUpdate = current.some(
+      item => item.type === 'item' && !item.item_id && followsDefault(item.requested_delivery_date),
+    )
     if (!needsUpdate) return
     items = current.map(item => {
-      if (item.type !== 'item' || item.item_id || item.requested_delivery_date) return item
+      if (item.type !== 'item' || item.item_id) return item
+      if (!followsDefault(item.requested_delivery_date)) return item
       return {
         ...item,
         requested_delivery_date: normalized,
-        delivery_date: item.delivery_date || normalized,
+        delivery_date: followsDefault(item.delivery_date) ? normalized : item.delivery_date,
       }
     })
     notifyFormUpdate()
@@ -566,7 +571,8 @@
               const updates: Partial<InternalLineItem> = { requested_delivery_date: iso }
               if (iso && !item.delivery_date) updates.delivery_date = iso
               updateItem(index, updates)
-            }} />
+            }}
+            allowClear />
 
           <DateField
             name="deliveryDate-{index}"
@@ -575,7 +581,8 @@
             showErrorMessage={false}
             disabled={!item.item_id || isDisabled}
             width="w-full"
-            onChange={date => updateItem(index, { delivery_date: date ? toLocalISOString(date) : '' })} />
+            onChange={date => updateItem(index, { delivery_date: date ? toLocalISOString(date) : '' })}
+            allowClear />
         {/if}
 
         <StackedAmountValues
