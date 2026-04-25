@@ -1,4 +1,9 @@
-import { createFlagToggleAction, type RecordAction, type RecordActionRequestOptions } from '$lib/utils/record-actions'
+import {
+	createArchiveRecordAction,
+	createFlagToggleAction,
+	type RecordAction,
+	type RecordActionRequestOptions,
+} from '$lib/utils/record-actions'
 import type { SalesOrderStatus } from '$lib/types/api-types'
 import { api } from '$lib/utils/request'
 import * as m from '$lib/paraglide/messages.js'
@@ -9,14 +14,16 @@ export type SalesOrderActionOptions = RecordActionRequestOptions & {
 	state: SalesOrderStatus
 	sentAt: string | null
 	availableTransitions: string[]
+	isArchivable?: boolean
 }
 
 type CreateSalesOrderActionsOptions = {
 	legalEntityId: string
 	onSuccess?: () => void | Promise<void>
+	onArchived?: () => void
 }
 
-export function createSalesOrderActions({ legalEntityId, onSuccess }: CreateSalesOrderActionsOptions): RecordAction<SalesOrderActionOptions>[] {
+export function createSalesOrderActions({ legalEntityId, onSuccess, onArchived }: CreateSalesOrderActionsOptions): RecordAction<SalesOrderActionOptions>[] {
 	return [
 		createFlagToggleAction<SalesOrderActionOptions>({
 			id: 'toggle-sent',
@@ -86,5 +93,13 @@ export function createSalesOrderActions({ legalEntityId, onSuccess }: CreateSale
 				await onSuccess?.()
 			},
 		},
+		createArchiveRecordAction<SalesOrderActionOptions>({
+			apiUrl: (opts) => `/legal-entities/${legalEntityId}/sales-orders/${opts.targetId}`,
+			isArchivable: (opts) => opts.isArchivable,
+			confirmMessage: (opts) => m.archive_sales_order_confirmation({ name: opts.documentNumber }),
+			successMessage: (opts) => m.sales_order_archived_success({ name: opts.documentNumber }),
+			errorMessage: m.sales_order_archive_error(),
+			onSuccess: () => onArchived?.(),
+		}),
 	]
 }

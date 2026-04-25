@@ -1,4 +1,9 @@
-import { createFlagToggleAction, type RecordAction, type RecordActionRequestOptions } from '$lib/utils/record-actions'
+import {
+	createArchiveRecordAction,
+	createFlagToggleAction,
+	type RecordAction,
+	type RecordActionRequestOptions,
+} from '$lib/utils/record-actions'
 import * as m from '$lib/paraglide/messages.js'
 
 export type SupplierFlagOptions = RecordActionRequestOptions & {
@@ -6,14 +11,16 @@ export type SupplierFlagOptions = RecordActionRequestOptions & {
 	version: number
 	suspendedAt: string | null
 	ceasedAt: string | null
+	isArchivable?: boolean
 }
 
 type CreateSupplierFlagActionsOptions = {
 	legalEntityId: string
 	onSuccess?: () => void | Promise<void>
+	onArchived?: () => void
 }
 
-export function createSupplierFlagActions({ legalEntityId, onSuccess }: CreateSupplierFlagActionsOptions): RecordAction<SupplierFlagOptions>[] {
+export function createSupplierFlagActions({ legalEntityId, onSuccess, onArchived }: CreateSupplierFlagActionsOptions): RecordAction<SupplierFlagOptions>[] {
 	return [
 		createFlagToggleAction<SupplierFlagOptions>({
 			id: 'toggle-suspend',
@@ -58,6 +65,14 @@ export function createSupplierFlagActions({ legalEntityId, onSuccess }: CreateSu
 			},
 			errorMessage: m.flag_action_error(),
 			onSuccess,
+		}),
+		createArchiveRecordAction<SupplierFlagOptions>({
+			apiUrl: (opts) => `/legal-entities/${legalEntityId}/suppliers/${opts.targetId}`,
+			isArchivable: (opts) => opts.isArchivable,
+			confirmMessage: (opts) => m.archive_supplier_confirmation({ name: opts.name }),
+			successMessage: (opts) => m.supplier_archived_success({ name: opts.name }),
+			errorMessage: m.supplier_archive_error(),
+			onSuccess: () => onArchived?.(),
 		}),
 	]
 }

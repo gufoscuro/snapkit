@@ -24,6 +24,7 @@
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
   import { createCustomerFlagActions, type CustomerFlagOptions } from '$components/features/customers/customer-actions'
+  import { goto } from '$app/navigation'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
   import Separator from '$components/ui/separator/separator.svelte'
   import { RecordActionMenu } from '$lib/components/ui/record-action-menu'
@@ -77,7 +78,13 @@
   const promise = $derived(detail.promise)
 
   const flagActions = $derived(
-    legalEntityId ? createCustomerFlagActions({ legalEntityId, onSuccess: detail.refetch }) : [],
+    legalEntityId
+      ? createCustomerFlagActions({
+          legalEntityId,
+          onSuccess: detail.refetch,
+          onArchived: () => goto(createRoute({ $id: 'customers' })),
+        })
+      : [],
   )
   const actionOptions = $derived.by((): CustomerFlagOptions | null => {
     if (!record) return null
@@ -87,6 +94,7 @@
       version: record.version,
       suspendedAt: record.suspended_at || null,
       ceasedAt: record.ceased_at || null,
+      isArchivable: (record as Customer & { is_archivable?: boolean }).is_archivable,
     }
   })
 

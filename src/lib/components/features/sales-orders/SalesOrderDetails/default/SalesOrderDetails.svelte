@@ -54,6 +54,7 @@
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
+  import { goto } from '$app/navigation'
   import { SalesOrderDetailsContract } from './SalesOrderDetails.contract.js'
 
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
@@ -96,7 +97,13 @@
 
   // Sales order actions (sent flag, approve, reject)
   const salesOrderActions = $derived(
-    legalEntityId ? createSalesOrderActions({ legalEntityId, onSuccess: detail.refetch }) : [],
+    legalEntityId
+      ? createSalesOrderActions({
+          legalEntityId,
+          onSuccess: detail.refetch,
+          onArchived: () => goto(createRoute({ $id: 'sales-orders' })),
+        })
+      : [],
   )
   const actionOptions = $derived.by((): SalesOrderActionOptions | null => {
     if (!record) return null
@@ -107,6 +114,7 @@
       state: record.state,
       sentAt: record.sent_at || null,
       availableTransitions: record.available_transitions ?? [],
+      isArchivable: (record as SalesOrder & { is_archivable?: boolean }).is_archivable,
     }
   })
   const approveAction = $derived(salesOrderActions.find(a => a.id === 'approve'))

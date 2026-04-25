@@ -53,6 +53,7 @@
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
+  import { goto } from '$app/navigation'
   import { QuotationDetailsContract } from './QuotationDetails.contract.js'
 
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
@@ -95,7 +96,13 @@
 
   // Quotation actions (sent flag, approve, reject)
   const quotationActions = $derived(
-    legalEntityId ? createQuotationActions({ legalEntityId, onSuccess: detail.refetch }) : [],
+    legalEntityId
+      ? createQuotationActions({
+          legalEntityId,
+          onSuccess: detail.refetch,
+          onArchived: () => goto(createRoute({ $id: 'quotations' })),
+        })
+      : [],
   )
   const actionOptions = $derived.by((): QuotationActionOptions | null => {
     if (!record) return null
@@ -106,6 +113,7 @@
       state: record.state,
       sentAt: record.sent_at || null,
       availableTransitions: record.available_transitions ?? [],
+      isArchivable: (record as Quotation & { is_archivable?: boolean }).is_archivable,
     }
   })
   const approveAction = $derived(quotationActions.find(a => a.id === 'approve'))
