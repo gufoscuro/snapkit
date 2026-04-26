@@ -1,6 +1,6 @@
 import type { PageConfig, PageDetails } from '$lib/utils/page-registry'
 import { match } from 'path-to-regexp'
-import type { TenantConfigData } from './types'
+import type { DashboardConfigData } from './types'
 
 /**
  * Search pages recursively for a matching route
@@ -55,12 +55,12 @@ function collectAllPageIds(pages: PageConfig[]): string[] {
 }
 
 function createTenantConfigStore() {
-  // In-memory cache: Map<legalEntityId, TenantConfigData>
+  // In-memory cache: Map<legalEntityId, DashboardConfigData>
   // eslint-disable-next-line svelte/prefer-svelte-reactivity
-  const cache = new Map<string, TenantConfigData>()
+  const cache = new Map<string, DashboardConfigData>()
 
   // Reactive state using Svelte 5 runes
-  let currentTenant = $state<TenantConfigData | null>(null)
+  let currentTenant = $state<DashboardConfigData | null>(null)
   let currentLegalEntityId = $state<string | null>(null)
 
   /**
@@ -70,9 +70,9 @@ function createTenantConfigStore() {
    * responsible for fetching it. This method only handles caching and state.
    *
    * @param legalEntityId - UUID of the legal entity
-   * @param config - Pre-fetched TenantConfigData (dashboard field from the config response)
+   * @param config - Pre-fetched DashboardConfigData (dashboard field from the config response)
    */
-  function setActiveLegalEntity(legalEntityId: string, config: TenantConfigData): void {
+  function setActiveLegalEntity(legalEntityId: string, config: DashboardConfigData): void {
     cache.set(legalEntityId, config)
     currentTenant = config
     currentLegalEntityId = legalEntityId

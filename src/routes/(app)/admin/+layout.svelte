@@ -15,7 +15,7 @@
   import type { LayoutProps } from '../$types'
 
   let { data, children }: LayoutProps = $props()
-  let { pageDetails, routeDetails, entityConfig, legalEntity, user } = $derived(data)
+  let { entityConfig, legalEntity, user } = $derived(data)
 
   async function onLegalEntityChoose(entity: LegalEntity) {
     await switchLegalEntity(entity.id)
@@ -39,13 +39,12 @@
     })
   }
 
-  setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () => ({
-    pageDetails,
-    routeDetails,
-    entityConfig,
-    legalEntity,
-    user,
-  }))
+  // Admin section is a static layout that doesn't go through the dynamic page registry,
+  // so pageDetails/routeDetails aren't populated from the load. We satisfy the SnippetProps
+  // shape with a cast — admin snippets don't read these fields.
+  setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () =>
+    ({ entityConfig, legalEntity, user }) as ReturnType<SnippetPropsGetter>,
+  )
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col" data-scrollable-content>

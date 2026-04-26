@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { Ok, Err } from './result'
+import { Ok, Err, type Result } from './result'
 
 describe('Ok', () => {
 	it('isOk returns true', () => {
@@ -49,7 +49,7 @@ describe('Err', () => {
 	})
 
 	it('unwrapOr returns default', () => {
-		expect(Err('oops').unwrapOr(42)).toBe(42)
+		expect((Err('oops') as Result<number, string>).unwrapOr(42)).toBe(42)
 	})
 
 	it('unwrapErrOr returns error (not default)', () => {
@@ -139,7 +139,7 @@ describe('unwrapOrElse / unwrapErrOrElse', () => {
 	})
 
 	it('unwrapOrElse calls fn for Err', () => {
-		expect(Err('oops').unwrapOrElse(() => 42)).toBe(42)
+		expect((Err('oops') as Result<number, string>).unwrapOrElse(() => 42)).toBe(42)
 	})
 
 	it('unwrapErrOrElse returns error for Err', () => {
@@ -147,6 +147,6 @@ describe('unwrapOrElse / unwrapErrOrElse', () => {
 	})
 
 	it('unwrapErrOrElse calls fn for Ok', () => {
-		expect(Ok('val').unwrapErrOrElse(() => 'fallback')).toBe('fallback')
+		expect((Ok('val') as Result<string, string>).unwrapErrOrElse(() => 'fallback')).toBe('fallback')
 	})
 })

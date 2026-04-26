@@ -121,6 +121,6 @@ function isOptionalSchema(schema: TSchema): boolean {
 	// TypeBox optional schemas have [Optional] symbol or modifier
 	return (
 		TypeGuard.IsOptional(schema) ||
-		(schema as Record<string, unknown>)[Symbol.for('TypeBox.Optional')] === 'Optional'
+		(schema as Record<symbol, unknown>)[Symbol.for('TypeBox.Optional')] === 'Optional'
 	)
 }

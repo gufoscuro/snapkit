@@ -466,7 +466,7 @@ export const dimensionUnitLabels: EnumLabelMap<DimensionUnit> = {
 // Quotation Status
 export const quotationStatusConfig: Record<QuotationStatus, EnumDisplayConfig> = {
   open: { label: m.enum_quotation_status_open, variant: 'default' },
-  approved: { label: m.enum_quotation_status_approved, variant: 'success' },
+  approved: { label: m.enum_quotation_status_approved, variant: 'default' },
   rejected: { label: m.enum_quotation_status_rejected, variant: 'destructive' },
   superseded: { label: m.enum_quotation_status_superseded, variant: 'default' },
 }

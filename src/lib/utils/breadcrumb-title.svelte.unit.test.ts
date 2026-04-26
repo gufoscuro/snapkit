@@ -16,6 +16,19 @@ function createTestPageState() {
     update<T>(key: string, fn: (current: T | undefined) => T): void {
       state[key] = fn(state[key] as T | undefined)
     },
+    getNamespace<T extends Record<string, unknown>>(namespace: string): T {
+      const prefix = `${namespace}.`
+      const result: Record<string, unknown> = {}
+      for (const [key, value] of Object.entries(state)) {
+        if (key.startsWith(prefix)) {
+          result[key.slice(prefix.length)] = value
+        }
+      }
+      return result as T
+    },
+    get _debug() {
+      return state
+    },
   }
 }
 

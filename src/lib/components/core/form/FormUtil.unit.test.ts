@@ -101,7 +101,7 @@ describe('FormUtil', () => {
       props: {
         initialValues: { name: '' },
         onSubmit,
-        validate: (values: { name: string }) => {
+        validate: (values: Record<string, unknown>) => {
           const errors: Record<string, string> = {}
           if (!values.name) errors.name = 'Required'
           return errors
@@ -226,9 +226,10 @@ describe('FormUtil', () => {
           initialValues: { email: '', phone: 'invalid' },
           onSubmit,
           resourceConfig,
-          validate: (values: { email: string; phone: string }) => {
+          validate: (values: Record<string, unknown>) => {
             const errors: Record<string, string> = {}
-            if (values.phone && values.phone.length < 5) errors.phone = 'Too short'
+            const phone = values.phone as string | undefined
+            if (phone && phone.length < 5) errors.phone = 'Too short'
             return errors
           },
         },

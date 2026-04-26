@@ -148,7 +148,7 @@ export const CURRENCIES: readonly CurrencyConfig[] = [
 /**
  * Default currency code
  */
-export const DEFAULT_CURRENCY_CODE = 'EUR'
+export const DEFAULT_CURRENCY_CODE = 'EUR' as const
 
 /**
  * Get default currency config

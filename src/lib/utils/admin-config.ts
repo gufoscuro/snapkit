@@ -574,6 +574,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
         },
       },
     },
+    policies: {},
     created_by: null,
     created_at: null,
   }
