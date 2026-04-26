@@ -27,6 +27,7 @@ import type {
   SalesOrderSummary,
   SalesOrderTag,
   SalesTransactionType,
+  ShippingMethod,
   Supplier,
   SupplierAddress,
   SupplierContact,
@@ -34,6 +35,10 @@ import type {
   UnitOfMeasure,
   ValuationMethod,
   WarehouseBin,
+  WarehouseOrder,
+  WarehouseOrderPickingStatus,
+  WarehouseOrderState,
+  WarehouseOrderTag,
   WarehouseType,
   WarehouseZone,
   WeightUnit,
@@ -523,6 +528,47 @@ export const salesOrderFulfillmentStatusConfig: Record<SalesOrderFulfillmentStat
 
 export function getSalesOrderFulfillmentStatusLabel(status: SalesOrderFulfillmentStatus): string {
   return salesOrderFulfillmentStatusConfig[status]?.label() ?? status
+}
+
+// Warehouse Order State (for WarehouseOrder entity from /warehouse-orders API)
+export const warehouseOrderStateConfig: Record<WarehouseOrderState, EnumDisplayConfig> = {
+  open: { label: m.enum_warehouse_order_status_open, variant: 'default' },
+  handed_over: { label: m.enum_warehouse_order_status_handed_over, variant: 'success' as BadgeVariant },
+}
+
+export function getWarehouseOrderStatusLabel(status: WarehouseOrder['state']): string {
+  return warehouseOrderStateConfig[status]?.label() ?? status
+}
+
+// Warehouse Order Tags
+export const warehouseOrderTagConfig: Record<WarehouseOrderTag, EnumDisplayConfig> = {
+  transport_document_generated: { label: m.enum_warehouse_order_tag_transport_document_generated, variant: 'default' },
+}
+
+export function getWarehouseOrderTagLabel(tag: WarehouseOrderTag): string {
+  return warehouseOrderTagConfig[tag]?.label() ?? tag
+}
+
+// Warehouse Order Picking Status
+export const warehouseOrderPickingStatusConfig: Record<WarehouseOrderPickingStatus, EnumDisplayConfig> = {
+  not_started: { label: m.enum_warehouse_order_picking_not_started, variant: 'secondary' },
+  partial: { label: m.enum_warehouse_order_picking_partial, variant: 'outline' },
+  full: { label: m.enum_warehouse_order_picking_full, variant: 'default' },
+}
+
+export function getWarehouseOrderPickingStatusLabel(status: WarehouseOrderPickingStatus): string {
+  return warehouseOrderPickingStatusConfig[status]?.label() ?? status
+}
+
+// Shipping Method Labels
+export const shippingMethodLabels: EnumLabelMap<ShippingMethod> = {
+  courier: m.enum_shipping_method_courier,
+  own_vehicle: m.enum_shipping_method_own_vehicle,
+  customer_pickup: m.enum_shipping_method_customer_pickup,
+}
+
+export function getShippingMethodLabel(method: ShippingMethod): string {
+  return shippingMethodLabels[method]?.() ?? method
 }
 
 // Incoterm Labels

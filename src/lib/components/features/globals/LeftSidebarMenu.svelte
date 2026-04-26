@@ -9,28 +9,28 @@
   import type { SnippetProps } from '$utils/runtime'
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right'
   import type { Component } from 'svelte'
-
   // Supported menu icons — import individually to avoid bundling the entire lucide library
-  import HouseIcon from '@lucide/svelte/icons/house'
-  import UsersIcon from '@lucide/svelte/icons/users'
+  import BarChartIcon from '@lucide/svelte/icons/bar-chart'
+  import BuildingIcon from '@lucide/svelte/icons/building'
+  import CalendarIcon from '@lucide/svelte/icons/calendar'
+  import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
   import ContactIcon from '@lucide/svelte/icons/contact'
-  import PackageIcon from '@lucide/svelte/icons/package'
+  import CreditCardIcon from '@lucide/svelte/icons/credit-card'
   import FileTextIcon from '@lucide/svelte/icons/file-text'
+  import FolderIcon from '@lucide/svelte/icons/folder'
+  import GlobeIcon from '@lucide/svelte/icons/globe'
+  import HouseIcon from '@lucide/svelte/icons/house'
+  import LayersIcon from '@lucide/svelte/icons/layers'
+  import MailIcon from '@lucide/svelte/icons/mail'
+  import PackageIcon from '@lucide/svelte/icons/package'
+  import PackageOpen from '@lucide/svelte/icons/package-open'
+  import ReceiptIcon from '@lucide/svelte/icons/receipt'
   import SettingsIcon from '@lucide/svelte/icons/settings'
   import ShoppingCartIcon from '@lucide/svelte/icons/shopping-cart'
-  import WarehouseIcon from '@lucide/svelte/icons/warehouse'
-  import TruckIcon from '@lucide/svelte/icons/truck'
-  import ReceiptIcon from '@lucide/svelte/icons/receipt'
-  import CreditCardIcon from '@lucide/svelte/icons/credit-card'
-  import BarChartIcon from '@lucide/svelte/icons/bar-chart'
-  import CalendarIcon from '@lucide/svelte/icons/calendar'
-  import FolderIcon from '@lucide/svelte/icons/folder'
   import TagIcon from '@lucide/svelte/icons/tag'
-  import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
-  import BuildingIcon from '@lucide/svelte/icons/building'
-  import MailIcon from '@lucide/svelte/icons/mail'
-  import GlobeIcon from '@lucide/svelte/icons/globe'
-  import LayersIcon from '@lucide/svelte/icons/layers'
+  import TruckIcon from '@lucide/svelte/icons/truck'
+  import UsersIcon from '@lucide/svelte/icons/users'
+  import WarehouseIcon from '@lucide/svelte/icons/warehouse'
 
   const { entityConfig }: SnippetProps = $props()
   const mainMenu = $derived(entityConfig?.dashboard.menus.main || { name: 'Unnamed Menu', items: [] })
@@ -56,6 +56,7 @@
     Mail: MailIcon,
     Globe: GlobeIcon,
     Layers: LayersIcon,
+    PackageOpen: PackageOpen,
   }
 
   const STORAGE_KEY = 'left-sidebar-menu-open'
