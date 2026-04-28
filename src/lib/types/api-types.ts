@@ -1332,8 +1332,12 @@ export type WarehouseOrder = {
   ship_to_address_id: string
   ship_to_snapshot: Record<string, unknown>[]
   warehouse_id: string
+  /** Full warehouse record (eager-loaded by the backend when warehouse_id is set) */
+  warehouse?: LegalEntityWarehouse
   planned_ship_date: string
   carrier_id: string
+  /** Full carrier (Supplier) record (eager-loaded by the backend when carrier_id is set) */
+  carrier?: Supplier
   shipping_method: ShippingMethod | null
   notes_internal: string
   state: WarehouseOrderState

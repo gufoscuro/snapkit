@@ -187,9 +187,17 @@
     return undefined
   })
 
-  // Warehouse and carrier are not snapshotted in the API response — selectors hydrate by id only.
-  const warehouseAttr = $derived<WarehouseSummary | undefined>(undefined)
-  const carrierAttr = $derived<CarrierSummary | undefined>(undefined)
+  // Warehouse and carrier are eager-loaded on the warehouse-order record — pass them directly to the selectors.
+  const warehouseAttr = $derived<WarehouseSummary | undefined>(
+    record?.warehouse
+      ? { id: record.warehouse.id, code: record.warehouse.code, description: record.warehouse.description }
+      : undefined,
+  )
+  const carrierAttr = $derived<CarrierSummary | undefined>(
+    record?.carrier
+      ? { id: record.carrier.id, name: record.carrier.name, trade_name: record.carrier.trade_name }
+      : undefined,
+  )
 </script>
 
 <RequestPlaceholder {promise}>
