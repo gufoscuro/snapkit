@@ -572,6 +572,50 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             },
           ],
         },
+        {
+          $id: 'transport-documents',
+          title: 'transport_documents',
+          route: '/sales/transport-documents',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.TransportDocumentsFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'transport-documents.transportdocumentstable.default.TransportDocumentsTable',
+              enabled: true,
+            },
+          },
+          subpages: [
+            {
+              $id: 'transport-document-details',
+              title: 'transport_document',
+              route: '/sales/transport-documents/upsert{/:uuid}',
+              layout: {
+                componentKey: 'layouts.LeftSidebar',
+                enabled: true,
+              },
+              snippets: {
+                sidebar: {
+                  componentKey: 'globals.sidebars.TransportDocumentSidebar',
+                  enabled: true,
+                },
+                content: {
+                  componentKey: 'transport-documents.transportdocumentdetails.default.TransportDocumentDetails',
+                  enabled: true,
+                },
+              },
+            },
+          ],
+        },
       ],
       menus: {
         main: {
@@ -626,6 +670,12 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   label: 'sales_orders',
                   pageId: 'sales-orders',
                   icon: 'ClipboardList',
+                  type: 'link',
+                },
+                {
+                  label: 'transport_documents',
+                  pageId: 'transport-documents',
+                  icon: 'Truck',
                   type: 'link',
                 },
                 {
