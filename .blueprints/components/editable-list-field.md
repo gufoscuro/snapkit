@@ -275,6 +275,91 @@ Since there is no table header, each field needs its own visible label (`showLab
 </div>
 ```
 
+## Server-side Validation Errors per Row
+
+The Laravel backend returns 422 validation errors keyed by **dotted paths** that
+mirror the request body, e.g.:
+
+```json
+{
+  "message": "Quantity exceeds available allocation. Available: 5.",
+  "errors": {
+    "items.1.quantity_requested": ["Quantity exceeds available allocation. Available: 5."]
+  }
+}
+```
+
+`FormUtil` writes every entry of `errors` into the form-state error map verbatim,
+so the dotted path lands in `form.errors["items.1.quantity_requested"]`. The
+challenge: **`EditableListField` calls `clearFormContext()`** for its children
+(see "Behavior" point 7), so the row's sub-fields cannot autowire and read their
+own error from the context.
+
+### Pattern
+
+The list editor (parent of `EditableListField`) resolves errors itself —
+the parent context is still in scope inside its `<script>`. Pass the resolved
+error explicitly to each sub-field via the `error` prop, paired with
+`errorPosition="floating-bottom"` so the message overlays the row instead of
+expanding the grid.
+
+**1. Add a resolver helper** (script-level, near the `form = getFormContextOptional()` call):
+
+```typescript
+const form = getFormContextOptional()
+
+function getFieldError(idx: number, field: string): string | undefined {
+  return form?.errors[`${name}.${idx}.${field}` as never] as string | undefined
+}
+```
+
+**2. Name sub-fields with the backend's dotted path**: `${name}.{index}.{api_field}`.
+Use the **API field name** (snake_case), so the error key from the server matches
+verbatim — no client-side translation table to keep in sync.
+
+```svelte
+<NumberField
+  name="{name}.{index}.quantity_requested"
+  label={m.quantity_requested()}
+  value={item.quantity_requested ?? 0}
+  error={getFieldError(index, 'quantity_requested')}
+  errorPosition="floating-bottom"
+  ... />
+```
+
+**3. Clear stale errors on every items mutation** — the server-side keys
+reference indices that may have shifted (add, remove, reorder) or values the
+user just corrected. Drop them all from `notifyFormUpdate` and `handleItemsChange`:
+
+```typescript
+function notifyFormUpdate() {
+  const output = transformOutput(items.filter(isCompleteItem))
+  onChange?.(output)
+  if (form) {
+    form.updateField(name, output as never)
+    form.clearErrorsAtPrefix(`${name}.`)
+  }
+}
+
+function handleItemsChange(completedItems: InternalLineItem[]) {
+  const output = transformOutput(completedItems)
+  onChange?.(output)
+  form?.clearErrorsAtPrefix(`${name}.`)
+}
+```
+
+`clearErrorsAtPrefix` is exposed by `FormAPI` and removes every error whose key
+starts with the given prefix — see [forms.md](./forms.md).
+
+### Field components that don't support `errorPosition`
+
+`EntitySelectorProps` (used by `ItemSelector`, `VatCodeSelector`, `CustomerSelector`,
+etc.) does **not** expose `errorPosition`. Errors targeting `{name}.{index}.{selector_field}`
+still land in the form-state map and surface in the top-of-form
+`FormErrorMessage` banner, but they will not appear inline next to the selector.
+Acceptable as a fallback for now; if inline display becomes important we can
+extend `EntitySelectorProps` with `errorPosition` in a follow-up.
+
 ## Rich Text in Cards
 
 Cards can contain `RichEditorField` for free-form text. Since `EditableListField` clears form context, use the `onChange` callback to propagate changes through `updateItem`:
@@ -305,6 +390,8 @@ Cards can contain `RichEditorField` for free-form text. Since `EditableListField
 | Component | Layout | Location |
 |---|---|---|
 | `QuotationItemsListEditor` | Card (3-col grid, multi-type) | `features/form/QuotationItemsListEditor.svelte` |
+| `SalesOrderItemsListEditor` | Thin wrapper of QuotationItemsListEditor + ImportMenu | `features/form/SalesOrderItemsListEditor.svelte` |
+| `WarehouseOrderItemsListEditor` | Card (4-col grid, linked/free items) | `features/form/WarehouseOrderItemsListEditor.svelte` |
 
 ## Checklist
 
@@ -315,7 +402,9 @@ When creating a new list editor:
 - [ ] Use `$effect` to hydrate from `value` prop or form context
 - [ ] Use `updateItem(index, updates)` for all field changes (including `RichEditorField` via `onChange`)
 - [ ] Set `showLabel` on all fields (no table header to provide labels)
-- [ ] Set `showErrorMessage={false}` on row inputs
+- [ ] Name sub-fields as `{name}.{index}.{api_field}` (dotted path) so server-side 422 errors map automatically
+- [ ] Add a `getFieldError(idx, field)` helper and pass `error={...}` + `errorPosition="floating-bottom"` to each input
+- [ ] Call `form?.clearErrorsAtPrefix(\`${name}.\`)` from `notifyFormUpdate` and `handleItemsChange` to drop stale errors on mutations and reorder
 - [ ] Use `pr-8` on the grid to leave room for the remove button
 - [ ] Use responsive grid classes (`sm:grid-cols-2 lg:grid-cols-3`)
 - [ ] Use `addButton` snippet for multi-type lists with different add actions
