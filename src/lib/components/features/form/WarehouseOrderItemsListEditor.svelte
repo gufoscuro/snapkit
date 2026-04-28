@@ -39,6 +39,7 @@
   import { getFormContextOptional } from '$components/core/form/form-context'
   import ItemSelector from '$components/features/form/ItemSelector.svelte'
   import Button from '$components/ui/button/button.svelte'
+  import Separator from '$components/ui/separator/separator.svelte'
   import * as Tooltip from '$components/ui/tooltip'
   import { UnitOfMeasures } from '$lib/config/uoms'
   import * as m from '$lib/paraglide/messages'
@@ -46,7 +47,7 @@
   import { toSelectItems, unitOfMeasureLabels } from '$lib/utils/enum-labels'
   import type { BasicOption } from '$lib/utils/generics'
   import { apiRequest } from '$utils/request'
-  import { GripVertical, Link2, Plus } from '@lucide/svelte'
+  import { ArrowUpDown, GripVertical, Plus } from '@lucide/svelte'
 
   type InternalLineItem = WarehouseOrderLineItem & {
     /** Cached item entity for the selector */
@@ -290,42 +291,55 @@
   disabled={isDisabled}
   syncFromForm={false}
   onItemsChange={handleItemsChange}
+  allowReorder
   class={className}>
-  {#snippet header()}
-    {#if !isDisabled && canImport}
+  {#snippet header({ options })}
+    {#if !isDisabled}
       <div class="flex w-full items-center justify-end gap-2">
-        <ImportMenu
-          fetchFunction={fetchAvailableSalesOrders}
-          optionMappingFunction={mapSalesOrderToOption}
-          onimport={handleImport}
-          label={m.import_from_sales_orders()}>
-          {#snippet previewSnippet(order)}
-            {@const productItems = (order.items ?? []).filter(i => i.type === 'item')}
-            <div class="space-y-2">
-              <div>
-                <p class="text-sm font-semibold">{order.document_number}</p>
-                <p class="text-xs text-muted-foreground">{new Date(order.document_date).toLocaleDateString()}</p>
-              </div>
-              <div class="text-xs text-muted-foreground">
-                {productItems.length}
-                {m.items()}
-              </div>
-              {#if productItems.length > 0}
-                <div class="space-y-1 border-t pt-2">
-                  {#each productItems.slice(0, MAX_PREVIEW_ITEMS) as item, idx (item.id + idx)}
-                    <div class="flex items-baseline justify-between gap-2 text-xs">
-                      <span class="truncate">{item.item_snapshot?.name ?? item.item_snapshot?.code ?? '-'}</span>
-                      <span class="shrink-0 text-muted-foreground">x{item.quantity}</span>
-                    </div>
-                  {/each}
-                  {#if productItems.length > MAX_PREVIEW_ITEMS}
-                    <p class="text-xs text-muted-foreground">+{productItems.length - MAX_PREVIEW_ITEMS} {m.items()}…</p>
-                  {/if}
+        {#if canImport}
+          <ImportMenu
+            fetchFunction={fetchAvailableSalesOrders}
+            optionMappingFunction={mapSalesOrderToOption}
+            onimport={handleImport}
+            label={m.import_from_sales_orders()}>
+            {#snippet previewSnippet(order)}
+              {@const productItems = (order.items ?? []).filter(i => i.type === 'item')}
+              <div class="space-y-2">
+                <div>
+                  <p class="text-sm font-semibold">{order.document_number}</p>
+                  <p class="text-xs text-muted-foreground">{new Date(order.document_date).toLocaleDateString()}</p>
                 </div>
-              {/if}
-            </div>
-          {/snippet}
-        </ImportMenu>
+                <div class="text-xs text-muted-foreground">
+                  {productItems.length}
+                  {m.items()}
+                </div>
+                {#if productItems.length > 0}
+                  <div class="space-y-1 border-t pt-2">
+                    {#each productItems.slice(0, MAX_PREVIEW_ITEMS) as item, idx (item.id + idx)}
+                      <div class="flex items-baseline justify-between gap-2 text-xs">
+                        <span class="truncate">{item.item_snapshot?.name ?? item.item_snapshot?.code ?? '-'}</span>
+                        <span class="shrink-0 text-muted-foreground">x{item.quantity}</span>
+                      </div>
+                    {/each}
+                    {#if productItems.length > MAX_PREVIEW_ITEMS}
+                      <p class="text-xs text-muted-foreground">
+                        +{productItems.length - MAX_PREVIEW_ITEMS}
+                        {m.items()}…
+                      </p>
+                    {/if}
+                  </div>
+                {/if}
+              </div>
+            {/snippet}
+          </ImportMenu>
+        {/if}
+        <Button variant="outline" size="sm" onclick={options.toggleDragAndDrop}>
+          <ArrowUpDown class="mr-1 size-4" />
+          {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
+        </Button>
+      </div>
+      <div class="my-8">
+        <Separator />
       </div>
     {/if}
   {/snippet}
@@ -354,7 +368,11 @@
         <div class="sm:col-span-2 lg:col-span-2">
           <span class="block text-sm leading-6 font-medium">{m.item()}</span>
           <div class="flex h-9 items-center gap-2 text-sm">
-            <Tooltip.Root>
+            <span class="max-w-64 truncate text-muted-foreground">
+              {item.item_snapshot?.name ?? item.item_snapshot?.code ?? '-'}
+            </span>
+
+            <!-- <Tooltip.Root>
               <Tooltip.Trigger class="flex items-center gap-1 text-muted-foreground">
                 <Link2 class="size-3.5" />
                 <span class="max-w-64 truncate">
@@ -362,7 +380,7 @@
                 </span>
               </Tooltip.Trigger>
               <Tooltip.Content>{m.linked_to_sales_order_item()}</Tooltip.Content>
-            </Tooltip.Root>
+            </Tooltip.Root> -->
           </div>
         </div>
       {:else}
@@ -428,14 +446,15 @@
         width="w-full"
         onChange={uom => updateItem(index, { uom: uom ?? undefined })} />
 
-      {#if item.id}
+      <!-- Quantity Picked - hidden for the time being, until we have the pick functionality -->
+      <!-- {#if item.id}
         <div class="flex flex-col">
           <span class="block text-sm leading-6 font-medium">{m.quantity_picked()}</span>
           <div class="flex h-9 items-center text-sm text-muted-foreground">
             {item.quantity_picked ?? 0}
           </div>
         </div>
-      {/if}
+      {/if} -->
     </div>
   {/snippet}
 
