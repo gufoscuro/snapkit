@@ -126,8 +126,22 @@ type FormAPI<T> = {
   touchField: <K extends keyof T>(name: K) => void;
   reset: () => void;
   submit: (option?: string | null) => void;
+  /**
+   * Remove every error whose key starts with the given prefix.
+   * Used by complex field editors (e.g. items list) to drop stale server-side
+   * errors keyed by `{prefix}{index}.{field}` after the array is mutated.
+   * See `editable-list-field.md` for the row-error pattern.
+   */
+  clearErrorsAtPrefix: (prefix: string) => void;
 };
 ```
+
+> Server-side 422 errors come back keyed by dotted paths (e.g.
+> `items.1.quantity_requested`). `FormUtil` writes them into `errors` verbatim,
+> regardless of whether the key matches a top-level field of `T`. Complex
+> editors then either resolve their nested errors via `form.errors[path]` and
+> pass them down explicitly, or rely on the top-form `FormErrorMessage` banner
+> as a fallback.
 
 ### Accessing Context
 

@@ -22,6 +22,12 @@ export type FormAPI<T extends Record<string, unknown> = Record<string, unknown>>
 	touchField: <K extends keyof T>(name: K) => void;
 	reset: () => void;
 	submit: (option?: string | null) => void;
+	/**
+	 * Remove all errors whose key starts with the given prefix.
+	 * Used by complex field editors (e.g. items list) to clear stale server-side
+	 * errors keyed by `{prefix}{index}.{field}` after the array is mutated.
+	 */
+	clearErrorsAtPrefix: (prefix: string) => void;
 
 	// Custom Fields (parallel state — dynamic keys not part of T)
 	readonly customFieldValues: Record<string, unknown>;

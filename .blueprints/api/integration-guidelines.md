@@ -126,6 +126,41 @@ async function loadOrders() {
 
 `apiRequest<T>` and `safeApiRequest<T>` are still exported and work as before. Existing code does not need to be migrated immediately, but all **new** implementations should use `api`.
 
+## Request Headers
+
+Every outgoing request automatically carries two cross-cutting headers, applied
+by the private helper `buildBaseHeaders()` inside [`request.ts`](../../src/lib/utils/request.ts):
+
+| Header | Source | Purpose |
+|---|---|---|
+| `Accept-Language` | `getLocale()` from `$lib/paraglide/runtime.js` | Drives backend localization (validation messages, enum labels, errors). Reflects the current UI locale and changes automatically when the user calls `setLocale`. |
+| `X-XSRF-TOKEN` | `XSRF-TOKEN` cookie (when present) | Sanctum CSRF protection for non-`GET` requests. |
+
+`apiRequest`, `apiDownload`, and `apiUploadRequest` all merge `buildBaseHeaders()`
+into their headers object. Caller-supplied `headers` win over the base, so a
+request can opt out of either by passing the same key explicitly:
+
+```typescript
+// Force Italian regardless of UI locale (rare — for debugging or PDF generation)
+await api.get<...>('/...', { headers: { 'Accept-Language': 'it' } })
+```
+
+### Future direction (refactor candidate)
+
+The current implementation couples `request.ts` to paraglide via a direct
+`getLocale()` import. This is acceptable for two cross-cutting concerns
+(i18n + XSRF), but if more interceptor-style behaviors accumulate (auth token
+refresh, request IDs, telemetry, etc.) we should extract a thin **interceptor
+layer** above `request.ts`:
+
+- A list of `(options) => options` transformers applied before each request
+- The locale interceptor lives in a separate module that imports paraglide
+- `request.ts` stays a pure HTTP utility, agnostic of i18n
+
+That refactor is **non-breaking** for callers — `api` and `apiRequest` keep the
+same surface — so it can happen lazily when motivated by a third concern. Today,
+two interceptors do not justify the abstraction.
+
 ## Discovering API Endpoints
 
 Use the **arke MCP** to discover available API endpoints:

@@ -105,6 +105,25 @@ export function createFormState<T extends Record<string, unknown>>(config: FormS
 		}
 	}
 
+	/**
+	 * Remove all errors whose key starts with the given prefix.
+	 * Useful when a complex field (e.g. an array of items) has been mutated and
+	 * any server-side errors keyed by `items.{index}.{field}` are no longer
+	 * meaningful — the indices may have shifted (reorder) or the offending value
+	 * may have been corrected.
+	 */
+	function clearErrorsAtPrefix(prefix: string) {
+		const next = { ...errors };
+		let changed = false;
+		for (const key of Object.keys(next)) {
+			if (key.startsWith(prefix)) {
+				delete next[key as keyof T];
+				changed = true;
+			}
+		}
+		if (changed) errors = next;
+	}
+
 	return {
 		get values() {
 			return values;
@@ -127,7 +146,8 @@ export function createFormState<T extends Record<string, unknown>>(config: FormS
 		touchField,
 		reset,
 		setValues,
-		setErrors
+		setErrors,
+		clearErrorsAtPrefix
 	};
 }
 

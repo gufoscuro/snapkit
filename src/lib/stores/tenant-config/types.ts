@@ -65,13 +65,13 @@ export type SimpleMenuItem = MenuItemBase & {
 }
 
 /**
- * Submenu styles supported by the Navigation Menu component
- * - list: Items with title + description (best for feature sections)
- * - simple: Compact list of links without descriptions
- * - icon: Links with icons
- * - grid: Grid layout for many items (e.g., components showcase)
+ * Submenu styles supported by the LeftSidebar menu render.
+ * - simple: parent label becomes a sidebar GroupLabel; children render as flat
+ *   menu items (each with its own icon). No collapsible behaviour.
+ * - collapsible: parent renders as a collapsible trigger (chevron); children
+ *   render inside the expanded sub-menu.
  */
-export type SubmenuStyle = 'list' | 'simple' | 'icon' | 'grid'
+export type SubmenuStyle = 'simple' | 'collapsible'
 
 /**
  * Menu item with submenu children
@@ -88,8 +88,6 @@ export type MenuItemWithSubmenu = Omit<MenuItemBase, 'pageId'> & {
   submenuStyle: SubmenuStyle
   /** Child menu items */
   children: MenuItem[]
-  /** Optional description (shown in list-style submenu) */
-  description?: string
 
   icon?: string
 }

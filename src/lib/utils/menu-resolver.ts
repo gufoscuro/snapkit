@@ -11,8 +11,7 @@ export type ResolvedMenuItem = {
   disabled: boolean
   icon?: string
   type: 'link' | 'submenu'
-  submenuStyle?: 'list' | 'simple' | 'icon' | 'grid'
-  description?: string
+  submenuStyle?: 'simple' | 'collapsible'
   children?: ResolvedMenuItem[]
 }
 
@@ -85,7 +84,6 @@ function resolveSubmenuItem(item: MenuItemWithSubmenu): ResolvedMenuItem {
     disabled: item.disabled ?? false,
     icon: item.icon,
     submenuStyle: item.submenuStyle,
-    description: item.description,
     children
   }
 }

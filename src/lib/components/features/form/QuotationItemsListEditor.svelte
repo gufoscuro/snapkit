@@ -115,6 +115,13 @@
   const isDisabled = $derived(disabled || locked)
   const currencyCode = $derived(currency)
 
+  // EditableListField clears the form context for its children, so sub-fields
+  // can't auto-resolve their error from `form.errors[name]`. We resolve it here
+  // (where the parent form context is still in scope) and pass it down explicitly.
+  function getFieldError(idx: number, field: string): string | undefined {
+    return form?.errors[`${name}.${idx}.${field}` as never] as string | undefined
+  }
+
   /**
    * Format a Date as a local ISO-like string (YYYY-MM-DDTHH:mm:ss.sss)
    * to avoid UTC timezone shift (e.g. Apr 30 CET → Apr 29 22:00 UTC).
@@ -331,6 +338,10 @@
     onChange?.(output)
     if (form) {
       form.updateField(name, output as never)
+      // Stale server-side errors (keyed by `{name}.{index}.{field}`) reference
+      // indices that may have shifted after add/remove/reorder, or values that
+      // the user just corrected. Drop them all on every items mutation.
+      form.clearErrorsAtPrefix(`${name}.`)
     }
   }
 
@@ -340,6 +351,7 @@
   function handleItemsChange(completedItems: InternalLineItem[]) {
     const output = transformOutput(completedItems)
     onChange?.(output)
+    form?.clearErrorsAtPrefix(`${name}.`)
   }
 
   /**
@@ -414,10 +426,11 @@
       <!-- Descriptive: full-width rich editor -->
       <div class="pr-8">
         <RichEditorField
-          name="description-{index}"
+          name="{name}.{index}.description"
           label={m.description()}
           value={item.description}
-          showErrorMessage={false}
+          error={getFieldError(index, 'description')}
+          errorPosition="floating-bottom"
           disabled={isDisabled}
           width="w-full"
           minHeight="min-h-20 max-h-60 overflow-y-auto bg-input/10 dark:bg-input/30"
@@ -428,11 +441,10 @@
       <div class="grid grid-cols-1 gap-x-4 gap-y-3 pr-8 sm:grid-cols-2 lg:grid-cols-3">
         <!-- Row 1: Item Selector, Code, Quantity -->
         <ItemSelector
-          name="item-{index}"
+          name="{name}.{index}.item_id"
           label={m.item()}
           mode="sellable"
           attr={item.itemAttr}
-          showErrorMessage={false}
           width="w-full"
           contentWidth={FormFieldClass.SelectorContentDefaultWidth}
           readonly={isDisabled}
@@ -458,11 +470,12 @@
         </div>
 
         <QuantityField
-          name="quantity-{index}"
+          name="{name}.{index}.quantity"
           label={m.quantity()}
           value={item.quantity ?? 0}
           uom={item.uom}
-          showErrorMessage={false}
+          error={getFieldError(index, 'quantity')}
+          errorPosition="floating-bottom"
           disabled={!item.item_id || isDisabled}
           width="w-full"
           onChange={qty => updateItem(index, { quantity: qty })} />
@@ -470,10 +483,11 @@
         <!-- Description (customizable, defaults to item name) -->
         <div class="sm:col-span-2 lg:col-span-3">
           <TextField
-            name="description-{index}"
+            name="{name}.{index}.description"
             label={m.description()}
             value={item.description ?? ''}
-            showErrorMessage={false}
+            error={getFieldError(index, 'description')}
+            errorPosition="floating-bottom"
             disabled={!item.item_id || isDisabled}
             width="w-full"
             oninput={e => updateItem(index, { description: e.currentTarget.value })} />
@@ -490,12 +504,13 @@
             {/if}
           </div>
           <PriceField
-            name="unitPrice-{index}"
+            name="{name}.{index}.unit_price"
             value={item.unit_price ?? 0}
             {currency}
             allowNegative={allowNegativePrices}
             showLabel={false}
-            showErrorMessage={false}
+            error={getFieldError(index, 'unit_price')}
+            errorPosition="floating-bottom"
             disabled={!item.item_id || isDisabled}
             width="w-full"
             onChange={price => updateItem(index, { unit_price: price })} />
@@ -522,21 +537,23 @@
           </div>
           {#if item.useDiscountAmount}
             <PriceField
-              name="discountAmount-{index}"
+              name="{name}.{index}.discount_amount"
               value={item.discount_amount ?? 0}
               {currency}
               allowNegative={allowNegativePrices}
               showLabel={false}
-              showErrorMessage={false}
+              error={getFieldError(index, 'discount_amount')}
+              errorPosition="floating-bottom"
               disabled={!item.item_id || isDisabled}
               width="w-full"
               onChange={amount => updateItem(index, { discount_amount: amount, discount_percent: 0 })} />
           {:else}
             <NumberField
-              name="discountPercent-{index}"
+              name="{name}.{index}.discount_percent"
               value={item.discount_percent}
               showLabel={false}
-              showErrorMessage={false}
+              error={getFieldError(index, 'discount_percent')}
+              errorPosition="floating-bottom"
               disabled={!item.item_id || isDisabled}
               width="w-full"
               oninput={e =>
@@ -545,11 +562,10 @@
         </div>
 
         <VatCodeSelector
-          name="vatCode-{index}"
+          name="{name}.{index}.vat_code_id"
           label={m.vat_code()}
           attr={item.vatCodeAttr || defaultVatCode}
           direction="vendita"
-          showErrorMessage={false}
           width="w-full"
           contentWidth={FormFieldClass.SelectorContentDefaultWidth}
           readonly={!item.item_id || isDisabled}
@@ -560,10 +576,11 @@
         <!-- Row 3: Delivery dates (conditional) -->
         {#if showDeliveryDates}
           <DateField
-            name="requestedDeliveryDate-{index}"
+            name="{name}.{index}.requested_delivery_date"
             label={m.requested_delivery_date()}
             value={item.requested_delivery_date}
-            showErrorMessage={false}
+            error={getFieldError(index, 'requested_delivery_date')}
+            errorPosition="floating-bottom"
             disabled={!item.item_id || isDisabled}
             width="w-full"
             onChange={date => {
@@ -575,10 +592,11 @@
             allowClear />
 
           <DateField
-            name="deliveryDate-{index}"
+            name="{name}.{index}.{deliveryDateKey}"
             label={m.delivery_date()}
             value={item.delivery_date}
-            showErrorMessage={false}
+            error={getFieldError(index, deliveryDateKey)}
+            errorPosition="floating-bottom"
             disabled={!item.item_id || isDisabled}
             width="w-full"
             onChange={date => updateItem(index, { delivery_date: date ? toLocalISOString(date) : '' })}
