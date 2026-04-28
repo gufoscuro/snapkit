@@ -3,6 +3,7 @@
 import { goto } from '$app/navigation'
 import { resolve } from '$app/paths'
 import { env } from '$env/dynamic/public'
+import { getLocale } from '$lib/paraglide/runtime.js'
 import { parseJSON, stringifyJSON } from './json'
 
 const API_GATEWAY = env.PUBLIC_API_GATEWAY
@@ -101,6 +102,20 @@ function getXsrfToken(): string | null {
 }
 
 /**
+ * Build the headers shared by every outgoing request: current UI locale and
+ * (when available) the XSRF token. Caller-provided headers override these,
+ * so a request can opt out of either by passing the same key explicitly.
+ */
+function buildBaseHeaders(): Record<string, string> {
+  const xsrfToken = getXsrfToken()
+
+  return {
+    'Accept-Language': getLocale(),
+    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+  }
+}
+
+/**
  * Client-side API request with XSRF token support
  * Calls the API gateway directly using PUBLIC_API_GATEWAY
  * Automatically reads the XSRF-TOKEN cookie and includes it as a header
@@ -136,11 +151,10 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
     invalidateCacheByBasePath(url)
   }
 
-  const xsrfToken = getXsrfToken()
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+    ...buildBaseHeaders(),
     ...(options.headers || {}),
   }
 
@@ -194,10 +208,9 @@ export async function apiDownload(options: {
   const { url, filename, redirectOnUnauthorized = true } = options
   const fullUrl = `${API_GATEWAY}/api${url}`
 
-  const xsrfToken = getXsrfToken()
   const headers: HeadersInit = {
     Accept: 'application/pdf, application/octet-stream',
-    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+    ...buildBaseHeaders(),
   }
 
   const result = await fetch(fullUrl, { method: 'GET', headers, credentials: 'include' })
@@ -236,10 +249,9 @@ export async function apiUploadRequest<T>(options: {
   const { url, method = 'POST', body, redirectOnUnauthorized = true } = options
   const fullUrl = `${API_GATEWAY}/api${url}`
 
-  const xsrfToken = getXsrfToken()
   const headers: HeadersInit = {
     Accept: 'application/json',
-    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+    ...buildBaseHeaders(),
   }
 
   const result = await fetch(fullUrl, { method, headers, body, credentials: 'include' })

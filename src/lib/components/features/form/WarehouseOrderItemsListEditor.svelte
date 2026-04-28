@@ -127,6 +127,13 @@
   const uomItems = toSelectItems(unitOfMeasureLabels)
   const canImport = $derived(!!legalEntityId && !!customerId && !isDisabled)
 
+  // EditableListField clears the form context for its children, so sub-fields
+  // can't auto-resolve their error from `form.errors[name]`. We resolve it here
+  // (where the parent form context is still in scope) and pass it down explicitly.
+  function getFieldError(idx: number, field: string): string | undefined {
+    return form?.errors[`${name}.${idx}.${field}` as never] as string | undefined
+  }
+
   let items = $state<InternalLineItem[]>([])
   let editorRef: EditableListField<InternalLineItem> | undefined = $state()
 
@@ -225,12 +232,17 @@
     onChange?.(output)
     if (form) {
       form.updateField(name, output as never)
+      // Stale server-side errors (keyed by `{name}.{index}.{field}`) reference
+      // indices that may have shifted after add/remove/reorder, or values that
+      // the user just corrected. Drop them all on every items mutation.
+      form.clearErrorsAtPrefix(`${name}.`)
     }
   }
 
   function handleItemsChange(completedItems: InternalLineItem[]) {
     const output = transformOutput(completedItems)
     onChange?.(output)
+    form?.clearErrorsAtPrefix(`${name}.`)
   }
 
   async function fetchAvailableSalesOrders(search?: string): Promise<SalesOrderWithItems[]> {
@@ -386,11 +398,10 @@
       {:else}
         <div class="sm:col-span-2 lg:col-span-2">
           <ItemSelector
-            name="item-{index}"
+            name="{name}.{index}.item_id"
             label={m.item()}
             mode="sellable"
             attr={item.itemAttr}
-            showErrorMessage={false}
             width="w-full"
             contentWidth={FormFieldClass.SelectorContentDefaultWidth}
             readonly={isDisabled}
@@ -417,31 +428,34 @@
       </div>
 
       <NumberField
-        name="quantityRequested-{index}"
+        name="{name}.{index}.quantity_requested"
         label={m.quantity_requested()}
         value={item.quantity_requested ?? 0}
-        showErrorMessage={false}
+        error={getFieldError(index, 'quantity_requested')}
+        errorPosition="floating-bottom"
         disabled={(!isLinked && !item.item_id) || isDisabled}
         width="w-full"
         oninput={e => updateItem(index, { quantity_requested: parseFloat(e.currentTarget.value) || 0 })} />
 
       <div class="sm:col-span-2 lg:col-span-3">
         <TextField
-          name="description-{index}"
+          name="{name}.{index}.description"
           label={m.description()}
           value={item.description ?? ''}
-          showErrorMessage={false}
+          error={getFieldError(index, 'description')}
+          errorPosition="floating-bottom"
           disabled={isLinked || !item.item_id || isDisabled}
           width="w-full"
           oninput={e => updateItem(index, { description: e.currentTarget.value })} />
       </div>
 
       <SelectField
-        name="uom-{index}"
+        name="{name}.{index}.uom"
         label={m.uom()}
         items={uomItems}
         value={item.uom}
-        showErrorMessage={false}
+        error={getFieldError(index, 'uom')}
+        errorPosition="floating-bottom"
         disabled={isLinked || !item.item_id || isDisabled}
         width="w-full"
         onChange={uom => updateItem(index, { uom: uom ?? undefined })} />

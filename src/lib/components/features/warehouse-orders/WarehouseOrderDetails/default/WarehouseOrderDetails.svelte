@@ -14,6 +14,7 @@
 </script>
 
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import ActionButton from '$components/core/ActionButton.svelte'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
@@ -45,12 +46,16 @@
   import * as m from '$lib/paraglide/messages'
   import type { WarehouseOrder } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import { incotermLabels, salesTransactionTypeLabels, shippingMethodLabels, toSelectItems } from '$lib/utils/enum-labels'
+  import {
+    incotermLabels,
+    salesTransactionTypeLabels,
+    shippingMethodLabels,
+    toSelectItems,
+  } from '$lib/utils/enum-labels'
   import { api, apiDownload } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import type { SnippetProps } from '$utils/runtime'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
-  import { goto } from '$app/navigation'
   import { WarehouseOrderDetailsContract } from './WarehouseOrderDetails.contract.js'
 
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
@@ -93,6 +98,7 @@
       ? createWarehouseOrderActions({
           legalEntityId,
           onSuccess: detail.refetch,
+          // eslint-disable-next-line svelte/no-navigation-without-resolve
           onArchived: () => goto(createRoute({ $id: 'warehouse-orders' })),
         })
       : [],
@@ -261,10 +267,7 @@
 
             <WarehouseSelector name="warehouse_id" attr={warehouseAttr} class={FormFieldClass.MaxWidth} />
 
-            <DateField
-              name="planned_ship_date"
-              label={m.planned_ship_date()}
-              class={FormFieldClass.MaxWidth} />
+            <DateField name="planned_ship_date" label={m.planned_ship_date()} class={FormFieldClass.MaxWidth} />
           {/snippet}
         </GroupTitle>
 
