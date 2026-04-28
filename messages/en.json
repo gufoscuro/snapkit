@@ -1,5 +1,8 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "general": "General",
+  "sales": "Sales",
+  "main_menu": "Main menu",
   "common_save": "Save",
   "buy": "Buy",
   "back": "Back",
