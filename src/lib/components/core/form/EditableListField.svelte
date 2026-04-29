@@ -24,7 +24,7 @@
   import * as m from '$lib/paraglide/messages'
   import { ArrowUp, Plus, X } from '@lucide/svelte'
   import type { Snippet } from 'svelte'
-  import { dndzone, overrideItemIdKeyNameBeforeInitialisingDndZones } from 'svelte-dnd-action'
+  import { dndzone } from 'svelte-dnd-action'
   import { flip } from 'svelte/animate'
   import { EditableListFieldClass } from './form'
   import { clearFormContext, getFormContextOptional } from './form-context'
@@ -127,8 +127,6 @@
   // Drag-and-drop state
   let dragAndDropActive = $state(false)
   const FLIP_DURATION_MS = 200
-
-  overrideItemIdKeyNameBeforeInitialisingDndZones('_dndId')
 
   let dndIdCounter = 0
 
