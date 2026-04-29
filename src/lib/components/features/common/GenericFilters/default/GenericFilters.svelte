@@ -18,7 +18,7 @@
   import * as m from '$lib/paraglide/messages.js'
   import type { FilterConfig, QueryObject } from '$lib/utils/filters'
   import type { SnippetProps } from '$utils/runtime.js'
-  import { Search } from '@lucide/svelte'
+  import Search from '@lucide/svelte/icons/search'
   import type { Snippet } from 'svelte'
   import { GenericFiltersContract } from './GenericFilters.contract.js'
 

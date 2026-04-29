@@ -21,7 +21,7 @@
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
   import Plus from '@lucide/svelte/icons/plus'
   import X from '@lucide/svelte/icons/x'
-  import { IconExternalLink } from '@tabler/icons-svelte'
+  import IconExternalLink from '@tabler/icons-svelte/icons/external-link'
   import type { Component } from 'svelte'
   import { tick, untrack } from 'svelte'
   import DefaultMultiRenderer from './DefaultMultiRenderer.svelte'

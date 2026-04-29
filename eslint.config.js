@@ -23,7 +23,26 @@ export default defineConfig(
 		rules: {
 			// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
 			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
-			'no-undef': 'off'
+			'no-undef': 'off',
+			// Barrel imports of icon libraries blow up Vite build memory on the
+			// production VPS — force single-file imports (e.g. `@lucide/svelte/icons/x`).
+			'no-restricted-imports': [
+				'error',
+				{
+					paths: [
+						{
+							name: '@lucide/svelte',
+							message:
+								"Use single-file imports instead, e.g. `import X from '@lucide/svelte/icons/x'`. Barrel imports inflate build memory."
+						},
+						{
+							name: '@tabler/icons-svelte',
+							message:
+								"Use single-file imports instead, e.g. `import IconX from '@tabler/icons-svelte/icons/x'`. Barrel imports inflate build memory."
+						}
+					]
+				}
+			]
 		}
 	},
 	{

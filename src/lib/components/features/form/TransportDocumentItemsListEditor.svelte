@@ -63,7 +63,9 @@
   import type { BasicOption } from '$lib/utils/generics'
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices'
   import { apiRequest } from '$utils/request'
-  import { ArrowUpDown, GripVertical, Plus } from '@lucide/svelte'
+  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
+  import GripVertical from '@lucide/svelte/icons/grip-vertical'
+  import Plus from '@lucide/svelte/icons/plus'
 
   type InternalLineItem = TransportDocumentLineItem & {
     /** Cached item entity for the selector */

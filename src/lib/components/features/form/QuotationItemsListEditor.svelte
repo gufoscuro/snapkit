@@ -37,7 +37,9 @@
   import * as m from '$lib/paraglide/messages'
   import type { Item } from '$lib/types/api-types'
   import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol } from '$utils/prices'
-  import { ArrowUpDown, GripVertical, Plus } from '@lucide/svelte'
+  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
+  import GripVertical from '@lucide/svelte/icons/grip-vertical'
+  import Plus from '@lucide/svelte/icons/plus'
   import { untrack, type Snippet } from 'svelte'
   import type { QuotationLineItem } from './QuotationItemsEditor.svelte'
 

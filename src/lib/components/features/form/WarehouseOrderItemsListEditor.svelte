@@ -47,7 +47,9 @@
   import { toSelectItems, unitOfMeasureLabels } from '$lib/utils/enum-labels'
   import type { BasicOption } from '$lib/utils/generics'
   import { apiRequest } from '$utils/request'
-  import { ArrowUpDown, GripVertical, Plus } from '@lucide/svelte'
+  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
+  import GripVertical from '@lucide/svelte/icons/grip-vertical'
+  import Plus from '@lucide/svelte/icons/plus'
 
   type InternalLineItem = WarehouseOrderLineItem & {
     /** Cached item entity for the selector */
