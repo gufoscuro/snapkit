@@ -673,15 +673,15 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   type: 'link',
                 },
                 {
-                  label: 'transport_documents',
-                  pageId: 'transport-documents',
-                  icon: 'Truck',
-                  type: 'link',
-                },
-                {
                   label: 'warehouse_orders',
                   pageId: 'warehouse-orders',
                   icon: 'PackageOpen',
+                  type: 'link',
+                },
+                {
+                  label: 'transport_documents',
+                  pageId: 'transport-documents',
+                  icon: 'Truck',
                   type: 'link',
                 },
               ],
