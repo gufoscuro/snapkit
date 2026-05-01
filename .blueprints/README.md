@@ -28,8 +28,10 @@ snapkit-content/
 │   └── strategy.md       # Test projects, mocking, what/how to test
 ├── api/                  # API integration guidelines
 │   └── integration-guidelines.md  # API types, requests, error handling
-└── routing/              # Navigation and routing patterns
-    └── navigation.md     # Route builder usage and best practices
+├── routing/              # Navigation and routing patterns
+│   └── navigation.md     # Route builder usage and best practices
+└── infrastructure/       # Build, deploy, and runtime architecture
+    └── deployment.md     # CI/CD pipeline, build/runtime contract, Forge's role
 ```
 
 ## File Descriptions
@@ -69,6 +71,10 @@ snapkit-content/
 ### Routing
 
 - **navigation.md**: Using the route-builder utility for type-safe navigation, with examples and best practices
+
+### Infrastructure
+
+- **deployment.md**: How the app reaches production. Covers the CI/CD pipeline (GHA → GHCR → Kamal), the build contract code must satisfy (self-contained `npm ci && npm run build`, no build-time env inlining, adapter-node output, build memory limits), the runtime contract (container :3000, `/healthz`, stateless), and Forge's reduced role (only nginx/SSL/firewall). Reference for code changes that could break the deploy pipeline.
 
 ## Usage with MCP Server
 
@@ -137,3 +143,9 @@ When updating guidelines:
 - "How to set up snippet bindings manually?" → `pages/fixed-pages.md`
 - "How to handle navigation in fixed pages?" → `pages/fixed-pages.md`
 - "How to create a sidebar with fixed links?" → `pages/fixed-pages.md`
+- "How is the app deployed?" → `infrastructure/deployment.md`
+- "What's the build/runtime contract?" → `infrastructure/deployment.md`
+- "Why can't I read env vars at build time?" → `infrastructure/deployment.md`
+- "What does Forge do in production?" → `infrastructure/deployment.md`
+- "Where does CI build the Docker image?" → `infrastructure/deployment.md`
+- "Why are barrel imports of icon libs banned?" → `infrastructure/deployment.md`
