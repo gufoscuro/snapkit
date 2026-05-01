@@ -1,0 +1,47 @@
+# Dependencies (rebuilt inside the image)
+node_modules
+
+# Build artifacts (rebuilt inside the image)
+build
+.svelte-kit
+.output
+
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# CI / deploy config (not needed at build time)
+.github
+.kamal
+config/deploy.yml
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Tests / coverage
+coverage
+playwright-report
+test-results
+
+# Tenant runtime data
+data
+
+# Docs that don't affect the build
+*.md
+!CLAUDE.md
+
+# Vite timestamp leftovers
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# MCP local config
+.mcp.json

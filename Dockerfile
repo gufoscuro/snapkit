@@ -6,10 +6,11 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-RUN NODE_OPTIONS="--max-old-space-size=3072" npm run build
+RUN npm run build
 
 ### Runtime stage — only ship what's needed
 FROM node:20-slim
+LABEL org.opencontainers.image.source="https://github.com/moddopro/app"
 WORKDIR /usr/src/app
 
 COPY --from=build /usr/src/app/build build/

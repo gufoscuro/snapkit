@@ -28,3 +28,6 @@ vite.config.ts.timestamp-*
 
 # Tenant configuration data (runtime storage)
 data/
+
+# Kamal local secrets (deploy passwords, registry tokens)
+.kamal/secrets
