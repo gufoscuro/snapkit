@@ -147,3 +147,13 @@ Use the `search_blueprint` tool to find:
 ```
 search_blueprint("MCP servers overview")
 ```
+
+### Authoring blueprints
+
+Blueprint sources live as plain markdown files under `.blueprints/` at the repo root, organized by domain (e.g. `.blueprints/components/`, `.blueprints/api/`). To add or update a blueprint:
+
+1. Create or edit the relevant `.md` file under `.blueprints/<domain>/`. If the domain doesn't exist yet, create the folder and add an entry to `.blueprints/README.md`.
+2. Inform the user — they run a manual script (`npm run build:embeddings` or equivalent) to regenerate the vector embeddings consumed by `snapkit-blueprint-mcp`. Until that's run, `search_blueprint` won't surface the new content.
+3. Commit the new/edited markdown together with whatever embeddings file the script produces.
+
+Blueprint files are chunked by heading, so structure them with clear `##` sections that each stand on their own as searchable answers.
