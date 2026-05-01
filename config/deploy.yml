@@ -1,0 +1,54 @@
+# Kamal deployment config.
+# Docs: https://kamal-deploy.org
+#
+# Forge handles nginx + SSL + firewall. Kamal-proxy is disabled (`proxy: false`)
+# so traffic flows: Forge nginx (:443) → upstream 127.0.0.1:3000 → app container.
+
+service: snapkit
+
+image: moddopro/app
+
+servers:
+  web:
+    hosts:
+      - <DEPLOY_HOST>  # set via repo secret in CI; replace inline for local kamal runs
+    # Bind container :3000 only to loopback — nginx (Forge) proxies to this.
+    # Change the host-side port (left side) during Phase 3 cutover if you want
+    # the new container running alongside the legacy Forge daemon on a
+    # different port (e.g. "127.0.0.1:3001:3000") and switch nginx upstream
+    # only after smoke tests pass.
+    options:
+      publish:
+        - "127.0.0.1:3000:3000"
+
+# Bypass kamal-proxy: Forge's nginx is already the reverse proxy on this host.
+proxy: false
+
+ssh:
+  user: <DEPLOY_USER>  # deploy user on the VPS (likely the Forge sites user)
+
+# We build in GitHub Actions, not on the deploy host.
+builder:
+  arch: amd64
+  remote: false
+
+registry:
+  server: ghcr.io
+  username: <GH_USERNAME>  # GitHub user/org that owns the package
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+# Healthcheck for blue/green rollout. Kamal waits for /healthz to return 2xx
+# before routing traffic and stopping the old container.
+healthcheck:
+  path: /healthz
+  port: 3000
+  interval: 5s
+  max_attempts: 24
+
+env:
+  clear:
+    NODE_ENV: production
+    BODY_SIZE_LIMIT: 15M
+  secret:
+    - API_GATEWAY_URL
