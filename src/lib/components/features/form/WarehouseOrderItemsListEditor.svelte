@@ -45,15 +45,20 @@
   import * as m from '$lib/paraglide/messages'
   import type { Item, UnitOfMeasure } from '$lib/types/api-types'
   import { toSelectItems, unitOfMeasureLabels } from '$lib/utils/enum-labels'
+  import { generateId } from '$lib/utils/id'
   import type { BasicOption } from '$lib/utils/generics'
   import { apiRequest } from '$utils/request'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
   import Plus from '@lucide/svelte/icons/plus'
+  import { SvelteSet } from 'svelte/reactivity'
+  import { toast } from 'svelte-sonner'
 
   type InternalLineItem = WarehouseOrderLineItem & {
     /** Cached item entity for the selector */
     itemAttr?: Item
+    /** UI-only: identifies a batch of items imported together (used for color coding). Stripped in transformOutput. */
+    _groupId?: string
   }
 
   type SalesOrderWithItems = {
@@ -161,7 +166,7 @@
   function transformOutput(internalItems: InternalLineItem[]): WarehouseOrderLineItem[] {
     return internalItems.map(item => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { itemAttr, quantity_picked, ...rest } = item
+      const { itemAttr, _groupId, quantity_picked, ...rest } = item
       if (rest.sales_order_item_id) {
         return {
           sales_order_item_id: rest.sales_order_item_id,
@@ -272,10 +277,22 @@
   }
 
   function handleImport(orders: SalesOrderWithItems[]) {
-    const imported: InternalLineItem[] = orders.flatMap(order =>
-      (order.items ?? [])
-        .filter(item => item.type === 'item')
-        .map(item => ({
+    const existingLinkIds = new SvelteSet(
+      items.filter(i => i.sales_order_item_id).map(i => i.sales_order_item_id as string),
+    )
+    let skipped = 0
+    const imported: InternalLineItem[] = []
+    // One groupId per source order so each sales order gets its own color.
+    for (const order of orders) {
+      const groupId = generateId()
+      for (const item of order.items ?? []) {
+        if (item.type !== 'item') continue
+        if (existingLinkIds.has(item.id)) {
+          skipped++
+          continue
+        }
+        existingLinkIds.add(item.id)
+        imported.push({
           sales_order_item_id: item.id,
           item_id: item.item_id,
           item_snapshot: item.item_snapshot,
@@ -283,8 +300,11 @@
           quantity_requested: item.quantity,
           uom: item.uom,
           itemAttr: item.item_snapshot ? ({ id: item.item_id, ...item.item_snapshot } as Item) : undefined,
-        })),
-    )
+          _groupId: groupId,
+        })
+      }
+    }
+    if (skipped > 0) toast.info(m.import_skipped_duplicates({ count: skipped }))
     if (imported.length === 0) return
     const nonEmpty = items.filter(i => isCompleteItem(i))
     items = [...nonEmpty, ...imported]
@@ -306,6 +326,7 @@
   syncFromForm={false}
   onItemsChange={handleItemsChange}
   allowReorder
+  collapsible
   class={className}>
   {#snippet header({ options })}
     {#if !isDisabled}
@@ -371,13 +392,22 @@
     </div>
   {/snippet}
 
+  {#snippet collapsedItem({ item, index, groupColorClass })}
+    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 px-3 py-2 hover:bg-muted">
+      <span class="font-semibold {groupColorClass ?? 'text-primary'}"
+        ><span class="opacity-60">#</span>{index + 1}</span>
+      <span class="truncate text-sm">
+        {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+      </span>
+      {#if item.quantity_requested}
+        <span class="text-xs text-muted-foreground">x{item.quantity_requested}</span>
+      {/if}
+    </div>
+  {/snippet}
+
   {#snippet item({ item, index, updateItem })}
     {@const isLinked = !!item.sales_order_item_id}
-    <div class="absolute -left-8 hidden h-6 text-sm leading-6 font-semibold text-primary md:block">
-      <span class="opacity-60">#</span>{index + 1}
-    </div>
-
-    <div class="grid grid-cols-1 gap-x-4 gap-y-3 pr-8 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
       {#if isLinked}
         <div class="sm:col-span-2 lg:col-span-2">
           <span class="block text-sm leading-6 font-medium">{m.item()}</span>

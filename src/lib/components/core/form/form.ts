@@ -31,7 +31,7 @@ export const EditableListFieldClass = Object.freeze({
   /** Individual card item */
   Card: 'relative rounded-lg border bg-card p-4',
   /** Remove button positioned top-right */
-  RemoveButton: 'absolute top-2 right-2',
+  RemoveButton: 'absolute top-1.5 right-1.5',
   /** Add button at the bottom */
   AddButton: 'mt-1',
 })

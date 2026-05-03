@@ -36,6 +36,7 @@
   import { UnitOfMeasures } from '$lib/config/uoms'
   import * as m from '$lib/paraglide/messages'
   import type { Item } from '$lib/types/api-types'
+  import { generateId } from '$lib/utils/id'
   import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol } from '$utils/prices'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
@@ -55,6 +56,8 @@
     vatCodeAttr?: VatCodeSummary
     /** Item base price from catalog (shown as suggestion, not auto-filled) */
     itemBasePrice?: number
+    /** UI-only: identifies a batch of items imported together (used for color coding). Stripped in transformOutput. */
+    _groupId?: string
   }
 
   type Props = {
@@ -222,7 +225,7 @@
   function transformOutput(internalItems: InternalLineItem[]): QuotationLineItem[] {
     return internalItems.map(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      ({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, delivery_date, ...rest }, index) => {
+      ({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, _groupId, delivery_date, ...rest }, index) => {
         if (rest.type === 'descriptive')
           return {
             type: 'descriptive',
@@ -358,13 +361,25 @@
 
   /**
    * Append imported line items to the current list.
-   * Called by wrapper components (e.g. SalesOrderItemsListEditor) after import.
+   * All items in this call are tagged with the same `_groupId` for color coding —
+   * callers should invoke `addItems` once per source record (e.g. once per quotation)
+   * so each source gets its own color. If `groupId` is omitted, a fresh one is generated.
    */
-  export function addItems(newItems: QuotationLineItem[]) {
-    const mapped = mapFromApi(newItems)
+  export function addItems(newItems: QuotationLineItem[], options?: { groupId?: string }) {
+    if (newItems.length === 0) return
+    const groupId = options?.groupId ?? generateId()
+    const mapped = mapFromApi(newItems).map(item => ({ ...item, _groupId: groupId }))
     const nonEmpty = items.filter(i => isCompleteItem(i))
     items = [...nonEmpty, ...mapped]
     notifyFormUpdate()
+  }
+
+  /**
+   * Returns the current line items in API shape — used by wrapper components
+   * (e.g. SalesOrderItemsListEditor) to dedupe imports against existing rows.
+   */
+  export function getItems(): QuotationLineItem[] {
+    return transformOutput(items.filter(isCompleteItem))
   }
 </script>
 
@@ -381,6 +396,7 @@
   syncFromForm={false}
   onItemsChange={handleItemsChange}
   allowReorder
+  collapsible
   class={className}>
   {#snippet header({ options })}
     {#if !isDisabled}
@@ -419,14 +435,27 @@
     </div>
   {/snippet}
 
-  {#snippet item({ item, index, updateItem })}
-    <div class="absolute -left-8 hidden h-6 text-sm leading-6 font-semibold text-primary md:block">
-      <span class="opacity-60">#</span>{index + 1}
+  {#snippet collapsedItem({ item, index, groupColorClass })}
+    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 px-3 py-2 hover:bg-muted">
+      <span class="font-semibold {groupColorClass ?? 'text-primary'}"
+        ><span class="opacity-60">#</span>{index + 1}</span>
+      {#if item.type === 'descriptive'}
+        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
+      {:else}
+        <span class="truncate text-sm">
+          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        </span>
+        {#if item.quantity}
+          <span class="text-xs text-muted-foreground">x{item.quantity}</span>
+        {/if}
+      {/if}
     </div>
+  {/snippet}
 
+  {#snippet item({ item, index, updateItem })}
     {#if item.type === 'descriptive'}
       <!-- Descriptive: full-width rich editor -->
-      <div class="pr-8">
+      <div>
         <RichEditorField
           name="{name}.{index}.description"
           label={m.description()}
@@ -440,7 +469,7 @@
       </div>
     {:else}
       <!-- Item type: multi-row grid layout -->
-      <div class="grid grid-cols-1 gap-x-4 gap-y-3 pr-8 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
         <!-- Row 1: Item Selector, Code, Quantity -->
         <ItemSelector
           name="{name}.{index}.item_id"

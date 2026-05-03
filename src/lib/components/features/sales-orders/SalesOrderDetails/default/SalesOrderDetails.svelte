@@ -14,6 +14,7 @@
 </script>
 
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import ActionButton from '$components/core/ActionButton.svelte'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
@@ -54,7 +55,6 @@
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
-  import { goto } from '$app/navigation'
   import { SalesOrderDetailsContract } from './SalesOrderDetails.contract.js'
 
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
@@ -487,7 +487,7 @@
               defaultDeliveryDate={formAPI?.values?.requested_delivery_date} />
 
             {@const currencyCode = formAPI.values.currency}
-            <div class="pr-14">
+            <div class="pr-12">
               <StackedAmountValues
                 title={m.total()}
                 rows={[

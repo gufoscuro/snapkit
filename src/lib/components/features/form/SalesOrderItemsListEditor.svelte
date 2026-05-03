@@ -10,9 +10,12 @@
   import { ImportMenu } from '$components/core/common/import-menu'
   import type { VatCodeSummary } from '$components/features/form/VatCodeSelector.svelte'
   import * as m from '$lib/paraglide/messages'
+  import { generateId } from '$lib/utils/id'
   import type { BasicOption } from '$lib/utils/generics'
   import { floatToPriceString } from '$utils/prices'
   import { apiRequest } from '$utils/request'
+  import { SvelteSet } from 'svelte/reactivity'
+  import { toast } from 'svelte-sonner'
   import type { QuotationLineItem } from './QuotationItemsEditor.svelte'
   import QuotationItemsListEditor from './QuotationItemsListEditor.svelte'
 
@@ -137,10 +140,27 @@
   function handleImport(quotations: QuotationWithItems[]) {
     if (!editorRef) return
 
-    const newItems: QuotationLineItem[] = quotations.flatMap(q => {
-      const productItems: QuotationLineItem[] = (q.items ?? [])
-        .filter(item => item.type === 'item')
-        .map(item => ({
+    // Dedupe against rows already imported earlier (matched by source quotation item id)
+    const existingLinkIds = new SvelteSet(
+      editorRef
+        .getItems()
+        .filter(it => it.type === 'item' && it.quotation_item_id)
+        .map(it => it.quotation_item_id as string),
+    )
+
+    let skipped = 0
+    // One addItems call per source quotation so each gets its own color group.
+    for (const q of quotations) {
+      const productItems: QuotationLineItem[] = []
+      for (const item of q.items ?? []) {
+        if (item.type !== 'item') continue
+        if (existingLinkIds.has(item.id)) {
+          skipped++
+          continue
+        }
+        // Track ids added in this run so the same item from another selected quotation isn't doubled.
+        existingLinkIds.add(item.id)
+        productItems.push({
           type: 'item',
           quotation_item_id: item.id,
           item_id: item.item_id,
@@ -155,19 +175,20 @@
           vat_code_snapshot: item.vat_code_snapshot,
           requested_delivery_date: item.requested_delivery_date,
           delivery_date: item.delivery_date,
-        }))
+        })
+      }
 
-      if (productItems.length === 0) return []
+      if (productItems.length === 0) continue
 
       const referenceText = referenceMessageBuilder(q)
       const referenceItem: QuotationLineItem[] = referenceText
         ? [{ type: 'descriptive', description: referenceText }]
         : []
 
-      return [...referenceItem, ...productItems]
-    })
+      editorRef.addItems([...referenceItem, ...productItems], { groupId: generateId() })
+    }
 
-    editorRef.addItems(newItems)
+    if (skipped > 0) toast.info(m.import_skipped_duplicates({ count: skipped }))
   }
 </script>
 

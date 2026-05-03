@@ -60,18 +60,23 @@
   import * as m from '$lib/paraglide/messages'
   import type { Item, UnitOfMeasure } from '$lib/types/api-types'
   import { toSelectItems, unitOfMeasureLabels } from '$lib/utils/enum-labels'
+  import { generateId } from '$lib/utils/id'
   import type { BasicOption } from '$lib/utils/generics'
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices'
   import { apiRequest } from '$utils/request'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
   import Plus from '@lucide/svelte/icons/plus'
+  import { SvelteSet } from 'svelte/reactivity'
+  import { toast } from 'svelte-sonner'
 
   type InternalLineItem = TransportDocumentLineItem & {
     /** Cached item entity for the selector */
     itemAttr?: Item
     /** Cached VAT code entity for the selector */
     vatCodeAttr?: VatCodeSummary
+    /** UI-only: identifies a batch of items imported together (used for color coding). Stripped in transformOutput. */
+    _groupId?: string
   }
 
   type SourceOrigin = 'sales-order' | 'warehouse-order'
@@ -204,7 +209,7 @@
   function transformOutput(internalItems: InternalLineItem[]): TransportDocumentLineItem[] {
     return internalItems.map(item => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { itemAttr, vatCodeAttr, ...rest } = item
+      const { itemAttr, vatCodeAttr, _groupId, ...rest } = item
       // Strip null/empty link ids so the API only receives the relevant origin
       if (rest.sales_order_item_id) {
         return {
@@ -374,9 +379,25 @@
   }
 
   function handleImport(records: SourceOrderRecord[]) {
-    const imported: InternalLineItem[] = records.flatMap(record => {
+    const existingSoIds = new SvelteSet(
+      items.filter(i => i.sales_order_item_id).map(i => i.sales_order_item_id as string),
+    )
+    const existingWoIds = new SvelteSet(
+      items.filter(i => i.warehouse_order_item_id).map(i => i.warehouse_order_item_id as string),
+    )
+    let skipped = 0
+    const imported: InternalLineItem[] = []
+    // One groupId per source record so each SO/WO gets its own color.
+    for (const record of records) {
+      const groupId = generateId()
       const productItems = (record.items ?? []).filter(it => (it.type ?? 'item') === 'item')
-      return productItems.map(it => {
+      for (const it of productItems) {
+        const existingSet = record.source === 'sales-order' ? existingSoIds : existingWoIds
+        if (existingSet.has(it.id)) {
+          skipped++
+          continue
+        }
+        existingSet.add(it.id)
         const qty = it.quantity ?? it.quantity_requested ?? 0
         const base: InternalLineItem = {
           item_id: it.item_id,
@@ -394,12 +415,14 @@
             it.vat_code_snapshot && it.vat_code_id
               ? ({ ...(it.vat_code_snapshot as VatCodeSummary), id: it.vat_code_id })
               : (defaultVatCode ?? undefined),
+          _groupId: groupId,
         }
         if (record.source === 'sales-order') base.sales_order_item_id = it.id
         else base.warehouse_order_item_id = it.id
-        return base
-      })
-    })
+        imported.push(base)
+      }
+    }
+    if (skipped > 0) toast.info(m.import_skipped_duplicates({ count: skipped }))
     if (imported.length === 0) return
     const nonEmpty = items.filter(i => isCompleteItem(i))
     items = [...nonEmpty, ...imported]
@@ -421,6 +444,7 @@
   syncFromForm={false}
   onItemsChange={handleItemsChange}
   allowReorder
+  collapsible
   class={className}>
   {#snippet header({ options })}
     {#if !isDisabled}
@@ -489,14 +513,28 @@
     </div>
   {/snippet}
 
+  {#snippet collapsedItem({ item, index, groupColorClass })}
+    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 px-3 py-2 hover:bg-muted">
+      <span class="font-semibold {groupColorClass ?? 'text-primary'}"
+        ><span class="opacity-60">#</span>{index + 1}</span>
+      <span class="truncate text-sm">
+        {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+      </span>
+      {#if item.quantity}
+        <span class="text-xs text-muted-foreground">x{item.quantity}</span>
+      {/if}
+      {#if isLinkedItem(item)}
+        <Badge variant="outline" class="text-[10px] font-normal">
+          {item.sales_order_item_id ? m.import_source_sales_order() : m.import_source_warehouse_order()}
+        </Badge>
+      {/if}
+    </div>
+  {/snippet}
+
   {#snippet item({ item, index, updateItem })}
     {@const linked = isLinkedItem(item)}
     {@const linkedFromSO = !!item.sales_order_item_id}
-    <div class="absolute -left-8 hidden h-6 text-sm leading-6 font-semibold text-primary md:block">
-      <span class="opacity-60">#</span>{index + 1}
-    </div>
-
-    <div class="grid grid-cols-1 gap-x-4 gap-y-3 pr-8 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
       {#if linked}
         <div class="sm:col-span-2 lg:col-span-2">
           <span class="block text-sm leading-6 font-medium">{m.item()}</span>
