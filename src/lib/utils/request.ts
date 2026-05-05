@@ -38,33 +38,14 @@ const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 type CacheEntry = { data: unknown; timestamp: number }
 const apiCache = new Map<string, CacheEntry>()
 
-function getBaseUrl(url: string): string {
-  return url.split('?')[0]
-}
-
-function getParentPath(path: string): string | null {
-  const lastSlash = path.lastIndexOf('/')
-  if (lastSlash <= 0) return null
-  return path.substring(0, lastSlash)
-}
-
-export function invalidateCacheByBasePath(url: string): void {
-  const basePath = getBaseUrl(url)
-
-  // Collect the mutation path and all ancestor paths.
-  // e.g. PUT /foo/bar/123/flags → invalidates /foo/bar/123/flags, /foo/bar/123, /foo/bar
-  const pathsToInvalidate = new Set<string>()
-  let current: string | null = basePath
-  while (current) {
-    pathsToInvalidate.add(current)
-    current = getParentPath(current)
-  }
-
-  for (const key of apiCache.keys()) {
-    if (pathsToInvalidate.has(getBaseUrl(key))) {
-      apiCache.delete(key)
-    }
-  }
+/**
+ * Drops every cached GET response. The backend is the source of truth and a
+ * mutation on one resource may have side effects on unrelated reads, so any
+ * non-GET request — and contexts like logout or legal-entity switch — clear
+ * the whole cache rather than trying to map mutation→reads.
+ */
+export function invalidateAllCache(): void {
+  apiCache.clear()
 }
 
 export type SafeApiResponse<T> = {
@@ -148,7 +129,7 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
       if (cached) apiCache.delete(url)
     }
   } else {
-    invalidateCacheByBasePath(url)
+    invalidateAllCache()
   }
 
   const headers: HeadersInit = {
@@ -268,7 +249,7 @@ export async function apiUploadRequest<T>(options: {
     throw new ApiError(data?.message || 'Request failed', result.status, data, result)
   }
 
-  invalidateCacheByBasePath(fullUrl)
+  invalidateAllCache()
 
   return data as T
 }
