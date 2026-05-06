@@ -58,6 +58,11 @@
   let selectedValues = new SvelteSet<string>()
   let open = $state(false)
   let debounceTimeout: ReturnType<typeof setTimeout> | undefined
+  // Mutex for hover preview: only one card can be open at a time.
+  // Without this, bits-ui opens the next preview before the previous one finishes
+  // its exit animation, causing them to overlap in the portal with unpredictable
+  // z-index ordering (the older card can stay on top and block the new one).
+  let hoverOpenValue = $state<string | null>(null)
 
   const options = $derived(items.map(optionMappingFunction))
 
@@ -99,6 +104,7 @@
       load()
     } else {
       if (debounceTimeout) clearTimeout(debounceTimeout)
+      hoverOpenValue = null
     }
   }
 
@@ -151,7 +157,14 @@
             {@const item = getItemByValue(opt.value)}
             {@const locked = item ? isLocked(item, opt.value) : false}
             {#if previewSnippet && item}
-              <HoverCard.Root openDelay={400} closeDelay={0}>
+              <HoverCard.Root
+                openDelay={400}
+                closeDelay={0}
+                open={hoverOpenValue === opt.value}
+                onOpenChange={isOpen => {
+                  if (isOpen) hoverOpenValue = opt.value
+                  else if (hoverOpenValue === opt.value) hoverOpenValue = null
+                }}>
                 <HoverCard.Trigger class="w-full">
                   <Command.Item
                     class={cn('text-xs', locked && 'cursor-not-allowed opacity-50')}
