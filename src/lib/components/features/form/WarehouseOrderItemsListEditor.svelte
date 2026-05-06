@@ -4,9 +4,10 @@
   Each item is either linked to a sales order item (description/UoM/item_id are
   derived server-side from the snapshot) or a free entry. Pricing/VAT are not
   part of the warehouse order item model.
-  Supports importing items from confirmed sales orders for the same customer.
-  @keywords warehouse-order, items, editor, line-items, picking, import, sales-order
-  @uses EditableListField, ItemSelector, ImportMenu
+  The import-from-sales-orders flow lives at the form level (WarehouseOrderDetails);
+  this component exposes `addItems` / `getItems` for that flow to drive imports.
+  @keywords warehouse-order, items, editor, line-items, picking
+  @uses EditableListField, ItemSelector
 -->
 <script lang="ts" module>
   export type WarehouseOrderLineItem = {
@@ -30,7 +31,6 @@
 </script>
 
 <script lang="ts">
-  import { ImportMenu } from '$components/core/common/import-menu'
   import EditableListField from '$components/core/form/EditableListField.svelte'
   import NumberField from '$components/core/form/NumberField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
@@ -45,15 +45,11 @@
   import * as m from '$lib/paraglide/messages'
   import type { Item, UnitOfMeasure } from '$lib/types/api-types'
   import { toSelectItems, unitOfMeasureLabels } from '$lib/utils/enum-labels'
-  import type { BasicOption } from '$lib/utils/generics'
   import { generateId } from '$lib/utils/id'
-  import { apiRequest } from '$utils/request'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
   import Pencil from '@lucide/svelte/icons/pencil'
   import Plus from '@lucide/svelte/icons/plus'
-  import { toast } from 'svelte-sonner'
-  import { SvelteSet } from 'svelte/reactivity'
 
   type InternalLineItem = WarehouseOrderLineItem & {
     /** Cached item entity for the selector */
@@ -62,37 +58,7 @@
     _groupId?: string
   }
 
-  type SalesOrderWithItems = {
-    id: string
-    document_number: string
-    document_date: string
-    customer_id: string
-    sales_transaction_type?: string
-    incoterm?: string
-    items?: SalesOrderItemSnapshot[]
-  }
-
-  type SalesOrderItemSnapshot = {
-    id: string
-    type: 'item' | 'descriptive'
-    item_id: string
-    item_snapshot: Record<string, unknown>
-    description: string
-    quantity: number
-    uom: string
-  }
-
-  const MAX_PREVIEW_ITEMS = 10
-
   type Props = {
-    /** Legal entity ID for API calls */
-    legalEntityId: string | undefined
-    /** Customer ID — gates the import action and filters available sales orders */
-    customerId: string | undefined
-    /** Sales transaction type — passed as filter to the import menu */
-    salesTransactionType?: string
-    /** Incoterm — passed as filter to the import menu */
-    incoterm?: string
     /** Field name for form binding */
     name?: string
     /** Label for the field */
@@ -114,10 +80,6 @@
   }
 
   let {
-    legalEntityId,
-    customerId,
-    salesTransactionType,
-    incoterm,
     name = 'items',
     label = m.warehouse_order_line_items(),
     showLabel = true,
@@ -133,7 +95,6 @@
   const locked = $derived(form?.locked ?? false)
   const isDisabled = $derived(disabled || locked)
   const uomItems = toSelectItems(unitOfMeasureLabels)
-  const canImport = $derived(!!legalEntityId && !!customerId && !isDisabled)
 
   // EditableListField clears the form context for its children, so sub-fields
   // can't auto-resolve their error from `form.errors[name]`. We resolve it here
@@ -235,81 +196,33 @@
     })
   }
 
-  function notifyFormUpdate() {
-    const output = transformOutput(items.filter(isCompleteItem))
-    onChange?.(output)
-    if (form) {
-      form.updateField(name, output as never)
-      // Stale server-side errors (keyed by `{name}.{index}.{field}`) reference
-      // indices that may have shifted after add/remove/reorder, or values that
-      // the user just corrected. Drop them all on every items mutation.
-      form.clearErrorsAtPrefix(`${name}.`)
-    }
-  }
-
+  /**
+   * Handle items change callback from EditableListField. Clears stale server-side
+   * errors keyed under `{name}.{index}.*` since indices may have shifted after
+   * an add/remove/reorder, or the user may have just corrected the field.
+   */
   function handleItemsChange(completedItems: InternalLineItem[]) {
     const output = transformOutput(completedItems)
     onChange?.(output)
     form?.clearErrorsAtPrefix(`${name}.`)
   }
 
-  async function fetchAvailableSalesOrders(search?: string): Promise<SalesOrderWithItems[]> {
-    if (!legalEntityId || !customerId) return []
-    const response = await apiRequest<{ data: SalesOrderWithItems[] }>({
-      url: `/legal-entities/${legalEntityId}/sales-orders`,
-      method: 'GET',
-      queryParams: {
-        state: 'approved',
-        customer_id: customerId,
-        ...(search ? { search } : {}),
-      },
-    })
-    const data = response.data ?? []
-    return data.filter(order => {
-      if (salesTransactionType && order.sales_transaction_type && order.sales_transaction_type !== salesTransactionType)
-        return false
-      if (incoterm && order.incoterm && order.incoterm !== incoterm) return false
-      return true
+  /**
+   * Append imported line items, tagged with a shared `_groupId` for color coding.
+   * Drives the import-from-sales-orders flow that lives in WarehouseOrderDetails.
+   */
+  export function addItems(newItems: WarehouseOrderLineItem[], options?: { groupId?: string }) {
+    editorRef?.addItems(mapFromApi(newItems), {
+      groupId: options?.groupId ?? generateId(),
     })
   }
 
-  function mapSalesOrderToOption(order: SalesOrderWithItems): BasicOption {
-    return { label: order.document_number, value: order.id }
-  }
-
-  function handleImport(orders: SalesOrderWithItems[]) {
-    const existingLinkIds = new SvelteSet(
-      items.filter(i => i.sales_order_item_id).map(i => i.sales_order_item_id as string),
-    )
-    let skipped = 0
-    const imported: InternalLineItem[] = []
-    // One groupId per source order so each sales order gets its own color.
-    for (const order of orders) {
-      const groupId = generateId()
-      for (const item of order.items ?? []) {
-        if (item.type !== 'item') continue
-        if (existingLinkIds.has(item.id)) {
-          skipped++
-          continue
-        }
-        existingLinkIds.add(item.id)
-        imported.push({
-          sales_order_item_id: item.id,
-          item_id: item.item_id,
-          item_snapshot: item.item_snapshot,
-          description: item.description,
-          quantity_requested: item.quantity,
-          uom: item.uom,
-          itemAttr: item.item_snapshot ? ({ id: item.item_id, ...item.item_snapshot } as Item) : undefined,
-          _groupId: groupId,
-        })
-      }
-    }
-    if (skipped > 0) toast.info(m.import_skipped_duplicates({ count: skipped }))
-    if (imported.length === 0) return
-    const nonEmpty = items.filter(i => isCompleteItem(i))
-    items = [...nonEmpty, ...imported]
-    notifyFormUpdate()
+  /**
+   * Returns the current line items in API shape — used by WarehouseOrderDetails
+   * to dedupe imports against rows already in the editor.
+   */
+  export function getItems(): WarehouseOrderLineItem[] {
+    return (editorRef?.getItems() ?? []) as WarehouseOrderLineItem[]
   }
 </script>
 
@@ -332,43 +245,6 @@
   {#snippet header({ options })}
     {#if !isDisabled}
       <div class="flex w-full items-center justify-end gap-2">
-        {#if canImport}
-          <ImportMenu
-            fetchFunction={fetchAvailableSalesOrders}
-            optionMappingFunction={mapSalesOrderToOption}
-            onimport={handleImport}
-            label={m.import_from_sales_orders()}>
-            {#snippet previewSnippet(order)}
-              {@const productItems = (order.items ?? []).filter(i => i.type === 'item')}
-              <div class="space-y-2">
-                <div>
-                  <p class="text-sm font-semibold">{order.document_number}</p>
-                  <p class="text-xs text-muted-foreground">{new Date(order.document_date).toLocaleDateString()}</p>
-                </div>
-                <div class="text-xs text-muted-foreground">
-                  {productItems.length}
-                  {m.items()}
-                </div>
-                {#if productItems.length > 0}
-                  <div class="space-y-1 border-t pt-2">
-                    {#each productItems.slice(0, MAX_PREVIEW_ITEMS) as item, idx (item.id + idx)}
-                      <div class="flex items-baseline justify-between gap-2 text-xs">
-                        <span class="truncate">{item.item_snapshot?.name ?? item.item_snapshot?.code ?? '-'}</span>
-                        <span class="shrink-0 text-muted-foreground">x{item.quantity}</span>
-                      </div>
-                    {/each}
-                    {#if productItems.length > MAX_PREVIEW_ITEMS}
-                      <p class="text-xs text-muted-foreground">
-                        +{productItems.length - MAX_PREVIEW_ITEMS}
-                        {m.items()}…
-                      </p>
-                    {/if}
-                  </div>
-                {/if}
-              </div>
-            {/snippet}
-          </ImportMenu>
-        {/if}
         <Button variant="outline" size="sm" onclick={options.toggleDragAndDrop}>
           {#if options.dragAndDropActive}
             <Pencil class="mr-1 size-4" />

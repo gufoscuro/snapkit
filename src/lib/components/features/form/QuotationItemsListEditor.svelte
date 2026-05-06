@@ -145,6 +145,7 @@
 
   // Internal items state
   let items = $state<InternalLineItem[]>([])
+  let editableListFieldRef: EditableListField<InternalLineItem> | undefined = $state()
 
   function createEmptyItem(): InternalLineItem {
     return {
@@ -167,9 +168,8 @@
   }
 
   // When defaultVatCode arrives (async from commercial terms), apply to items with empty vat_code_id.
-  // Uses untrack on items to avoid read→write loop.
-  // Calls notifyFormUpdate so items that become complete are pushed to the form field
-  // (EditableListField only commits on its own internal mutations).
+  // Uses untrack on items to avoid read→write loop. Flushes via the editor ref so items that
+  // become complete are pushed to the form field (EditableListField only commits on its own internal mutations).
   $effect(() => {
     const vatCode = defaultVatCode
     if (!vatCode) return
@@ -186,7 +186,7 @@
         vatCodeAttr: vatCode,
       }
     })
-    notifyFormUpdate()
+    editableListFieldRef?.flush()
   })
 
   // When defaultDeliveryDate changes, propagate it to empty items (no item_id yet) whose
@@ -213,7 +213,7 @@
         delivery_date: followsDefault(item.delivery_date) ? normalized : item.delivery_date,
       }
     })
-    notifyFormUpdate()
+    editableListFieldRef?.flush()
   })
 
   function isCompleteItem(item: InternalLineItem): boolean {
@@ -335,24 +335,9 @@
   }
 
   /**
-   * Notify onChange and form context of the current items state.
-   * EditableListField calls this internally via onItemsChange for its own mutations,
-   * but external mutations (addItems) must call this directly.
-   */
-  function notifyFormUpdate() {
-    const output = transformOutput(items.filter(isCompleteItem))
-    onChange?.(output)
-    if (form) {
-      form.updateField(name, output as never)
-      // Stale server-side errors (keyed by `{name}.{index}.{field}`) reference
-      // indices that may have shifted after add/remove/reorder, or values that
-      // the user just corrected. Drop them all on every items mutation.
-      form.clearErrorsAtPrefix(`${name}.`)
-    }
-  }
-
-  /**
-   * Handle items change callback from EditableListField
+   * Handle items change callback from EditableListField. Clears stale server-side
+   * errors keyed under `{name}.{index}.*` since indices may have shifted after
+   * an add/remove/reorder, or the user may have just corrected the field.
    */
   function handleItemsChange(completedItems: InternalLineItem[]) {
     const output = transformOutput(completedItems)
@@ -361,18 +346,14 @@
   }
 
   /**
-   * Append imported line items to the current list.
-   * All items in this call are tagged with the same `_groupId` for color coding —
-   * callers should invoke `addItems` once per source record (e.g. once per quotation)
-   * so each source gets its own color. If `groupId` is omitted, a fresh one is generated.
+   * Append imported line items, tagged with a shared `_groupId` for color coding.
+   * Callers should invoke once per source record (e.g. once per quotation) so each
+   * source gets its own color. If `groupId` is omitted, a fresh one is generated.
    */
   export function addItems(newItems: QuotationLineItem[], options?: { groupId?: string }) {
-    if (newItems.length === 0) return
-    const groupId = options?.groupId ?? generateId()
-    const mapped = mapFromApi(newItems).map(item => ({ ...item, _groupId: groupId }))
-    const nonEmpty = items.filter(i => isCompleteItem(i))
-    items = [...nonEmpty, ...mapped]
-    notifyFormUpdate()
+    editableListFieldRef?.addItems(mapFromApi(newItems), {
+      groupId: options?.groupId ?? generateId(),
+    })
   }
 
   /**
@@ -380,11 +361,12 @@
    * (e.g. SalesOrderItemsListEditor) to dedupe imports against existing rows.
    */
   export function getItems(): QuotationLineItem[] {
-    return transformOutput(items.filter(isCompleteItem))
+    return (editableListFieldRef?.getItems() ?? []) as QuotationLineItem[]
   }
 </script>
 
 <EditableListField
+  bind:this={editableListFieldRef}
   {name}
   {label}
   {showLabel}

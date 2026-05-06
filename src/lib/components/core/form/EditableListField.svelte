@@ -194,8 +194,19 @@
     return result
   })
 
+  /**
+   * An item is considered editable unless it carries an explicit `is_editable: false`
+   * flag (a backend-driven convention used to lock rows imported from upstream
+   * documents, etc.). Non-editable items render compact-only in collapsible mode.
+   */
+  function isItemEditable(currentItem: T): boolean {
+    return (currentItem as Record<string, unknown>).is_editable !== false
+  }
+
   function isItemExpanded(index: number, currentItem: T): boolean {
     if (!collapsible) return true
+    // Non-editable rows are forced compact: no expand even on errors / incomplete state.
+    if (!isItemEditable(currentItem)) return false
     if (expandedIndices.has(index)) return true
     if (errorIndices.has(index)) return true
     if (!isCompleteItem(currentItem)) return true
@@ -393,6 +404,45 @@
       items = [createEmptyItem()]
     }
   })
+
+  // ---------------------------------------------------------------------------
+  // Public API exposed via `bind:this`
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Append items from an external source (typically an import flow). Existing
+   * incomplete rows are dropped first to keep the list tidy. If `groupId` is
+   * provided, every appended item is tagged with `_groupId` for color-coding.
+   */
+  export function addItems(newItems: T[], options?: { groupId?: string }) {
+    if (newItems.length === 0) return
+    const groupId = options?.groupId
+    const tagged = groupId
+      ? (newItems.map(it => ({ ...it, _groupId: groupId })) as T[])
+      : newItems
+    const nonEmpty = items.filter(isCompleteItem)
+    items = [...nonEmpty, ...tagged]
+    flushFormUpdate()
+  }
+
+  /**
+   * Returns the current complete items in form-output shape (after `transformOutput`
+   * if provided, with `_groupId` stripped). Used by parents to dedup imports
+   * against rows already in the editor.
+   */
+  export function getItems(): unknown[] {
+    const completedItems = items.filter(isCompleteItem).map(stripGroupId)
+    return transformOutput ? transformOutput(completedItems) : completedItems
+  }
+
+  /**
+   * Force the current items state to be committed to the form context now.
+   * Use after mutating `items` directly via `bind:items` from a $effect or
+   * similar — bypasses the debounced `scheduleFormUpdate`.
+   */
+  export function flush() {
+    flushFormUpdate()
+  }
 </script>
 
 <div class="w-full {className}">
@@ -456,35 +506,19 @@
           {#if expanded}
             <div onfocusin={collapsible ? () => expandedIndices.add(index) : undefined}>
               {#if headerMode}
-                <div class="mb-3 flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-2">
-                    <span class="font-semibold {groupColors?.text ?? 'text-primary'}"
-                      ><span class="opacity-60">#</span>{index + 1}</span>
-                    {#if showCollapseAction}
-                      <Button variant="ghost" size="sm" onclick={() => toggleExpanded(index)}>
-                        <ChevronUp class="mr-1 size-4" />
-                        {m.collapse_item()}
-                      </Button>
-                    {/if}
-                  </div>
-                  {#if !isDisabled}
-                    {#if removeButton}
-                      {@render removeButton({
-                        removeItem: () => handleRemove(index),
-                        index,
-                        disabled: isDisabled,
-                      })}
-                    {:else}
-                      <ActionButton
-                        variant="ghost"
-                        size="icon"
-                        class="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        tooltip={m.remove_table_resource_line()}
-                        disabled={isDisabled}
-                        onclick={() => handleRemove(index)}>
-                        <X class="size-4" />
-                      </ActionButton>
-                    {/if}
+                <div
+                  class="mb-3 flex h-10 items-center justify-between gap-2 border-t border-l border-transparent pr-1.5 pl-3">
+                  <span class="font-semibold {groupColors?.text ?? 'text-primary'}"
+                    ><span class="opacity-60">#</span>{index + 1}</span>
+                  {#if showCollapseAction}
+                    <ActionButton
+                      variant="ghost"
+                      size="icon"
+                      class="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      tooltip={m.collapse_item()}
+                      onclick={() => toggleExpanded(index)}>
+                      <ChevronUp class="size-4" />
+                    </ActionButton>
                   {/if}
                 </div>
               {/if}
@@ -499,12 +533,15 @@
               })}
             </div>
           {:else}
+            {@const editable = isItemEditable(currentItem)}
             <div
               role="button"
-              tabindex="0"
-              class="cursor-pointer"
-              onclick={() => toggleExpanded(index)}
+              tabindex={editable ? 0 : -1}
+              aria-disabled={!editable}
+              class={editable ? 'cursor-pointer' : 'cursor-not-allowed'}
+              onclick={() => editable && toggleExpanded(index)}
               onkeydown={e => {
+                if (!editable) return
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
                   toggleExpanded(index)
