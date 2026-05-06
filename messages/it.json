@@ -893,6 +893,7 @@
   "no_warehouses_found": "Nessun magazzino trovato",
   "linked_to_sales_order_item": "Collegato a riga ordine di vendita",
   "import_from_sales_orders": "Importa da ordini di vendita",
+  "import_from_warehouse_orders": "Importa da ordini di magazzino",
   "handed_over_on": "Mandato in prelievo il",
   "uom": "UM",
   "customer_purchase_order": "OdA Cliente",

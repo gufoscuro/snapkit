@@ -2,10 +2,11 @@
   @component TransportDocumentItemsListEditor
   @description Card-based editor for transport document line items with pricing/VAT/weights.
   Each item is either linked to a sales order item, a warehouse order item, or a free entry.
-  Supports a unified import flow that lets the user pick approved sales orders or
-  warehouse orders for the same customer in one dropdown.
-  @keywords transport-document, ddt, items, editor, line-items, import, sales-order, warehouse-order
-  @uses EditableListField, ItemSelector, VatCodeSelector, ImportMenu
+  The import-from-orders flow lives at the form level (TransportDocumentDetails) which
+  exposes two separate ImportMenu (SO and WO); this component exposes `addItems` /
+  `getItems` for those flows to drive imports.
+  @keywords transport-document, ddt, items, editor, line-items
+  @uses EditableListField, ItemSelector, VatCodeSelector
 -->
 <script lang="ts" module>
   export type TransportDocumentLineItem = {
@@ -41,7 +42,6 @@
 </script>
 
 <script lang="ts">
-  import { ImportMenu } from '$components/core/common/import-menu'
   import EditableListField from '$components/core/form/EditableListField.svelte'
   import NumberField from '$components/core/form/NumberField.svelte'
   import PriceField from '$components/core/form/PriceField.svelte'
@@ -60,16 +60,12 @@
   import * as m from '$lib/paraglide/messages'
   import type { Item, UnitOfMeasure } from '$lib/types/api-types'
   import { toSelectItems, unitOfMeasureLabels } from '$lib/utils/enum-labels'
-  import type { BasicOption } from '$lib/utils/generics'
   import { generateId } from '$lib/utils/id'
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices'
-  import { apiRequest } from '$utils/request'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
   import Pencil from '@lucide/svelte/icons/pencil'
   import Plus from '@lucide/svelte/icons/plus'
-  import { toast } from 'svelte-sonner'
-  import { SvelteSet } from 'svelte/reactivity'
 
   type InternalLineItem = TransportDocumentLineItem & {
     /** Cached item entity for the selector */
@@ -80,46 +76,7 @@
     _groupId?: string
   }
 
-  type SourceOrigin = 'sales-order' | 'warehouse-order'
-
-  type SourceOrderItem = {
-    id: string
-    type?: 'item' | 'descriptive'
-    item_id: string
-    item_snapshot: Record<string, unknown>
-    description: string
-    /** Sales order: `quantity`. Warehouse order: `quantity_requested`. Normalized below. */
-    quantity?: number
-    quantity_requested?: number
-    uom: string
-    unit_price?: number
-    vat_code_id?: string
-    vat_code_snapshot?: Record<string, unknown>
-  }
-
-  type SourceOrderRecord = {
-    /** Discriminator added client-side for the unified import dropdown */
-    source: SourceOrigin
-    id: string
-    document_number: string
-    document_date: string
-    customer_id: string
-    sales_transaction_type?: string
-    incoterm?: string
-    items?: SourceOrderItem[]
-  }
-
-  const MAX_PREVIEW_ITEMS = 10
-
   type Props = {
-    /** Legal entity ID for API calls */
-    legalEntityId: string | undefined
-    /** Customer ID — gates the import action and filters available source orders */
-    customerId: string | undefined
-    /** Sales transaction type — passed as filter to the import menu */
-    salesTransactionType?: string
-    /** Incoterm — passed as filter to the import menu */
-    incoterm?: string
     /** Field name for form binding */
     name?: string
     /** Label for the field */
@@ -145,10 +102,6 @@
   }
 
   let {
-    legalEntityId,
-    customerId,
-    salesTransactionType,
-    incoterm,
     name = 'items',
     label = m.transport_document_line_items(),
     showLabel = true,
@@ -166,7 +119,6 @@
   const locked = $derived(form?.locked ?? false)
   const isDisabled = $derived(disabled || locked)
   const uomItems = toSelectItems(unitOfMeasureLabels)
-  const canImport = $derived(!!legalEntityId && !!customerId && !isDisabled)
 
   // EditableListField clears the form context for its children, so sub-fields
   // can't auto-resolve their error from `form.errors[name]`. We resolve it here
@@ -310,124 +262,33 @@
     })
   }
 
-  function notifyFormUpdate() {
-    const output = transformOutput(items.filter(isCompleteItem))
-    onChange?.(output)
-    if (form) {
-      form.updateField(name, output as never)
-      form.clearErrorsAtPrefix(`${name}.`)
-    }
-  }
-
+  /**
+   * Handle items change callback from EditableListField. Clears stale server-side
+   * errors keyed under `{name}.{index}.*` since indices may have shifted after
+   * an add/remove/reorder, or the user may have just corrected the field.
+   */
   function handleItemsChange(completedItems: InternalLineItem[]) {
     const output = transformOutput(completedItems)
     onChange?.(output)
     form?.clearErrorsAtPrefix(`${name}.`)
   }
 
-  /** Filter source records by sales_transaction_type / incoterm if the form already has them set. */
-  function filterByCurrentDocument(records: SourceOrderRecord[]): SourceOrderRecord[] {
-    return records.filter(r => {
-      if (salesTransactionType && r.sales_transaction_type && r.sales_transaction_type !== salesTransactionType)
-        return false
-      if (incoterm && r.incoterm && r.incoterm !== incoterm) return false
-      return true
+  /**
+   * Append imported line items, tagged with a shared `_groupId` for color coding.
+   * Drives the import-from-orders flow that lives in TransportDocumentDetails.
+   */
+  export function addItems(newItems: TransportDocumentLineItem[], options?: { groupId?: string }) {
+    editorRef?.addItems(mapFromApi(newItems), {
+      groupId: options?.groupId ?? generateId(),
     })
   }
 
   /**
-   * Unified fetch: in parallel grab approved sales orders and warehouse orders
-   * for the current customer, tag each with its origin, and return a merged list.
+   * Returns the current line items in API shape — used by TransportDocumentDetails
+   * to dedupe imports against rows already in the editor.
    */
-  async function fetchAvailableSources(search?: string): Promise<SourceOrderRecord[]> {
-    if (!legalEntityId || !customerId) return []
-    const baseParams = {
-      customer_id: customerId,
-      ...(search ? { search } : {}),
-    }
-    const [salesOrdersResp, warehouseOrdersResp] = await Promise.all([
-      apiRequest<{ data: Omit<SourceOrderRecord, 'source'>[] }>({
-        url: `/legal-entities/${legalEntityId}/sales-orders`,
-        method: 'GET',
-        queryParams: { ...baseParams, state: 'approved' },
-      }),
-      apiRequest<{ data: Omit<SourceOrderRecord, 'source'>[] }>({
-        url: `/legal-entities/${legalEntityId}/warehouse-orders`,
-        method: 'GET',
-        queryParams: baseParams,
-      }),
-    ])
-
-    const sales: SourceOrderRecord[] = (salesOrdersResp.data ?? []).map(o => ({ ...o, source: 'sales-order' }))
-    const warehouses: SourceOrderRecord[] = (warehouseOrdersResp.data ?? []).map(o => ({
-      ...o,
-      source: 'warehouse-order',
-    }))
-
-    return filterByCurrentDocument([...sales, ...warehouses])
-  }
-
-  function sourceLabel(record: SourceOrderRecord): string {
-    return record.source === 'sales-order' ? m.import_source_sales_order() : m.import_source_warehouse_order()
-  }
-
-  function mapSourceToOption(record: SourceOrderRecord): BasicOption {
-    return {
-      label: `${record.document_number} · ${sourceLabel(record)}`,
-      // Prefix the value with the source so SO+WO ids never collide
-      value: `${record.source}:${record.id}`,
-    }
-  }
-
-  function handleImport(records: SourceOrderRecord[]) {
-    const existingSoIds = new SvelteSet(
-      items.filter(i => i.sales_order_item_id).map(i => i.sales_order_item_id as string),
-    )
-    const existingWoIds = new SvelteSet(
-      items.filter(i => i.warehouse_order_item_id).map(i => i.warehouse_order_item_id as string),
-    )
-    let skipped = 0
-    const imported: InternalLineItem[] = []
-    // One groupId per source record so each SO/WO gets its own color.
-    for (const record of records) {
-      const groupId = generateId()
-      const productItems = (record.items ?? []).filter(it => (it.type ?? 'item') === 'item')
-      for (const it of productItems) {
-        const existingSet = record.source === 'sales-order' ? existingSoIds : existingWoIds
-        if (existingSet.has(it.id)) {
-          skipped++
-          continue
-        }
-        existingSet.add(it.id)
-        const qty = it.quantity ?? it.quantity_requested ?? 0
-        const base: InternalLineItem = {
-          item_id: it.item_id,
-          item_snapshot: it.item_snapshot,
-          description: it.description,
-          quantity: qty,
-          uom: it.uom,
-          unit_price: it.unit_price ?? 0,
-          vat_code_id: it.vat_code_id,
-          vat_code_snapshot: it.vat_code_snapshot,
-          weight_gross: 0,
-          weight_net: 0,
-          itemAttr: it.item_snapshot ? ({ id: it.item_id, ...it.item_snapshot } as Item) : undefined,
-          vatCodeAttr:
-            it.vat_code_snapshot && it.vat_code_id
-              ? { ...(it.vat_code_snapshot as VatCodeSummary), id: it.vat_code_id }
-              : (defaultVatCode ?? undefined),
-          _groupId: groupId,
-        }
-        if (record.source === 'sales-order') base.sales_order_item_id = it.id
-        else base.warehouse_order_item_id = it.id
-        imported.push(base)
-      }
-    }
-    if (skipped > 0) toast.info(m.import_skipped_duplicates({ count: skipped }))
-    if (imported.length === 0) return
-    const nonEmpty = items.filter(i => isCompleteItem(i))
-    items = [...nonEmpty, ...imported]
-    notifyFormUpdate()
+  export function getItems(): TransportDocumentLineItem[] {
+    return (editorRef?.getItems() ?? []) as TransportDocumentLineItem[]
   }
 </script>
 
@@ -450,46 +311,6 @@
   {#snippet header({ options })}
     {#if !isDisabled}
       <div class="flex w-full items-center justify-end gap-2">
-        {#if canImport}
-          <ImportMenu
-            fetchFunction={fetchAvailableSources}
-            optionMappingFunction={mapSourceToOption}
-            onimport={handleImport}
-            label={m.import_from_orders()}>
-            {#snippet previewSnippet(record)}
-              {@const productItems = (record.items ?? []).filter(it => (it.type ?? 'item') === 'item')}
-              <div class="space-y-2">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <p class="text-sm font-semibold">{record.document_number}</p>
-                    <Badge variant="outline" class="text-[10px] font-normal">{sourceLabel(record)}</Badge>
-                  </div>
-                  <p class="text-xs text-muted-foreground">{new Date(record.document_date).toLocaleDateString()}</p>
-                </div>
-                <div class="text-xs text-muted-foreground">
-                  {productItems.length}
-                  {m.items()}
-                </div>
-                {#if productItems.length > 0}
-                  <div class="space-y-1 border-t pt-2">
-                    {#each productItems.slice(0, MAX_PREVIEW_ITEMS) as item, idx (item.id + idx)}
-                      <div class="flex items-baseline justify-between gap-2 text-xs">
-                        <span class="truncate">{item.item_snapshot?.name ?? item.item_snapshot?.code ?? '-'}</span>
-                        <span class="shrink-0 text-muted-foreground">x{item.quantity ?? item.quantity_requested}</span>
-                      </div>
-                    {/each}
-                    {#if productItems.length > MAX_PREVIEW_ITEMS}
-                      <p class="text-xs text-muted-foreground">
-                        +{productItems.length - MAX_PREVIEW_ITEMS}
-                        {m.items()}…
-                      </p>
-                    {/if}
-                  </div>
-                {/if}
-              </div>
-            {/snippet}
-          </ImportMenu>
-        {/if}
         <Button variant="outline" size="sm" onclick={options.toggleDragAndDrop}>
           {#if options.dragAndDropActive}
             <Pencil class="mr-1 size-4" />

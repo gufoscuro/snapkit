@@ -891,6 +891,7 @@
   "no_warehouses_found": "No warehouses found",
   "linked_to_sales_order_item": "Linked to sales order item",
   "import_from_sales_orders": "Import from sales orders",
+  "import_from_warehouse_orders": "Import from warehouse orders",
   "handed_over_on": "Handed over on",
   "uom": "UoM",
   "customer_purchase_order": "Customer PO",
