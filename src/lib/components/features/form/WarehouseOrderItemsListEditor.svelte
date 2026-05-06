@@ -45,14 +45,15 @@
   import * as m from '$lib/paraglide/messages'
   import type { Item, UnitOfMeasure } from '$lib/types/api-types'
   import { toSelectItems, unitOfMeasureLabels } from '$lib/utils/enum-labels'
-  import { generateId } from '$lib/utils/id'
   import type { BasicOption } from '$lib/utils/generics'
+  import { generateId } from '$lib/utils/id'
   import { apiRequest } from '$utils/request'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
+  import Pencil from '@lucide/svelte/icons/pencil'
   import Plus from '@lucide/svelte/icons/plus'
-  import { SvelteSet } from 'svelte/reactivity'
   import { toast } from 'svelte-sonner'
+  import { SvelteSet } from 'svelte/reactivity'
 
   type InternalLineItem = WarehouseOrderLineItem & {
     /** Cached item entity for the selector */
@@ -369,8 +370,13 @@
           </ImportMenu>
         {/if}
         <Button variant="outline" size="sm" onclick={options.toggleDragAndDrop}>
-          <ArrowUpDown class="mr-1 size-4" />
-          {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
+          {#if options.dragAndDropActive}
+            <Pencil class="mr-1 size-4" />
+            {m.edit_items()}
+          {:else}
+            <ArrowUpDown class="mr-1 size-4" />
+            {m.reorder_items()}
+          {/if}
         </Button>
       </div>
       <div class="my-8">

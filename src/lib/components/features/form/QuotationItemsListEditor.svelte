@@ -40,6 +40,7 @@
   import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol } from '$utils/prices'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
+  import Pencil from '@lucide/svelte/icons/pencil'
   import Plus from '@lucide/svelte/icons/plus'
   import { untrack, type Snippet } from 'svelte'
   import type { QuotationLineItem } from './QuotationItemsEditor.svelte'
@@ -408,8 +409,13 @@
           variant={options.dragAndDropActive ? 'outline' : 'outline'}
           size="sm"
           onclick={options.toggleDragAndDrop}>
-          <ArrowUpDown class="mr-1 size-4" />
-          {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
+          {#if options.dragAndDropActive}
+            <Pencil class="mr-1 size-4" />
+            {m.edit_items()}
+          {:else}
+            <ArrowUpDown class="mr-1 size-4" />
+            {m.reorder_items()}
+          {/if}
         </Button>
       </div>
       <div class="my-8">

@@ -700,7 +700,7 @@
   "switch_to_discount_amount": "Use amount",
   "switch_to_discount_percent": "Use %",
   "reorder_items": "Reorder",
-  "done_reordering": "Done",
+  "edit_items": "Edit",
   "collapse_item": "Collapse",
   "import_skipped_duplicates": "Skipped {count} item(s) already present",
   "add_item_line": "Add item",

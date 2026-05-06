@@ -60,15 +60,16 @@
   import * as m from '$lib/paraglide/messages'
   import type { Item, UnitOfMeasure } from '$lib/types/api-types'
   import { toSelectItems, unitOfMeasureLabels } from '$lib/utils/enum-labels'
-  import { generateId } from '$lib/utils/id'
   import type { BasicOption } from '$lib/utils/generics'
+  import { generateId } from '$lib/utils/id'
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices'
   import { apiRequest } from '$utils/request'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
+  import Pencil from '@lucide/svelte/icons/pencil'
   import Plus from '@lucide/svelte/icons/plus'
-  import { SvelteSet } from 'svelte/reactivity'
   import { toast } from 'svelte-sonner'
+  import { SvelteSet } from 'svelte/reactivity'
 
   type InternalLineItem = TransportDocumentLineItem & {
     /** Cached item entity for the selector */
@@ -245,7 +246,7 @@
         ...item,
         itemAttr: itemSnapshot ? ({ id: item.item_id, ...itemSnapshot } as Item) : undefined,
         vatCodeAttr:
-          vatSnapshot && item.vat_code_id ? ({ ...(vatSnapshot as VatCodeSummary), id: item.vat_code_id }) : undefined,
+          vatSnapshot && item.vat_code_id ? { ...(vatSnapshot as VatCodeSummary), id: item.vat_code_id } : undefined,
       }
     })
   }
@@ -413,7 +414,7 @@
           itemAttr: it.item_snapshot ? ({ id: it.item_id, ...it.item_snapshot } as Item) : undefined,
           vatCodeAttr:
             it.vat_code_snapshot && it.vat_code_id
-              ? ({ ...(it.vat_code_snapshot as VatCodeSummary), id: it.vat_code_id })
+              ? { ...(it.vat_code_snapshot as VatCodeSummary), id: it.vat_code_id }
               : (defaultVatCode ?? undefined),
           _groupId: groupId,
         }
@@ -490,8 +491,13 @@
           </ImportMenu>
         {/if}
         <Button variant="outline" size="sm" onclick={options.toggleDragAndDrop}>
-          <ArrowUpDown class="mr-1 size-4" />
-          {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
+          {#if options.dragAndDropActive}
+            <Pencil class="mr-1 size-4" />
+            {m.edit_items()}
+          {:else}
+            <ArrowUpDown class="mr-1 size-4" />
+            {m.reorder_items()}
+          {/if}
         </Button>
       </div>
       <div class="my-8">

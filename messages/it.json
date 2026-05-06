@@ -702,7 +702,7 @@
   "switch_to_discount_amount": "Indica importo",
   "switch_to_discount_percent": "Indica %",
   "reorder_items": "Riordina",
-  "done_reordering": "Conferma riordino",
+  "edit_items": "Modifica",
   "collapse_item": "Comprimi",
   "import_skipped_duplicates": "Saltate {count} righe già presenti",
   "add_item_line": "Aggiungi articolo",

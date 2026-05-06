@@ -282,6 +282,13 @@
 
   function handleDndFinalize(e: CustomEvent<{ items: DndItem[] }>) {
     dndItems = e.detail.items
+    // Mirror the new order to `items` and flush immediately so a save while DnD
+    // is still active (i.e. the user reorders and submits without clicking "Done")
+    // persists the reorder. Indices shift, so drop user-expand state to avoid stale mappings.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    items = dndItems.map(({ _dndId, ...rest }) => rest as unknown as T)
+    expandedIndices.clear()
+    flushFormUpdate()
   }
 
   // Debounce timer for form updates
