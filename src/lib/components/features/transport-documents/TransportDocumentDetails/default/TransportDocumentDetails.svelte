@@ -453,9 +453,10 @@
           })
         }
 
-        if (lines.length === 0) continue
+        const itemLineCount = lines.filter(l => l.type === 'item').length
+        if (itemLineCount === 0) continue
         itemsEditorRef!.addItems(lines, { groupId: generateId() })
-        added += lines.filter(l => l.type === 'item').length
+        added += itemLineCount
       }
 
       return { added, skipped }
