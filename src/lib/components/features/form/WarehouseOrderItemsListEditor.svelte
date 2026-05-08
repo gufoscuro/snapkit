@@ -11,21 +11,25 @@
 -->
 <script lang="ts" module>
   export type WarehouseOrderLineItem = {
+    /** Line type: `item` carries quantity/UOM, `descriptive` is a free-text annotation. */
+    type: 'item' | 'descriptive'
     /** Persisted UUID — present only on existing items */
     id?: string
-    /** Linked sales order item UUID — when set, item_id/description/uom are derived server-side */
+    /** Linked sales order item UUID — when set on an `item` line, item_id/description/uom
+     * are derived server-side. On a `descriptive` line it is an FK back to a source SO line
+     * for chain traceability. */
     sales_order_item_id?: string
-    /** Item UUID — required when sales_order_item_id is not provided */
+    /** Item UUID — required for `item` lines when sales_order_item_id is not provided */
     item_id?: string
     /** Cached item snapshot for display */
     item_snapshot?: Record<string, unknown>
-    /** Description — required when sales_order_item_id is not provided */
+    /** Description — required for both `item` (when not linked) and `descriptive` lines */
     description?: string
-    /** Requested quantity */
-    quantity_requested: number
+    /** Requested quantity. Required on `item` lines, omitted on `descriptive`. */
+    quantity_requested?: number
     /** Picked quantity — read-only here, mutated via the pick-items endpoint */
     quantity_picked?: number
-    /** Unit of measure — required when sales_order_item_id is not provided */
+    /** Unit of measure (`item` lines only when not linked) */
     uom?: string
   }
 </script>
@@ -33,6 +37,7 @@
 <script lang="ts">
   import EditableListField from '$components/core/form/EditableListField.svelte'
   import NumberField from '$components/core/form/NumberField.svelte'
+  import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { FormFieldClass } from '$components/core/form/form'
@@ -108,6 +113,7 @@
 
   function createEmptyItem(): InternalLineItem {
     return {
+      type: 'item',
       sales_order_item_id: undefined,
       item_id: '',
       description: '',
@@ -119,24 +125,37 @@
   }
 
   function isCompleteItem(item: InternalLineItem): boolean {
-    if (item.sales_order_item_id) {
-      return item.quantity_requested > 0
+    if (item.type === 'descriptive') {
+      return !!item.description
     }
-    return !!item.item_id && !!item.uom && !!item.description && item.quantity_requested > 0
+    const qty = item.quantity_requested ?? 0
+    if (item.sales_order_item_id) {
+      return qty > 0
+    }
+    return !!item.item_id && !!item.uom && !!item.description && qty > 0
   }
 
   function transformOutput(internalItems: InternalLineItem[]): WarehouseOrderLineItem[] {
     return internalItems.map(item => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { itemAttr, _groupId, quantity_picked, ...rest } = item
+      if (rest.type === 'descriptive') {
+        return {
+          type: 'descriptive',
+          description: rest.description ?? '',
+          ...(rest.id ? { id: rest.id } : {}),
+          ...(rest.sales_order_item_id ? { sales_order_item_id: rest.sales_order_item_id } : {}),
+        }
+      }
       if (rest.sales_order_item_id) {
         return {
+          type: 'item',
           sales_order_item_id: rest.sales_order_item_id,
           quantity_requested: rest.quantity_requested,
           ...(rest.id ? { id: rest.id } : {}),
         }
       }
-      return rest
+      return { ...rest, type: 'item' }
     })
   }
 
@@ -145,6 +164,7 @@
       const snapshot = item.item_snapshot as Record<string, unknown> | undefined
       return {
         ...item,
+        type: item.type ?? 'item',
         itemAttr: snapshot ? ({ id: item.item_id, ...snapshot } as Item) : undefined,
       }
     })
@@ -265,11 +285,15 @@
     <div class="flex w-full cursor-grab items-center gap-3 rounded border bg-muted/50 px-3 py-2">
       <GripVertical class="size-4 text-muted-foreground" />
       <span class="font-semibold text-primary"><span class="opacity-60">#</span>{index + 1}</span>
-      <span class="truncate text-sm">
-        {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
-      </span>
-      {#if item.quantity_requested}
-        <span class="text-xs text-muted-foreground">x{item.quantity_requested}</span>
+      {#if item.type === 'descriptive'}
+        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
+      {:else}
+        <span class="truncate text-sm">
+          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        </span>
+        {#if item.quantity_requested}
+          <span class="text-xs text-muted-foreground">x{item.quantity_requested}</span>
+        {/if}
       {/if}
     </div>
   {/snippet}
@@ -278,18 +302,36 @@
     <div class="flex w-full items-center gap-3 rounded border bg-muted/50 px-3 py-2 hover:bg-muted">
       <span class="font-semibold {groupColorClass ?? 'text-primary'}"
         ><span class="opacity-60">#</span>{index + 1}</span>
-      <span class="truncate text-sm">
-        {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
-      </span>
-      {#if item.quantity_requested}
-        <span class="text-xs text-muted-foreground">x{item.quantity_requested}</span>
+      {#if item.type === 'descriptive'}
+        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
+      {:else}
+        <span class="truncate text-sm">
+          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        </span>
+        {#if item.quantity_requested}
+          <span class="text-xs text-muted-foreground">x{item.quantity_requested}</span>
+        {/if}
       {/if}
     </div>
   {/snippet}
 
   {#snippet item({ item, index, updateItem })}
-    {@const isLinked = !!item.sales_order_item_id}
-    <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+    {#if item.type === 'descriptive'}
+      <div>
+        <RichEditorField
+          name="{name}.{index}.description"
+          label={m.description()}
+          value={item.description}
+          error={getFieldError(index, 'description')}
+          errorPosition="floating-bottom"
+          disabled={isDisabled}
+          width="w-full"
+          minHeight="min-h-20 max-h-60 overflow-y-auto bg-input/10 dark:bg-input/30"
+          onChange={md => updateItem(index, { description: md })} />
+      </div>
+    {:else}
+      {@const isLinked = !!item.sales_order_item_id}
+      <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
       {#if isLinked}
         <div class="sm:col-span-2 lg:col-span-2">
           <span class="block text-sm leading-6 font-medium">{m.item()}</span>
@@ -383,15 +425,21 @@
           </div>
         </div>
       {/if} -->
-    </div>
+      </div>
+    {/if}
   {/snippet}
 
   {#snippet addButton({ addItem, disabled: addDisabled, options: opts })}
     {#if !opts.dragAndDropActive}
       <div class="mt-1 gap-2 md:flex">
-        <Button variant="outline" size="sm" disabled={addDisabled} onclick={() => addItem()}>
+        <Button variant="outline" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'item' })}>
           <Plus class="mr-1 size-4" />
           {m.add_item_line()}
+        </Button>
+
+        <Button variant="ghost" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'descriptive' })}>
+          <Plus class="mr-1 size-4" />
+          {m.add_description_line()}
         </Button>
       </div>
     {/if}

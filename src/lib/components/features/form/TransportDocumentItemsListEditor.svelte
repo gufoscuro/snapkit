@@ -10,33 +10,35 @@
 -->
 <script lang="ts" module>
   export type TransportDocumentLineItem = {
+    /** Line type: `item` carries quantity/UOM/pricing, `descriptive` is a free-text annotation. */
+    type: 'item' | 'descriptive'
     /** Persisted UUID — present only on existing items */
     id?: string
-    /** Linked sales order item UUID — when set, item_id/description/uom are derived server-side */
+    /** Linked sales order item UUID — on `item` lines drives derivation; on `descriptive` it is an FK to a source SO line for chain traceability. */
     sales_order_item_id?: string
     /** Linked warehouse order item UUID — alternative origin to sales_order_item_id */
     warehouse_order_item_id?: string
-    /** Item UUID — required when no link is present */
+    /** Item UUID — required for `item` lines when no link is present */
     item_id?: string
     /** Cached item snapshot for display */
     item_snapshot?: Record<string, unknown>
-    /** Description — required when no link is present */
+    /** Description — required for both `item` (when not linked) and `descriptive` lines */
     description?: string
-    /** Transported quantity */
-    quantity: number
-    /** Unit of measure — required when no link is present */
+    /** Transported quantity. Required on `item` lines, omitted on `descriptive`. */
+    quantity?: number
+    /** Unit of measure (`item` lines only when not linked) */
     uom?: string
-    /** Unit price */
+    /** Unit price (`item` lines only) */
     unit_price?: number
-    /** Net value (computed server-side) */
+    /** Net value (computed server-side, `item` lines only) */
     net_value?: number
-    /** VAT code id */
+    /** VAT code id (`item` lines only) */
     vat_code_id?: string
-    /** VAT code snapshot */
+    /** VAT code snapshot (`item` lines only) */
     vat_code_snapshot?: Record<string, unknown>
-    /** Per-line gross weight */
+    /** Per-line gross weight (`item` lines only) */
     weight_gross?: number
-    /** Per-line net weight */
+    /** Per-line net weight (`item` lines only) */
     weight_net?: number
   }
 </script>
@@ -46,6 +48,7 @@
   import NumberField from '$components/core/form/NumberField.svelte'
   import PriceField from '$components/core/form/PriceField.svelte'
   import QuantityField from '$components/core/form/QuantityField.svelte'
+  import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { FormFieldClass } from '$components/core/form/form'
@@ -132,6 +135,7 @@
 
   function createEmptyItem(): InternalLineItem {
     return {
+      type: 'item',
       sales_order_item_id: undefined,
       warehouse_order_item_id: undefined,
       item_id: '',
@@ -153,19 +157,33 @@
   }
 
   function isCompleteItem(item: InternalLineItem): boolean {
-    if (isLinkedItem(item)) {
-      return item.quantity > 0
+    if (item.type === 'descriptive') {
+      return !!item.description
     }
-    return !!item.item_id && !!item.uom && !!item.description && item.quantity > 0
+    const qty = item.quantity ?? 0
+    if (isLinkedItem(item)) {
+      return qty > 0
+    }
+    return !!item.item_id && !!item.uom && !!item.description && qty > 0
   }
 
   function transformOutput(internalItems: InternalLineItem[]): TransportDocumentLineItem[] {
     return internalItems.map(item => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { itemAttr, vatCodeAttr, _groupId, ...rest } = item
+      if (rest.type === 'descriptive') {
+        return {
+          type: 'descriptive',
+          description: rest.description ?? '',
+          ...(rest.id ? { id: rest.id } : {}),
+          ...(rest.sales_order_item_id ? { sales_order_item_id: rest.sales_order_item_id } : {}),
+          ...(rest.warehouse_order_item_id ? { warehouse_order_item_id: rest.warehouse_order_item_id } : {}),
+        }
+      }
       // Strip null/empty link ids so the API only receives the relevant origin
       if (rest.sales_order_item_id) {
         return {
+          type: 'item',
           sales_order_item_id: rest.sales_order_item_id,
           quantity: rest.quantity,
           unit_price: rest.unit_price,
@@ -177,6 +195,7 @@
       }
       if (rest.warehouse_order_item_id) {
         return {
+          type: 'item',
           warehouse_order_item_id: rest.warehouse_order_item_id,
           quantity: rest.quantity,
           unit_price: rest.unit_price,
@@ -186,7 +205,7 @@
           ...(rest.id ? { id: rest.id } : {}),
         }
       }
-      return rest
+      return { ...rest, type: 'item' }
     })
   }
 
@@ -196,6 +215,7 @@
       const vatSnapshot = item.vat_code_snapshot as Record<string, unknown> | undefined
       return {
         ...item,
+        type: item.type ?? 'item',
         itemAttr: itemSnapshot ? ({ id: item.item_id, ...itemSnapshot } as Item) : undefined,
         vatCodeAttr:
           vatSnapshot && item.vat_code_id ? { ...(vatSnapshot as VatCodeSummary), id: item.vat_code_id } : undefined,
@@ -331,11 +351,15 @@
     <div class="flex w-full cursor-grab items-center gap-3 rounded border bg-muted/50 px-3 py-2">
       <GripVertical class="size-4 text-muted-foreground" />
       <span class="font-semibold text-primary"><span class="opacity-60">#</span>{index + 1}</span>
-      <span class="truncate text-sm">
-        {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
-      </span>
-      {#if item.quantity}
-        <span class="text-xs text-muted-foreground">x{item.quantity}</span>
+      {#if item.type === 'descriptive'}
+        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
+      {:else}
+        <span class="truncate text-sm">
+          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        </span>
+        {#if item.quantity}
+          <span class="text-xs text-muted-foreground">x{item.quantity}</span>
+        {/if}
       {/if}
     </div>
   {/snippet}
@@ -344,11 +368,15 @@
     <div class="flex w-full items-center gap-3 rounded border bg-muted/50 px-3 py-2 hover:bg-muted">
       <span class="font-semibold {groupColorClass ?? 'text-primary'}"
         ><span class="opacity-60">#</span>{index + 1}</span>
-      <span class="truncate text-sm">
-        {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
-      </span>
-      {#if item.quantity}
-        <span class="text-xs text-muted-foreground">x{item.quantity}</span>
+      {#if item.type === 'descriptive'}
+        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
+      {:else}
+        <span class="truncate text-sm">
+          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        </span>
+        {#if item.quantity}
+          <span class="text-xs text-muted-foreground">x{item.quantity}</span>
+        {/if}
       {/if}
       {#if isLinkedItem(item)}
         <Badge variant="outline" class="text-[10px] font-normal">
@@ -359,9 +387,23 @@
   {/snippet}
 
   {#snippet item({ item, index, updateItem })}
-    {@const linked = isLinkedItem(item)}
-    {@const linkedFromSO = !!item.sales_order_item_id}
-    <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+    {#if item.type === 'descriptive'}
+      <div>
+        <RichEditorField
+          name="{name}.{index}.description"
+          label={m.description()}
+          value={item.description}
+          error={getFieldError(index, 'description')}
+          errorPosition="floating-bottom"
+          disabled={isDisabled}
+          width="w-full"
+          minHeight="min-h-20 max-h-60 overflow-y-auto bg-input/10 dark:bg-input/30"
+          onChange={md => updateItem(index, { description: md })} />
+      </div>
+    {:else}
+      {@const linked = isLinkedItem(item)}
+      {@const linkedFromSO = !!item.sales_order_item_id}
+      <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
       {#if linked}
         <div class="sm:col-span-2 lg:col-span-2">
           <span class="block text-sm leading-6 font-medium">{m.item()}</span>
@@ -472,15 +514,21 @@
         disabled={(!linked && !item.item_id) || isDisabled}
         width="w-full"
         oninput={e => updateItem(index, { weight_net: parseFloat(e.currentTarget.value) || 0 })} />
-    </div>
+      </div>
+    {/if}
   {/snippet}
 
   {#snippet addButton({ addItem, disabled: addDisabled, options: opts })}
     {#if !opts.dragAndDropActive}
       <div class="mt-1 gap-2 md:flex">
-        <Button variant="outline" size="sm" disabled={addDisabled} onclick={() => addItem()}>
+        <Button variant="outline" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'item' })}>
           <Plus class="mr-1 size-4" />
           {m.add_item_line()}
+        </Button>
+
+        <Button variant="ghost" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'descriptive' })}>
+          <Plus class="mr-1 size-4" />
+          {m.add_description_line()}
         </Button>
       </div>
     {/if}

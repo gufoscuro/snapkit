@@ -117,6 +117,8 @@
     ship_to_snapshot?: SnapshotShape
     incoterm?: string
     incoterm_location?: string
+    customer_purchase_order?: string
+    customer_purchase_order_date?: string
     notes_internal?: string
     items?: SalesOrderItemForImport[]
   }
@@ -131,6 +133,21 @@
     uom: string
     /** Per-line remaining importable qty toward a warehouse order. Only on `GET /sales-orders/{id}`. */
     importable_into_warehouse_order_quantity?: number
+  }
+
+  /** Build the descriptive "Rif. ordine" header line prepended to items imported from a sales order. */
+  function salesOrderReferenceText(o: SalesOrderForImport): string {
+    const documentNumber = o.document_number
+    const date = new Date(o.document_date).toLocaleDateString()
+    if (o.customer_purchase_order && o.customer_purchase_order_date) {
+      return m.sales_order_reference_with_customer_po({
+        documentNumber,
+        date,
+        customerPo: o.customer_purchase_order,
+        customerPoDate: new Date(o.customer_purchase_order_date).toLocaleDateString(),
+      })
+    }
+    return m.sales_order_reference({ documentNumber, date })
   }
 
   /**
@@ -244,6 +261,7 @@
 
         const productItems: WarehouseOrderLineItem[] = []
         for (const item of o.items ?? []) {
+          // Source descriptive lines are dropped; we prepend our own "Rif. ordine" header instead.
           if (item.type !== 'item') continue
           const importableQty = item.importable_into_warehouse_order_quantity ?? 0
           if (importableQty <= 0) continue
@@ -253,6 +271,7 @@
           }
           existingLinkIds.add(item.id)
           productItems.push({
+            type: 'item',
             sales_order_item_id: item.id,
             item_id: item.item_id,
             item_snapshot: item.item_snapshot,
@@ -263,7 +282,12 @@
         }
 
         if (productItems.length === 0) continue
-        itemsEditorRef!.addItems(productItems, { groupId: generateId() })
+        // Prepend a descriptive "Rif. ordine vendita…" header per source SO.
+        const referenceLine: WarehouseOrderLineItem = {
+          type: 'descriptive',
+          description: salesOrderReferenceText(o),
+        }
+        itemsEditorRef!.addItems([referenceLine, ...productItems], { groupId: generateId() })
         added += productItems.length
       }
 

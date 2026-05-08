@@ -166,7 +166,8 @@
   ): Promise<QuotationWithItems[]> {
     if (!legalEntityId) return []
     const queryParams: Record<string, string> = {
-      state: 'open,approved',
+      // The create endpoint rejects non-approved upstreams, per the import-flows business doc.
+      state: 'approved',
       conversion_status: 'none,partial',
       // Inflate page size so the client-side compat lock has a wide-enough pool.
       // The endpoint is paginated; without this we'd risk missing compatible

@@ -633,6 +633,8 @@
   "descriptive": "Descrittiva",
   "quotation_items": "Righe Preventivo",
   "quotation_reference": "Riferimento preventivo: {documentNumber} del {date}",
+  "sales_order_reference": "Rif. ordine {documentNumber} del {date}",
+  "sales_order_reference_with_customer_po": "Rif. ordine {documentNumber} del {date} - Rif. vs ordine: {customerPo} del {customerPoDate}",
   "quotation": "Preventivo",
   "new_quotation": "Nuovo preventivo",
   "quotations": "Preventivi",

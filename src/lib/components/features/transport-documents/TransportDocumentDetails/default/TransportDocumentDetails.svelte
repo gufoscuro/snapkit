@@ -124,6 +124,8 @@
     ship_to_snapshot?: SnapshotShape
     incoterm?: string
     incoterm_location?: string
+    customer_purchase_order?: string
+    customer_purchase_order_date?: string
     notes_internal?: string
     notes_external?: string
     items?: SalesOrderItemForImport[]
@@ -161,13 +163,30 @@
 
   type WarehouseOrderItemForImport = {
     id: string
+    type: 'item' | 'descriptive'
     item_id: string
     item_snapshot: Record<string, unknown>
     description: string
     quantity_requested: number
     uom: string
+    sales_order_item_id?: string
     /** Per-line remaining importable qty toward a transport document. Only on `GET /warehouse-orders/{id}`. */
     importable_into_transport_document_quantity?: number
+  }
+
+  /** Build the descriptive "Rif. ordine" header line prepended to items imported from a sales order. */
+  function salesOrderReferenceText(o: SalesOrderForImport): string {
+    const documentNumber = o.document_number
+    const date = new Date(o.document_date).toLocaleDateString()
+    if (o.customer_purchase_order && o.customer_purchase_order_date) {
+      return m.sales_order_reference_with_customer_po({
+        documentNumber,
+        date,
+        customerPo: o.customer_purchase_order,
+        customerPoDate: new Date(o.customer_purchase_order_date).toLocaleDateString(),
+      })
+    }
+    return m.sales_order_reference({ documentNumber, date })
   }
 
   type ImportFormFilters = {
@@ -323,6 +342,7 @@
 
         const productItems: TransportDocumentLineItem[] = []
         for (const item of o.items ?? []) {
+          // Source descriptive lines are dropped; we prepend our own "Rif. ordine vendita…" header instead.
           if (item.type !== 'item') continue
           const importableQty = item.importable_into_transport_document_quantity ?? 0
           if (importableQty <= 0) continue
@@ -332,6 +352,7 @@
           }
           existingLinkIds.add(item.id)
           productItems.push({
+            type: 'item',
             sales_order_item_id: item.id,
             item_id: item.item_id,
             item_snapshot: item.item_snapshot,
@@ -347,7 +368,12 @@
         }
 
         if (productItems.length === 0) continue
-        itemsEditorRef!.addItems(productItems, { groupId: generateId() })
+        // Prepend a descriptive "Rif. ordine vendita…" header per source SO.
+        const referenceLine: TransportDocumentLineItem = {
+          type: 'descriptive',
+          description: salesOrderReferenceText(o),
+        }
+        itemsEditorRef!.addItems([referenceLine, ...productItems], { groupId: generateId() })
         added += productItems.length
       }
 
@@ -367,6 +393,8 @@
   /**
    * WO → DDT import. WO items don't carry pricing/VAT — the user fills those manually
    * (or via the form-level `commercialTermsVatCode` default for new rows).
+   * Source descriptive lines are PRESERVED with a `warehouse_order_item_id` FK link
+   * so the chain (e.g. an upstream "Rif. ordine vendita…" line) is kept intact.
    */
   async function handleImportWarehouseOrders(
     formAPI: { updateField: FormFieldUpdater; values: Record<string, unknown> },
@@ -390,16 +418,27 @@
       for (const [idx, o] of fullOrders.entries()) {
         if (idx === 0 && isFormEmpty) applyHeaderFromSource(formAPI, o)
 
-        const productItems: TransportDocumentLineItem[] = []
+        const lines: TransportDocumentLineItem[] = []
         for (const item of o.items ?? []) {
-          const importableQty = item.importable_into_transport_document_quantity ?? 0
-          if (importableQty <= 0) continue
           if (existingLinkIds.has(item.id)) {
             skipped++
             continue
           }
+          if (item.type === 'descriptive') {
+            // Preserve descriptive lines as-is, with FK link for chain traceability.
+            existingLinkIds.add(item.id)
+            lines.push({
+              type: 'descriptive',
+              warehouse_order_item_id: item.id,
+              description: item.description,
+            })
+            continue
+          }
+          const importableQty = item.importable_into_transport_document_quantity ?? 0
+          if (importableQty <= 0) continue
           existingLinkIds.add(item.id)
-          productItems.push({
+          lines.push({
+            type: 'item',
             warehouse_order_item_id: item.id,
             item_id: item.item_id,
             item_snapshot: item.item_snapshot,
@@ -414,9 +453,9 @@
           })
         }
 
-        if (productItems.length === 0) continue
-        itemsEditorRef!.addItems(productItems, { groupId: generateId() })
-        added += productItems.length
+        if (lines.length === 0) continue
+        itemsEditorRef!.addItems(lines, { groupId: generateId() })
+        added += lines.filter(l => l.type === 'item').length
       }
 
       return { added, skipped }
