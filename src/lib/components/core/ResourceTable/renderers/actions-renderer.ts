@@ -26,7 +26,7 @@ import type { ColumnConfig, ActionsConfig, ActionHelpers } from '../types'
  *   }
  * }
  */
-export function createActionsRenderer<T>(
+export function createActionsRenderer<T extends Record<string, any>>(
 	config: ColumnConfig<T>,
 	actionHelpers: ActionHelpers<T>
 ) {
@@ -38,12 +38,14 @@ export function createActionsRenderer<T>(
 			return null
 		}
 
+		// ActionsCell is generic on T; renderComponent can't bridge generic variance
+		// (Action<T>'s callback is contravariant in T), so we widen at the boundary.
 		return renderComponent(ActionsCell, {
 			row,
 			actions: actionsConfig.actions,
 			buttonSize: actionsConfig.buttonSize,
 			dropdownAlign: actionsConfig.dropdownAlign,
-			actionHelpers
-		})
+			actionHelpers,
+		} as never)
 	}
 }

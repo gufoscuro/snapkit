@@ -206,6 +206,7 @@
       customFieldTouched = {}
     },
     submit: triggerSubmit,
+    clearErrorsAtPrefix: formState.clearErrorsAtPrefix,
 
     // Custom Fields
     get customFieldValues() {

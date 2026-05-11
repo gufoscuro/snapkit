@@ -11,6 +11,7 @@
   import type { SnippetProps } from '$utils/runtime'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import PanelLeftIcon from '@lucide/svelte/icons/panel-left'
+  import MainMenuDropdown from './MainMenuDropdown.svelte'
 
   const props: SnippetProps = $props()
   const pageState = getPageState()
@@ -50,15 +51,23 @@
   {#if breadcrumbItems?.length}
     <Breadcrumb.Root class="ms-4 cursor-default">
       <Breadcrumb.List>
+        {#if props.entityConfig?.dashboard.menus.main}
+          <Breadcrumb.Item>
+            <MainMenuDropdown items={props.entityConfig.dashboard.menus.main.items} />
+          </Breadcrumb.Item>
+          <Breadcrumb.Separator />
+        {/if}
         {#each breadcrumbItems as page, i (page.$id)}
           {#if i > 0}
-            <Breadcrumb.Separator />
+            <Breadcrumb.Separator class="hidden md:inline-flex" />
           {/if}
-          <Breadcrumb.Item>
+          <Breadcrumb.Item class={i !== breadcrumbItems.length - 1 ? 'hidden md:inline-flex' : ''}>
             {#if i === breadcrumbItems.length - 1}
               <Breadcrumb.Page>{breadcrumbLabels[page.$id] ?? getI18nLabel(page.title)}</Breadcrumb.Page>
             {:else}
-              <Breadcrumb.Link class="hover:text-brand hover:underline" href={createRoute({ $id: page.$id, params: props.pageDetails.params })}>
+              <Breadcrumb.Link
+                class="hover:text-brand hover:underline"
+                href={createRoute({ $id: page.$id, params: props.pageDetails.params })}>
                 {breadcrumbLabels[page.$id] ?? getI18nLabel(page.title)}
               </Breadcrumb.Link>
             {/if}

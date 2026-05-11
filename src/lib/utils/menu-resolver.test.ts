@@ -89,7 +89,7 @@ describe('resolveMenuItem', () => {
 			const item: MenuItemWithSubmenu = {
 				type: 'submenu',
 				label: 'Sales',
-				submenuStyle: 'list',
+				submenuStyle: 'collapsible',
 				children: [
 					{ type: 'link', label: 'Orders', pageId: 'sales-orders' },
 					{ type: 'link', label: 'Invoices', pageId: 'sales-invoices' },
@@ -101,7 +101,7 @@ describe('resolveMenuItem', () => {
 			expect(result.type).toBe('submenu')
 			expect(result.label).toBe('Sales')
 			expect(result.href).toBeNull()
-			expect(result.submenuStyle).toBe('list')
+			expect(result.submenuStyle).toBe('collapsible')
 			expect(result.children).toHaveLength(2)
 			expect(result.children![0].href).toBe('/resolved/sales-orders')
 			expect(result.children![1].href).toBe('/resolved/sales-invoices')
@@ -122,24 +122,11 @@ describe('resolveMenuItem', () => {
 			expect(result.children).toEqual([])
 		})
 
-		it('preserves description on submenu', () => {
-			const item: MenuItemWithSubmenu = {
-				type: 'submenu',
-				label: 'Admin',
-				submenuStyle: 'list',
-				description: 'Admin tools',
-				children: [],
-			}
-
-			const result = resolveMenuItem(item)
-			expect(result.description).toBe('Admin tools')
-		})
-
 		it('resolves nested submenus recursively', () => {
 			const item: MenuItemWithSubmenu = {
 				type: 'submenu',
 				label: 'Top',
-				submenuStyle: 'list',
+				submenuStyle: 'collapsible',
 				children: [
 					{
 						type: 'submenu',

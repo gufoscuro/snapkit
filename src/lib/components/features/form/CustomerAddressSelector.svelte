@@ -64,7 +64,6 @@
         'customer-address-details',
         { uuid: customerId, aid: option.value as string },
         m.new_tab_opened_for_customer_address_edit(),
-        `/legal-entities/${legalEntityId}/customers/${customerId}/addresses`,
       )
     },
   }: Props = $props()

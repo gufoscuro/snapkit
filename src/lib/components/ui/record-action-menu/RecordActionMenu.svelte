@@ -78,8 +78,11 @@
     <DropdownMenu.Content class="min-w-44" {align}>
       <DropdownMenu.Label>{m.quick_actions()}</DropdownMenu.Label>
       <DropdownMenu.Separator />
-      {#each visibleActions as action (action.id)}
+      {#each visibleActions as action, i (action.id)}
         {@const icon = resolveIcon(action)}
+        {#if action.separatorBefore && i > 0}
+          <DropdownMenu.Separator />
+        {/if}
         <DropdownMenu.Item disabled={action.disabled?.(actionOptions) ?? false} onclick={() => handleAction(action)}>
           {#if icon}
             {@const Icon = icon}

@@ -528,6 +528,94 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             },
           ],
         },
+        {
+          $id: 'warehouse-orders',
+          title: 'warehouse_orders',
+          route: '/warehouse/warehouse-orders',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.WarehouseOrdersFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'warehouse-orders.warehouseorderstable.default.WarehouseOrdersTable',
+              enabled: true,
+            },
+          },
+          subpages: [
+            {
+              $id: 'warehouse-order-details',
+              title: 'warehouse_order',
+              route: '/warehouse/warehouse-orders/upsert{/:uuid}',
+              layout: {
+                componentKey: 'layouts.LeftSidebar',
+                enabled: true,
+              },
+              snippets: {
+                sidebar: {
+                  componentKey: 'globals.sidebars.WarehouseOrderSidebar',
+                  enabled: true,
+                },
+                content: {
+                  componentKey: 'warehouse-orders.warehouseorderdetails.default.WarehouseOrderDetails',
+                  enabled: true,
+                },
+              },
+            },
+          ],
+        },
+        {
+          $id: 'transport-documents',
+          title: 'transport_documents',
+          route: '/sales/transport-documents',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.TransportDocumentsFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'transport-documents.transportdocumentstable.default.TransportDocumentsTable',
+              enabled: true,
+            },
+          },
+          subpages: [
+            {
+              $id: 'transport-document-details',
+              title: 'transport_document',
+              route: '/sales/transport-documents/upsert{/:uuid}',
+              layout: {
+                componentKey: 'layouts.LeftSidebar',
+                enabled: true,
+              },
+              snippets: {
+                sidebar: {
+                  componentKey: 'globals.sidebars.TransportDocumentSidebar',
+                  enabled: true,
+                },
+                content: {
+                  componentKey: 'transport-documents.transportdocumentdetails.default.TransportDocumentDetails',
+                  enabled: true,
+                },
+              },
+            },
+          ],
+        },
       ],
       menus: {
         main: {
@@ -535,45 +623,74 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
           name: 'sections',
           items: [
             {
-              label: 'Home',
-              pageId: 'home',
-              icon: 'House',
-              type: 'link',
+              label: 'general',
+              icon: 'Layers',
+              type: 'submenu',
+              submenuStyle: 'simple',
+              children: [
+                {
+                  label: 'Home',
+                  pageId: 'home',
+                  icon: 'House',
+                  type: 'link',
+                },
+                {
+                  label: 'customers',
+                  pageId: 'customers',
+                  icon: 'Users',
+                  type: 'link',
+                },
+                {
+                  label: 'suppliers',
+                  pageId: 'suppliers',
+                  icon: 'Contact',
+                  type: 'link',
+                },
+                {
+                  label: 'items',
+                  pageId: 'items',
+                  icon: 'Package',
+                  type: 'link',
+                },
+              ],
             },
             {
-              label: 'customers',
-              pageId: 'customers',
-              icon: 'Users',
-              type: 'link',
-            },
-            {
-              label: 'suppliers',
-              pageId: 'suppliers',
-              icon: 'Contact',
-              type: 'link',
-            },
-            {
-              label: 'items',
-              pageId: 'items',
-              icon: 'Package',
-              type: 'link',
-            },
-            {
-              label: 'quotations',
-              pageId: 'quotations',
-              icon: 'FileText',
-              type: 'link',
-            },
-            {
-              label: 'sales_orders',
-              pageId: 'sales-orders',
-              icon: 'ClipboardList',
-              type: 'link',
+              label: 'sales',
+              icon: 'ShoppingCart',
+              type: 'submenu',
+              submenuStyle: 'simple',
+              children: [
+                {
+                  label: 'quotations',
+                  pageId: 'quotations',
+                  icon: 'FileText',
+                  type: 'link',
+                },
+                {
+                  label: 'sales_orders',
+                  pageId: 'sales-orders',
+                  icon: 'ClipboardList',
+                  type: 'link',
+                },
+                {
+                  label: 'warehouse_orders',
+                  pageId: 'warehouse-orders',
+                  icon: 'PackageOpen',
+                  type: 'link',
+                },
+                {
+                  label: 'transport_documents',
+                  pageId: 'transport-documents',
+                  icon: 'Truck',
+                  type: 'link',
+                },
+              ],
             },
           ],
         },
       },
     },
+    policies: {},
     created_by: null,
     created_at: null,
   }

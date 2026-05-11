@@ -36,8 +36,12 @@
   import { UnitOfMeasures } from '$lib/config/uoms'
   import * as m from '$lib/paraglide/messages'
   import type { Item } from '$lib/types/api-types'
+  import { generateId } from '$lib/utils/id'
   import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol } from '$utils/prices'
-  import { ArrowUpDown, GripVertical, Plus } from '@lucide/svelte'
+  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
+  import GripVertical from '@lucide/svelte/icons/grip-vertical'
+  import Pencil from '@lucide/svelte/icons/pencil'
+  import Plus from '@lucide/svelte/icons/plus'
   import { untrack, type Snippet } from 'svelte'
   import type { QuotationLineItem } from './QuotationItemsEditor.svelte'
 
@@ -53,6 +57,8 @@
     vatCodeAttr?: VatCodeSummary
     /** Item base price from catalog (shown as suggestion, not auto-filled) */
     itemBasePrice?: number
+    /** UI-only: identifies a batch of items imported together (used for color coding). Stripped in transformOutput. */
+    _groupId?: string
   }
 
   type Props = {
@@ -115,6 +121,13 @@
   const isDisabled = $derived(disabled || locked)
   const currencyCode = $derived(currency)
 
+  // EditableListField clears the form context for its children, so sub-fields
+  // can't auto-resolve their error from `form.errors[name]`. We resolve it here
+  // (where the parent form context is still in scope) and pass it down explicitly.
+  function getFieldError(idx: number, field: string): string | undefined {
+    return form?.errors[`${name}.${idx}.${field}` as never] as string | undefined
+  }
+
   /**
    * Format a Date as a local ISO-like string (YYYY-MM-DDTHH:mm:ss.sss)
    * to avoid UTC timezone shift (e.g. Apr 30 CET → Apr 29 22:00 UTC).
@@ -132,6 +145,7 @@
 
   // Internal items state
   let items = $state<InternalLineItem[]>([])
+  let editableListFieldRef: EditableListField<InternalLineItem> | undefined = $state()
 
   function createEmptyItem(): InternalLineItem {
     return {
@@ -154,9 +168,8 @@
   }
 
   // When defaultVatCode arrives (async from commercial terms), apply to items with empty vat_code_id.
-  // Uses untrack on items to avoid read→write loop.
-  // Calls notifyFormUpdate so items that become complete are pushed to the form field
-  // (EditableListField only commits on its own internal mutations).
+  // Uses untrack on items to avoid read→write loop. Flushes via the editor ref so items that
+  // become complete are pushed to the form field (EditableListField only commits on its own internal mutations).
   $effect(() => {
     const vatCode = defaultVatCode
     if (!vatCode) return
@@ -173,7 +186,7 @@
         vatCodeAttr: vatCode,
       }
     })
-    notifyFormUpdate()
+    editableListFieldRef?.flush()
   })
 
   // When defaultDeliveryDate changes, propagate it to empty items (no item_id yet) whose
@@ -200,7 +213,7 @@
         delivery_date: followsDefault(item.delivery_date) ? normalized : item.delivery_date,
       }
     })
-    notifyFormUpdate()
+    editableListFieldRef?.flush()
   })
 
   function isCompleteItem(item: InternalLineItem): boolean {
@@ -213,7 +226,7 @@
   function transformOutput(internalItems: InternalLineItem[]): QuotationLineItem[] {
     return internalItems.map(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      ({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, delivery_date, ...rest }, index) => {
+      ({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, _groupId, delivery_date, ...rest }, index) => {
         if (rest.type === 'descriptive')
           return {
             type: 'descriptive',
@@ -322,39 +335,38 @@
   }
 
   /**
-   * Notify onChange and form context of the current items state.
-   * EditableListField calls this internally via onItemsChange for its own mutations,
-   * but external mutations (addItems) must call this directly.
-   */
-  function notifyFormUpdate() {
-    const output = transformOutput(items.filter(isCompleteItem))
-    onChange?.(output)
-    if (form) {
-      form.updateField(name, output as never)
-    }
-  }
-
-  /**
-   * Handle items change callback from EditableListField
+   * Handle items change callback from EditableListField. Clears stale server-side
+   * errors keyed under `{name}.{index}.*` since indices may have shifted after
+   * an add/remove/reorder, or the user may have just corrected the field.
    */
   function handleItemsChange(completedItems: InternalLineItem[]) {
     const output = transformOutput(completedItems)
     onChange?.(output)
+    form?.clearErrorsAtPrefix(`${name}.`)
   }
 
   /**
-   * Append imported line items to the current list.
-   * Called by wrapper components (e.g. SalesOrderItemsListEditor) after import.
+   * Append imported line items, tagged with a shared `_groupId` for color coding.
+   * Callers should invoke once per source record (e.g. once per quotation) so each
+   * source gets its own color. If `groupId` is omitted, a fresh one is generated.
    */
-  export function addItems(newItems: QuotationLineItem[]) {
-    const mapped = mapFromApi(newItems)
-    const nonEmpty = items.filter(i => isCompleteItem(i))
-    items = [...nonEmpty, ...mapped]
-    notifyFormUpdate()
+  export function addItems(newItems: QuotationLineItem[], options?: { groupId?: string }) {
+    editableListFieldRef?.addItems(mapFromApi(newItems), {
+      groupId: options?.groupId ?? generateId(),
+    })
+  }
+
+  /**
+   * Returns the current line items in API shape — used by wrapper components
+   * (e.g. SalesOrderItemsListEditor) to dedupe imports against existing rows.
+   */
+  export function getItems(): QuotationLineItem[] {
+    return (editableListFieldRef?.getItems() ?? []) as QuotationLineItem[]
   }
 </script>
 
 <EditableListField
+  bind:this={editableListFieldRef}
   {name}
   {label}
   {showLabel}
@@ -367,6 +379,7 @@
   syncFromForm={false}
   onItemsChange={handleItemsChange}
   allowReorder
+  collapsible
   class={className}>
   {#snippet header({ options })}
     {#if !isDisabled}
@@ -378,8 +391,13 @@
           variant={options.dragAndDropActive ? 'outline' : 'outline'}
           size="sm"
           onclick={options.toggleDragAndDrop}>
-          <ArrowUpDown class="mr-1 size-4" />
-          {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
+          {#if options.dragAndDropActive}
+            <Pencil class="mr-1 size-4" />
+            {m.edit_items()}
+          {:else}
+            <ArrowUpDown class="mr-1 size-4" />
+            {m.reorder_items()}
+          {/if}
         </Button>
       </div>
       <div class="my-8">
@@ -405,19 +423,33 @@
     </div>
   {/snippet}
 
-  {#snippet item({ item, index, updateItem })}
-    <div class="absolute -left-8 hidden h-6 text-sm leading-6 font-semibold text-primary md:block">
-      <span class="opacity-60">#</span>{index + 1}
+  {#snippet collapsedItem({ item, index, groupColorClass })}
+    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 px-3 py-2 hover:bg-muted">
+      <span class="font-semibold {groupColorClass ?? 'text-primary'}"
+        ><span class="opacity-60">#</span>{index + 1}</span>
+      {#if item.type === 'descriptive'}
+        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
+      {:else}
+        <span class="truncate text-sm">
+          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        </span>
+        {#if item.quantity}
+          <span class="text-xs text-muted-foreground">x{item.quantity}</span>
+        {/if}
+      {/if}
     </div>
+  {/snippet}
 
+  {#snippet item({ item, index, updateItem })}
     {#if item.type === 'descriptive'}
       <!-- Descriptive: full-width rich editor -->
-      <div class="pr-8">
+      <div>
         <RichEditorField
-          name="description-{index}"
+          name="{name}.{index}.description"
           label={m.description()}
           value={item.description}
-          showErrorMessage={false}
+          error={getFieldError(index, 'description')}
+          errorPosition="floating-bottom"
           disabled={isDisabled}
           width="w-full"
           minHeight="min-h-20 max-h-60 overflow-y-auto bg-input/10 dark:bg-input/30"
@@ -425,14 +457,13 @@
       </div>
     {:else}
       <!-- Item type: multi-row grid layout -->
-      <div class="grid grid-cols-1 gap-x-4 gap-y-3 pr-8 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
         <!-- Row 1: Item Selector, Code, Quantity -->
         <ItemSelector
-          name="item-{index}"
+          name="{name}.{index}.item_id"
           label={m.item()}
           mode="sellable"
           attr={item.itemAttr}
-          showErrorMessage={false}
           width="w-full"
           contentWidth={FormFieldClass.SelectorContentDefaultWidth}
           readonly={isDisabled}
@@ -458,11 +489,12 @@
         </div>
 
         <QuantityField
-          name="quantity-{index}"
+          name="{name}.{index}.quantity"
           label={m.quantity()}
           value={item.quantity ?? 0}
           uom={item.uom}
-          showErrorMessage={false}
+          error={getFieldError(index, 'quantity')}
+          errorPosition="floating-bottom"
           disabled={!item.item_id || isDisabled}
           width="w-full"
           onChange={qty => updateItem(index, { quantity: qty })} />
@@ -470,10 +502,11 @@
         <!-- Description (customizable, defaults to item name) -->
         <div class="sm:col-span-2 lg:col-span-3">
           <TextField
-            name="description-{index}"
+            name="{name}.{index}.description"
             label={m.description()}
             value={item.description ?? ''}
-            showErrorMessage={false}
+            error={getFieldError(index, 'description')}
+            errorPosition="floating-bottom"
             disabled={!item.item_id || isDisabled}
             width="w-full"
             oninput={e => updateItem(index, { description: e.currentTarget.value })} />
@@ -490,12 +523,13 @@
             {/if}
           </div>
           <PriceField
-            name="unitPrice-{index}"
+            name="{name}.{index}.unit_price"
             value={item.unit_price ?? 0}
             {currency}
             allowNegative={allowNegativePrices}
             showLabel={false}
-            showErrorMessage={false}
+            error={getFieldError(index, 'unit_price')}
+            errorPosition="floating-bottom"
             disabled={!item.item_id || isDisabled}
             width="w-full"
             onChange={price => updateItem(index, { unit_price: price })} />
@@ -522,21 +556,23 @@
           </div>
           {#if item.useDiscountAmount}
             <PriceField
-              name="discountAmount-{index}"
+              name="{name}.{index}.discount_amount"
               value={item.discount_amount ?? 0}
               {currency}
               allowNegative={allowNegativePrices}
               showLabel={false}
-              showErrorMessage={false}
+              error={getFieldError(index, 'discount_amount')}
+              errorPosition="floating-bottom"
               disabled={!item.item_id || isDisabled}
               width="w-full"
               onChange={amount => updateItem(index, { discount_amount: amount, discount_percent: 0 })} />
           {:else}
             <NumberField
-              name="discountPercent-{index}"
+              name="{name}.{index}.discount_percent"
               value={item.discount_percent}
               showLabel={false}
-              showErrorMessage={false}
+              error={getFieldError(index, 'discount_percent')}
+              errorPosition="floating-bottom"
               disabled={!item.item_id || isDisabled}
               width="w-full"
               oninput={e =>
@@ -545,11 +581,10 @@
         </div>
 
         <VatCodeSelector
-          name="vatCode-{index}"
+          name="{name}.{index}.vat_code_id"
           label={m.vat_code()}
           attr={item.vatCodeAttr || defaultVatCode}
           direction="vendita"
-          showErrorMessage={false}
           width="w-full"
           contentWidth={FormFieldClass.SelectorContentDefaultWidth}
           readonly={!item.item_id || isDisabled}
@@ -560,10 +595,11 @@
         <!-- Row 3: Delivery dates (conditional) -->
         {#if showDeliveryDates}
           <DateField
-            name="requestedDeliveryDate-{index}"
+            name="{name}.{index}.requested_delivery_date"
             label={m.requested_delivery_date()}
             value={item.requested_delivery_date}
-            showErrorMessage={false}
+            error={getFieldError(index, 'requested_delivery_date')}
+            errorPosition="floating-bottom"
             disabled={!item.item_id || isDisabled}
             width="w-full"
             onChange={date => {
@@ -575,10 +611,11 @@
             allowClear />
 
           <DateField
-            name="deliveryDate-{index}"
+            name="{name}.{index}.{deliveryDateKey}"
             label={m.delivery_date()}
             value={item.delivery_date}
-            showErrorMessage={false}
+            error={getFieldError(index, deliveryDateKey)}
+            errorPosition="floating-bottom"
             disabled={!item.item_id || isDisabled}
             width="w-full"
             onChange={date => updateItem(index, { delivery_date: date ? toLocalISOString(date) : '' })}

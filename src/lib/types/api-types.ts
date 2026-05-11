@@ -682,6 +682,10 @@ export type Permission =
   | 'create-warehouses'
   | 'edit-warehouses'
   | 'delete-warehouses'
+  | 'view-warehouse-orders'
+  | 'create-warehouse-orders'
+  | 'edit-warehouse-orders'
+  | 'delete-warehouse-orders'
   | 'view-transport-documents'
   | 'create-transport-documents'
   | 'edit-transport-documents'
@@ -1289,6 +1293,149 @@ export type SalesOrder = {
   created_by: string
   items?: SalesOrderItem[]
   available_transitions?: string[]
+}
+
+// ============================================================================
+// Warehouse Orders API Types
+// ============================================================================
+
+export type WarehouseOrderTag = 'transport_document_generated'
+
+export type WarehouseOrderState = 'open' | 'handed_over'
+
+export type WarehouseOrderPickingStatus = 'not_started' | 'partial' | 'full'
+
+export type ShippingMethod = 'courier' | 'own_vehicle' | 'customer_pickup'
+
+export type WarehouseOrderItem = {
+  id: string
+  sales_order_item_id: string
+  sort_order: number
+  item_id: string
+  item_snapshot: Record<string, unknown>[]
+  description: string
+  quantity_requested: number
+  quantity_picked: number
+  uom: UnitOfMeasure
+  version: number
+}
+
+export type WarehouseOrder = {
+  id: string
+  document_number: string
+  document_date: string
+  sales_transaction_type: SalesTransactionType
+  incoterm: Incoterm
+  incoterm_location: string
+  customer_id: string
+  customer_snapshot: Record<string, unknown>[]
+  ship_to_address_id: string
+  ship_to_snapshot: Record<string, unknown>[]
+  warehouse_id: string
+  /** Full warehouse record (eager-loaded by the backend when warehouse_id is set) */
+  warehouse?: LegalEntityWarehouse
+  planned_ship_date: string
+  carrier_id: string
+  /** Full carrier (Supplier) record (eager-loaded by the backend when carrier_id is set) */
+  carrier?: Supplier
+  shipping_method: ShippingMethod | null
+  notes_internal: string
+  state: WarehouseOrderState
+  tags: WarehouseOrderTag[]
+  picking_status: WarehouseOrderPickingStatus | null
+  handed_over_at: string
+  version: number
+  created_by: string
+  items?: WarehouseOrderItem[]
+  available_transitions?: string[]
+  is_archivable?: boolean
+}
+
+// ============================================================================
+// Transport Documents API Types
+// ============================================================================
+
+export type TransportDocumentState = 'open' | 'carried'
+
+export type TransportDocumentType =
+  | 'sale'
+  | 'export'
+  | 'intra_eu'
+  | 'consignment_stock'
+  | 'consignment_return'
+  | 'subcontracting'
+  | 'return'
+  | 'customer_return'
+  | 'gift'
+  | 'transfer'
+  | 'repair'
+  | 'sampling'
+
+export type TransportMethod = 'sender' | 'recipient'
+
+export type TransportDocumentInvoicingStatus = 'none' | 'partial' | 'full'
+
+export type TransportDocumentItemStatus = 'active' | 'cancelled'
+
+export type TransportDocumentItem = {
+  id: string
+  warehouse_order_item_id: string
+  sales_order_item_id: string
+  sort_order: number
+  item_id: string
+  item_snapshot: Record<string, unknown>[]
+  description: string
+  quantity: number
+  uom: UnitOfMeasure
+  weight_gross: number
+  weight_net: number
+  unit_price: number
+  net_value: number
+  vat_code_id: string
+  vat_code_snapshot: Record<string, unknown>[]
+  status: TransportDocumentItemStatus
+  version: number
+}
+
+export type TransportDocument = {
+  id: string
+  document_number: string
+  document_date: string
+  sales_transaction_type: SalesTransactionType
+  /** Derived server-side from sales_transaction_type */
+  transport_document_type: TransportDocumentType
+  incoterm: Incoterm
+  incoterm_location: string
+  customer_id: string
+  customer_snapshot: Record<string, unknown>[]
+  ship_to_address_id: string
+  ship_to_snapshot: Record<string, unknown>[]
+  warehouse_id: string
+  /** Full warehouse record (eager-loaded by the backend when warehouse_id is set) */
+  warehouse?: LegalEntityWarehouse
+  carrier_id: string
+  /** Full carrier (Supplier) record (eager-loaded by the backend when carrier_id is set) */
+  carrier?: Supplier
+  transport_reason: string
+  transport_method: TransportMethod | null
+  shipping_date: string
+  shipping_time: string
+  packages_count: number
+  gross_weight: number
+  net_weight: number
+  volume: number
+  appearance: string
+  notes_external: string
+  notes_internal: string
+  return_deadline: string
+  state: TransportDocumentState
+  carried_at: string
+  invoicing_status: TransportDocumentInvoicingStatus | null
+  version: number
+  created_by: string
+  items?: TransportDocumentItem[]
+  available_transitions?: string[]
+  is_archivable?: boolean
 }
 
 /**

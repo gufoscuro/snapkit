@@ -21,6 +21,14 @@
     onimport: (items: T[]) => void
     /** Optional snippet to render a hover preview for each item */
     previewSnippet?: Snippet<[T]>
+    /**
+     * Optional compatibility-lock function. When provided, the first selected item
+     * becomes a "compat anchor": items whose `compatKey` differs from the anchor's
+     * are rendered disabled and cannot be added to the selection. Already-selected
+     * items remain enabled (so the user can always deselect). The lock clears as
+     * soon as the selection becomes empty.
+     */
+    compatKey?: (item: T) => string
     /** Optional label for the trigger button */
     label?: string
     /** Whether the component renders as a sub-menu inside another dropdown */
@@ -34,6 +42,7 @@
     optionMappingFunction,
     onimport,
     previewSnippet,
+    compatKey,
     label = m.common_import(),
     submenu = false,
     disabled = false,
@@ -49,8 +58,28 @@
   let selectedValues = new SvelteSet<string>()
   let open = $state(false)
   let debounceTimeout: ReturnType<typeof setTimeout> | undefined
+  // Mutex for hover preview: only one card can be open at a time.
+  // Without this, bits-ui opens the next preview before the previous one finishes
+  // its exit animation, causing them to overlap in the portal with unpredictable
+  // z-index ordering (the older card can stay on top and block the new one).
+  let hoverOpenValue = $state<string | null>(null)
 
   const options = $derived(items.map(optionMappingFunction))
+
+  // Compatibility-lock anchor: compatKey of the first currently-selected item.
+  // When defined, options whose compatKey differs are disabled.
+  const compatAnchor = $derived.by(() => {
+    if (!compatKey || selectedValues.size === 0) return undefined
+    const firstKey = [...selectedValues][0]
+    const first = getItemByValue(firstKey)
+    return first ? compatKey(first) : undefined
+  })
+
+  function isLocked(item: T, value: string): boolean {
+    if (compatAnchor === undefined || !compatKey) return false
+    if (selectedValues.has(value)) return false
+    return compatKey(item) !== compatAnchor
+  }
 
   async function load(search?: string) {
     loading = true
@@ -75,10 +104,13 @@
       load()
     } else {
       if (debounceTimeout) clearTimeout(debounceTimeout)
+      hoverOpenValue = null
     }
   }
 
   function toggle(value: string) {
+    const item = getItemByValue(value)
+    if (item && isLocked(item, value)) return
     if (selectedValues.has(value)) {
       selectedValues.delete(value)
     } else {
@@ -123,10 +155,20 @@
         <Command.Group class="max-h-48 overflow-y-auto">
           {#each options as opt (opt.value)}
             {@const item = getItemByValue(opt.value)}
+            {@const locked = item ? isLocked(item, opt.value) : false}
             {#if previewSnippet && item}
-              <HoverCard.Root openDelay={400} closeDelay={0}>
+              <HoverCard.Root
+                openDelay={400}
+                closeDelay={0}
+                open={hoverOpenValue === opt.value}
+                onOpenChange={isOpen => {
+                  if (isOpen) hoverOpenValue = opt.value
+                  else if (hoverOpenValue === opt.value) hoverOpenValue = null
+                }}>
                 <HoverCard.Trigger class="w-full">
-                  <Command.Item class="text-xs" onSelect={() => toggle(opt.value)}>
+                  <Command.Item
+                    class={cn('text-xs', locked && 'cursor-not-allowed opacity-50')}
+                    onSelect={() => toggle(opt.value)}>
                     <div class="mr-2 size-3.5 shrink-0 rounded border hover:border-foreground/60">
                       <Check class={cn('size-3', !selectedValues.has(opt.value) && 'text-transparent')} />
                     </div>
@@ -138,7 +180,9 @@
                 </HoverCard.Content>
               </HoverCard.Root>
             {:else}
-              <Command.Item class="text-xs" onSelect={() => toggle(opt.value)}>
+              <Command.Item
+                class={cn('text-xs', locked && 'cursor-not-allowed opacity-50')}
+                onSelect={() => toggle(opt.value)}>
                 <div class="mr-2 size-3.5 shrink-0 rounded border hover:border-foreground/60">
                   <Check class={cn('size-3', !selectedValues.has(opt.value) && 'text-transparent')} />
                 </div>

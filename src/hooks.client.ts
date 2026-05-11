@@ -1,4 +1,7 @@
 import { dev } from '$app/environment'
+import { overrideItemIdKeyNameBeforeInitialisingDndZones } from 'svelte-dnd-action'
+
+overrideItemIdKeyNameBeforeInitialisingDndZones('_dndId')
 
 export const handleError = ({ error, event }) => {
   if (dev) {

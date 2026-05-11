@@ -1,6 +1,11 @@
 import * as m from '$lib/paraglide/messages.js'
 import type { QuotationStatus } from '$lib/types/api-types'
-import { createFlagToggleAction, type RecordAction, type RecordActionRequestOptions } from '$lib/utils/record-actions'
+import {
+  createArchiveRecordAction,
+  createFlagToggleAction,
+  type RecordAction,
+  type RecordActionRequestOptions,
+} from '$lib/utils/record-actions'
 import { api } from '$lib/utils/request'
 
 export type QuotationActionOptions = RecordActionRequestOptions & {
@@ -9,16 +14,19 @@ export type QuotationActionOptions = RecordActionRequestOptions & {
   state: QuotationStatus
   sentAt: string | null
   availableTransitions: string[]
+  isArchivable?: boolean
 }
 
 type CreateQuotationActionsOptions = {
   legalEntityId: string
   onSuccess?: () => void | Promise<void>
+  onArchived?: () => void
 }
 
 export function createQuotationActions({
   legalEntityId,
   onSuccess,
+  onArchived,
 }: CreateQuotationActionsOptions): RecordAction<QuotationActionOptions>[] {
   return [
     createFlagToggleAction<QuotationActionOptions>({
@@ -89,5 +97,13 @@ export function createQuotationActions({
         await onSuccess?.()
       },
     },
+    createArchiveRecordAction<QuotationActionOptions>({
+      apiUrl: opts => `/legal-entities/${legalEntityId}/quotations/${opts.targetId}`,
+      isArchivable: opts => opts.isArchivable,
+      confirmMessage: opts => m.archive_quotation_confirmation({ name: opts.documentNumber }),
+      successMessage: opts => m.quotation_archived_success({ name: opts.documentNumber }),
+      errorMessage: m.quotation_archive_error(),
+      onSuccess: () => onArchived?.(),
+    }),
   ]
 }

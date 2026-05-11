@@ -1,6 +1,6 @@
 # Menu System
 
-This document describes Snapkit's dynamic menu system, which provides flexible navigation configuration with support for simple links and nested submenus.
+This document describes Snapkit's dynamic menu system, which provides flexible navigation configuration with support for simple links and grouped submenus.
 
 ## Overview
 
@@ -9,9 +9,9 @@ The menu system is built on top of Snapkit's dynamic routing system (see [naviga
 **Key Features:**
 
 - ✅ Type-safe menu configuration using `pageId` from page registry
-- ✅ Support for nested submenus with multiple rendering styles
-- ✅ Integration with shadcn-svelte Navigation Menu component
-- ✅ Icons, descriptions, and metadata support
+- ✅ Support for nested submenus with two rendering styles
+- ✅ Integration with the shadcn-svelte Sidebar component
+- ✅ Icons and metadata support
 - ✅ Automatic URL generation via `createRoute()`
 - ✅ Backward compatibility with legacy `href`-based menus
 
@@ -26,7 +26,7 @@ A simple menu item that navigates directly to a page.
   type: 'link',
   label: 'Dashboard',
   pageId: 'dashboard',
-  icon: 'home',              // Optional Lucide icon name
+  icon: 'House',             // Optional Lucide icon name (PascalCase)
   visible: true,             // Optional, defaults to true
   disabled: false            // Optional, defaults to false
 }
@@ -46,39 +46,32 @@ A simple menu item that navigates directly to a page.
 
 ### Submenu
 
-A menu item with nested children, rendered using shadcn-svelte Navigation Menu.
+A menu item with nested children, rendered in the LeftSidebar according to its `submenuStyle`.
 
 ```typescript
 {
   type: 'submenu',
-  label: 'Orders',
-  icon: 'package',
-  submenuStyle: 'list',      // 'list' | 'simple' | 'icon' | 'grid'
+  label: 'sales',
+  icon: 'ShoppingCart',
+  submenuStyle: 'simple',     // 'simple' | 'collapsible'
   children: [
-    {
-      type: 'link',
-      label: 'All Orders',
-      pageId: 'order-list',
-      description: 'View and manage all orders'  // Used in 'list' style
-    },
-    {
-      type: 'link',
-      label: 'Create Order',
-      pageId: 'order-create',
-      description: 'Create a new sales order'
-    }
+    { type: 'link', label: 'quotations',       pageId: 'quotations',       icon: 'FileText' },
+    { type: 'link', label: 'sales_orders',     pageId: 'sales-orders',     icon: 'ClipboardList' },
+    { type: 'link', label: 'warehouse_orders', pageId: 'warehouse-orders', icon: 'PackageOpen' }
   ]
 }
 ```
 
 **Clickable Trigger (Submenu with pageId):**
 
+A `pageId` is supported on the submenu wrapper itself but is currently only honoured by the menu resolver — the LeftSidebar render does not navigate on the trigger. Treat it as forward-compatibility metadata.
+
 ```typescript
 {
   type: 'submenu',
-  label: 'Orders',
-  pageId: 'order-list',      // Makes the trigger itself clickable
-  submenuStyle: 'simple',
+  label: 'orders',
+  pageId: 'order-list',
+  submenuStyle: 'collapsible',
   children: [
     { type: 'link', label: 'Pending', pageId: 'order-list', query: { status: 'pending' } },
     { type: 'link', label: 'Shipped', pageId: 'order-list', query: { status: 'shipped' } }
@@ -88,63 +81,25 @@ A menu item with nested children, rendered using shadcn-svelte Navigation Menu.
 
 ## Submenu Styles
 
-The `submenuStyle` property controls how submenu children are rendered:
+The `submenuStyle` property controls how a submenu is rendered in the LeftSidebar.
 
-### 1. List Style (`'list'`)
+### 1. Simple Style (`'simple'`)
 
-**Best for:** Feature sections with descriptions
+**Best for:** splitting the sidebar into named sections of flat, iconated links.
 
-Shows title + description for each item. Ideal for explaining what each section does.
-
-```typescript
-{
-  type: 'submenu',
-  label: 'Sales',
-  submenuStyle: 'list',
-  children: [
-    {
-      type: 'link',
-      label: 'Customers',
-      pageId: 'customer-list',
-      description: 'Manage your customer database'
-    },
-    {
-      type: 'link',
-      label: 'Quotes',
-      pageId: 'quote-list',
-      description: 'View and create sales quotes'
-    }
-  ]
-}
-```
-
-**Renders as:**
-
-```
-┌─────────────────────────────┐
-│ Customers                   │
-│ Manage your customer database│
-├─────────────────────────────┤
-│ Quotes                      │
-│ View and create sales quotes│
-└─────────────────────────────┘
-```
-
-### 2. Simple Style (`'simple'`)
-
-**Best for:** Compact menus with short lists
-
-Minimal style with just link text. Most compact option.
+The parent label becomes a `Sidebar.GroupLabel` and the children render as flat `Sidebar.MenuItem`s — each with its own icon. There is **no** collapsible behaviour: the section is always expanded.
 
 ```typescript
 {
   type: 'submenu',
-  label: 'Settings',
+  label: 'general',
+  icon: 'Layers',                // Currently not rendered (the group has only a label)
   submenuStyle: 'simple',
   children: [
-    { type: 'link', label: 'Profile', pageId: 'settings-profile' },
-    { type: 'link', label: 'Preferences', pageId: 'settings-preferences' },
-    { type: 'link', label: 'Security', pageId: 'settings-security' }
+    { type: 'link', label: 'Home',      pageId: 'home',      icon: 'House' },
+    { type: 'link', label: 'customers', pageId: 'customers', icon: 'Users' },
+    { type: 'link', label: 'suppliers', pageId: 'suppliers', icon: 'Contact' },
+    { type: 'link', label: 'items',     pageId: 'items',     icon: 'Package' }
   ]
 }
 ```
@@ -152,90 +107,70 @@ Minimal style with just link text. Most compact option.
 **Renders as:**
 
 ```
-┌──────────────┐
-│ Profile      │
-│ Preferences  │
-│ Security     │
-└──────────────┘
+GENERAL
+  🏠  Home
+  👥  Customers
+  📇  Suppliers
+  📦  Items
 ```
 
-### 3. Icon Style (`'icon'`)
+A `simple` submenu always opens its own `<Sidebar.Group>`. If it's preceded by other top-level items (links or `collapsible` submenus), those items are flushed first into a separate inline group. The first inline group inherits the `mainMenu.name` as its `GroupLabel`; subsequent inline groups have no label to avoid repetition.
 
-**Best for:** Visual workflow states or categories
+If the submenu has no visible link children, the group is omitted entirely.
 
-Shows icon + label for each item. Great for status-based navigation.
+### 2. Collapsible Style (`'collapsible'`)
+
+**Best for:** keeping a long list of related links collapsed by default to save vertical space.
+
+The parent renders as a clickable `Sidebar.MenuButton` with a chevron. Children are revealed inside a `Sidebar.MenuSub` and persist their open/closed state in `localStorage` (key: `left-sidebar-menu-open`). Children render with their icon next to the label.
 
 ```typescript
 {
   type: 'submenu',
-  label: 'Workflow',
-  submenuStyle: 'icon',
+  label: 'sales',
+  icon: 'ShoppingCart',
+  submenuStyle: 'collapsible',
   children: [
-    { type: 'link', label: 'Backlog', pageId: 'workflow-backlog', icon: 'circle-help' },
-    { type: 'link', label: 'In Progress', pageId: 'workflow-progress', icon: 'circle' },
-    { type: 'link', label: 'Done', pageId: 'workflow-done', icon: 'circle-check' }
+    { type: 'link', label: 'quotations',       pageId: 'quotations',       icon: 'FileText' },
+    { type: 'link', label: 'sales_orders',     pageId: 'sales-orders',     icon: 'ClipboardList' },
+    { type: 'link', label: 'warehouse_orders', pageId: 'warehouse-orders', icon: 'PackageOpen' }
   ]
 }
 ```
 
-**Renders as:**
+**Renders as (collapsed):**
 
 ```
-┌──────────────────┐
-│ ◔ Backlog        │
-│ ○ In Progress    │
-│ ◉ Done           │
-└──────────────────┘
+🛒  Sales                          ›
 ```
 
-### 4. Grid Style (`'grid'`)
-
-**Best for:** Many items (6+) that need organization
-
-Displays items in a multi-column grid. Best for component showcases or large catalogs.
-
-```typescript
-{
-  type: 'submenu',
-  label: 'Materials',
-  submenuStyle: 'grid',
-  children: [
-    { type: 'link', label: 'Raw Materials', pageId: 'materials-raw' },
-    { type: 'link', label: 'Components', pageId: 'materials-components' },
-    { type: 'link', label: 'Finished Goods', pageId: 'materials-finished' },
-    { type: 'link', label: 'Packaging', pageId: 'materials-packaging' },
-    { type: 'link', label: 'Consumables', pageId: 'materials-consumables' },
-    { type: 'link', label: 'Tools', pageId: 'materials-tools' }
-  ]
-}
-```
-
-**Renders as:**
+**Renders as (expanded):**
 
 ```
-┌──────────────┬──────────────┬──────────────┐
-│ Raw Materials│ Components   │ Finished Goods│
-├──────────────┼──────────────┼──────────────┤
-│ Packaging    │ Consumables  │ Tools         │
-└──────────────┴──────────────┴──────────────┘
+🛒  Sales                          ⌄
+    📄  Quotations
+    📋  Sales Orders
+    📦  Warehouse Orders
 ```
+
+The trigger expands automatically when the active route matches one of the children (via `isGroupActive`).
 
 ## Configuration Structure
 
-Menus are configured in `TenantConfigData`, which is the `dashboard` field of the legal entity config response (`LegalEntityConfigResponse`):
+Menus are configured under `dashboard.menus.main` of the legal entity config response (`LegalEntityConfigResponse`):
 
 ```typescript
-interface TenantConfigData {
+interface DashboardConfigData {
   pages: PageConfig[]
   menus: {
-    main: MenuConfigData        // Primary navigation menu
-    [key: string]: MenuConfigData  // Additional named menus
+    main: MenuConfigData
+    [key: string]: MenuConfigData
   }
 }
 
 interface MenuConfigData {
   id: string
-  name: string
+  name: string          // Used as GroupLabel for the first inline segment
   items: MenuItem[]
 }
 ```
@@ -254,69 +189,42 @@ The JSON served by `GET /api/legal-entities/{id}/config` (field `dashboard.menus
 
 ```typescript
 const menuConfig: MenuConfigData = {
-  id: 'main-menu',
-  name: 'Main Navigation',
+  id: 'main',
+  name: 'sections',
   items: [
-    // Simple link
-    {
-      type: 'link',
-      label: 'Dashboard',
-      pageId: 'dashboard',
-      icon: 'home'
-    },
-
-    // Submenu with list style
     {
       type: 'submenu',
-      label: 'Sales',
-      icon: 'shopping-cart',
-      submenuStyle: 'list',
+      label: 'general',
+      icon: 'Layers',
+      submenuStyle: 'simple',
       children: [
-        {
-          type: 'link',
-          label: 'All Orders',
-          pageId: 'order-list',
-          description: 'View and manage sales orders'
-        },
-        {
-          type: 'link',
-          label: 'Customers',
-          pageId: 'customer-list',
-          description: 'Manage customer database'
-        },
-        {
-          type: 'link',
-          label: 'Create Order',
-          pageId: 'order-create',
-          description: 'Create a new sales order'
-        }
+        { type: 'link', label: 'Home',      pageId: 'home',      icon: 'House' },
+        { type: 'link', label: 'customers', pageId: 'customers', icon: 'Users' },
+        { type: 'link', label: 'suppliers', pageId: 'suppliers', icon: 'Contact' },
+        { type: 'link', label: 'items',     pageId: 'items',     icon: 'Package' }
       ]
     },
-
-    // Submenu with grid style
     {
       type: 'submenu',
-      label: 'Inventory',
-      icon: 'package',
-      submenuStyle: 'grid',
+      label: 'sales',
+      icon: 'ShoppingCart',
+      submenuStyle: 'simple',
       children: [
-        { type: 'link', label: 'Raw Materials', pageId: 'inventory-raw' },
-        { type: 'link', label: 'Components', pageId: 'inventory-components' },
-        { type: 'link', label: 'Finished Products', pageId: 'inventory-finished' },
-        { type: 'link', label: 'Packaging', pageId: 'inventory-packaging' }
+        { type: 'link', label: 'quotations',       pageId: 'quotations',       icon: 'FileText' },
+        { type: 'link', label: 'sales_orders',     pageId: 'sales-orders',     icon: 'ClipboardList' },
+        { type: 'link', label: 'warehouse_orders', pageId: 'warehouse-orders', icon: 'PackageOpen' }
       ]
-    },
-
-    // Simple link with parameters
-    {
-      type: 'link',
-      label: 'Reports',
-      pageId: 'reports-dashboard',
-      icon: 'bar-chart'
     }
   ]
 }
 ```
+
+### Mixing styles
+
+Top-level items can mix `link`, `collapsible` submenus and `simple` submenus. The render groups them as follows:
+
+- Each `simple` submenu opens its own `<Sidebar.Group>` with the submenu's label as `GroupLabel`.
+- Adjacent `link` items and `collapsible` submenus are bundled into a single inline group. The first such group inherits `menus.main.name` as its `GroupLabel`; further inline groups (if separated by `simple` submenus) render without a label.
 
 ## How Menu Resolution Works
 
@@ -324,10 +232,9 @@ The menu system uses `createRoute()` under the hood to generate URLs from `pageI
 
 1. **Menu Configuration** → Contains `MenuItem[]` with `pageId` references
 2. **Menu Resolver** (`resolveMenuItems()`) → Converts `MenuItem` to `ResolvedMenuItem` with computed `href`
-3. **Component Rendering** → Uses `href` for navigation
+3. **Component Rendering** → `LeftSidebarMenu` consumes the raw `MenuItem[]` directly and uses an internal `getHref()` helper
 
 ```typescript
-// Configuration
 const menuItem = {
   type: 'link',
   label: 'Order Details',
@@ -336,23 +243,19 @@ const menuItem = {
   query: { tab: 'shipping' }
 }
 
-// Resolution (automatic)
 const resolved = resolveMenuItem(menuItem)
 // → {
 //     type: 'link',
 //     label: 'Order Details',
-//     href: '/orders/123?tab=shipping',  // Computed via createRoute()
+//     href: '/orders/123?tab=shipping',
 //     visible: true,
 //     disabled: false
 //   }
-
-// Rendering (automatic in AppHeader)
-<a href={resolved.href}>{resolved.label}</a>
 ```
 
 ## Using Menu Items in Components
 
-Menu components read items directly from `tenantConfigStore`, which is populated by the layout load function before any page renders:
+Menu components read items directly from `tenantConfigStore`, populated by the layout load function before any page renders:
 
 ```svelte
 <script lang="ts">
@@ -368,29 +271,41 @@ Menu components read items directly from `tenantConfigStore`, which is populated
 The `LeftSidebarMenu` component handles:
 
 - ✅ URL generation via `getHref()` (wraps `createRoute()`)
-- ✅ Collapsible submenus with persisted open/closed state
+- ✅ Segment computation: splits top-level items into `simple` groups and inline groups
+- ✅ Collapsible submenus with persisted open/closed state in `localStorage`
 - ✅ Active state detection via `page.url.pathname`
-- ✅ Icon rendering (kebab-case → PascalCase + `Icon` suffix via `lucide-svelte`)
-- ✅ Visibility filtering
+- ✅ Icon rendering for top-level links, simple-group children and collapsible children
+- ✅ Visibility filtering (skips items with `visible: false` and groups whose children are all hidden)
 
 ## Icons
 
-Icons use Lucide icon names. Common examples:
+Icons use the **PascalCase** Lucide icon names registered in `LeftSidebarMenu`'s `SUPPORTED_ICONS` map. Add new entries to that map (with an individual import) before referencing them from config — referencing an unknown name renders no icon.
 
-| Icon Name       | Visual | Use Case           |
-| --------------- | ------ | ------------------ |
-| `home`          | 🏠     | Dashboard, Home    |
-| `package`       | 📦     | Orders, Inventory  |
-| `users`         | 👥     | Customers, Team    |
-| `settings`      | ⚙️     | Configuration      |
-| `bar-chart`     | 📊     | Reports, Analytics |
-| `shopping-cart` | 🛒     | Sales, Commerce    |
-| `truck`         | 🚚     | Shipping, Delivery |
-| `circle-help`   | ◔      | Backlog, Help      |
-| `circle`        | ○      | In Progress        |
-| `circle-check`  | ◉      | Completed          |
+| Icon Name       | Use Case                |
+| --------------- | ----------------------- |
+| `House`         | Dashboard, Home         |
+| `Package`       | Items, Inventory        |
+| `PackageOpen`   | Warehouse Orders        |
+| `Users`         | Customers, Team         |
+| `Contact`       | Suppliers, Address book |
+| `ShoppingCart`  | Sales, Commerce         |
+| `Truck`         | Shipping, Delivery      |
+| `Receipt`       | Invoices                |
+| `CreditCard`    | Payments                |
+| `BarChart`      | Reports, Analytics      |
+| `Calendar`      | Scheduling              |
+| `Folder`        | Documents, Files        |
+| `Tag`           | Labels, Categories      |
+| `ClipboardList` | Sales Orders, Lists     |
+| `Building`      | Branches, Companies     |
+| `Mail`          | Communications          |
+| `Globe`         | Languages, Regions      |
+| `Layers`        | Generic groups          |
+| `FileText`      | Documents, Quotations   |
+| `Settings`      | Configuration           |
+| `Warehouse`     | Warehouse               |
 
-See [Lucide Icons](https://lucide.dev/) for full list.
+See [Lucide Icons](https://lucide.dev/) for the full library.
 
 ## Best Practices
 
@@ -401,52 +316,25 @@ See [Lucide Icons](https://lucide.dev/) for full list.
 { type: 'link', label: 'List', pageId: 'order-list' }
 
 // ✅ Good
-{ type: 'link', label: 'All Orders', pageId: 'order-list' }
+{ type: 'link', label: 'sales_orders', pageId: 'sales-orders' }
 ```
 
-### 2. Add Descriptions for List-Style Submenus
+Labels are passed through `getI18nLabel()` — prefer paraglide message keys (e.g. `'sales_orders'`) over literal strings so menu copy follows the active locale.
+
+### 2. Choose the Right Submenu Style
+
+- **Always-visible group of related links**: use `'simple'` — turns into a flat sidebar section.
+- **Long list you want collapsed by default**: use `'collapsible'` — saves vertical space, persists open state.
+
+### 3. Keep Menu Hierarchy Shallow
 
 ```typescript
-// ❌ Bad
-{
-  type: 'submenu',
-  submenuStyle: 'list',
-  children: [
-    { type: 'link', label: 'Orders', pageId: 'order-list' }
-  ]
-}
-
-// ✅ Good
-{
-  type: 'submenu',
-  submenuStyle: 'list',
-  children: [
-    {
-      type: 'link',
-      label: 'Orders',
-      pageId: 'order-list',
-      description: 'View and manage all sales orders'
-    }
-  ]
-}
-```
-
-### 3. Choose Appropriate Submenu Style
-
-- **2-4 items**: Use `simple`
-- **With descriptions**: Use `list`
-- **Visual categories**: Use `icon`
-- **6+ items**: Use `grid`
-
-### 4. Keep Menu Hierarchy Shallow
-
-```typescript
-// ❌ Bad - Too deep
+// ❌ Bad - Too deep, the LeftSidebar render only handles one level of nesting
 {
   type: 'submenu',
   children: [
     {
-      type: 'submenu',  // Nested submenu - harder to navigate
+      type: 'submenu',
       children: [...]
     }
   ]
@@ -462,21 +350,21 @@ See [Lucide Icons](https://lucide.dev/) for full list.
 }
 ```
 
-### 5. Use Icons Consistently
+### 4. Use Icons Consistently
 
 ```typescript
 // ✅ Good - Icons used consistently
-mainMenu: [
-  { type: 'link', label: 'Dashboard', pageId: 'dashboard', icon: 'home' },
-  { type: 'link', label: 'Orders', pageId: 'order-list', icon: 'package' },
-  { type: 'link', label: 'Customers', pageId: 'customer-list', icon: 'users' }
+items: [
+  { type: 'link', label: 'Home',      pageId: 'home',      icon: 'House' },
+  { type: 'link', label: 'customers', pageId: 'customers', icon: 'Users' },
+  { type: 'link', label: 'suppliers', pageId: 'suppliers', icon: 'Contact' }
 ]
 
 // ❌ Bad - Inconsistent icon usage
-mainMenu: [
-  { type: 'link', label: 'Dashboard', pageId: 'dashboard', icon: 'home' },
-  { type: 'link', label: 'Orders', pageId: 'order-list' },  // Missing icon
-  { type: 'link', label: 'Customers', pageId: 'customer-list', icon: 'users' }
+items: [
+  { type: 'link', label: 'Home',      pageId: 'home',      icon: 'House' },
+  { type: 'link', label: 'customers', pageId: 'customers' },
+  { type: 'link', label: 'suppliers', pageId: 'suppliers', icon: 'Contact' }
 ]
 ```
 
@@ -487,7 +375,7 @@ The system supports backward compatibility with the old `NavItem` format (with `
 ### Legacy Format (Deprecated)
 
 ```typescript
-mainMenu: [
+items: [
   {
     label: 'Dashboard',
     href: '/dashboard',  // ❌ Hardcoded URL
@@ -499,11 +387,11 @@ mainMenu: [
 ### New Format (Recommended)
 
 ```typescript
-mainMenu: [
+items: [
   {
-    type: 'link',        // ✅ Explicit type
+    type: 'link',
     label: 'Dashboard',
-    pageId: 'dashboard', // ✅ Uses page registry
+    pageId: 'dashboard',
     visible: true
   }
 ]
@@ -511,10 +399,10 @@ mainMenu: [
 
 **Why migrate?**
 
-- ✅ **Type-safe**: PageId validated against page registry
+- ✅ **Type-safe**: `pageId` validated against the page registry
 - ✅ **Maintainable**: URLs update automatically when routes change
-- ✅ **Flexible**: Support for parameters, query strings, and submenus
-- ✅ **Consistent**: Same routing system used throughout the app
+- ✅ **Flexible**: parameters, query strings, submenus
+- ✅ **Consistent**: same routing system as the rest of the app
 
 ## Related Documentation
 
@@ -526,32 +414,38 @@ mainMenu: [
 
 ### Menu items not appearing
 
-**Cause:** `visible: false` or missing `pageId` in page registry
+**Cause:** `visible: false`, missing `pageId` in page registry, or a `simple` submenu with all children hidden (group is omitted entirely in that case).
 
 **Solution:**
 
-1. Check that `visible` is not set to `false`
-2. Verify that `pageId` exists in page registry
-3. Check browser console for warnings about broken links
+1. Check that `visible` is not set to `false` on the item or all of its children.
+2. Verify that `pageId` exists in the page registry.
+3. Check the browser console for warnings about broken links.
 
 ### "Cannot read properties of undefined" error
 
-**Cause:** Menu configuration in old format or malformed
+**Cause:** Menu configuration in old format or malformed.
 
 **Solution:**
 
-1. Check that all menu items have `type` field
-2. Verify `children` array exists for submenu items
-3. Check browser console for migration warnings
+1. Check that all menu items have a `type` field.
+2. Verify `children` array exists for submenu items.
+3. Check the browser console for migration warnings.
 
 ### URLs not updating when routes change
 
-**Cause:** Still using legacy `href` format
+**Cause:** Still using legacy `href` format.
 
-**Solution:** Migrate to new `MenuItem` format with `pageId`
+**Solution:** Migrate to the new `MenuItem` format with `pageId`.
 
 ### Submenu not rendering correctly
 
-**Cause:** Missing or invalid `submenuStyle`
+**Cause:** Invalid `submenuStyle` value.
 
-**Solution:** Add `submenuStyle: 'list' | 'simple' | 'icon' | 'grid'` to submenu items
+**Solution:** Use one of `'simple' | 'collapsible'`. Older values (`'list'`, `'icon'`, `'grid'`) are no longer supported.
+
+### Submenu icon not showing
+
+**Cause:** Icon name not registered in `SUPPORTED_ICONS` in `LeftSidebarMenu.svelte`, or wrong casing.
+
+**Solution:** Use PascalCase names (e.g. `'House'`, `'PackageOpen'`). To use a new Lucide icon, add an explicit import and a `SUPPORTED_ICONS` entry in `LeftSidebarMenu.svelte` — bundling the entire Lucide library is intentionally avoided.

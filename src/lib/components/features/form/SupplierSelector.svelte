@@ -58,14 +58,9 @@
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
-    onCreateRecord = () => openRecordCreation('supplier-details', m.new_tab_opened_for_supplier(), 'supply/supplier'),
+    onCreateRecord = () => openRecordCreation('supplier-details', m.new_tab_opened_for_supplier()),
     onOpenRecord = (option: ExtendedOption) =>
-      openRecordEdit(
-        'supplier-details',
-        { uuid: option.value as string },
-        m.new_tab_opened_for_supplier_edit(),
-        'supply/supplier',
-      ),
+      openRecordEdit('supplier-details', { uuid: option.value as string }, m.new_tab_opened_for_supplier_edit()),
   }: Props = $props()
 
   function optionMappingFunction(item: SupplierSummary): ExtendedOption {

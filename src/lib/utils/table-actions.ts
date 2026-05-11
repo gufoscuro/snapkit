@@ -14,6 +14,12 @@ export type ArchiveActionConfig<T> = {
   apiUrl: (row: T) => string
 
   /**
+   * Function to build the URL used to GET the single record before archiving,
+   * to read its `is_archivable` flag. Defaults to `apiUrl(row)`.
+   */
+  fetchUrl?: (row: T) => string
+
+  /**
    * Confirmation dialog message
    */
   confirmMessage: (row: T) => string
@@ -80,6 +86,13 @@ export function createArchiveAction<T extends Record<string, any> & { id?: strin
         description: config.confirmMessage(row),
         confirmText: m.common_archive(),
         cancelText: m.common_cancel(),
+        prefetch: async () => {
+          const url = (config.fetchUrl ?? config.apiUrl)(row)
+          const record = await apiRequest<{ is_archivable?: boolean }>({ url })
+          return { blocked: record.is_archivable === false }
+        },
+        blockedTitle: m.cannot_archive_title(),
+        blockedDescription: m.cannot_archive_description(),
         onArchive: async () => {
           await apiRequest({
             url: config.apiUrl(row),

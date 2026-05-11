@@ -101,7 +101,7 @@
   import type { Item } from '$lib/types/api-types'
   import type { BasicOption } from '$utils/generics'
   import { formatPriceDisplay } from '$utils/prices'
-  import { X } from '@lucide/svelte'
+  import X from '@lucide/svelte/icons/x'
 
   /**
    * Internal line item type for editing

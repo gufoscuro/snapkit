@@ -1,4 +1,9 @@
-import { createFlagToggleAction, type RecordAction, type RecordActionRequestOptions } from '$lib/utils/record-actions'
+import {
+	createArchiveRecordAction,
+	createFlagToggleAction,
+	type RecordAction,
+	type RecordActionRequestOptions,
+} from '$lib/utils/record-actions'
 import * as m from '$lib/paraglide/messages.js'
 
 export type CustomerFlagOptions = RecordActionRequestOptions & {
@@ -6,14 +11,16 @@ export type CustomerFlagOptions = RecordActionRequestOptions & {
 	version: number
 	suspendedAt: string | null
 	ceasedAt: string | null
+	isArchivable?: boolean
 }
 
 type CreateCustomerFlagActionsOptions = {
 	legalEntityId: string
 	onSuccess?: () => void | Promise<void>
+	onArchived?: () => void
 }
 
-export function createCustomerFlagActions({ legalEntityId, onSuccess }: CreateCustomerFlagActionsOptions): RecordAction<CustomerFlagOptions>[] {
+export function createCustomerFlagActions({ legalEntityId, onSuccess, onArchived }: CreateCustomerFlagActionsOptions): RecordAction<CustomerFlagOptions>[] {
 	return [
 		createFlagToggleAction<CustomerFlagOptions>({
 			id: 'toggle-suspend',
@@ -58,6 +65,14 @@ export function createCustomerFlagActions({ legalEntityId, onSuccess }: CreateCu
 			},
 			errorMessage: m.flag_action_error(),
 			onSuccess,
+		}),
+		createArchiveRecordAction<CustomerFlagOptions>({
+			apiUrl: (opts) => `/legal-entities/${legalEntityId}/customers/${opts.targetId}`,
+			isArchivable: (opts) => opts.isArchivable,
+			confirmMessage: (opts) => m.archive_customer_confirmation({ name: opts.name }),
+			successMessage: (opts) => m.customer_archived_success({ name: opts.name }),
+			errorMessage: m.customer_archive_error(),
+			onSuccess: () => onArchived?.(),
 		}),
 	]
 }

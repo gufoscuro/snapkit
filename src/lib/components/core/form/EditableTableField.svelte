@@ -7,7 +7,7 @@
 <script lang="ts" generics="T extends Record<string, unknown>">
   import Label from '$components/ui/label/label.svelte'
   import * as Table from '$components/ui/table'
-  import { ArrowUp } from '@lucide/svelte'
+  import ArrowUp from '@lucide/svelte/icons/arrow-up'
   import type { Snippet } from 'svelte'
   import { EditableTableFieldClass } from './form'
   import { clearFormContext, getFormContextOptional } from './form-context'

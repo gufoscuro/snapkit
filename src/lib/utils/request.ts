@@ -3,6 +3,7 @@
 import { goto } from '$app/navigation'
 import { resolve } from '$app/paths'
 import { env } from '$env/dynamic/public'
+import { getLocale } from '$lib/paraglide/runtime.js'
 import { parseJSON, stringifyJSON } from './json'
 
 const API_GATEWAY = env.PUBLIC_API_GATEWAY
@@ -37,33 +38,14 @@ const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 type CacheEntry = { data: unknown; timestamp: number }
 const apiCache = new Map<string, CacheEntry>()
 
-function getBaseUrl(url: string): string {
-  return url.split('?')[0]
-}
-
-function getParentPath(path: string): string | null {
-  const lastSlash = path.lastIndexOf('/')
-  if (lastSlash <= 0) return null
-  return path.substring(0, lastSlash)
-}
-
-export function invalidateCacheByBasePath(url: string): void {
-  const basePath = getBaseUrl(url)
-
-  // Collect the mutation path and all ancestor paths.
-  // e.g. PUT /foo/bar/123/flags → invalidates /foo/bar/123/flags, /foo/bar/123, /foo/bar
-  const pathsToInvalidate = new Set<string>()
-  let current: string | null = basePath
-  while (current) {
-    pathsToInvalidate.add(current)
-    current = getParentPath(current)
-  }
-
-  for (const key of apiCache.keys()) {
-    if (pathsToInvalidate.has(getBaseUrl(key))) {
-      apiCache.delete(key)
-    }
-  }
+/**
+ * Drops every cached GET response. The backend is the source of truth and a
+ * mutation on one resource may have side effects on unrelated reads, so any
+ * non-GET request — and contexts like logout or legal-entity switch — clear
+ * the whole cache rather than trying to map mutation→reads.
+ */
+export function invalidateAllCache(): void {
+  apiCache.clear()
 }
 
 export type SafeApiResponse<T> = {
@@ -101,6 +83,20 @@ function getXsrfToken(): string | null {
 }
 
 /**
+ * Build the headers shared by every outgoing request: current UI locale and
+ * (when available) the XSRF token. Caller-provided headers override these,
+ * so a request can opt out of either by passing the same key explicitly.
+ */
+function buildBaseHeaders(): Record<string, string> {
+  const xsrfToken = getXsrfToken()
+
+  return {
+    'Accept-Language': getLocale(),
+    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+  }
+}
+
+/**
  * Client-side API request with XSRF token support
  * Calls the API gateway directly using PUBLIC_API_GATEWAY
  * Automatically reads the XSRF-TOKEN cookie and includes it as a header
@@ -133,14 +129,13 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
       if (cached) apiCache.delete(url)
     }
   } else {
-    invalidateCacheByBasePath(url)
+    invalidateAllCache()
   }
 
-  const xsrfToken = getXsrfToken()
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+    ...buildBaseHeaders(),
     ...(options.headers || {}),
   }
 
@@ -194,10 +189,9 @@ export async function apiDownload(options: {
   const { url, filename, redirectOnUnauthorized = true } = options
   const fullUrl = `${API_GATEWAY}/api${url}`
 
-  const xsrfToken = getXsrfToken()
   const headers: HeadersInit = {
     Accept: 'application/pdf, application/octet-stream',
-    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+    ...buildBaseHeaders(),
   }
 
   const result = await fetch(fullUrl, { method: 'GET', headers, credentials: 'include' })
@@ -236,10 +230,9 @@ export async function apiUploadRequest<T>(options: {
   const { url, method = 'POST', body, redirectOnUnauthorized = true } = options
   const fullUrl = `${API_GATEWAY}/api${url}`
 
-  const xsrfToken = getXsrfToken()
   const headers: HeadersInit = {
     Accept: 'application/json',
-    ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+    ...buildBaseHeaders(),
   }
 
   const result = await fetch(fullUrl, { method, headers, body, credentials: 'include' })
@@ -256,7 +249,7 @@ export async function apiUploadRequest<T>(options: {
     throw new ApiError(data?.message || 'Request failed', result.status, data, result)
   }
 
-  invalidateCacheByBasePath(fullUrl)
+  invalidateAllCache()
 
   return data as T
 }

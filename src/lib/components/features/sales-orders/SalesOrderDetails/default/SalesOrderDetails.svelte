@@ -14,7 +14,10 @@
 </script>
 
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import ActionButton from '$components/core/ActionButton.svelte'
+  import { ImportMenu, ImportRecordPreview } from '$components/core/common/import-menu'
+  import { createImportedSnapshot } from '$components/core/form/imported-snapshot.svelte'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
   import BottomBar from '$components/core/form/BottomBar.svelte'
@@ -33,6 +36,7 @@
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
   import LegalEntityBankSelector from '$components/features/form/LegalEntityBankSelector.svelte'
   import PaymentTermSelector from '$components/features/form/PaymentTermSelector.svelte'
+  import type { QuotationLineItem } from '$components/features/form/QuotationItemsEditor.svelte'
   import SalesOrderItemsListEditor from '$components/features/form/SalesOrderItemsListEditor.svelte'
   import type { VatCodeSummary } from '$components/features/form/VatCodeSelector.svelte'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
@@ -49,11 +53,16 @@
   import type { Currency, CustomerCommercialTerms, PaymentTerm, SalesOrder } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { currencyLabels, incotermLabels, salesTransactionTypeLabels, toSelectItems } from '$lib/utils/enum-labels'
-  import { api, apiDownload } from '$lib/utils/request'
+  import type { BasicOption } from '$lib/utils/generics'
+  import { generateId } from '$lib/utils/id'
+  import { api, apiDownload, apiRequest } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
-  import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
+  import { extractSnapshotString, type SnapshotShape } from '$lib/utils/snapshots'
+  import { DEFAULT_CURRENCY_CODE, floatToPriceString } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
+  import { toast } from 'svelte-sonner'
+  import { SvelteSet } from 'svelte/reactivity'
   import { SalesOrderDetailsContract } from './SalesOrderDetails.contract.js'
 
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
@@ -94,9 +103,231 @@
   const promise = $derived(detail.promise)
   const isReadOnly = $derived(!!record && record.state !== 'open')
 
+  // Items list editor ref + import-from-quotations flow
+  let itemsEditorRef: SalesOrderItemsListEditor | undefined = $state()
+
+  // Snapshots from a quotation imported in create mode. The *Attr derived below
+  // fall back to these so the selectors display names without an extra fetch.
+  const customerSnapshotImport = createImportedSnapshot()
+  const shipToSnapshotImport = createImportedSnapshot()
+  const contactPersonSnapshotImport = createImportedSnapshot()
+  const paymentTermSnapshotImport = createImportedSnapshot()
+
+  type QuotationWithItems = {
+    id: string
+    document_number: string
+    document_date: string
+    net_value: number
+    currency: string
+    sales_transaction_type?: string
+    customer_id: string
+    customer_snapshot?: SnapshotShape
+    ship_to_address_id?: string
+    ship_to_snapshot?: SnapshotShape
+    contact_person_id?: string
+    contact_person_snapshot?: SnapshotShape
+    payment_term_id?: string
+    payment_term_snapshot?: SnapshotShape
+    incoterm?: string
+    incoterm_location?: string
+    notes_internal?: string
+    notes_external?: string
+    items?: QuotationItem[]
+  }
+
+  type QuotationItem = {
+    id: string
+    type: 'item' | 'descriptive'
+    item_id: string
+    item_snapshot: Record<string, unknown>
+    description: string
+    quantity: number
+    uom: string
+    unit_price: number
+    discount_percent: number
+    discount_amount: number
+    vat_code_id: string
+    vat_code_snapshot: Record<string, unknown>
+    requested_delivery_date: string
+    delivery_date: string
+    /** Per-line remaining importable quantity. Only present on `GET /quotations/{id}`. */
+    importable_into_sales_order_quantity?: number
+  }
+
+  /**
+   * Fetch importable quotations. When the form already has any of `customer_id`,
+   * `ship_to_address_id`, `incoterm` set (edit mode or after a previous import),
+   * those values are forwarded as query filters so the dropdown only shows
+   * compatible records from the start. Empty fields are omitted from the query.
+   */
+  async function fetchImportableQuotations(
+    search?: string,
+    formFilters?: { customer_id?: string; ship_to_address_id?: string; incoterm?: string },
+  ): Promise<QuotationWithItems[]> {
+    if (!legalEntityId) return []
+    const queryParams: Record<string, string> = {
+      // The create endpoint rejects non-approved upstreams, per the import-flows business doc.
+      state: 'approved',
+      conversion_status: 'none,partial',
+      // Inflate page size so the client-side compat lock has a wide-enough pool.
+      // The endpoint is paginated; without this we'd risk missing compatible
+      // records past the default page cap.
+      per_page: '200',
+    }
+    if (search) queryParams.search = search
+    if (formFilters?.customer_id) queryParams.customer_id = formFilters.customer_id
+    if (formFilters?.ship_to_address_id) queryParams.ship_to_address_id = formFilters.ship_to_address_id
+    if (formFilters?.incoterm) queryParams.incoterm = formFilters.incoterm
+
+    const response = await apiRequest<{ data: QuotationWithItems[] }>({
+      url: `/legal-entities/${legalEntityId}/quotations`,
+      method: 'GET',
+      queryParams,
+    })
+    return response.data ?? []
+  }
+
+  function mapQuotationToOption(q: QuotationWithItems): BasicOption {
+    return {
+      label: `${q.document_number} · ${extractSnapshotString(q.customer_snapshot, 'name') ?? '—'}`,
+      value: q.id,
+    }
+  }
+
+  function quotationCompatKey(q: QuotationWithItems): string {
+    return `${q.customer_id}|${q.ship_to_address_id ?? ''}|${q.incoterm ?? ''}`
+  }
+
+  /**
+   * Fetch the full single-resource representation of a quotation. Needed because
+   * `importable_into_sales_order_quantity` is only populated on this endpoint
+   * (see business-doc `import-flows`).
+   */
+  async function fetchSingleQuotation(id: string): Promise<QuotationWithItems> {
+    if (!legalEntityId) throw new Error('legalEntityId not available')
+    return apiRequest<QuotationWithItems>({
+      url: `/legal-entities/${legalEntityId}/quotations/${id}`,
+      method: 'GET',
+    })
+  }
+
+  /**
+   * Drive the import flow:
+   * - In parallel, GET each selected quotation's full single-resource (for `importable_*` qty + snapshots).
+   * - If the form is empty (= `customer_id` not yet set), the FIRST imported record also fills the
+   *   sales-order header fields and the snapshot states (so selectors display names without an extra fetch).
+   * - For every record, line items are appended to the editor with their own color group; quantities use
+   *   `importable_into_sales_order_quantity` (clamped to 0 for non-importable lines, which we skip).
+   * - On any fetch failure the whole operation is aborted (no partial state).
+   */
+  async function handleImportQuotations(
+    formAPI: { updateField: FormFieldUpdater; values: Record<string, unknown> },
+    selected: QuotationWithItems[],
+  ) {
+    if (!itemsEditorRef || selected.length === 0) return
+    const isFormEmpty = !formAPI.values.customer_id
+
+    const job = (async () => {
+      const fullQuotations = await Promise.all(selected.map(s => fetchSingleQuotation(s.id)))
+
+      // Dedup set: against rows already in the editor, by source quotation_item_id.
+      const existingLinkIds = new SvelteSet(
+        itemsEditorRef!
+          .getItems()
+          .filter(it => it.type === 'item' && it.quotation_item_id)
+          .map(it => it.quotation_item_id as string),
+      )
+
+      let added = 0
+      let skipped = 0
+
+      for (const [idx, q] of fullQuotations.entries()) {
+        // First record AND empty form → also populate header fields + selector snapshots.
+        if (idx === 0 && isFormEmpty) {
+          if (q.sales_transaction_type) formAPI.updateField('sales_transaction_type', q.sales_transaction_type)
+          formAPI.updateField('customer_id', q.customer_id)
+          if (q.ship_to_address_id) formAPI.updateField('ship_to_address_id', q.ship_to_address_id)
+          if (q.contact_person_id) formAPI.updateField('contact_person_id', q.contact_person_id)
+          if (q.currency) formAPI.updateField('currency', q.currency)
+          if (q.payment_term_id) formAPI.updateField('payment_term_id', q.payment_term_id)
+          if (q.incoterm) formAPI.updateField('incoterm', q.incoterm)
+          if (q.incoterm_location) formAPI.updateField('incoterm_location', q.incoterm_location)
+          if (q.notes_internal) formAPI.updateField('notes_internal', q.notes_internal)
+          if (q.notes_external) formAPI.updateField('notes_external', q.notes_external)
+          customerSnapshotImport.value = q.customer_snapshot
+          shipToSnapshotImport.value = q.ship_to_snapshot
+          contactPersonSnapshotImport.value = q.contact_person_snapshot
+          paymentTermSnapshotImport.value = q.payment_term_snapshot
+          // Populate commercialTermsVatCode for default-VAT on new manual rows.
+          // No `updateField` passed so payment_term_id / incoterm just set above are not overwritten.
+          if (q.customer_id) fetchCustomerCommercialTerms(q.customer_id)
+        }
+
+        const productItems: QuotationLineItem[] = []
+        for (const item of q.items ?? []) {
+          if (item.type !== 'item') continue
+          const importableQty = item.importable_into_sales_order_quantity ?? 0
+          if (importableQty <= 0) continue
+          if (existingLinkIds.has(item.id)) {
+            skipped++
+            continue
+          }
+          existingLinkIds.add(item.id)
+          productItems.push({
+            type: 'item',
+            quotation_item_id: item.id,
+            item_id: item.item_id,
+            item_snapshot: item.item_snapshot,
+            description: item.description,
+            quantity: importableQty,
+            uom: item.uom,
+            unit_price: item.unit_price,
+            discount_percent: item.discount_percent,
+            discount_amount: item.discount_amount,
+            vat_code_id: item.vat_code_id,
+            vat_code_snapshot: item.vat_code_snapshot,
+            requested_delivery_date: item.requested_delivery_date,
+            delivery_date: item.delivery_date,
+          })
+        }
+
+        if (productItems.length === 0) continue
+
+        const referenceText = m.quotation_reference({
+          documentNumber: q.document_number,
+          date: new Date(q.document_date).toLocaleDateString(),
+        })
+        const referenceItem: QuotationLineItem[] = referenceText
+          ? [{ type: 'descriptive', description: referenceText }]
+          : []
+
+        itemsEditorRef!.addItems([...referenceItem, ...productItems], { groupId: generateId() })
+        added += productItems.length
+      }
+
+      return { added, skipped }
+    })()
+
+    toast.promise(job, {
+      loading: m.import_in_progress(),
+      success: res =>
+        res.skipped > 0
+          ? m.import_completed_with_skipped({ added: res.added, skipped: res.skipped })
+          : m.import_completed({ count: res.added }),
+      error: () => m.import_failed(),
+    })
+  }
+
   // Sales order actions (sent flag, approve, reject)
   const salesOrderActions = $derived(
-    legalEntityId ? createSalesOrderActions({ legalEntityId, onSuccess: detail.refetch }) : [],
+    legalEntityId
+      ? createSalesOrderActions({
+          legalEntityId,
+          onSuccess: detail.refetch,
+          // eslint-disable-next-line svelte/no-navigation-without-resolve
+          onArchived: () => goto(createRoute({ $id: 'sales-orders' })),
+        })
+      : [],
   )
   const actionOptions = $derived.by((): SalesOrderActionOptions | null => {
     if (!record) return null
@@ -107,6 +338,7 @@
       state: record.state,
       sentAt: record.sent_at || null,
       availableTransitions: record.available_transitions ?? [],
+      isArchivable: (record as SalesOrder & { is_archivable?: boolean }).is_archivable,
     }
   })
   const approveAction = $derived(salesOrderActions.find(a => a.id === 'approve'))
@@ -207,62 +439,30 @@
 
   const validate = $derived(!record ? validateCreate : validateUpdate)
 
-  // Resolve customer snapshot for pre-populating selector in edit mode
-  const customerAttr = $derived.by(() => {
-    if (!record) return undefined
-    const snapshot = record.customer_snapshot
-    if (Array.isArray(snapshot) && snapshot.length > 0) {
-      return snapshot[0] as Record<string, unknown>
-    }
-    if (snapshot && !Array.isArray(snapshot)) {
-      return snapshot as unknown as Record<string, unknown>
-    }
-    return undefined
-  })
+  // *Attr derived: read from `record.*_snapshot` in edit mode, fall back to the
+  // `*SnapshotImport` state populated by the import flow in create mode.
+  // `paymentTermAttr` adds a third fallback to commercial terms loaded for the customer.
 
-  // Resolve payment term: edit mode uses snapshot, create mode uses commercial terms
+  const customerAttr = $derived(
+    customerSnapshotImport.resolve(record?.customer_snapshot as SnapshotShape | undefined),
+  )
+
   const paymentTermAttr = $derived.by(() => {
-    if (record) {
-      const snapshot = record.payment_term_snapshot
-      if (Array.isArray(snapshot) && snapshot.length > 0) {
-        return snapshot[0] as Record<string, unknown>
-      }
-      if (snapshot && !Array.isArray(snapshot)) {
-        return snapshot as unknown as Record<string, unknown>
-      }
-      return undefined
-    }
-    if (commercialTermsPaymentTerm) {
-      return commercialTermsPaymentTerm as unknown as Record<string, unknown>
-    }
+    const fromSnapshots = paymentTermSnapshotImport.resolve(
+      record?.payment_term_snapshot as SnapshotShape | undefined,
+    )
+    if (fromSnapshots) return fromSnapshots
+    if (commercialTermsPaymentTerm) return commercialTermsPaymentTerm as unknown as Record<string, unknown>
     return undefined
   })
 
-  // Resolve ship-to address snapshot for pre-populating selector in edit mode
-  const shipToAddressAttr = $derived.by(() => {
-    if (!record) return undefined
-    const snapshot = record.ship_to_snapshot
-    if (Array.isArray(snapshot) && snapshot.length > 0) {
-      return snapshot[0] as Record<string, unknown>
-    }
-    if (snapshot && !Array.isArray(snapshot)) {
-      return snapshot as unknown as Record<string, unknown>
-    }
-    return undefined
-  })
+  const shipToAddressAttr = $derived(
+    shipToSnapshotImport.resolve(record?.ship_to_snapshot as SnapshotShape | undefined),
+  )
 
-  // Resolve contact person snapshot for pre-populating selector in edit mode
-  const contactPersonAttr = $derived.by(() => {
-    if (!record) return undefined
-    const snapshot = record.contact_person_snapshot
-    if (Array.isArray(snapshot) && snapshot.length > 0) {
-      return snapshot[0] as Record<string, unknown>
-    }
-    if (snapshot && !Array.isArray(snapshot)) {
-      return snapshot as unknown as Record<string, unknown>
-    }
-    return undefined
-  })
+  const contactPersonAttr = $derived(
+    contactPersonSnapshotImport.resolve(record?.contact_person_snapshot as SnapshotShape | undefined),
+  )
 
   // Resolve legal entity bank snapshot for pre-populating selector in edit mode
   const bankAttr = $derived.by(() => {
@@ -291,6 +491,49 @@
       class="relative flex flex-col gap-6 pb-breadcrumbs">
       {#snippet withContext(formAPI)}
         <FormErrorMessage columnsLayout />
+
+        <!-- Import records -->
+        {#if !isReadOnly}
+          <GroupTitle heading={m.import_records()}>
+            {#snippet description()}
+              {m.import_records_description()}
+            {/snippet}
+
+            {#snippet content()}
+              <div>
+                <ImportMenu
+                  fetchFunction={search =>
+                    fetchImportableQuotations(search, {
+                      customer_id: formAPI?.values?.customer_id as string | undefined,
+                      ship_to_address_id: formAPI?.values?.ship_to_address_id as string | undefined,
+                      incoterm: formAPI?.values?.incoterm as string | undefined,
+                    })}
+                  optionMappingFunction={mapQuotationToOption}
+                  compatKey={quotationCompatKey}
+                  onimport={selected => handleImportQuotations(formAPI as never, selected)}>
+                  {#snippet previewSnippet(quotation)}
+                    {@const productItems = (quotation.items ?? []).filter(i => i.type === 'item')}
+                    <ImportRecordPreview
+                      documentNumber={quotation.document_number}
+                      documentDate={quotation.document_date}
+                      subtitle={extractSnapshotString(quotation.customer_snapshot, 'name')}
+                      amount={floatToPriceString(quotation.net_value, quotation.currency)}
+                      items={productItems}>
+                      {#snippet itemRow(item)}
+                        <div class="flex items-baseline justify-between gap-2 text-xs">
+                          <span class="truncate">{item.item_snapshot?.name ?? item.item_snapshot?.code ?? '-'}</span>
+                          <span class="shrink-0 text-muted-foreground">x{item.quantity}</span>
+                        </div>
+                      {/snippet}
+                    </ImportRecordPreview>
+                  {/snippet}
+                </ImportMenu>
+              </div>
+            {/snippet}
+          </GroupTitle>
+
+          <Separator />
+        {/if}
 
         <!-- General Information -->
         <GroupTitle heading={m.sales_order_general_information()}>
@@ -467,10 +710,9 @@
 
           {#snippet content()}
             <SalesOrderItemsListEditor
+              bind:this={itemsEditorRef}
               name="items"
               showLabel={false}
-              {legalEntityId}
-              customerId={formAPI?.values?.customer_id}
               currency={formAPI?.values?.currency ?? DEFAULT_CURRENCY_CODE}
               required={!record}
               refreshKey={record?.version}
@@ -479,7 +721,7 @@
               defaultDeliveryDate={formAPI?.values?.requested_delivery_date} />
 
             {@const currencyCode = formAPI.values.currency}
-            <div class="pr-14">
+            <div class="pr-12">
               <StackedAmountValues
                 title={m.total()}
                 rows={[

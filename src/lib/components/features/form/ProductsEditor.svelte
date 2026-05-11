@@ -86,7 +86,8 @@
   import { apiRequest } from '$utils/request'
   import { createRoute } from '$utils/route-builder.js'
   import { getUOMMinQuantity } from '$utils/uom'
-  import { BadgeEuro, LoaderCircle } from '@lucide/svelte'
+  import BadgeEuro from '@lucide/svelte/icons/badge-euro'
+  import LoaderCircle from '@lucide/svelte/icons/loader-circle'
 
   /**
    * Internal line item type for editing

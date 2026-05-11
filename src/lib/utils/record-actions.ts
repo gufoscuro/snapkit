@@ -1,9 +1,11 @@
 import { toast } from 'svelte-sonner'
 import { confirmAction } from '$lib/components/ui/confirm-action-dialog'
-import { api } from '$lib/utils/request'
+import { confirmArchive } from '$lib/components/ui/confirm-archive-dialog'
+import { api, apiRequest } from '$lib/utils/request'
 import * as m from '$lib/paraglide/messages.js'
 import type { ButtonVariant } from '$lib/components/ui/button'
 import type { Component } from 'svelte'
+import Archive from '@lucide/svelte/icons/archive'
 
 /**
  * Base options passed to every action callback.
@@ -44,6 +46,8 @@ export type RecordAction<T extends RecordActionRequestOptions = RecordActionRequ
 	visible?: (options: T) => boolean
 	/** Conditionally disable this action */
 	disabled?: (options: T) => boolean
+	/** Render a separator above this action in the dropdown menu (e.g. to set apart destructive actions) */
+	separatorBefore?: boolean
 }
 
 /**
@@ -236,5 +240,87 @@ export function createFlagToggleAction<T extends RecordActionRequestOptions>(
 		},
 		visible: config.visible,
 		disabled: config.disabled,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Archive action factory
+// ---------------------------------------------------------------------------
+
+/**
+ * Configuration for an archive record action — symmetric to `createArchiveAction`
+ * (used in tables) but produces a `RecordAction<T>` for use in `RecordActionMenu`.
+ */
+export type ArchiveRecordActionConfig<T extends RecordActionRequestOptions = RecordActionRequestOptions> = {
+	/** Builds the URL for the DELETE request */
+	apiUrl: (opts: T) => string
+	/** URL for the GET that reads `is_archivable`. Defaults to `apiUrl(opts)`. */
+	fetchUrl?: (opts: T) => string
+	/**
+	 * Returns the current `is_archivable` flag if known upfront (e.g. from the
+	 * record already loaded on a detail page). When this returns `false` the
+	 * action renders disabled. The dialog still runs the prefetch as a safety net.
+	 */
+	isArchivable?: (opts: T) => boolean | undefined
+	/** Confirmation dialog message */
+	confirmMessage: (opts: T) => string
+	/** Success toast message */
+	successMessage: (opts: T) => string
+	/** Error toast message (optional) */
+	errorMessage?: string
+	/** Callback after a successful archive (e.g. goto listing page) */
+	onSuccess?: (opts: T) => void
+	/** Render a separator above this action in the menu. Defaults to true. */
+	separatorBefore?: boolean
+}
+
+/**
+ * Creates a `RecordAction` that archives a record.
+ *
+ * The action manages its own dialog (via `confirmArchive`), which gates the
+ * DELETE on the record's `is_archivable` flag — when blocked, an informative
+ * dialog explains why.
+ *
+ * @example
+ * ```ts
+ * createArchiveRecordAction<SupplierActionOptions>({
+ *   apiUrl: (opts) => `supply/supplier/${opts.targetId}`,
+ *   isArchivable: (opts) => opts.isArchivable,
+ *   confirmMessage: (opts) => m.archive_supplier_confirmation({ name: opts.name }),
+ *   successMessage: (opts) => m.supplier_archived_success({ name: opts.name }),
+ *   onSuccess: () => goto('/suppliers'),
+ * })
+ * ```
+ */
+export function createArchiveRecordAction<T extends RecordActionRequestOptions>(
+	config: ArchiveRecordActionConfig<T>,
+): RecordAction<T> {
+	return {
+		id: 'archive',
+		label: m.common_archive(),
+		icon: Archive,
+		separatorBefore: config.separatorBefore ?? true,
+		disabled: (opts) => config.isArchivable?.(opts) === false,
+		onAction: async (opts) => {
+			confirmArchive({
+				title: m.confirm_action(),
+				description: config.confirmMessage(opts),
+				confirmText: m.common_archive(),
+				cancelText: m.common_cancel(),
+				prefetch: async () => {
+					const url = (config.fetchUrl ?? config.apiUrl)(opts)
+					const record = await apiRequest<{ is_archivable?: boolean }>({ url })
+					return { blocked: record.is_archivable === false }
+				},
+				blockedTitle: m.cannot_archive_title(),
+				blockedDescription: m.cannot_archive_description(),
+				onArchive: async () => {
+					await apiRequest({ url: config.apiUrl(opts), method: 'DELETE' })
+				},
+				successMessage: config.successMessage(opts),
+				errorMessage: config.errorMessage,
+				onSuccess: () => config.onSuccess?.(opts),
+			})
+		},
 	}
 }

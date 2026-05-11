@@ -27,13 +27,23 @@ import type {
   SalesOrderSummary,
   SalesOrderTag,
   SalesTransactionType,
+  ShippingMethod,
   Supplier,
   SupplierAddress,
   SupplierContact,
   SupplyOrderSummary,
+  TransportDocument,
+  TransportDocumentInvoicingStatus,
+  TransportDocumentState,
+  TransportDocumentType,
+  TransportMethod,
   UnitOfMeasure,
   ValuationMethod,
   WarehouseBin,
+  WarehouseOrder,
+  WarehouseOrderPickingStatus,
+  WarehouseOrderState,
+  WarehouseOrderTag,
   WarehouseType,
   WarehouseZone,
   WeightUnit,
@@ -466,7 +476,7 @@ export const dimensionUnitLabels: EnumLabelMap<DimensionUnit> = {
 // Quotation Status
 export const quotationStatusConfig: Record<QuotationStatus, EnumDisplayConfig> = {
   open: { label: m.enum_quotation_status_open, variant: 'default' },
-  approved: { label: m.enum_quotation_status_approved, variant: 'success' },
+  approved: { label: m.enum_quotation_status_approved, variant: 'default' },
   rejected: { label: m.enum_quotation_status_rejected, variant: 'destructive' },
   superseded: { label: m.enum_quotation_status_superseded, variant: 'default' },
 }
@@ -523,6 +533,98 @@ export const salesOrderFulfillmentStatusConfig: Record<SalesOrderFulfillmentStat
 
 export function getSalesOrderFulfillmentStatusLabel(status: SalesOrderFulfillmentStatus): string {
   return salesOrderFulfillmentStatusConfig[status]?.label() ?? status
+}
+
+// Warehouse Order State (for WarehouseOrder entity from /warehouse-orders API)
+export const warehouseOrderStateConfig: Record<WarehouseOrderState, EnumDisplayConfig> = {
+  open: { label: m.enum_warehouse_order_status_open, variant: 'default' },
+  handed_over: { label: m.enum_warehouse_order_status_handed_over, variant: 'success' as BadgeVariant },
+}
+
+export function getWarehouseOrderStatusLabel(status: WarehouseOrder['state']): string {
+  return warehouseOrderStateConfig[status]?.label() ?? status
+}
+
+// Warehouse Order Tags
+export const warehouseOrderTagConfig: Record<WarehouseOrderTag, EnumDisplayConfig> = {
+  transport_document_generated: { label: m.enum_warehouse_order_tag_transport_document_generated, variant: 'default' },
+}
+
+export function getWarehouseOrderTagLabel(tag: WarehouseOrderTag): string {
+  return warehouseOrderTagConfig[tag]?.label() ?? tag
+}
+
+// Warehouse Order Picking Status
+export const warehouseOrderPickingStatusConfig: Record<WarehouseOrderPickingStatus, EnumDisplayConfig> = {
+  not_started: { label: m.enum_warehouse_order_picking_not_started, variant: 'secondary' },
+  partial: { label: m.enum_warehouse_order_picking_partial, variant: 'outline' },
+  full: { label: m.enum_warehouse_order_picking_full, variant: 'default' },
+}
+
+export function getWarehouseOrderPickingStatusLabel(status: WarehouseOrderPickingStatus): string {
+  return warehouseOrderPickingStatusConfig[status]?.label() ?? status
+}
+
+// Transport Document State (for TransportDocument entity from /transport-documents API)
+export const transportDocumentStateConfig: Record<TransportDocumentState, EnumDisplayConfig> = {
+  open: { label: m.enum_transport_document_status_open, variant: 'default' },
+  carried: { label: m.enum_transport_document_status_carried, variant: 'success' as BadgeVariant },
+}
+
+export function getTransportDocumentStatusLabel(status: TransportDocument['state']): string {
+  return transportDocumentStateConfig[status]?.label() ?? status
+}
+
+// Transport Document Invoicing Status
+export const transportDocumentInvoicingStatusConfig: Record<TransportDocumentInvoicingStatus, EnumDisplayConfig> = {
+  none: { label: m.enum_transport_document_invoicing_none, variant: 'secondary' },
+  partial: { label: m.enum_transport_document_invoicing_partial, variant: 'outline' },
+  full: { label: m.enum_transport_document_invoicing_full, variant: 'default' },
+}
+
+export function getTransportDocumentInvoicingStatusLabel(status: TransportDocumentInvoicingStatus): string {
+  return transportDocumentInvoicingStatusConfig[status]?.label() ?? status
+}
+
+// Transport Document Type Labels
+export const transportDocumentTypeLabels: EnumLabelMap<TransportDocumentType> = {
+  sale: m.enum_transport_document_type_sale,
+  export: m.enum_transport_document_type_export,
+  intra_eu: m.enum_transport_document_type_intra_eu,
+  consignment_stock: m.enum_transport_document_type_consignment_stock,
+  consignment_return: m.enum_transport_document_type_consignment_return,
+  subcontracting: m.enum_transport_document_type_subcontracting,
+  return: m.enum_transport_document_type_return,
+  customer_return: m.enum_transport_document_type_customer_return,
+  gift: m.enum_transport_document_type_gift,
+  transfer: m.enum_transport_document_type_transfer,
+  repair: m.enum_transport_document_type_repair,
+  sampling: m.enum_transport_document_type_sampling,
+}
+
+export function getTransportDocumentTypeLabel(type: TransportDocumentType): string {
+  return transportDocumentTypeLabels[type]?.() ?? type
+}
+
+// Transport Method Labels
+export const transportMethodLabels: EnumLabelMap<TransportMethod> = {
+  sender: m.enum_transport_method_sender,
+  recipient: m.enum_transport_method_recipient,
+}
+
+export function getTransportMethodLabel(method: TransportMethod): string {
+  return transportMethodLabels[method]?.() ?? method
+}
+
+// Shipping Method Labels
+export const shippingMethodLabels: EnumLabelMap<ShippingMethod> = {
+  courier: m.enum_shipping_method_courier,
+  own_vehicle: m.enum_shipping_method_own_vehicle,
+  customer_pickup: m.enum_shipping_method_customer_pickup,
+}
+
+export function getShippingMethodLabel(method: ShippingMethod): string {
+  return shippingMethodLabels[method]?.() ?? method
 }
 
 // Incoterm Labels

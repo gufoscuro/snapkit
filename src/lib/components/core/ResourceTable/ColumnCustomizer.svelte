@@ -5,7 +5,7 @@
   import * as m from '$lib/paraglide/messages.js'
   import * as StorageUtil from '$lib/utils/storage'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
-  import { dndzone, overrideItemIdKeyNameBeforeInitialisingDndZones } from 'svelte-dnd-action'
+  import { dndzone } from 'svelte-dnd-action'
   import { flip } from 'svelte/animate'
   import type { ColumnConfig } from './types'
   import { mergePreferences, type ColumnPreference } from './utils/column-preferences'
@@ -24,8 +24,6 @@
 
   const FLIP_DURATION_MS = 200
   const STORAGE_KEY = $derived(`columns:${storageId}`)
-
-  overrideItemIdKeyNameBeforeInitialisingDndZones('_dndId')
 
   let dndItems = $state<DndColumnItem[]>([])
 

@@ -26,6 +26,7 @@
   import { v } from '$components/core/form/validation'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
   import { createSupplierFlagActions, type SupplierFlagOptions } from '$components/features/suppliers/supplier-actions'
+  import { goto } from '$app/navigation'
   import Separator from '$components/ui/separator/separator.svelte'
   import { RecordActionMenu } from '$lib/components/ui/record-action-menu'
   import { useProvides } from '$lib/contexts/page-state'
@@ -76,7 +77,13 @@
   const promise = $derived(detail.promise)
 
   const flagActions = $derived(
-    legalEntityId ? createSupplierFlagActions({ legalEntityId, onSuccess: detail.refetch }) : [],
+    legalEntityId
+      ? createSupplierFlagActions({
+          legalEntityId,
+          onSuccess: detail.refetch,
+          onArchived: () => goto(createRoute({ $id: 'suppliers' })),
+        })
+      : [],
   )
   const actionOptions = $derived.by((): SupplierFlagOptions | null => {
     if (!record) return null
@@ -86,6 +93,7 @@
       version: record.version,
       suspendedAt: record.suspended_at || null,
       ceasedAt: record.ceased_at || null,
+      isArchivable: (record as Supplier & { is_archivable?: boolean }).is_archivable,
     }
   })
 
