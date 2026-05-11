@@ -47,7 +47,7 @@
       <TextField name="title" label="Title" bind:value={local.title} />
       <TextField name="route" label="Route" bind:value={local.route} disabled={isScaffoldPage} />
       {#if isScaffoldPage}
-        <p class="text-[10px] italic text-muted-foreground">
+        <p class="text-[10px] text-muted-foreground italic">
           Queste pagine fanno parte dei moduli di default del prodotto, pertanto id e route non sono customizzabili.
         </p>
       {/if}
@@ -60,8 +60,8 @@
         value={local.layout}
         scaffoldDefaultKey={scaffoldPage?.layout?.componentKey ?? null}
         onChange={updateLayout} />
-      <details class="rounded border">
-        <summary class="cursor-pointer px-3 py-1.5 text-xs text-muted-foreground"> Bindings / Props (JSON) </summary>
+      <details>
+        <summary class="cursor-pointer py-1.5 text-xs text-muted-foreground"> Bindings / Props (JSON) </summary>
         <pre class="overflow-auto rounded bg-muted p-2 text-xs">{JSON.stringify(
             { bindings: local.layout.bindings, props: local.layout.props },
             null,
