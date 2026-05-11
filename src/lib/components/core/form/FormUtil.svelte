@@ -167,6 +167,26 @@
   let submitOption = $state<SubmitOption>(null)
   let submitter: HTMLInputElement | null = $state(null)
 
+  // Callbacks fired synchronously before submission — see FormAPI.registerBeforeSubmit.
+  const beforeSubmitCallbacks = new Set<() => void>()
+
+  function registerBeforeSubmit(cb: () => void): () => void {
+    beforeSubmitCallbacks.add(cb)
+    return () => {
+      beforeSubmitCallbacks.delete(cb)
+    }
+  }
+
+  function runBeforeSubmit() {
+    for (const cb of beforeSubmitCallbacks) {
+      try {
+        cb()
+      } catch (err) {
+        if (dev) console.error('FormUtil beforeSubmit callback failed:', err)
+      }
+    }
+  }
+
   // Form API exposed via context
   const formAPI: FormAPI<T> = {
     get values() {
@@ -207,6 +227,7 @@
     },
     submit: triggerSubmit,
     clearErrorsAtPrefix: formState.clearErrorsAtPrefix,
+    registerBeforeSubmit,
 
     // Custom Fields
     get customFieldValues() {
@@ -256,6 +277,11 @@
     event.preventDefault()
 
     if (inflight || locked) return
+
+    // Flush any buffered field state (e.g. debounced writes from EditableListField)
+    // into `values` so validation and the submitted payload see the latest input.
+    runBeforeSubmit()
+
     if (!formState.validate()) return
 
     // Validate custom fields (only when enabled and configured)
