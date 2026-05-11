@@ -822,6 +822,7 @@
   "enum_warehouse_order_picking_partial": "Prelievo parziale",
   "enum_warehouse_order_picking_full": "Prelievo completo",
   "transport_document": "DDT",
+  "transport_document_type": "Tipo documento",
   "transport_documents": "DDT",
   "new_transport_document": "Nuovo DDT",
   "add_new_transport_document": "Aggiungi DDT",

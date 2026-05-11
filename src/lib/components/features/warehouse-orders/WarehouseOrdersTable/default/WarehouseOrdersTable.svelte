@@ -18,11 +18,12 @@
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import WarehouseOrderPickingBadge from '$lib/components/features/warehouse-orders/WarehouseOrderPickingBadge.svelte'
   import WarehouseOrderTagBadges from '$lib/components/features/warehouse-orders/WarehouseOrderTagBadges.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { WarehouseOrder } from '$lib/types/api-types'
-  import { getWarehouseOrderPickingStatusLabel, getWarehouseOrderStatusLabel } from '$lib/utils/enum-labels'
+  import { getWarehouseOrderStatusLabel } from '$lib/utils/enum-labels'
   import type { FilterQuery } from '$lib/utils/filters'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
@@ -88,12 +89,10 @@
     {
       accessorKey: 'picking_status',
       header: m.picking_status(),
-      renderer: 'custom',
+      renderer: 'component',
       rendererConfig: {
-        cellRenderer: (row: WarehouseOrder) => {
-          if (!row.picking_status) return '-'
-          return getWarehouseOrderPickingStatusLabel(row.picking_status)
-        },
+        component: WarehouseOrderPickingBadge,
+        propsMapper: (row: WarehouseOrder) => ({ pickingStatus: row.picking_status }),
       },
     },
     {

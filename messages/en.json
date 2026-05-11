@@ -820,6 +820,7 @@
   "enum_warehouse_order_picking_partial": "Partially Picked",
   "enum_warehouse_order_picking_full": "Fully Picked",
   "transport_document": "Transport Document",
+  "transport_document_type": "Document type",
   "transport_documents": "Transport Documents",
   "new_transport_document": "New transport document",
   "add_new_transport_document": "Add new transport document",
