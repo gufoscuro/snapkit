@@ -8,7 +8,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = join(__dirname, '..');
 const COMPONENTS_DIR = join(PROJECT_ROOT, 'src/lib/components/features');
-const OUTPUT_FILE = join(PROJECT_ROOT, 'src/generated/components-registry.ts');
+const GENERATED_DIR = join(PROJECT_ROOT, 'src/generated');
+const REGISTRY_FILE = join(GENERATED_DIR, 'components-registry.ts');
+const METADATA_FILE = join(GENERATED_DIR, 'components-metadata.ts');
 
 // File patterns to exclude
 const EXCLUDE_PATTERNS = [
@@ -28,7 +30,6 @@ async function findSvelteFiles(dir, fileList = []) {
     if (file.isDirectory()) {
       await findSvelteFiles(filePath, fileList);
     } else if (file.name.endsWith('.svelte')) {
-      // Check if file should be excluded
       const shouldExclude = EXCLUDE_PATTERNS.some(pattern => pattern.test(file.name));
       if (!shouldExclude) {
         fileList.push(filePath);
@@ -40,44 +41,55 @@ async function findSvelteFiles(dir, fileList = []) {
 }
 
 /**
- * Extract JSDoc description from a Svelte component
- * Supports both HTML comments and JSDoc comments
+ * Extract tagged metadata from a leading HTML comment in a Svelte component.
+ * Supports multiple instances of the same tag (e.g. multiple @api lines) and
+ * multi-line values (continued lines belong to the previous tag until the next
+ * @tag or the end of the comment).
  */
-function extractDescription(content) {
-  // First, try to find HTML comment at the start of the file (Svelte style)
-  const htmlCommentPattern = /<!--\s*([\s\S]*?)\s*-->/;
-  const htmlMatch = content.match(htmlCommentPattern);
+function extractMetadata(content) {
+  const empty = { component: null, description: null, keywords: [], api: [] };
 
-  if (htmlMatch) {
-    const commentContent = htmlMatch[1];
-    // Look for @description tag
-    const descriptionMatch = commentContent.match(/@description\s+(.+?)(?=\n\s*@|\n\s*$)/s);
+  const htmlMatch = content.match(/<!--\s*([\s\S]*?)\s*-->/);
+  if (!htmlMatch) return empty;
 
-    if (descriptionMatch) {
-      return descriptionMatch[1].trim().replace(/\s+/g, ' ');
+  const lines = htmlMatch[1].split('\n');
+
+  const groups = {};
+  let currentTag = null;
+  let currentValue = [];
+
+  function flush() {
+    if (currentTag && currentValue.length) {
+      const value = currentValue.join(' ').trim().replace(/\s+/g, ' ');
+      if (value) {
+        if (!groups[currentTag]) groups[currentTag] = [];
+        groups[currentTag].push(value);
+      }
     }
+    currentValue = [];
   }
 
-  // Fallback: Look for JSDoc comment (/**...*/)
-  const jsdocPattern = /\/\*\*\s*\n([^*]|\*(?!\/))*\*\//;
-  const jsdocMatch = content.match(jsdocPattern);
-
-  if (jsdocMatch) {
-    const jsdocContent = jsdocMatch[0];
-    const descriptionMatch = jsdocContent.match(/@description\s+(.+?)(?=\n\s*\*\s*@|\n\s*\*\/)/s);
-
-    if (descriptionMatch) {
-      return descriptionMatch[1].trim().replace(/\s+/g, ' ');
-    }
-
-    // If no @description tag, try to get the first line of the comment
-    const firstLineMatch = jsdocContent.match(/\/\*\*\s*\n\s*\*\s*(.+?)(?=\n|$)/);
-    if (firstLineMatch) {
-      return firstLineMatch[1].trim();
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    const tagMatch = line.match(/^@(\w+)\s*(.*)$/);
+    if (tagMatch) {
+      flush();
+      currentTag = tagMatch[1];
+      currentValue = tagMatch[2] ? [tagMatch[2]] : [];
+    } else if (currentTag && line) {
+      currentValue.push(line);
     }
   }
+  flush();
 
-  return null;
+  return {
+    component: groups.component?.[0] ?? null,
+    description: groups.description?.[0] ?? null,
+    keywords: groups.keywords?.[0]
+      ? groups.keywords[0].split(',').map(s => s.trim()).filter(Boolean)
+      : [],
+    api: groups.api ?? [],
+  };
 }
 
 /**
@@ -91,13 +103,9 @@ function generateKey(filePath) {
   const relativePath = relative(COMPONENTS_DIR, filePath);
   const parts = relativePath.split('/');
 
-  // Remove .svelte extension from last part (filename)
   const filename = parts[parts.length - 1].replace('.svelte', '');
-
-  // Lowercase all folder parts, preserve filename casing
   const folders = parts.slice(0, -1).map(part => part.toLowerCase());
 
-  // Join folders with filename
   return [...folders, filename].join('.');
 }
 
@@ -109,59 +117,59 @@ function generateImportPath(filePath) {
   return `$lib/${relativePath}`;
 }
 
-/**
- * Generate the registry file content
- */
-async function generateRegistry() {
+async function generate() {
   console.log('🔍 Scanning for Svelte components in:', COMPONENTS_DIR);
 
   const files = await findSvelteFiles(COMPONENTS_DIR);
   console.log(`✓ Found ${files.length} components`);
 
-  const registryEntries = [];
+  const entries = [];
 
   for (const filePath of files) {
     const content = await readFile(filePath, 'utf-8');
     const key = generateKey(filePath);
     const importPath = generateImportPath(filePath);
-    const description = extractDescription(content) || `${key.split('.').pop()} component`;
-    console.log('description', description);
+    const metadata = extractMetadata(content);
 
-    registryEntries.push({
+    // Description fallback for components without a tagged comment.
+    const description = metadata.description ?? `${key.split('.').pop()} component`;
+
+    entries.push({
       key,
       importPath,
+      component: metadata.component,
       description,
+      keywords: metadata.keywords,
+      api: metadata.api,
     });
   }
 
-  // Sort by key for consistent output
-  registryEntries.sort((a, b) => a.key.localeCompare(b.key));
+  entries.sort((a, b) => a.key.localeCompare(b.key));
 
-  // Generate TypeScript content
-  const registryContent = registryEntries
-    .map(({ key, importPath, description }) => {
+  // Registry: only the lazy component import. Shipped on any page that resolves
+  // pages dynamically, so kept lean to minimize main-bundle size.
+  const registryEntries = entries
+    .map(({ key, importPath }) => {
       return `  '${key}': {
     component: () => import('${importPath}'),
-    description: '${description.replace(/'/g, "\\'")}',
   }`;
     })
     .join(',\n');
 
-  const fileContent = `/**
+  const registryContent = `/**
  * AUTO-GENERATED FILE - DO NOT EDIT
  * Generated by: npm run generate:components-registry
  * Last updated: ${new Date().toISOString()}
  */
 
 export const COMPONENT_REGISTRY = {
-${registryContent}
+${registryEntries}
 } as const;
 
 export type ComponentKey = keyof typeof COMPONENT_REGISTRY;
 
 export type ComponentDefinition = {
-  component: () => Promise<any>;
-  description: string;
+  component: () => Promise<unknown>;
 };
 
 export function getComponent(key: ComponentKey): ComponentDefinition {
@@ -173,21 +181,54 @@ export function getAllComponentKeys(): ComponentKey[] {
 }
 `;
 
-  // Ensure output directory exists
-  await mkdir(dirname(OUTPUT_FILE), { recursive: true });
+  // Metadata: descriptions, keywords, api. Imported only by admin tooling so
+  // it ends up in an admin-specific chunk via code splitting.
+  const metadataEntries = entries
+    .map(({ key, component, description, keywords, api }) => {
+      return `  '${key}': {
+    component: ${JSON.stringify(component)},
+    description: ${JSON.stringify(description)},
+    keywords: ${JSON.stringify(keywords)},
+    api: ${JSON.stringify(api)},
+  }`;
+    })
+    .join(',\n');
 
-  // Write the file
-  await writeFile(OUTPUT_FILE, fileContent, 'utf-8');
+  const metadataContent = `/**
+ * AUTO-GENERATED FILE - DO NOT EDIT
+ * Generated by: npm run generate:components-registry
+ * Last updated: ${new Date().toISOString()}
+ */
 
-  console.log(`✨ Registry generated successfully!`);
-  console.log(`📁 Output: ${relative(PROJECT_ROOT, OUTPUT_FILE)}`);
-  console.log(`📦 Components registered: ${registryEntries.length}`);
-  console.log('\nRegistry keys:');
-  registryEntries.forEach(({ key }) => console.log(`  - ${key}`));
+import type { ComponentKey } from './components-registry'
+
+export interface ComponentMetadata {
+  /** Canonical component name from the @component tag */
+  component: string | null
+  /** Description from the @description tag (falls back to "<leaf> component") */
+  description: string
+  /** Keywords from the @keywords tag, split on comma */
+  keywords: string[]
+  /** API endpoints from @api tags */
+  api: string[]
 }
 
-// Run the script
-generateRegistry().catch((error) => {
+export const COMPONENT_METADATA: Record<ComponentKey, ComponentMetadata> = {
+${metadataEntries}
+}
+`;
+
+  await mkdir(GENERATED_DIR, { recursive: true });
+  await writeFile(REGISTRY_FILE, registryContent, 'utf-8');
+  await writeFile(METADATA_FILE, metadataContent, 'utf-8');
+
+  console.log(`✨ Registry and metadata generated successfully!`);
+  console.log(`📁 ${relative(PROJECT_ROOT, REGISTRY_FILE)}`);
+  console.log(`📁 ${relative(PROJECT_ROOT, METADATA_FILE)}`);
+  console.log(`📦 Components: ${entries.length}`);
+}
+
+generate().catch((error) => {
   console.error('❌ Error generating registry:', error);
   process.exit(1);
 });
