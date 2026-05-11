@@ -15,6 +15,7 @@
   let local = $state<PageConfig>($state.snapshot(page) as PageConfig)
 
   const scaffoldPage = $derived(findScaffoldPage(page.$id))
+  const isScaffoldPage = $derived(scaffoldPage !== null)
   const isDirty = $derived(JSON.stringify(local) !== JSON.stringify(page))
 
   function save() {
@@ -42,9 +43,14 @@
 
   <div class="flex-1 space-y-6 overflow-auto">
     <div class="space-y-3">
-      <TextField name="$id" label="ID" bind:value={local.$id} />
+      <TextField name="$id" label="ID" bind:value={local.$id} disabled={isScaffoldPage} />
       <TextField name="title" label="Title" bind:value={local.title} />
-      <TextField name="route" label="Route" bind:value={local.route} />
+      <TextField name="route" label="Route" bind:value={local.route} disabled={isScaffoldPage} />
+      {#if isScaffoldPage}
+        <p class="text-[10px] italic text-muted-foreground">
+          Queste pagine fanno parte dei moduli di default del prodotto, pertanto id e route non sono customizzabili.
+        </p>
+      {/if}
     </div>
 
     <div class="space-y-2">
