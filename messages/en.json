@@ -632,7 +632,7 @@
   "quotation_items": "Quotation Items",
   "quotation_reference": "Quotation reference: {documentNumber} of {date}",
   "sales_order_reference": "Sales order ref. {documentNumber} of {date}",
-  "sales_order_reference_with_customer_po": "Sales order ref. {documentNumber} of {date} - Customer ref. {customerPo} of {customerPoDate}",
+  "sales_order_reference_with_customer_po": "Sales order ref. {documentNumber} of {date} -\n\n Customer ref. {customerPo} of {customerPoDate}",
   "quotation": "Quotation",
   "new_quotation": "New quotation",
   "quotations": "Quotations",
