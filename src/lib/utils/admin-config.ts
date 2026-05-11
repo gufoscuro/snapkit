@@ -1,6 +1,7 @@
 import { invalidate, invalidateAll } from '$app/navigation'
 import { invalidateGlobalsCache } from '$lib/stores/globals-cache'
 import type { LegalEntityConfigResponse } from '$lib/stores/tenant-config/types'
+import type { PageConfig } from '$lib/utils/page-registry'
 import { apiRequest } from '$lib/utils/request'
 
 /**
@@ -720,4 +721,41 @@ export async function pushScaffoldConfig(legalEntityId: string) {
   })
 
   await refreshAdminConfig()
+}
+
+/**
+ * Looks up a page (or subpage, recursively) in the scaffold structure by $id.
+ * Used by the admin editor to compute "default" values for layout/snippet slots.
+ */
+export function findScaffoldPage(pageId: string): PageConfig | null {
+  return findPageInTree(scaffoldDashboardStructure().dashboard.pages, pageId)
+}
+
+function findPageInTree(pages: PageConfig[], pageId: string): PageConfig | null {
+  for (const p of pages) {
+    if (p.$id === pageId) return p
+    if (p.subpages) {
+      const found = findPageInTree(p.subpages, pageId)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+/**
+ * PUTs an updated legal entity config to the API, then refreshes admin data.
+ */
+export async function updateLegalEntityConfig(
+  legalEntityId: string,
+  config: LegalEntityConfigResponse,
+): Promise<LegalEntityConfigResponse> {
+  const updated = await apiRequest<LegalEntityConfigResponse>({
+    url: `/legal-entities/${legalEntityId}/config`,
+    method: 'PUT',
+    data: config,
+  })
+
+  await refreshAdminConfig()
+
+  return updated
 }

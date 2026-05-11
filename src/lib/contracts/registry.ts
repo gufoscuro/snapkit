@@ -3,6 +3,7 @@ import {
 	getAllComponentKeys,
 	type ComponentKey
 } from '$generated/components-registry'
+import { COMPONENT_METADATA } from '$generated/components-metadata'
 import type { ComponentContract } from '$lib/contexts/page-state'
 
 /**
@@ -71,7 +72,7 @@ export async function loadContractRegistry(): Promise<ContractRegistry> {
 					const entry: ContractEntry = {
 						componentKey: key,
 						contract,
-						description: componentDef.description
+						description: COMPONENT_METADATA[key]?.description ?? ''
 					}
 
 					// Index by component key
