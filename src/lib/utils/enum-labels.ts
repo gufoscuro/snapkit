@@ -525,6 +525,7 @@ export function getSalesOrderTagLabel(tag: SalesOrderTag): string {
 
 // Sales Order Fulfillment Status
 export const salesOrderFulfillmentStatusConfig: Record<SalesOrderFulfillmentStatus, EnumDisplayConfig> = {
+  none: { label: m.enum_sales_order_fulfillment_none, variant: 'secondary' },
   in_progress: { label: m.enum_sales_order_fulfillment_in_progress, variant: 'default' },
   picked: { label: m.enum_sales_order_fulfillment_picked, variant: 'default' },
   partially_shipped: { label: m.enum_sales_order_fulfillment_partially_shipped, variant: 'secondary' },

@@ -1230,7 +1230,7 @@ export type SalesOrderTag = 'sent'
 
 export type SalesOrderStatus = 'open' | 'approved' | 'rejected'
 
-export type SalesOrderFulfillmentStatus = 'in_progress' | 'picked' | 'partially_shipped' | 'fully_shipped'
+export type SalesOrderFulfillmentStatus = 'none' | 'in_progress' | 'picked' | 'partially_shipped' | 'fully_shipped'
 
 export type SalesOrderItemType = 'item' | 'descriptive'
 

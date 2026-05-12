@@ -774,6 +774,7 @@
   "enum_sales_order_status_approved": "Approved",
   "enum_sales_order_status_rejected": "Rejected",
   "enum_sales_order_tag_sent": "Sent",
+  "enum_sales_order_fulfillment_none": "Pending",
   "enum_sales_order_fulfillment_in_progress": "In Progress",
   "enum_sales_order_fulfillment_picked": "Picked",
   "enum_sales_order_fulfillment_partially_shipped": "Partially Shipped",

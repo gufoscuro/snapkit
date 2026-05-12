@@ -776,6 +776,7 @@
   "enum_sales_order_status_approved": "Approvato",
   "enum_sales_order_status_rejected": "Rifiutato",
   "enum_sales_order_tag_sent": "Inviato",
+  "enum_sales_order_fulfillment_none": "Da evadere",
   "enum_sales_order_fulfillment_in_progress": "In Corso",
   "enum_sales_order_fulfillment_picked": "Prelevato",
   "enum_sales_order_fulfillment_partially_shipped": "Parzialmente Spedito",

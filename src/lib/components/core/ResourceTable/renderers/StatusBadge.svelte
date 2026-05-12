@@ -2,6 +2,7 @@
   import Spinner from '$components/ui/spinner/spinner.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import CircleCheckFilled from '@tabler/icons-svelte/icons/circle-check-filled'
+  import CircleDashed from '@tabler/icons-svelte/icons/circle-dashed'
   import ClockPause from '@tabler/icons-svelte/icons/clock-pause'
   import Forbid2Filled from '@tabler/icons-svelte/icons/forbid-2-filled'
   import Loader from '@tabler/icons-svelte/icons/loader'
@@ -22,6 +23,8 @@
     <ClockPause class="size-3.5" />
   {:else if variant === 'blocked'}
     <Forbid2Filled class="size-3.5 fill-red-500 dark:fill-red-400" />
+  {:else if variant === 'neutral'}
+    <CircleDashed class="size-3.5" />
   {/if}
   {label}
 </Badge>
