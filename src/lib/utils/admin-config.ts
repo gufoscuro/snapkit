@@ -573,6 +573,29 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
           ],
         },
         {
+          $id: 'to-invoice',
+          title: 'to_invoice',
+          route: '/invoicing/to-invoice',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.InvoiceableDocumentsFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'invoiceable-documents.invoiceabledocumentstable.default.InvoiceableDocumentsTable',
+              enabled: true,
+            },
+          },
+        },
+        {
           $id: 'transport-documents',
           title: 'transport_documents',
           route: '/sales/transport-documents',
@@ -682,6 +705,20 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   label: 'transport_documents',
                   pageId: 'transport-documents',
                   icon: 'Truck',
+                  type: 'link',
+                },
+              ],
+            },
+            {
+              label: 'invoicing',
+              icon: 'Receipt',
+              type: 'submenu',
+              submenuStyle: 'simple',
+              children: [
+                {
+                  label: 'to_invoice',
+                  pageId: 'to-invoice',
+                  icon: 'FileClock',
                   type: 'link',
                 },
               ],

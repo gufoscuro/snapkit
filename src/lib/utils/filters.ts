@@ -23,9 +23,7 @@ export type FilterQuery = MinimalFilterQuery & {
 
 export type ExtendedFilterQuery = FilterQuery & AdditionalQueryProps
 
-export type ExtendedFilterQueryObject = MinimalFilterQuery & {
-	query?: string
-} & AdditionalQueryProps
+export type ExtendedFilterQueryObject = MinimalFilterQuery & AdditionalQueryProps
 
 // ---------------------------------------------------------------------------
 // Filter configuration types
@@ -57,7 +55,16 @@ export type DateFilterConfig = BaseFilterConfig & {
 	dayBoundary?: 'startOf' | 'endOf'
 }
 
-export type FilterConfigEntry = EnumFilterConfig | TagsFilterConfig | DateFilterConfig
+export type CustomerFilterConfig = BaseFilterConfig & {
+	type: 'customer'
+	fetchFunction: (search: string) => Promise<FilterOption[]>
+}
+
+export type FilterConfigEntry =
+	| EnumFilterConfig
+	| TagsFilterConfig
+	| DateFilterConfig
+	| CustomerFilterConfig
 export type FilterConfig = Record<string, FilterConfigEntry>
 
 // ---------------------------------------------------------------------------
@@ -85,7 +92,8 @@ export function serializeFilters(
 		if (value == null) continue
 
 		switch (entry.type) {
-			case 'enum': {
+			case 'enum':
+			case 'customer': {
 				if (typeof value === 'string' && value !== '') {
 					result[key] = value
 				}
@@ -127,7 +135,8 @@ export function deserializeFilters(
 		if (raw == null || raw === '') continue
 
 		switch (entry.type) {
-			case 'enum': {
+			case 'enum':
+			case 'customer': {
 				state[key] = raw
 				break
 			}
@@ -236,9 +245,17 @@ export function isSearchActive(query: FilterQuery): boolean {
 }
 
 /**
- * Creates request object from query
- * @param query {FilterQuery} - Query object
- * @returns object {ExtendedFilterQueryObject} - A FilterQueryObject with optional properties if any are passed
+ * Builds a flat query-string object from a FilterQuery.
+ *
+ * The structured `query` map (produced by FilterDropdown) is spread into the
+ * top-level params — each filter key becomes its own `?key=value` pair, matching
+ * the Moddo backend convention (see the "Combining filters" section of the
+ * `import-flows` business doc). Multi-value filters (e.g. `tags`) are already
+ * serialized as comma-separated strings by `serializeFilters`, which the backend
+ * OR-combines server-side.
+ *
+ * Explicit overrides (extra props on the input besides `search`/`query`) take
+ * precedence over keys coming from `query` if they collide.
  */
 export function createQueryRequestObject({
 	search,
@@ -247,7 +264,7 @@ export function createQueryRequestObject({
 }: FilterQuery): ExtendedFilterQueryObject {
 	return {
 		...(search && search.trim() !== '' ? { search } : {}),
-		...(query ? { query: JSON.stringify(query) } : {}),
-		...(overrides ? overrides : {})
+		...(query ?? {}),
+		...(overrides ?? {})
 	}
 }

@@ -16,6 +16,7 @@ import type {
   DimensionUnit,
   EmployeeCountRange,
   Incoterm,
+  InvoiceableDocumentType,
   ItemCategory,
   ItemStatus,
   LegalEntityWarehouse,
@@ -598,6 +599,17 @@ export const transportDocumentInvoicingStatusConfig: Record<TransportDocumentInv
 
 export function getTransportDocumentInvoicingStatusLabel(status: TransportDocumentInvoicingStatus): string {
   return transportDocumentInvoicingStatusConfig[status]?.label() ?? status
+}
+
+// Invoiceable Document Type Labels
+export const invoiceableDocumentTypeLabels: EnumLabelMap<InvoiceableDocumentType> = {
+  order_advance: m.enum_invoiceable_document_type_order_advance,
+  transport_document: m.enum_invoiceable_document_type_transport_document,
+  direct_order: m.enum_invoiceable_document_type_direct_order,
+}
+
+export function getInvoiceableDocumentTypeLabel(type: InvoiceableDocumentType): string {
+  return invoiceableDocumentTypeLabels[type]?.() ?? type
 }
 
 // Transport Document Type Labels

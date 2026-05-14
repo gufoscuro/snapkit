@@ -78,19 +78,31 @@ describe('createQueryRequestObject', () => {
 		expect(result.search).toBeUndefined()
 	})
 
-	it('stringifies query object', () => {
-		const result = createQueryRequestObject({ query: { status: 'active' } })
-		expect(result.query).toBe('{"status":"active"}')
+	it('spreads query keys as flat params', () => {
+		const result = createQueryRequestObject({
+			query: { status: 'active', customer_id: 'abc' },
+		}) as Record<string, unknown>
+		expect(result.status).toBe('active')
+		expect(result.customer_id).toBe('abc')
+		expect(result.query).toBeUndefined()
 	})
 
-	it('excludes query when undefined', () => {
-		const result = createQueryRequestObject({})
-		expect(result.query).toBeUndefined()
+	it('excludes query keys when query is undefined', () => {
+		const result = createQueryRequestObject({}) as Record<string, unknown>
+		expect(Object.keys(result)).toHaveLength(0)
 	})
 
 	it('passes through additional properties', () => {
 		const result = createQueryRequestObject({ search: 'foo', page: 2, per_page: 10 } as never)
 		expect((result as Record<string, unknown>).page).toBe(2)
 		expect((result as Record<string, unknown>).per_page).toBe(10)
+	})
+
+	it('overrides win over query keys on collision', () => {
+		const result = createQueryRequestObject({
+			query: { customer_id: 'from-query' },
+			customer_id: 'override',
+		} as never) as Record<string, unknown>
+		expect(result.customer_id).toBe('override')
 	})
 })

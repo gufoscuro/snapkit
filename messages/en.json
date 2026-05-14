@@ -917,5 +917,14 @@
   "new_tab_opened_for_customer_address_edit": "A new tab has been opened to edit the address.",
   "new_tab_opened_for_customer_contact_edit": "A new tab has been opened to edit the contact.",
   "popup_blocked_open_tab": "Your browser blocked the new tab. Please allow popups and try again.",
-  "go_to_new_tab": "Go to tab"
+  "go_to_new_tab": "Go to tab",
+  "invoicing": "Invoicing",
+  "to_invoice": "To invoice",
+  "document_type": "Document type",
+  "date_from": "Date from",
+  "date_to": "Date to",
+  "invoiceable_lines_count": "Lines to invoice",
+  "enum_invoiceable_document_type_order_advance": "Order advance",
+  "enum_invoiceable_document_type_transport_document": "Transport document",
+  "enum_invoiceable_document_type_direct_order": "Direct order"
 }

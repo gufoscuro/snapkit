@@ -14,6 +14,7 @@
   import type { DateValue } from '@internationalized/date'
   import ListFilterIcon from '@lucide/svelte/icons/list-filter'
   import { untrack } from 'svelte'
+  import FilterCustomer from './FilterCustomer.svelte'
   import FilterDate from './FilterDate.svelte'
   import FilterEnum from './FilterEnum.svelte'
   import FilterStandalone from './FilterStandalone.svelte'
@@ -89,6 +90,11 @@
             <FilterDate
               {entry}
               value={internalState[key] as DateValue | undefined}
+              onchange={v => updateFilter(key, v)} />
+          {:else if entry.type === 'customer'}
+            <FilterCustomer
+              {entry}
+              value={internalState[key] as string | undefined}
               onchange={v => updateFilter(key, v)} />
           {/if}
         {/each}

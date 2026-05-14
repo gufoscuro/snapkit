@@ -919,5 +919,14 @@
   "new_tab_opened_for_customer_address_edit": "È stata aperta una nuova scheda per modificare l'indirizzo.",
   "new_tab_opened_for_customer_contact_edit": "È stata aperta una nuova scheda per modificare il contatto.",
   "popup_blocked_open_tab": "Il browser ha bloccato la nuova scheda. Abilita i popup e riprova.",
-  "go_to_new_tab": "Vai alla scheda"
+  "go_to_new_tab": "Vai alla scheda",
+  "invoicing": "Fatturazione",
+  "to_invoice": "Da fatturare",
+  "document_type": "Tipo documento",
+  "date_from": "Data da",
+  "date_to": "Data a",
+  "invoiceable_lines_count": "Righe da fatturare",
+  "enum_invoiceable_document_type_order_advance": "Acconto ordine",
+  "enum_invoiceable_document_type_transport_document": "DDT",
+  "enum_invoiceable_document_type_direct_order": "Ordine diretto"
 }

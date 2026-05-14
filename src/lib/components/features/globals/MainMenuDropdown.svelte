@@ -16,6 +16,7 @@
   import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
   import ContactIcon from '@lucide/svelte/icons/contact'
   import CreditCardIcon from '@lucide/svelte/icons/credit-card'
+  import FileClockIcon from '@lucide/svelte/icons/file-clock'
   import FileTextIcon from '@lucide/svelte/icons/file-text'
   import FolderIcon from '@lucide/svelte/icons/folder'
   import GlobeIcon from '@lucide/svelte/icons/globe'
@@ -52,6 +53,7 @@
     Truck: TruckIcon,
     Receipt: ReceiptIcon,
     CreditCard: CreditCardIcon,
+    FileClock: FileClockIcon,
     BarChart: BarChartIcon,
     Calendar: CalendarIcon,
     Folder: FolderIcon,

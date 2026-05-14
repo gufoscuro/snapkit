@@ -5,6 +5,7 @@
   import { isFilterActive, type FilterInternalState } from '$lib/utils/filters'
   import type { DateValue } from '@internationalized/date'
   import CircleIcon from '@lucide/svelte/icons/circle'
+  import FilterCustomer from './FilterCustomer.svelte'
   import FilterDate from './FilterDate.svelte'
   import FilterEnum from './FilterEnum.svelte'
   import FilterTags from './FilterTags.svelte'
@@ -49,6 +50,12 @@
       <FilterDate
         {entry}
         value={state[filterKey] as DateValue | undefined}
+        onchange={v => onchange(filterKey, v)}
+        standalone />
+    {:else if entry.type === 'customer'}
+      <FilterCustomer
+        {entry}
+        value={state[filterKey] as string | undefined}
         onchange={v => onchange(filterKey, v)}
         standalone />
     {/if}

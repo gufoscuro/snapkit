@@ -1435,6 +1435,43 @@ export type TransportDocument = {
   is_archivable?: boolean
 }
 
+// ============================================================================
+// Invoiceable Documents API Types
+// ============================================================================
+
+export type InvoiceableDocumentType = 'order_advance' | 'transport_document' | 'direct_order'
+
+export type InvoiceableDocumentSourceType = 'sales_order' | 'transport_document'
+
+/**
+ * A document that can be invoiced, returned by
+ * GET /api/legal-entities/{legalEntity}/invoiceable-documents
+ */
+export type InvoiceableDocument = {
+  type: InvoiceableDocumentType
+  priority: number
+  source: {
+    type: InvoiceableDocumentSourceType
+    id: string
+    document_number: string
+    document_date: string
+  }
+  customer_id: string
+  customer_snapshot: Record<string, unknown>[]
+  sales_transaction_type: SalesTransactionType
+  transport_reason: string
+  currency: Currency
+  reference_date: string
+  invoiceable_lines_count: number
+  amount: {
+    net: number
+    tax: number
+    total: number
+  }
+  fulfillment_status: SalesOrderFulfillmentStatus | null
+  invoicing_status: TransportDocumentInvoicingStatus | null
+}
+
 /**
  * Price calculation result from sales-api POST /customer/{customerId}/products/{productId}/_calculate-price
  */
