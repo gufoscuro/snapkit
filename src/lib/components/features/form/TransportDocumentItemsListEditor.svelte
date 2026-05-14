@@ -469,7 +469,7 @@
         value={item.uom}
         error={getFieldError(index, 'uom')}
         errorPosition="floating-bottom"
-        disabled={linked || !item.item_id || isDisabled}
+        disabled
         width="w-full"
         onChange={uom => updateItem(index, { uom: uom ?? undefined })} />
 

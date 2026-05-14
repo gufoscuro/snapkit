@@ -18,14 +18,12 @@
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import TransportDocumentInvoicingBadge from '$lib/components/features/transport-documents/TransportDocumentInvoicingBadge.svelte'
+  import TransportDocumentTypeBadge from '$lib/components/features/transport-documents/TransportDocumentTypeBadge.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { TransportDocument } from '$lib/types/api-types'
-  import {
-    getTransportDocumentInvoicingStatusLabel,
-    getTransportDocumentStatusLabel,
-    getTransportDocumentTypeLabel,
-  } from '$lib/utils/enum-labels'
+  import { getTransportDocumentStatusLabel } from '$lib/utils/enum-labels'
   import type { FilterQuery } from '$lib/utils/filters'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
@@ -80,11 +78,11 @@
     },
     {
       accessorKey: 'transport_document_type',
-      header: m.transport_document(),
-      renderer: 'custom',
+      header: m.transport_document_type(),
+      renderer: 'component',
       rendererConfig: {
-        cellRenderer: (row: TransportDocument) =>
-          row.transport_document_type ? getTransportDocumentTypeLabel(row.transport_document_type) : '-',
+        component: TransportDocumentTypeBadge,
+        propsMapper: (row: TransportDocument) => ({ type: row.transport_document_type }),
       },
     },
     {
@@ -100,12 +98,10 @@
     {
       accessorKey: 'invoicing_status',
       header: m.invoicing_status(),
-      renderer: 'custom',
+      renderer: 'component',
       rendererConfig: {
-        cellRenderer: (row: TransportDocument) => {
-          if (!row.invoicing_status) return '-'
-          return getTransportDocumentInvoicingStatusLabel(row.invoicing_status)
-        },
+        component: TransportDocumentInvoicingBadge,
+        propsMapper: (row: TransportDocument) => ({ invoicingStatus: row.invoicing_status }),
       },
     },
     {

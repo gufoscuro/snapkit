@@ -47,7 +47,7 @@
   import * as m from '$lib/paraglide/messages'
   import type { Currency, CustomerCommercialTerms, PaymentTerm, Quotation } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import { currencyLabels, incotermLabels, salesTransactionTypeLabels, toSelectItems } from '$lib/utils/enum-labels'
+  import { currencyLabels, getSalesTransactionTypeItemsFor, incotermLabels, toSelectItems } from '$lib/utils/enum-labels'
   import { api, apiDownload } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
@@ -170,7 +170,7 @@
 
   const currencyItems = toSelectItems(currencyLabels)
   const incotermItems = toSelectItems(incotermLabels)
-  const transactionTypeItems = toSelectItems(salesTransactionTypeLabels)
+  const transactionTypeItems = $derived(getSalesTransactionTypeItemsFor('quotation', record?.sales_transaction_type))
 
   const initialValues = $derived.by(() => ({
     document_number: '',

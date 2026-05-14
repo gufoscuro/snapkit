@@ -18,11 +18,12 @@
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import SalesOrderFulfillmentBadge from '$lib/components/features/sales-orders/SalesOrderFulfillmentBadge.svelte'
   import SalesOrderTagBadges from '$lib/components/features/sales-orders/SalesOrderTagBadges.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { SalesOrder } from '$lib/types/api-types'
-  import { getSalesOrderFulfillmentStatusLabel, getSalesOrderStatusLabel } from '$lib/utils/enum-labels'
+  import { getSalesOrderStatusLabel } from '$lib/utils/enum-labels'
   import type { FilterQuery } from '$lib/utils/filters'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
@@ -96,12 +97,10 @@
     {
       accessorKey: 'fulfillment_status',
       header: m.fulfillment_status(),
-      renderer: 'custom',
+      renderer: 'component',
       rendererConfig: {
-        cellRenderer: (row: SalesOrder) => {
-          if (!row.fulfillment_status) return '-'
-          return getSalesOrderFulfillmentStatusLabel(row.fulfillment_status)
-        },
+        component: SalesOrderFulfillmentBadge,
+        propsMapper: (row: SalesOrder) => ({ fulfillmentStatus: row.fulfillment_status }),
       },
     },
     {

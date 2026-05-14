@@ -405,6 +405,14 @@
     }
   })
 
+  // Flush pending debounced writes before submission so the payload reflects
+  // the latest input (e.g. Enter in a textbox triggers submit before the
+  // debounce timer would have fired).
+  $effect(() => {
+    if (!form) return
+    return form.registerBeforeSubmit(flushFormUpdate)
+  })
+
   // ---------------------------------------------------------------------------
   // Public API exposed via `bind:this`
   // ---------------------------------------------------------------------------
@@ -417,9 +425,7 @@
   export function addItems(newItems: T[], options?: { groupId?: string }) {
     if (newItems.length === 0) return
     const groupId = options?.groupId
-    const tagged = groupId
-      ? (newItems.map(it => ({ ...it, _groupId: groupId })) as T[])
-      : newItems
+    const tagged = groupId ? (newItems.map(it => ({ ...it, _groupId: groupId })) as T[]) : newItems
     const nonEmpty = items.filter(isCompleteItem)
     items = [...nonEmpty, ...tagged]
     flushFormUpdate()

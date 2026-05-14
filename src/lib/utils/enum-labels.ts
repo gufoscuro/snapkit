@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import type { StatusVariant } from '$lib/components/core/ResourceTable/renderers/StatusBadge.types'
 import * as m from '$lib/paraglide/messages.js'
 import type {
   AbcClass,
@@ -517,14 +518,27 @@ export function getSalesOrderStatusVariant(status: SalesOrder['state']): BadgeVa
 // Sales Order Tags
 export const salesOrderTagConfig: Record<SalesOrderTag, EnumDisplayConfig> = {
   sent: { label: m.enum_sales_order_tag_sent, variant: 'default' },
+  advance_pending: { label: m.enum_sales_order_tag_advance_pending, variant: 'secondary' },
+  requires_direct_invoicing: { label: m.enum_sales_order_tag_requires_direct_invoicing, variant: 'secondary' },
+}
+
+export const salesOrderTagStatusVariantConfig: Record<SalesOrderTag, StatusVariant> = {
+  sent: 'active',
+  advance_pending: 'paused',
+  requires_direct_invoicing: 'alert',
 }
 
 export function getSalesOrderTagLabel(tag: SalesOrderTag): string {
   return salesOrderTagConfig[tag]?.label() ?? tag
 }
 
+export function getSalesOrderTagStatusVariant(tag: SalesOrderTag): StatusVariant {
+  return salesOrderTagStatusVariantConfig[tag] ?? 'active'
+}
+
 // Sales Order Fulfillment Status
 export const salesOrderFulfillmentStatusConfig: Record<SalesOrderFulfillmentStatus, EnumDisplayConfig> = {
+  none: { label: m.enum_sales_order_fulfillment_none, variant: 'secondary' },
   in_progress: { label: m.enum_sales_order_fulfillment_in_progress, variant: 'default' },
   picked: { label: m.enum_sales_order_fulfillment_picked, variant: 'default' },
   partially_shipped: { label: m.enum_sales_order_fulfillment_partially_shipped, variant: 'secondary' },
@@ -674,4 +688,43 @@ export const salesTransactionTypeLabels: EnumLabelMap<SalesTransactionType> = {
   RIP: () => 'RIP - Riparazione',
   'RIP-RES': () => 'RIP-RES - Reso Riparazione',
   CAMP: () => 'CAMP - Campionatura',
+}
+
+export type SalesDocumentKind = 'quotation' | 'sales_order' | 'warehouse_order' | 'transport_document'
+
+const FORWARD_SALES_TRANSACTION_TYPES: readonly SalesTransactionType[] = [
+  'VEN',
+  'VEN-EXP',
+  'VEN-UE',
+  'C/VIS',
+  'OMG',
+  'RIP',
+  'CAMP',
+]
+
+const ALL_SALES_TRANSACTION_TYPES = Object.keys(salesTransactionTypeLabels) as SalesTransactionType[]
+
+export const salesTransactionTypeAvailability: Record<SalesDocumentKind, readonly SalesTransactionType[]> = {
+  quotation: FORWARD_SALES_TRANSACTION_TYPES,
+  sales_order: FORWARD_SALES_TRANSACTION_TYPES,
+  warehouse_order: ALL_SALES_TRANSACTION_TYPES,
+  transport_document: ALL_SALES_TRANSACTION_TYPES,
+}
+
+/**
+ * Returns select items for the SalesTransactionType select, filtered by document kind.
+ * Backend allows only a forward-sales subset on quotation/sales_order. If `currentValue` is
+ * provided and not in the kind's allowed set (legacy document), it is appended so the form
+ * preserves the value on edit.
+ */
+export function getSalesTransactionTypeItemsFor(
+  kind: SalesDocumentKind,
+  currentValue?: string,
+): { value: SalesTransactionType; label: string }[] {
+  const allowed = salesTransactionTypeAvailability[kind]
+  const codes =
+    currentValue && !allowed.includes(currentValue as SalesTransactionType)
+      ? [...allowed, currentValue as SalesTransactionType]
+      : allowed
+  return codes.map(code => ({ value: code, label: salesTransactionTypeLabels[code]() }))
 }
