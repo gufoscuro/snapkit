@@ -689,3 +689,42 @@ export const salesTransactionTypeLabels: EnumLabelMap<SalesTransactionType> = {
   'RIP-RES': () => 'RIP-RES - Reso Riparazione',
   CAMP: () => 'CAMP - Campionatura',
 }
+
+export type SalesDocumentKind = 'quotation' | 'sales_order' | 'warehouse_order' | 'transport_document'
+
+const FORWARD_SALES_TRANSACTION_TYPES: readonly SalesTransactionType[] = [
+  'VEN',
+  'VEN-EXP',
+  'VEN-UE',
+  'C/VIS',
+  'OMG',
+  'RIP',
+  'CAMP',
+]
+
+const ALL_SALES_TRANSACTION_TYPES = Object.keys(salesTransactionTypeLabels) as SalesTransactionType[]
+
+export const salesTransactionTypeAvailability: Record<SalesDocumentKind, readonly SalesTransactionType[]> = {
+  quotation: FORWARD_SALES_TRANSACTION_TYPES,
+  sales_order: FORWARD_SALES_TRANSACTION_TYPES,
+  warehouse_order: ALL_SALES_TRANSACTION_TYPES,
+  transport_document: ALL_SALES_TRANSACTION_TYPES,
+}
+
+/**
+ * Returns select items for the SalesTransactionType select, filtered by document kind.
+ * Backend allows only a forward-sales subset on quotation/sales_order. If `currentValue` is
+ * provided and not in the kind's allowed set (legacy document), it is appended so the form
+ * preserves the value on edit.
+ */
+export function getSalesTransactionTypeItemsFor(
+  kind: SalesDocumentKind,
+  currentValue?: string,
+): { value: SalesTransactionType; label: string }[] {
+  const allowed = salesTransactionTypeAvailability[kind]
+  const codes =
+    currentValue && !allowed.includes(currentValue as SalesTransactionType)
+      ? [...allowed, currentValue as SalesTransactionType]
+      : allowed
+  return codes.map(code => ({ value: code, label: salesTransactionTypeLabels[code]() }))
+}

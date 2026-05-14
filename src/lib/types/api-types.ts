@@ -674,10 +674,6 @@ export type Permission =
   | 'create-sales-orders'
   | 'edit-sales-orders'
   | 'delete-sales-orders'
-  | 'view-pre-deliveries'
-  | 'create-pre-deliveries'
-  | 'edit-pre-deliveries'
-  | 'delete-pre-deliveries'
   | 'view-warehouses'
   | 'create-warehouses'
   | 'edit-warehouses'
@@ -690,6 +686,7 @@ export type Permission =
   | 'create-transport-documents'
   | 'edit-transport-documents'
   | 'delete-transport-documents'
+  | 'view-invoices'
 
 export type CustomerType = 'company' | 'individual' | 'public_entity' | 'consortium' | 'association'
 export type CustomerCommercialStatus = 'active' | 'prospect'
