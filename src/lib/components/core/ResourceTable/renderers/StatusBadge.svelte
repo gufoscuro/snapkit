@@ -1,13 +1,15 @@
 <script lang="ts">
   import Spinner from '$components/ui/spinner/spinner.svelte'
   import { Badge } from '$lib/components/ui/badge'
+  import AlertCircleFilled from '@tabler/icons-svelte/icons/alert-circle-filled'
   import CircleCheckFilled from '@tabler/icons-svelte/icons/circle-check-filled'
   import CircleDashed from '@tabler/icons-svelte/icons/circle-dashed'
   import ClockPause from '@tabler/icons-svelte/icons/clock-pause'
   import Forbid2Filled from '@tabler/icons-svelte/icons/forbid-2-filled'
   import Loader from '@tabler/icons-svelte/icons/loader'
+  import type { StatusVariant } from './StatusBadge.types'
 
-  export type StatusVariant = 'active' | 'in-progress' | 'loading' | 'paused' | 'blocked' | 'neutral'
+  export type { StatusVariant } from './StatusBadge.types'
 
   let { variant, label }: { variant: StatusVariant; label: string } = $props()
 </script>
@@ -23,6 +25,8 @@
     <ClockPause class="size-3.5" />
   {:else if variant === 'blocked'}
     <Forbid2Filled class="size-3.5 fill-red-500 dark:fill-red-400" />
+  {:else if variant === 'alert'}
+    <AlertCircleFilled class="size-3.5 fill-amber-500 dark:fill-amber-400" />
   {:else if variant === 'neutral'}
     <CircleDashed class="size-3.5" />
   {/if}

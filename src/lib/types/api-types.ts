@@ -1226,7 +1226,7 @@ export type Quotation = {
 // Sales Orders API Types
 // ============================================================================
 
-export type SalesOrderTag = 'sent'
+export type SalesOrderTag = 'sent' | 'advance_pending' | 'requires_direct_invoicing'
 
 export type SalesOrderStatus = 'open' | 'approved' | 'rejected'
 

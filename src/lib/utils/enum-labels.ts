@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import type { StatusVariant } from '$lib/components/core/ResourceTable/renderers/StatusBadge.types'
 import * as m from '$lib/paraglide/messages.js'
 import type {
   AbcClass,
@@ -517,10 +518,22 @@ export function getSalesOrderStatusVariant(status: SalesOrder['state']): BadgeVa
 // Sales Order Tags
 export const salesOrderTagConfig: Record<SalesOrderTag, EnumDisplayConfig> = {
   sent: { label: m.enum_sales_order_tag_sent, variant: 'default' },
+  advance_pending: { label: m.enum_sales_order_tag_advance_pending, variant: 'secondary' },
+  requires_direct_invoicing: { label: m.enum_sales_order_tag_requires_direct_invoicing, variant: 'secondary' },
+}
+
+export const salesOrderTagStatusVariantConfig: Record<SalesOrderTag, StatusVariant> = {
+  sent: 'active',
+  advance_pending: 'paused',
+  requires_direct_invoicing: 'alert',
 }
 
 export function getSalesOrderTagLabel(tag: SalesOrderTag): string {
   return salesOrderTagConfig[tag]?.label() ?? tag
+}
+
+export function getSalesOrderTagStatusVariant(tag: SalesOrderTag): StatusVariant {
+  return salesOrderTagStatusVariantConfig[tag] ?? 'active'
 }
 
 // Sales Order Fulfillment Status

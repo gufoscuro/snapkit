@@ -9,6 +9,8 @@ const SalesOrderStatusSchema = Type.Union([
 
 const SalesOrderTagSchema = Type.Union([
   Type.Literal('sent'),
+  Type.Literal('advance_pending'),
+  Type.Literal('requires_direct_invoicing'),
 ])
 
 const SalesOrderFulfillmentStatusSchema = Type.Union([
