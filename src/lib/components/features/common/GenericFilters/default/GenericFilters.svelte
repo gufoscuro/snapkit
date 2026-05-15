@@ -83,7 +83,7 @@
   })
 </script>
 
-<div class="flex w-full items-center justify-end gap-4">
+<div class="flex w-full items-center justify-end gap-2">
   {#if config}
     <FilterDropdown {config} query={currentQuery} onchange={handleQueryChange} />
   {/if}
