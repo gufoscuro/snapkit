@@ -928,5 +928,9 @@
   "invoiceable_lines_count": "Righe da fatturare",
   "enum_invoiceable_document_type_order_advance": "Acconto ordine",
   "enum_invoiceable_document_type_transport_document": "DDT",
-  "enum_invoiceable_document_type_direct_order": "Ordine diretto"
+  "enum_invoiceable_document_type_direct_order": "Ordine diretto",
+  "amount": "Importo",
+  "filters_amount_gte": "Maggiore o uguale a",
+  "filters_amount_lte": "Minore o uguale a",
+  "filters_amount_invalid_range": "Intervallo non valido"
 }

@@ -67,6 +67,13 @@
       label: m.document_type(),
       options: documentTypeOptions,
     },
+    amount: {
+      type: 'amount',
+      label: m.total(),
+      fromKey: 'total_from',
+      toKey: 'total_to',
+      unit: '€',
+    },
   }
 </script>
 

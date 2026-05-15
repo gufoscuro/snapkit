@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Spinner from '$components/ui/spinner/spinner.svelte'
   import * as Command from '$lib/components/ui/command'
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
   import * as m from '$lib/paraglide/messages'
@@ -61,7 +62,10 @@
       <Command.Separator />
 
       {#if loading}
-        <Command.Loading>{m.common_loading()}</Command.Loading>
+        <Command.Loading class="flex items-center gap-1 px-3 py-2 text-xs text-muted-foreground">
+          <Spinner />
+          {m.common_loading()}
+        </Command.Loading>
       {:else if options.length === 0}
         <Command.Empty class="py-2 text-center text-xs">{m.common_no_results()}</Command.Empty>
       {:else}

@@ -4,6 +4,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
   import * as m from '$lib/paraglide/messages'
   import {
+    type AmountFilterValue,
     countActiveFilters,
     deserializeFilters,
     type FilterConfig,
@@ -14,6 +15,7 @@
   import type { DateValue } from '@internationalized/date'
   import ListFilterIcon from '@lucide/svelte/icons/list-filter'
   import { untrack } from 'svelte'
+  import FilterAmount from './FilterAmount.svelte'
   import FilterCustomer from './FilterCustomer.svelte'
   import FilterDate from './FilterDate.svelte'
   import FilterEnum from './FilterEnum.svelte'
@@ -32,6 +34,12 @@
     untrack(() => deserializeFilters(config, query ?? {})),
   )
 
+  // Track the last `query` shape we emitted to the parent, so we can tell
+  // a "self-induced" prop change (parent echoing our update back) from an
+  // *external* one (URL back/forward, parent reset) — only the latter should
+  // overwrite our internal state.
+  let lastEmittedQueryKey = untrack(() => JSON.stringify(query ?? {}))
+
   const groupedFilters = $derived.by(() => {
     return Object.fromEntries(Object.entries(config).filter(([, e]) => !e.standalone))
   })
@@ -42,7 +50,10 @@
 
   const activeGroupedCount = $derived(countActiveFilters(groupedFilters, internalState))
 
-  function updateFilter(key: string, value: string | string[] | DateValue | undefined) {
+  function updateFilter(
+    key: string,
+    value: string | string[] | DateValue | AmountFilterValue | undefined,
+  ) {
     internalState = { ...internalState, [key]: value }
   }
 
@@ -50,10 +61,20 @@
     internalState = {}
   }
 
+  // Re-sync internalState when `query` changes from outside (e.g. URL nav).
+  $effect(() => {
+    const incomingKey = JSON.stringify(query ?? {})
+    if (incomingKey === lastEmittedQueryKey) return
+    lastEmittedQueryKey = incomingKey
+    internalState = deserializeFilters(config, query ?? {})
+  })
+
   $effect(() => {
     const serialized = serializeFilters(config, internalState)
     const hasAny = Object.keys(serialized).length > 0
-    untrack(() => onchange(hasAny ? serialized : undefined))
+    const nextQuery = hasAny ? serialized : undefined
+    lastEmittedQueryKey = JSON.stringify(nextQuery ?? {})
+    untrack(() => onchange(nextQuery))
   })
 </script>
 
@@ -95,6 +116,11 @@
             <FilterCustomer
               {entry}
               value={internalState[key] as string | undefined}
+              onchange={v => updateFilter(key, v)} />
+          {:else if entry.type === 'amount'}
+            <FilterAmount
+              {entry}
+              value={internalState[key] as AmountFilterValue | undefined}
               onchange={v => updateFilter(key, v)} />
           {/if}
         {/each}

@@ -926,5 +926,9 @@
   "invoiceable_lines_count": "Lines to invoice",
   "enum_invoiceable_document_type_order_advance": "Order advance",
   "enum_invoiceable_document_type_transport_document": "Transport document",
-  "enum_invoiceable_document_type_direct_order": "Direct order"
+  "enum_invoiceable_document_type_direct_order": "Direct order",
+  "amount": "Amount",
+  "filters_amount_gte": "Greater than or equal",
+  "filters_amount_lte": "Less than or equal",
+  "filters_amount_invalid_range": "Invalid range"
 }

@@ -1,10 +1,11 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button'
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
-  import type { FilterConfigEntry } from '$lib/utils/filters'
+  import type { AmountFilterValue, FilterConfigEntry } from '$lib/utils/filters'
   import { isFilterActive, type FilterInternalState } from '$lib/utils/filters'
   import type { DateValue } from '@internationalized/date'
   import CircleIcon from '@lucide/svelte/icons/circle'
+  import FilterAmount from './FilterAmount.svelte'
   import FilterCustomer from './FilterCustomer.svelte'
   import FilterDate from './FilterDate.svelte'
   import FilterEnum from './FilterEnum.svelte'
@@ -14,7 +15,10 @@
     filterKey: string
     entry: FilterConfigEntry
     state: FilterInternalState
-    onchange: (key: string, value: string | string[] | DateValue | undefined) => void
+    onchange: (
+      key: string,
+      value: string | string[] | DateValue | AmountFilterValue | undefined,
+    ) => void
   }
 
   const { filterKey, entry, state, onchange }: Props = $props()
@@ -56,6 +60,12 @@
       <FilterCustomer
         {entry}
         value={state[filterKey] as string | undefined}
+        onchange={v => onchange(filterKey, v)}
+        standalone />
+    {:else if entry.type === 'amount'}
+      <FilterAmount
+        {entry}
+        value={state[filterKey] as AmountFilterValue | undefined}
         onchange={v => onchange(filterKey, v)}
         standalone />
     {/if}

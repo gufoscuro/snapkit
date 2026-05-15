@@ -60,18 +60,39 @@ export type CustomerFilterConfig = BaseFilterConfig & {
 	fetchFunction: (search: string) => Promise<FilterOption[]>
 }
 
+export type AmountFilterValue = { from?: number; to?: number }
+
+/**
+ * Numeric range filter expanded into two flat query params (e.g. `total_from`,
+ * `total_to`). The config key is just the internal identifier of the filter; the
+ * bounds are emitted under `fromKey` and `toKey`.
+ */
+export type AmountFilterConfig = BaseFilterConfig & {
+	type: 'amount'
+	/** Query param sent for the lower bound (e.g. 'total_from'). */
+	fromKey: string
+	/** Query param sent for the upper bound (e.g. 'total_to'). */
+	toKey: string
+	/** Optional unit suffix shown next to each input (e.g. '€', 'kg'). */
+	unit?: string
+}
+
 export type FilterConfigEntry =
 	| EnumFilterConfig
 	| TagsFilterConfig
 	| DateFilterConfig
 	| CustomerFilterConfig
+	| AmountFilterConfig
 export type FilterConfig = Record<string, FilterConfigEntry>
 
 // ---------------------------------------------------------------------------
 // Filter internal state
 // ---------------------------------------------------------------------------
 
-export type FilterInternalState = Record<string, string | string[] | DateValue | undefined>
+export type FilterInternalState = Record<
+	string,
+	string | string[] | DateValue | AmountFilterValue | undefined
+>
 
 // ---------------------------------------------------------------------------
 // Serialization / deserialization
@@ -79,6 +100,10 @@ export type FilterInternalState = Record<string, string | string[] | DateValue |
 
 function isDateValue(v: unknown): v is DateValue {
 	return v != null && typeof v === 'object' && 'calendar' in v && 'year' in v
+}
+
+function isAmountValue(v: unknown): v is AmountFilterValue {
+	return v != null && typeof v === 'object' && !isDateValue(v) && ('from' in v || 'to' in v)
 }
 
 export function serializeFilters(
@@ -118,6 +143,13 @@ export function serializeFilters(
 				}
 				break
 			}
+			case 'amount': {
+				if (isAmountValue(value)) {
+					if (value.from !== undefined) result[entry.fromKey] = String(value.from)
+					if (value.to !== undefined) result[entry.toKey] = String(value.to)
+				}
+				break
+			}
 		}
 	}
 
@@ -131,6 +163,22 @@ export function deserializeFilters(
 	const state: FilterInternalState = {}
 
 	for (const [key, entry] of Object.entries(config)) {
+		if (entry.type === 'amount') {
+			const value: AmountFilterValue = {}
+			const fromRaw = query[entry.fromKey]
+			const toRaw = query[entry.toKey]
+			if (fromRaw != null && fromRaw !== '') {
+				const n = Number(fromRaw)
+				if (!Number.isNaN(n)) value.from = n
+			}
+			if (toRaw != null && toRaw !== '') {
+				const n = Number(toRaw)
+				if (!Number.isNaN(n)) value.to = n
+			}
+			if (value.from !== undefined || value.to !== undefined) state[key] = value
+			continue
+		}
+
 		const raw = query[key]
 		if (raw == null || raw === '') continue
 
@@ -164,11 +212,54 @@ export function isFilterActive(state: FilterInternalState, key: string): boolean
 	if (value == null) return false
 	if (typeof value === 'string') return value !== ''
 	if (Array.isArray(value)) return value.length > 0
+	if (isAmountValue(value)) return value.from !== undefined || value.to !== undefined
 	return isDateValue(value)
 }
 
 export function countActiveFilters(config: FilterConfig, state: FilterInternalState): number {
 	return Object.keys(config).filter((key) => isFilterActive(state, key)).length
+}
+
+/**
+ * Returns the full set of URL query-param keys a filter config writes to.
+ *
+ * Most filter types use the config key itself as the URL param name; `amount`
+ * filters expand into two keys (`fromKey` + `toKey`). Used by URL-persistence
+ * logic to know which params it "owns" — so it can clear them on rewrite
+ * without trampling unrelated params (`page`, etc.).
+ */
+export function getFilterUrlKeys(config: FilterConfig): string[] {
+	const keys = new Set<string>()
+	for (const [key, entry] of Object.entries(config)) {
+		if (entry.type === 'amount') {
+			keys.add(entry.fromKey)
+			keys.add(entry.toKey)
+		} else {
+			keys.add(key)
+		}
+	}
+	return Array.from(keys)
+}
+
+/**
+ * Reads filter state from URL search params, given a FilterConfig.
+ *
+ * `search` is read from the `search` param; all other keys owned by the config
+ * (per `getFilterUrlKeys`) are collected into `query`. Reserved keys like
+ * `page` are ignored.
+ */
+export function readFiltersFromUrl(
+	url: URL,
+	config: FilterConfig,
+): { search: string | undefined; query: QueryObject | undefined } {
+	const params = url.searchParams
+	const search = params.get('search') || undefined
+	const query: QueryObject = {}
+	for (const key of getFilterUrlKeys(config)) {
+		const v = params.get(key)
+		if (v != null && v !== '') query[key] = v
+	}
+	return { search, query: Object.keys(query).length > 0 ? query : undefined }
 }
 
 export type PaginationLinks = {
