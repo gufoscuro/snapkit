@@ -18,7 +18,6 @@
   import GenericFilters from '$components/features/common/GenericFilters/default/GenericFilters.svelte'
   import * as m from '$lib/paraglide/messages'
   import type { CustomerSummary, InvoiceableDocumentType } from '$lib/types/api-types'
-  import { getSalesTransactionTypeItemsFor } from '$lib/utils/enum-labels'
   import {
     createQueryRequestObject,
     type FilterConfig,
@@ -35,10 +34,9 @@
   async function fetchCustomers(search: string): Promise<FilterOption[]> {
     if (!legalEntityId) return []
     const params = createQueryRequestObject({ search })
-    const res = await api.get<PaginatedResponse<CustomerSummary>>(
-      `/legal-entities/${legalEntityId}/customers`,
-      { queryParams: params },
-    )
+    const res = await api.get<PaginatedResponse<CustomerSummary>>(`/legal-entities/${legalEntityId}/customers`, {
+      queryParams: params,
+    })
     return res.data.map(c => ({ value: c.id as string, label: c.name }))
   }
 
@@ -64,14 +62,7 @@
       label: m.date_to(),
       dayBoundary: 'endOf',
     },
-    sales_transaction_type: {
-      type: 'tags',
-      label: m.sales_transaction_type(),
-      options: getSalesTransactionTypeItemsFor('transport_document'),
-    },
-    // TODO(backend): the API does not yet expose a `document_type` query param.
-    // This filter is UI-only and currently not transmitted to the backend.
-    document_type: {
+    type: {
       type: 'tags',
       label: m.document_type(),
       options: documentTypeOptions,
