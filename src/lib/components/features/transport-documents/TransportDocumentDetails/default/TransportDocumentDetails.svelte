@@ -745,13 +745,18 @@
           {/snippet}
 
           {#snippet content()}
-            <CarrierSelector name="carrier_id" attr={carrierAttr} class={FormFieldClass.MaxWidth} />
-
             <SelectField
               name="transport_method"
               label={m.transport_method()}
               items={transportMethodItems}
+              onChange={value => {
+                if (value !== 'carrier') formAPI.updateField('carrier_id', '')
+              }}
               class={FormFieldClass.MinWidth} />
+
+            {#if formAPI.values.transport_method === 'carrier'}
+              <CarrierSelector name="carrier_id" attr={carrierAttr} class={FormFieldClass.MaxWidth} />
+            {/if}
 
             <DateField name="shipping_date" label={m.shipping_date()} class={FormFieldClass.MaxWidth} />
 

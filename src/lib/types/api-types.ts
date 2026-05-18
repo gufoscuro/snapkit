@@ -1368,7 +1368,7 @@ export type TransportDocumentType =
   | 'repair'
   | 'sampling'
 
-export type TransportMethod = 'sender' | 'recipient'
+export type TransportMethod = 'sender' | 'recipient' | 'carrier'
 
 export type TransportDocumentInvoicingStatus = 'none' | 'partial' | 'full'
 

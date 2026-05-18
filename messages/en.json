@@ -882,6 +882,7 @@
   "enum_transport_document_type_sampling": "Sampling",
   "enum_transport_method_sender": "Sender",
   "enum_transport_method_recipient": "Recipient",
+  "enum_transport_method_carrier": "Carrier",
   "enum_shipping_method_courier": "Courier",
   "enum_shipping_method_own_vehicle": "Own Vehicle",
   "enum_shipping_method_customer_pickup": "Customer Pickup",

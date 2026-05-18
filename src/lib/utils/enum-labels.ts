@@ -636,6 +636,7 @@ export function getTransportDocumentTypeLabel(type: TransportDocumentType): stri
 export const transportMethodLabels: EnumLabelMap<TransportMethod> = {
   sender: m.enum_transport_method_sender,
   recipient: m.enum_transport_method_recipient,
+  carrier: m.enum_transport_method_carrier,
 }
 
 export function getTransportMethodLabel(method: TransportMethod): string {

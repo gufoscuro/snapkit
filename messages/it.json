@@ -884,6 +884,7 @@
   "enum_transport_document_type_sampling": "Campionatura",
   "enum_transport_method_sender": "Mittente",
   "enum_transport_method_recipient": "Destinatario",
+  "enum_transport_method_carrier": "Vettore",
   "enum_shipping_method_courier": "Corriere",
   "enum_shipping_method_own_vehicle": "Mezzo proprio",
   "enum_shipping_method_customer_pickup": "Ritiro cliente",
