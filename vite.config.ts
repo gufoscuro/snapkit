@@ -2,6 +2,7 @@ import { paraglideVitePlugin } from '@inlang/paraglide-js'
 import { sveltekit } from '@sveltejs/kit/vite'
 import tailwindcss from '@tailwindcss/vite'
 import { playwright } from '@vitest/browser-playwright'
+import { searchForWorkspaceRoot } from 'vite'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -74,6 +75,9 @@ export default defineConfig({
 
   server: {
     allowedHosts: ['moddo.moddo.local', 'unknown.moddo.local'],
+    fs: {
+      allow: [searchForWorkspaceRoot(process.cwd())],
+    },
     watch: {
       ignored: ['**/data/**'],
     },
