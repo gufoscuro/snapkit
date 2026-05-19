@@ -17,6 +17,8 @@ import type {
   EmployeeCountRange,
   Incoterm,
   InvoiceableDocumentType,
+  InvoiceDocumentType,
+  InvoiceState,
   ItemCategory,
   ItemStatus,
   LegalEntityWarehouse,
@@ -610,6 +612,49 @@ export const invoiceableDocumentTypeLabels: EnumLabelMap<InvoiceableDocumentType
 
 export function getInvoiceableDocumentTypeLabel(type: InvoiceableDocumentType): string {
   return invoiceableDocumentTypeLabels[type]?.() ?? type
+}
+
+// Invoice Document Type (FatturaPA TipoDocumento) Labels
+export const invoiceDocumentTypeLabels: EnumLabelMap<InvoiceDocumentType> = {
+  TD01: m.enum_invoice_document_type_td01,
+  TD02: m.enum_invoice_document_type_td02,
+  TD04: m.enum_invoice_document_type_td04,
+  TD05: m.enum_invoice_document_type_td05,
+  TD24: m.enum_invoice_document_type_td24,
+  TD25: m.enum_invoice_document_type_td25,
+}
+
+export function getInvoiceDocumentTypeLabel(type: InvoiceDocumentType): string {
+  return invoiceDocumentTypeLabels[type]?.() ?? type
+}
+
+// Invoice State Labels (Acube/SDI lifecycle)
+export const invoiceStateLabels: EnumLabelMap<InvoiceState> = {
+  draft: m.enum_invoice_state_draft,
+  sent: m.enum_invoice_state_sent,
+  delivered: m.enum_invoice_state_delivered,
+  accepted: m.enum_invoice_state_accepted,
+  rejected: m.enum_invoice_state_rejected,
+  archived: m.enum_invoice_state_archived,
+  error: m.enum_invoice_state_error,
+}
+
+export function getInvoiceStateLabel(state: InvoiceState): string {
+  return invoiceStateLabels[state]?.() ?? state
+}
+
+export const invoiceStateVariantConfig: Record<InvoiceState, StatusVariant> = {
+  draft: 'neutral',
+  sent: 'in-progress',
+  delivered: 'in-progress',
+  accepted: 'active',
+  rejected: 'blocked',
+  archived: 'paused',
+  error: 'alert',
+}
+
+export function getInvoiceStateVariant(state: InvoiceState): StatusVariant {
+  return invoiceStateVariantConfig[state] ?? 'neutral'
 }
 
 // Transport Document Type Labels

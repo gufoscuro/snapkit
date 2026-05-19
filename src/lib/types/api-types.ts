@@ -687,6 +687,9 @@ export type Permission =
   | 'edit-transport-documents'
   | 'delete-transport-documents'
   | 'view-invoices'
+  | 'create-invoices'
+  | 'edit-invoices'
+  | 'delete-invoices'
 
 export type CustomerType = 'company' | 'individual' | 'public_entity' | 'consortium' | 'association'
 export type CustomerCommercialStatus = 'active' | 'prospect'
@@ -1470,6 +1473,76 @@ export type InvoiceableDocument = {
   }
   fulfillment_status: SalesOrderFulfillmentStatus | null
   invoicing_status: TransportDocumentInvoicingStatus | null
+}
+
+// ============================================================================
+// Invoices API Types
+// ============================================================================
+
+/** FatturaPA TipoDocumento codes accepted by POST /invoices */
+export type InvoiceDocumentType = 'TD01' | 'TD02' | 'TD04' | 'TD05' | 'TD24' | 'TD25'
+
+/** Acube/SDI-driven lifecycle. `draft` is the entry state for any new invoice. */
+export type InvoiceState = 'draft' | 'sent' | 'delivered' | 'accepted' | 'rejected' | 'archived' | 'error'
+
+export type InvoiceItemType = 'item' | 'descriptive'
+
+/** Transitions accepted by POST /invoices/{id}/transition */
+export type InvoiceTransition = 'submit' | 'resubmit' | 'archive'
+
+export type InvoiceItem = {
+  id: string
+  position: number
+  type: InvoiceItemType
+  item_id: string
+  item_snapshot: Record<string, unknown>[]
+  description: string
+  quantity: number
+  unit_of_measure: UnitOfMeasure
+  unit_price: number
+  discount_percentage: number
+  net_value: number
+  vat_code_id: string
+  vat_code_snapshot: Record<string, unknown>[]
+  tax_amount: number
+  sales_order_item_id: string
+  transport_document_item_id: string
+}
+
+/**
+ * Invoice from Moddo API POST /api/legal-entities/{legalEntity}/invoices.
+ * Created in `draft` state; lifecycle progresses server-side via Acube/SDI.
+ * `document_number` is auto-generated (`FT-YYYY-NNNNN`); totals are computed
+ * server-side from item-level `net_value` / `tax_amount`.
+ */
+export type Invoice = {
+  id: string
+  document_number: string
+  document_date: string
+  document_type: InvoiceDocumentType
+  customer_id: string
+  customer_snapshot: Record<string, unknown>[]
+  sales_order_id: string
+  legal_entity_snapshot: Record<string, unknown>[]
+  payment_term_id: string
+  payment_term_snapshot: Record<string, unknown>[]
+  legal_entity_bank_id: string
+  legal_entity_bank_snapshot: Record<string, unknown>[]
+  currency: Currency
+  total_net: number
+  total_tax: number
+  total_amount: number
+  state: InvoiceState
+  acube_invoice_uuid: string
+  notes_external: string
+  notes_internal: string
+  pdf_path: string
+  version: number
+  created_by: string
+  created_at: string
+  updated_at: string
+  items?: InvoiceItem[]
+  available_transitions?: InvoiceTransition[]
 }
 
 /**

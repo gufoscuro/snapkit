@@ -1,11 +1,10 @@
 <!--
-  @component InvoiceableDocumentsFilters
-  @description A filter component for the invoiceable-documents listing.
-  Exposes search, customer, date range, sales transaction type and document type
-  filters via FilterDropdown. The document_type filter is not yet supported by the
-  backend and is currently UI-only (TODO: wire when backend exposes the query param).
-  Provides filter state consumable by InvoiceableDocumentsTable.
-  @keywords filter, search, invoiceable-documents, invoicing, to-invoice, common
+  @component InvoicesFilters
+  @description Filter component for the invoices listing.
+  Exposes search, customer, state and document-date range filters via
+  FilterDropdown. Includes a primary "Nuova fattura" CTA on the right.
+  Provides filter state consumable by InvoicesTable.
+  @keywords filter, search, invoices, billing, fatturapa, common
   @uses GenericFilters
   @provides filters
 -->
@@ -18,7 +17,8 @@
   import GenericFilters from '$components/features/common/GenericFilters/default/GenericFilters.svelte'
   import Button from '$components/ui/button/button.svelte'
   import * as m from '$lib/paraglide/messages'
-  import type { CustomerSummary, InvoiceableDocumentType } from '$lib/types/api-types'
+  import type { CustomerSummary, InvoiceState } from '$lib/types/api-types'
+  import { invoiceStateLabels } from '$lib/utils/enum-labels'
   import {
     createQueryRequestObject,
     type FilterConfig,
@@ -42,11 +42,9 @@
     return res.data.map(c => ({ value: c.id as string, label: c.name }))
   }
 
-  const documentTypeOptions: { value: InvoiceableDocumentType; label: string }[] = [
-    { value: 'order_advance', label: m.enum_invoiceable_document_type_order_advance() },
-    { value: 'transport_document', label: m.enum_invoiceable_document_type_transport_document() },
-    { value: 'direct_order', label: m.enum_invoiceable_document_type_direct_order() },
-  ]
+  const stateOptions: { value: InvoiceState; label: string }[] = (
+    Object.keys(invoiceStateLabels) as InvoiceState[]
+  ).map(value => ({ value, label: invoiceStateLabels[value]() }))
 
   const config: FilterConfig = {
     customer_id: {
@@ -54,27 +52,20 @@
       label: m.customer(),
       fetchFunction: fetchCustomers,
     },
-    date_from: {
+    state: {
+      type: 'tags',
+      label: m.filters_state(),
+      options: stateOptions,
+    },
+    document_date_from: {
       type: 'date',
       label: m.date_from(),
       dayBoundary: 'startOf',
     },
-    date_to: {
+    document_date_to: {
       type: 'date',
       label: m.date_to(),
       dayBoundary: 'endOf',
-    },
-    type: {
-      type: 'tags',
-      label: m.document_type(),
-      options: documentTypeOptions,
-    },
-    amount: {
-      type: 'amount',
-      label: m.total(),
-      fromKey: 'total_from',
-      toKey: 'total_to',
-      unit: '€',
     },
   }
 </script>

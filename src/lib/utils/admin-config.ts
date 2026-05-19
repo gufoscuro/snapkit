@@ -596,6 +596,50 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
           },
         },
         {
+          $id: 'invoices',
+          title: 'invoices',
+          route: '/invoicing/invoices',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.InvoicesFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'invoices.invoicestable.default.InvoicesTable',
+              enabled: true,
+            },
+          },
+          subpages: [
+            {
+              $id: 'invoice-details',
+              title: 'invoice',
+              route: '/invoicing/invoices/upsert{/:uuid}',
+              layout: {
+                componentKey: 'layouts.LeftSidebar',
+                enabled: true,
+              },
+              snippets: {
+                sidebar: {
+                  componentKey: 'globals.sidebars.InvoiceSidebar',
+                  enabled: true,
+                },
+                content: {
+                  componentKey: 'invoices.invoicesdetails.default.InvoicesDetails',
+                  enabled: true,
+                },
+              },
+            },
+          ],
+        },
+        {
           $id: 'transport-documents',
           title: 'transport_documents',
           route: '/sales/transport-documents',
@@ -719,6 +763,12 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   label: 'to_invoice',
                   pageId: 'to-invoice',
                   icon: 'FileClock',
+                  type: 'link',
+                },
+                {
+                  label: 'invoices',
+                  pageId: 'invoices',
+                  icon: 'Receipt',
                   type: 'link',
                 },
               ],
