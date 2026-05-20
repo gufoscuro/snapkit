@@ -37,7 +37,7 @@
   import * as m from '$lib/paraglide/messages'
   import type { Item } from '$lib/types/api-types'
   import { generateId } from '$lib/utils/id'
-  import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol } from '$utils/prices'
+  import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol, renderPrice } from '$utils/prices'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
   import Pencil from '@lucide/svelte/icons/pencil'
@@ -141,6 +141,11 @@
     if (!value) return ''
     if (value instanceof Date) return toLocalISOString(value)
     return value
+  }
+
+  // Compact ISO-date rendering for collapsed/drag rows (YYYY-MM-DD).
+  function formatDateShort(value: string | undefined): string {
+    return value ? value.slice(0, 10) : ''
   }
 
   // Internal items state
@@ -411,31 +416,69 @@
       <GripVertical class="size-4 text-muted-foreground" />
       <span class="font-semibold text-primary"><span class="opacity-60">#</span>{index + 1}</span>
       {#if item.type === 'descriptive'}
-        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
+        <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {item.description || m.description()}
+        </span>
       {:else}
-        <span class="truncate text-sm">
+        <span class="min-w-0 flex-1 truncate text-sm">
           {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
         </span>
-        {#if item.quantity}
-          <span class="text-xs text-muted-foreground">x{item.quantity}</span>
-        {/if}
+        <div class="flex shrink-0 items-center gap-3 text-xs">
+          {#if item.quantity}
+            <span class="whitespace-nowrap">{item.quantity} {item.uom}</span>
+          {/if}
+          {#if item.unit_price && item.unit_price > 0}
+            <span class="hidden whitespace-nowrap text-muted-foreground sm:inline">
+              {renderPrice(item.unit_price, currency)}
+            </span>
+          {/if}
+          {#if item.net_value && item.net_value > 0}
+            <span class="hidden whitespace-nowrap text-muted-foreground sm:inline">
+              {renderPrice(item.net_value, currency)}
+            </span>
+          {/if}
+          {#if showDeliveryDates && item.delivery_date}
+            <span class="hidden whitespace-nowrap text-muted-foreground sm:inline">
+              {formatDateShort(item.delivery_date)}
+            </span>
+          {/if}
+        </div>
       {/if}
     </div>
   {/snippet}
 
   {#snippet collapsedItem({ item, index, groupColorClass })}
-    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 px-3 py-2 hover:bg-muted">
+    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 py-2 pr-12 pl-3 hover:bg-muted">
       <span class="font-semibold {groupColorClass ?? 'text-primary'}"
         ><span class="opacity-60">#</span>{index + 1}</span>
       {#if item.type === 'descriptive'}
-        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
+        <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {item.description || m.description()}
+        </span>
       {:else}
-        <span class="truncate text-sm">
+        <span class="min-w-0 flex-1 truncate text-sm">
           {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
         </span>
-        {#if item.quantity}
-          <span class="text-xs text-muted-foreground">x{item.quantity}</span>
-        {/if}
+        <div class="flex shrink-0 items-center gap-3 text-xs">
+          {#if item.quantity}
+            <span class="whitespace-nowrap">{item.quantity} {item.uom}</span>
+          {/if}
+          {#if item.unit_price && item.unit_price > 0}
+            <span class="hidden whitespace-nowrap text-muted-foreground sm:inline">
+              {renderPrice(item.unit_price, currency)}
+            </span>
+          {/if}
+          {#if item.net_value && item.net_value > 0}
+            <span class="hidden whitespace-nowrap text-muted-foreground sm:inline">
+              {renderPrice(item.net_value, currency)}
+            </span>
+          {/if}
+          {#if showDeliveryDates && item.delivery_date}
+            <span class="hidden whitespace-nowrap text-muted-foreground sm:inline">
+              {formatDateShort(item.delivery_date)}
+            </span>
+          {/if}
+        </div>
       {/if}
     </div>
   {/snippet}

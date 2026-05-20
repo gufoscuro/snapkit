@@ -286,30 +286,34 @@
       <GripVertical class="size-4 text-muted-foreground" />
       <span class="font-semibold text-primary"><span class="opacity-60">#</span>{index + 1}</span>
       {#if item.type === 'descriptive'}
-        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
+        <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {item.description || m.description()}
+        </span>
       {:else}
-        <span class="truncate text-sm">
+        <span class="min-w-0 flex-1 truncate text-sm">
           {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
         </span>
         {#if item.quantity_requested}
-          <span class="text-xs text-muted-foreground">x{item.quantity_requested}</span>
+          <span class="shrink-0 text-xs whitespace-nowrap">{item.quantity_requested} {item.uom}</span>
         {/if}
       {/if}
     </div>
   {/snippet}
 
   {#snippet collapsedItem({ item, index, groupColorClass })}
-    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 px-3 py-2 hover:bg-muted">
+    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 py-2 pr-12 pl-3 hover:bg-muted">
       <span class="font-semibold {groupColorClass ?? 'text-primary'}"
         ><span class="opacity-60">#</span>{index + 1}</span>
       {#if item.type === 'descriptive'}
-        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
+        <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {item.description || m.description()}
+        </span>
       {:else}
-        <span class="truncate text-sm">
+        <span class="min-w-0 flex-1 truncate text-sm">
           {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
         </span>
         {#if item.quantity_requested}
-          <span class="text-xs text-muted-foreground">x{item.quantity_requested}</span>
+          <span class="shrink-0 text-xs whitespace-nowrap">{item.quantity_requested} {item.uom}</span>
         {/if}
       {/if}
     </div>
