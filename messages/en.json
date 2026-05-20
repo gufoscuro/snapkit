@@ -970,6 +970,8 @@
   "invoice_xml_download": "Download XML",
   "invoice_submitted_successfully": "Invoice submitted successfully.",
   "invoice_validated_successfully": "Invoice validated successfully.",
+  "invoice_validation_valid": "Invoice valid",
+  "invoice_validation_failed": "SDI validation failed",
   "invoice_archived_successfully": "Invoice archived successfully.",
   "invoice_deleted_successfully": "Invoice deleted successfully.",
   "invoice_submit_confirmation": "Submit invoice {name} to SDI? This action is not reversible.",

@@ -972,6 +972,8 @@
   "invoice_xml_download": "Scarica XML",
   "invoice_submitted_successfully": "Fattura inviata correttamente.",
   "invoice_validated_successfully": "Fattura validata correttamente.",
+  "invoice_validation_valid": "Fattura valida",
+  "invoice_validation_failed": "Validazione SDI non riuscita",
   "invoice_archived_successfully": "Fattura archiviata correttamente.",
   "invoice_deleted_successfully": "Fattura eliminata correttamente.",
   "invoice_submit_confirmation": "Confermi l'invio a SDI della fattura {name}? L'operazione non è reversibile.",

@@ -24,6 +24,7 @@
 </script>
 
 <script lang="ts">
+  import { browser } from '$app/environment'
   import { goto } from '$app/navigation'
   import ActionButton from '$components/core/ActionButton.svelte'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
@@ -45,8 +46,15 @@
   import type { QuotationLineItem } from '$components/features/form/QuotationItemsEditor.svelte'
   import type { VatCodeSummary } from '$components/features/form/VatCodeSelector.svelte'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
-  import { createInvoiceActions, type InvoiceActionOptions } from '$components/features/invoices/invoice-actions'
+  import {
+    createInvoiceActions,
+    type InvoiceActionOptions,
+    type SdiViolation,
+  } from '$components/features/invoices/invoice-actions'
   import Separator from '$components/ui/separator/separator.svelte'
+  import type { FormAPI } from '$lib/components/core/form/form-context'
+  import * as Alert from '$lib/components/ui/alert'
+  import { RecordActionButton } from '$lib/components/ui/record-action-button'
   import { RecordActionMenu } from '$lib/components/ui/record-action-menu'
   import { useProvides } from '$lib/contexts/page-state'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
@@ -68,7 +76,11 @@
   import { createRoute } from '$lib/utils/route-builder'
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
+  import AlertCircleIcon from '@lucide/svelte/icons/alert-circle'
+  import CircleCheckFilled from '@tabler/icons-svelte/icons/circle-check-filled'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
+  import { tick } from 'svelte'
+  import { fly } from 'svelte/transition'
   import { InvoicesDetailsContract } from './InvoicesDetails.contract.js'
 
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
@@ -315,6 +327,36 @@
     } as unknown as LegalEntityBank
   })
 
+  // ---- SDI validation status ----
+  // Tracks the outcome of the last `validate` action so the form can surface a
+  // persistent green badge on success or an inline error alert with the SDI
+  // violations on failure. Resets to `idle` as soon as the user dirties the
+  // form — at that point the previous result is stale.
+  let validationStatus = $state<'idle' | 'valid' | 'invalid'>('idle')
+  let validationViolations = $state<SdiViolation[]>([])
+  // Captured from the `withContext` snippet so we can $effect on its `isDirty`.
+  let formApi = $state<FormAPI<InvoiceFormValues> | null>(null)
+
+  $effect(() => {
+    if (formApi?.isDirty && validationStatus !== 'idle') {
+      validationStatus = 'idle'
+      validationViolations = []
+    }
+  })
+
+  function handleValidateSuccess() {
+    validationStatus = 'valid'
+    validationViolations = []
+  }
+
+  function handleValidateError(violations: SdiViolation[]) {
+    validationStatus = 'invalid'
+    validationViolations = violations
+    tick().then(() => {
+      if (browser) document.querySelector('[data-scrollable-content]')?.scrollTo({ top: 0, behavior: 'smooth' })
+    })
+  }
+
   // Actions
   const invoiceActions = $derived(
     legalEntityId
@@ -323,6 +365,8 @@
           onSuccess: detail.refetch,
           // eslint-disable-next-line svelte/no-navigation-without-resolve
           onDeleted: () => goto(createRoute({ $id: 'invoices' })),
+          onValidateSuccess: handleValidateSuccess,
+          onValidateError: handleValidateError,
         })
       : [],
   )
@@ -337,6 +381,12 @@
       availableTransitions: (record.available_transitions ?? []) as InvoiceTransition[],
     }
   })
+
+  // Standalone primary CTAs — visibility is driven by each action's own
+  // `visible()` (mutually exclusive on `availableTransitions`), so at most
+  // one of these buttons actually renders.
+  const submitAction = $derived(invoiceActions.find(a => a.id === 'submit'))
+  const resubmitAction = $derived(invoiceActions.find(a => a.id === 'resubmit'))
 </script>
 
 <RequestPlaceholder {promise}>
@@ -351,7 +401,25 @@
       onFailure={handleFailure}
       class="relative flex flex-col gap-6 pb-breadcrumbs">
       {#snippet withContext(formAPI)}
+        {((formApi = formAPI as unknown as FormAPI<InvoiceFormValues>), '')}
         <FormErrorMessage columnsLayout />
+
+        {#if validationStatus === 'invalid' && validationViolations.length > 0}
+          <Alert.Root variant="destructive" class="max-w-md lg:max-w-none">
+            <AlertCircleIcon />
+            <Alert.Title>{m.invoice_validation_failed()}</Alert.Title>
+            <Alert.Description class="[&_p]:leading-tight">
+              <ul class="mt-1 list-disc space-y-1 pl-4">
+                {#each validationViolations as v, i (i)}
+                  <li>
+                    <span class="font-mono text-xs">{v.propertyPath}</span>
+                    — {v.message}
+                  </li>
+                {/each}
+              </ul>
+            </Alert.Description>
+          </Alert.Root>
+        {/if}
 
         <!-- General information -->
         <GroupTitle heading={m.invoice_general_information()}>
@@ -448,6 +516,13 @@
           {#if !record}
             <BusyButton type="submit">{m.save_changes()}</BusyButton>
           {:else}
+            {#if validationStatus === 'valid'}
+              <div class="mr-2 flex items-center gap-1.5" transition:fly={{ x: 20, duration: 250 }}>
+                <CircleCheckFilled class="size-3.5 text-green-600" />
+                <span class="text-xs font-semibold">{m.invoice_validation_valid()}</span>
+              </div>
+            {/if}
+
             {#if actionOptions}
               <RecordActionMenu buttonVariant="outline" actions={invoiceActions} {actionOptions} />
             {/if}
@@ -464,6 +539,14 @@
               <ActionButton type="submit" variant="outline" size="icon" busyLabel="" tooltip={m.save_changes()}>
                 <IconDeviceFloppy class="size-4" />
               </ActionButton>
+            {/if}
+
+            {#if submitAction && actionOptions}
+              <RecordActionButton action={submitAction} {actionOptions} />
+            {/if}
+
+            {#if resubmitAction && actionOptions}
+              <RecordActionButton action={resubmitAction} {actionOptions} />
             {/if}
           {/if}
         </BottomBar>
