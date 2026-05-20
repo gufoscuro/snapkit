@@ -453,6 +453,7 @@
             {/if}
 
             <DownloadActionButton
+              tooltip={m.invoice_xml_download()}
               onDownload={() =>
                 apiDownload({
                   url: `/legal-entities/${legalEntityId}/invoices/${record.id}/xml`,
