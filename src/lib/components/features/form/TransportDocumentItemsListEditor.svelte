@@ -359,20 +359,16 @@
         <span class="min-w-0 flex-1 truncate text-sm">
           {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
         </span>
-        <div class="flex shrink-0 items-center gap-3 text-xs">
-          {#if item.quantity}
-            <span class="whitespace-nowrap">{item.quantity} {item.uom}</span>
-          {/if}
-          {#if item.unit_price && item.unit_price > 0}
-            <span class="hidden whitespace-nowrap text-muted-foreground sm:inline">
-              {renderPrice(item.unit_price, currency)}
-            </span>
-          {/if}
-          {#if item.net_value && item.net_value > 0}
-            <span class="hidden whitespace-nowrap text-muted-foreground sm:inline">
-              {renderPrice(item.net_value, currency)}
-            </span>
-          {/if}
+        <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
+          <span class="w-20 text-right whitespace-nowrap">
+            {#if item.quantity}{item.quantity} {item.uom}{/if}
+          </span>
+          <span class="hidden w-24 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.unit_price && item.unit_price > 0}{renderPrice(item.unit_price, currency)}{/if}
+          </span>
+          <span class="hidden w-32 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.net_value && item.net_value > 0}Tot. {renderPrice(item.net_value, currency)}{/if}
+          </span>
         </div>
       {/if}
     </div>
@@ -395,20 +391,16 @@
             {item.sales_order_item_id ? m.import_source_sales_order() : m.import_source_warehouse_order()}
           </Badge>
         {/if}
-        <div class="flex shrink-0 items-center gap-3 text-xs">
-          {#if item.quantity}
-            <span class="whitespace-nowrap">{item.quantity} {item.uom}</span>
-          {/if}
-          {#if item.unit_price && item.unit_price > 0}
-            <span class="hidden whitespace-nowrap text-muted-foreground sm:inline">
-              {renderPrice(item.unit_price, currency)}
-            </span>
-          {/if}
-          {#if item.net_value && item.net_value > 0}
-            <span class="hidden whitespace-nowrap text-muted-foreground sm:inline">
-              {renderPrice(item.net_value, currency)}
-            </span>
-          {/if}
+        <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
+          <span class="w-20 text-right whitespace-nowrap">
+            {#if item.quantity}{item.quantity} {item.uom}{/if}
+          </span>
+          <span class="hidden w-24 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.unit_price && item.unit_price > 0}{renderPrice(item.unit_price, currency)}{/if}
+          </span>
+          <span class="hidden w-32 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.net_value && item.net_value > 0}Tot. {renderPrice(item.net_value, currency)}{/if}
+          </span>
         </div>
       {/if}
     </div>

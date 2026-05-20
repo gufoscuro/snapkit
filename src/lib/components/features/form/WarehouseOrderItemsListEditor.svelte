@@ -293,9 +293,9 @@
         <span class="min-w-0 flex-1 truncate text-sm">
           {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
         </span>
-        {#if item.quantity_requested}
-          <span class="shrink-0 text-xs whitespace-nowrap">{item.quantity_requested} {item.uom}</span>
-        {/if}
+        <span class="w-20 shrink-0 text-right text-xs whitespace-nowrap tabular-nums">
+          {#if item.quantity_requested}{item.quantity_requested} {item.uom}{/if}
+        </span>
       {/if}
     </div>
   {/snippet}
@@ -312,9 +312,9 @@
         <span class="min-w-0 flex-1 truncate text-sm">
           {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
         </span>
-        {#if item.quantity_requested}
-          <span class="shrink-0 text-xs whitespace-nowrap">{item.quantity_requested} {item.uom}</span>
-        {/if}
+        <span class="w-20 shrink-0 text-right text-xs whitespace-nowrap tabular-nums">
+          {#if item.quantity_requested}{item.quantity_requested} {item.uom}{/if}
+        </span>
       {/if}
     </div>
   {/snippet}
