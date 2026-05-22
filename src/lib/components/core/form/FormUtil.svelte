@@ -22,6 +22,7 @@
   import { registerForm } from '$components/runtime/devtools'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntityResourceConfig, ResourceCustomFieldConfig } from '$lib/stores/tenant-config/types'
+  import { emptyToNull } from '$lib/utils/empty-to-null'
   import type { ApiError } from '$utils/request'
   import type { Snippet } from 'svelte'
   import CustomFields from './CustomFields.svelte'
@@ -307,6 +308,10 @@
       } else {
         payload = formState.values
       }
+
+      // Backend expects `null` for absent optional fields, not `''`. Snapshot
+      // blobs (*_snapshot) are skipped — see emptyToNull.
+      payload = emptyToNull(payload)
 
       const result = (await onSubmit(payload)) as T
       onSuccess?.({ result, option: submitOption })
