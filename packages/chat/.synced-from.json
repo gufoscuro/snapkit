@@ -1,8 +1,8 @@
 {
   "sourceRemote": "git@github.com:diaphora-ai/diaphora.git",
   "sourcePath": "/Users/lorenzofontana/Documents/js-apps/diaphora/webapp",
-  "ref": "feat/chat-package-extraction",
-  "commit": "5aae006e542593880893115cb1578dc90413d9de",
-  "syncedAt": "2026-05-18T12:33:34Z",
+  "ref": "master",
+  "commit": "be8e3fe34c61ac299ec2e0153acb0c77e2755233",
+  "syncedAt": "2026-05-27T15:07:08Z",
   "syncedBy": "gufoscuro@gmail.com"
 }
