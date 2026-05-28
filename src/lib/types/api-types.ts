@@ -1485,10 +1485,63 @@ export type InvoiceDocumentType = 'TD01' | 'TD02' | 'TD04' | 'TD05' | 'TD24' | '
 /** Acube/SDI-driven lifecycle. `draft` is the entry state for any new invoice. */
 export type InvoiceState = 'draft' | 'sent' | 'delivered' | 'accepted' | 'rejected' | 'archived' | 'error'
 
-export type InvoiceItemType = 'item' | 'descriptive'
+export type InvoiceItemType = 'item' | 'descriptive' | 'charge'
 
 /** Transitions accepted by POST /invoices/{id}/transition */
 export type InvoiceTransition = 'submit' | 'resubmit' | 'archive'
+
+/**
+ * FatturaPA ModalitaPagamento codes — stable enum defined by SDI.
+ * See `paymentMethodLabels` in `enum-labels.ts` for the human-readable mapping.
+ */
+export type PaymentMethod =
+  | 'MP01'
+  | 'MP02'
+  | 'MP03'
+  | 'MP04'
+  | 'MP05'
+  | 'MP06'
+  | 'MP07'
+  | 'MP08'
+  | 'MP09'
+  | 'MP10'
+  | 'MP11'
+  | 'MP12'
+  | 'MP13'
+  | 'MP14'
+  | 'MP15'
+  | 'MP16'
+  | 'MP17'
+  | 'MP18'
+  | 'MP19'
+  | 'MP20'
+  | 'MP21'
+  | 'MP22'
+  | 'MP23'
+
+/**
+ * Single due-date row attached to an invoice. The backend recomputes these from
+ * the invoice's payment term on save, so the FE renders them as read-only info.
+ */
+export type InvoiceDueDate = {
+  id: string
+  position: number
+  due_date: string
+  amount: string | number
+  payment_method: PaymentMethod
+  invoice_id: string
+}
+
+/**
+ * Reduced due-date shape carried by the prefill response — no `id` /
+ * `invoice_id` since the invoice has not been saved yet.
+ */
+export type InvoicePrefillDueDate = {
+  position: number
+  due_date: string
+  amount: number
+  payment_method: PaymentMethod
+}
 
 export type InvoiceItem = {
   id: string
@@ -1542,7 +1595,60 @@ export type Invoice = {
   created_at: string
   updated_at: string
   items?: InvoiceItem[]
+  due_dates?: InvoiceDueDate[]
   available_transitions?: InvoiceTransition[]
+}
+
+/**
+ * Input shape for an invoice line item — matches the body accepted by
+ * `POST /invoices` and the items array returned by `GET /invoices/prefill`.
+ * Distinct from `InvoiceItem` (the saved-row representation) because prefill
+ * lines have no `id`, `position`, snapshots or computed totals yet.
+ */
+export type InvoiceItemInput = {
+  type: 'item' | 'charge' | 'descriptive'
+  item_id?: string
+  description: string
+  quantity?: number
+  unit_of_measure?: UnitOfMeasure
+  unit_price?: number
+  discount_percentage?: number
+  vat_code_id?: string
+  sales_order_item_id?: string
+  transport_document_item_id?: string
+}
+
+/**
+ * Pre-filled invoice draft returned by
+ * `GET /invoices/prefill?source_type=<InvoiceableDocumentType>&source_id=<uuid>`.
+ *
+ * The backend hydrates header fields, lines and totals from the source document
+ * (order advance / transport document / direct order) so the FE can pre-populate
+ * an invoice create form with one round-trip.
+ */
+export type InvoicePrefill = {
+  document_date: string
+  document_type: InvoiceDocumentType
+  customer_id: string
+  /** Full customer record — `null` when the customer cannot be resolved. */
+  customer: Customer | null
+  sales_order_id: string
+  payment_term_id: string
+  /** Full payment term — `null` when unset on the source. */
+  payment_term: PaymentTerm | null
+  legal_entity_bank_id: string
+  /** Full legal-entity bank — `null` when unset on the source. */
+  legal_entity_bank: LegalEntityBank | null
+  currency: Currency
+  notes_external: string
+  notes_internal: string
+  items: InvoiceItemInput[]
+  totals: {
+    net: number
+    tax: number
+    total: number
+  }
+  due_dates: InvoicePrefillDueDate[]
 }
 
 /**

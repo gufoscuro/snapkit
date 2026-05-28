@@ -14,7 +14,7 @@
   /**
    * Quotation item type enum
    */
-  export type QuotationItemType = 'item' | 'descriptive'
+  export type QuotationItemType = 'item' | 'descriptive' | 'charge'
 
   /**
    * Output line item type (matches API schema for create/update).

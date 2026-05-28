@@ -35,6 +35,12 @@
     submenu?: boolean
     /** Disable the trigger button */
     disabled?: boolean
+    /**
+     * Single-selection mode. When true, picking an item immediately calls
+     * `onimport([item])` and closes the menu — no checkboxes, no footer button.
+     * `compatKey` is ignored in this mode (no anchor to lock against).
+     */
+    singleSelect?: boolean
   }
 
   const {
@@ -46,6 +52,7 @@
     label = m.common_import(),
     submenu = false,
     disabled = false,
+    singleSelect = false,
   }: Props = $props()
 
   function getItemByValue(value: string): T | undefined {
@@ -110,6 +117,12 @@
 
   function toggle(value: string) {
     const item = getItemByValue(value)
+    if (singleSelect) {
+      if (!item) return
+      onimport([item])
+      closeMenu()
+      return
+    }
     if (item && isLocked(item, value)) return
     if (selectedValues.has(value)) {
       selectedValues.delete(value)
@@ -169,9 +182,11 @@
                   <Command.Item
                     class={cn('text-xs', locked && 'cursor-not-allowed opacity-50')}
                     onSelect={() => toggle(opt.value)}>
-                    <div class="mr-2 size-3.5 shrink-0 rounded border hover:border-foreground/60">
-                      <Check class={cn('size-3', !selectedValues.has(opt.value) && 'text-transparent')} />
-                    </div>
+                    {#if !singleSelect}
+                      <div class="mr-2 size-3.5 shrink-0 rounded border hover:border-foreground/60">
+                        <Check class={cn('size-3', !selectedValues.has(opt.value) && 'text-transparent')} />
+                      </div>
+                    {/if}
                     {opt.label}
                   </Command.Item>
                 </HoverCard.Trigger>
@@ -194,16 +209,18 @@
       {/if}
     </Command.List>
   </Command.Root>
-  <div class="border-t p-1">
-    <Button
-      variant="default"
-      size="sm"
-      class="w-full text-xs"
-      disabled={selectedValues.size === 0}
-      onclick={handleImport}>
-      {m.common_import()} ({selectedValues.size})
-    </Button>
-  </div>
+  {#if !singleSelect}
+    <div class="border-t p-1">
+      <Button
+        variant="default"
+        size="sm"
+        class="w-full text-xs"
+        disabled={selectedValues.size === 0}
+        onclick={handleImport}>
+        {m.common_import()} ({selectedValues.size})
+      </Button>
+    </div>
+  {/if}
 {/snippet}
 
 {#if submenu}

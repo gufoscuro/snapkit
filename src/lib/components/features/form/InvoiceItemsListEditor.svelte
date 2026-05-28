@@ -27,6 +27,10 @@
     refreshKey?: unknown
     defaultVatCode?: VatCodeSummary
     allowNegativePrices?: boolean
+    /** Treat the list as structurally rigid: no add buttons, charge rows can't be removed. */
+    lockStructure?: boolean
+    /** Predicate flagging individual `item` rows as locked (read-only except description, not removable). */
+    isItemLocked?: (item: QuotationLineItem) => boolean
     class?: string
   }
 
@@ -42,6 +46,8 @@
     refreshKey = undefined,
     defaultVatCode = undefined,
     allowNegativePrices = true,
+    lockStructure = false,
+    isItemLocked,
     class: className = '',
   }: Props = $props()
 
@@ -55,6 +61,11 @@
   /** Returns the current line items in editor shape — used to dedupe imports. */
   export function getItems(): QuotationLineItem[] {
     return editorRef?.getItems() ?? []
+  }
+
+  /** Drops every line item, including locked types like `charge`. */
+  export function clearItems() {
+    editorRef?.clearItems()
   }
 </script>
 
@@ -72,4 +83,6 @@
   {refreshKey}
   {defaultVatCode}
   {allowNegativePrices}
+  {lockStructure}
+  {isItemLocked}
   class={className} />

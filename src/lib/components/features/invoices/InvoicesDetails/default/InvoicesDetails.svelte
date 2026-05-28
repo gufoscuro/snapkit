@@ -25,9 +25,12 @@
 
 <script lang="ts">
   import { browser } from '$app/environment'
-  import { goto } from '$app/navigation'
+  import { goto, replaceState } from '$app/navigation'
+  import { page } from '$app/state'
   import ActionButton from '$components/core/ActionButton.svelte'
+  import { ImportMenu } from '$components/core/common/import-menu'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
+  import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
   import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
   import BottomBar from '$components/core/form/BottomBar.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
@@ -35,6 +38,7 @@
   import { FormFieldClass } from '$components/core/form/form.js'
   import FormErrorMessage from '$components/core/form/FormErrorMessage.svelte'
   import FormUtil from '$components/core/form/FormUtil.svelte'
+  import { createImportedSnapshot } from '$components/core/form/imported-snapshot.svelte'
   import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
@@ -51,6 +55,7 @@
     type InvoiceActionOptions,
     type SdiViolation,
   } from '$components/features/invoices/invoice-actions'
+  import { Button as BaseButton } from '$components/ui/button'
   import Separator from '$components/ui/separator/separator.svelte'
   import type { FormAPI } from '$lib/components/core/form/form-context'
   import * as Alert from '$lib/components/ui/alert'
@@ -64,22 +69,39 @@
     CustomerCommercialTerms,
     CustomerSummary,
     Invoice,
+    InvoiceableDocument,
+    InvoiceableDocumentType,
     InvoiceDocumentType,
+    InvoiceDueDate,
     InvoiceItem,
+    InvoiceItemInput,
+    InvoicePrefill,
+    InvoicePrefillDueDate,
     InvoiceTransition,
     LegalEntityBank,
+    PaymentMethod,
     PaymentTerm,
   } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import { currencyLabels, invoiceDocumentTypeLabels, toSelectItems } from '$lib/utils/enum-labels'
-  import { api, apiDownload } from '$lib/utils/request'
+  import {
+    currencyLabels,
+    getPaymentMethodLabel,
+    invoiceDocumentTypeLabels,
+    toSelectItems,
+  } from '$lib/utils/enum-labels'
+  import type { BasicOption } from '$lib/utils/generics'
+  import { generateId } from '$lib/utils/id'
+  import { api, apiDownload, apiRequest } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
-  import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
+  import { extractSnapshotString, type SnapshotShape } from '$lib/utils/snapshots'
+  import { DEFAULT_CURRENCY_CODE, floatToPriceString } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import AlertCircleIcon from '@lucide/svelte/icons/alert-circle'
   import CircleCheckFilled from '@tabler/icons-svelte/icons/circle-check-filled'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
+  import IconX from '@tabler/icons-svelte/icons/x'
   import { tick } from 'svelte'
+  import { toast } from 'svelte-sonner'
   import { fly } from 'svelte/transition'
   import { InvoicesDetailsContract } from './InvoicesDetails.contract.js'
 
@@ -105,6 +127,17 @@
         return {
           type: 'descriptive' as const,
           description: line.description,
+          sales_order_item_id: line.sales_order_item_id,
+          transport_document_item_id: line.transport_document_item_id,
+        }
+      }
+      if (line.type === 'charge') {
+        return {
+          type: 'charge' as const,
+          description: line.description,
+          quantity: line.quantity,
+          unit_price: line.unit_price,
+          vat_code_id: line.vat_code_id,
           sales_order_item_id: line.sales_order_item_id,
           transport_document_item_id: line.transport_document_item_id,
         }
@@ -136,6 +169,21 @@
         return {
           type: 'descriptive' as const,
           description: line.description,
+          sales_order_item_id: line.sales_order_item_id || undefined,
+          transport_document_item_id: line.transport_document_item_id || undefined,
+        }
+      }
+      if (line.type === 'charge') {
+        return {
+          type: 'charge' as const,
+          description: line.description,
+          quantity: line.quantity,
+          uom: line.unit_of_measure,
+          unit_price: line.unit_price,
+          net_value: line.net_value,
+          vat_code_id: line.vat_code_id,
+          vat_code_snapshot: Array.isArray(line.vat_code_snapshot) ? line.vat_code_snapshot[0] : line.vat_code_snapshot,
+          tax_amount: line.tax_amount,
           sales_order_item_id: line.sales_order_item_id || undefined,
           transport_document_item_id: line.transport_document_item_id || undefined,
         }
@@ -212,6 +260,72 @@
   // Default VAT code resolved from the selected customer's commercial terms.
   // Used by the line items editor as the suggested VAT for newly added rows.
   let commercialTermsVatCode = $state<VatCodeSummary | undefined>(undefined)
+
+  // Ref to the items list editor — drives the prefill flow that appends imported lines.
+  let itemsEditorRef: InvoiceItemsListEditor | undefined = $state()
+
+  // VAT codes by id, lazily fetched once per mount during the first prefill. The
+  // prefill endpoint only ships `vat_code_id` on item/charge lines (no inline
+  // snapshot), so we resolve labels here to populate `vat_code_snapshot` on the
+  // editor-shape items. VAT codes are session-stable, no need to invalidate.
+  let vatCodesById = $state<Map<string, VatCodeSummary>>(new Map())
+
+  // Server-computed totals + due dates captured from the prefill response.
+  // Display-only — the backend recomputes both on save from the line items
+  // and the selected payment term. Cleared by `clearPrefill`.
+  let prefillTotals = $state<InvoicePrefill['totals'] | null>(null)
+  let prefillDueDates = $state<InvoicePrefillDueDate[]>([])
+
+  // Unified display shape — `record` takes precedence in edit mode, falling
+  // back to the prefill payload in create mode. Returns `null` when there's
+  // nothing to show (manual create, no prefill yet).
+  type DisplayDueDate = {
+    position: number
+    due_date: string
+    amount: number
+    payment_method: PaymentMethod
+  }
+  const displayTotals = $derived.by<{ net: number; tax: number; total: number } | null>(() => {
+    if (record) return { net: record.total_net, tax: record.total_tax, total: record.total_amount }
+    if (prefillTotals) return prefillTotals
+    return null
+  })
+  const displayDueDates = $derived.by<DisplayDueDate[]>(() => {
+    if (record?.due_dates) {
+      return record.due_dates.map(d => ({
+        position: d.position,
+        due_date: d.due_date,
+        amount: typeof d.amount === 'string' ? Number.parseFloat(d.amount) : d.amount,
+        payment_method: d.payment_method,
+      }))
+    }
+    return prefillDueDates
+  })
+
+  async function ensureVatCodesLoaded(): Promise<void> {
+    if (vatCodesById.size > 0) return
+    const { data } = await api.safe.get<{ data: VatCodeSummary[] }>('/vat-codes', {
+      queryParams: { direction: 'vendita', per_page: 500 },
+    })
+    if (data?.data) vatCodesById = new Map(data.data.map(v => [v.id, v]))
+  }
+
+  /** Build the minimal snapshot shape used by the editor's locked-item / charge views. */
+  function buildVatCodeSnapshot(id: string | undefined): Record<string, unknown> | undefined {
+    if (!id) return undefined
+    const vat = vatCodesById.get(id)
+    if (!vat) return undefined
+    return { id: vat.id, code: vat.code, description: vat.description, rate: vat.rate }
+  }
+
+  // Snapshots populated by the invoiceable-documents prefill flow, so selectors
+  // (Customer / PaymentTerm / LegalEntityBank) render the entity name in create
+  // mode without an extra fetch. In edit mode `record.*_snapshot` takes precedence.
+  // The prefill response ships the full `customer`, `payment_term` and
+  // `legal_entity_bank` objects, so these are filled directly from the response.
+  const customerSnapshotImport = createImportedSnapshot()
+  const paymentTermSnapshotImport = createImportedSnapshot()
+  const legalEntityBankSnapshotImport = createImportedSnapshot()
 
   type FormFieldUpdater = (name: string, value: unknown) => void
 
@@ -294,12 +408,28 @@
     return undefined
   }
 
+  /**
+   * Resolve the displayable snapshot for a selector — record's snapshot in edit
+   * mode, falls back to the imported one populated by the prefill flow in create
+   * mode. The id comes from the record (edit) or from the current form value
+   * (create, after prefill set it via `updateField`).
+   */
+  function resolveSelectorSnapshot(
+    recordSnapshot: unknown,
+    importedValue: SnapshotShape | undefined,
+  ): Record<string, unknown> | undefined {
+    if (recordSnapshot) return firstSnapshot<Record<string, unknown>>(recordSnapshot)
+    if (Array.isArray(importedValue)) return importedValue[0] as Record<string, unknown> | undefined
+    if (importedValue && typeof importedValue === 'object') return importedValue as Record<string, unknown>
+    return undefined
+  }
+
   const customerAttr = $derived.by<CustomerSummary | undefined>(() => {
-    if (!record?.customer_id) return undefined
-    const s = firstSnapshot<Record<string, unknown>>(record.customer_snapshot)
-    if (!s) return undefined
+    const s = resolveSelectorSnapshot(record?.customer_snapshot, customerSnapshotImport.value)
+    const id = record?.customer_id || (formApi?.values.customer_id as string | undefined)
+    if (!id || !s) return undefined
     return {
-      id: record.customer_id,
+      id,
       name: (s.name as string) ?? '',
       vat_no: (s.vat_no as string) ?? '',
       categories: [],
@@ -310,18 +440,18 @@
   })
 
   const paymentTermAttr = $derived.by<PaymentTerm | undefined>(() => {
-    if (!record?.payment_term_id) return undefined
-    const s = firstSnapshot<Record<string, unknown>>(record.payment_term_snapshot)
-    if (!s) return undefined
-    return { id: record.payment_term_id, name: (s.name as string) ?? '' } as unknown as PaymentTerm
+    const s = resolveSelectorSnapshot(record?.payment_term_snapshot, paymentTermSnapshotImport.value)
+    const id = record?.payment_term_id || (formApi?.values.payment_term_id as string | undefined)
+    if (!id || !s) return undefined
+    return { id, name: (s.name as string) ?? '' } as unknown as PaymentTerm
   })
 
   const legalEntityBankAttr = $derived.by<LegalEntityBank | undefined>(() => {
-    if (!record?.legal_entity_bank_id) return undefined
-    const s = firstSnapshot<Record<string, unknown>>(record.legal_entity_bank_snapshot)
-    if (!s) return undefined
+    const s = resolveSelectorSnapshot(record?.legal_entity_bank_snapshot, legalEntityBankSnapshotImport.value)
+    const id = record?.legal_entity_bank_id || (formApi?.values.legal_entity_bank_id as string | undefined)
+    if (!id || !s) return undefined
     return {
-      id: record.legal_entity_bank_id,
+      id,
       name: (s.name as string) ?? '',
       iban: (s.iban as string) ?? '',
     } as unknown as LegalEntityBank
@@ -356,6 +486,210 @@
       if (browser) document.querySelector('[data-scrollable-content]')?.scrollTo({ top: 0, behavior: 'smooth' })
     })
   }
+
+  // ---- Import flow: invoiceable documents → invoice draft ----
+
+  /**
+   * List importable invoiceable documents for the ImportMenu picker. Free-text
+   * search is forwarded; pagination is widened so the picker has a meaningful
+   * pool to choose from.
+   */
+  async function fetchImportableInvoiceableDocuments(search?: string): Promise<InvoiceableDocument[]> {
+    if (!legalEntityId) return []
+    const queryParams: Record<string, string> = { per_page: '200' }
+    if (search) queryParams.search = search
+    const response = await apiRequest<{ data: InvoiceableDocument[] }>({
+      url: `/legal-entities/${legalEntityId}/invoiceable-documents`,
+      method: 'GET',
+      queryParams,
+    })
+    return response.data ?? []
+  }
+
+  function mapInvoiceableToOption(doc: InvoiceableDocument): BasicOption {
+    const customerName = extractSnapshotString(doc.customer_snapshot, 'name') ?? '—'
+    return {
+      label: `${doc.source.document_number} · ${customerName}`,
+      value: doc.source.id,
+    }
+  }
+
+  /** Convert prefill API line shape (`unit_of_measure`, `discount_percentage`) into
+   *  the editor's internal shape (`uom`, `discount_percent`). */
+  function mapPrefillItemsToEditorShape(items: InvoiceItemInput[]): QuotationLineItem[] {
+    return items.map(line => {
+      if (line.type === 'descriptive') {
+        return {
+          type: 'descriptive',
+          description: line.description,
+          sales_order_item_id: line.sales_order_item_id,
+          transport_document_item_id: line.transport_document_item_id,
+        }
+      }
+      if (line.type === 'charge') {
+        return {
+          type: 'charge',
+          description: line.description,
+          quantity: line.quantity,
+          unit_price: line.unit_price,
+          vat_code_id: line.vat_code_id,
+          vat_code_snapshot: buildVatCodeSnapshot(line.vat_code_id),
+          sales_order_item_id: line.sales_order_item_id,
+          transport_document_item_id: line.transport_document_item_id,
+        }
+      }
+      return {
+        type: 'item',
+        item_id: line.item_id,
+        description: line.description,
+        quantity: line.quantity,
+        uom: line.unit_of_measure,
+        unit_price: line.unit_price,
+        discount_percent: line.discount_percentage,
+        vat_code_id: line.vat_code_id,
+        vat_code_snapshot: buildVatCodeSnapshot(line.vat_code_id),
+        sales_order_item_id: line.sales_order_item_id,
+        transport_document_item_id: line.transport_document_item_id,
+      }
+    })
+  }
+
+  /**
+   * Run the full prefill workflow from a source (type + id):
+   * - GET /invoices/prefill (header + lines + totals)
+   * - In parallel, GET the entity records to populate the selector snapshots
+   *   (no `attr` round-trip on first paint).
+   * - Populate the form fields, fetch commercial terms (for default VAT),
+   *   and append the line items to the editor.
+   */
+  async function applyPrefillFromSource(sourceType: InvoiceableDocumentType, sourceId: string) {
+    if (!legalEntityId || !formApi || !itemsEditorRef) return
+
+    // Re-import: wipe the previous prefill before fetching the new one so the
+    // items editor and header fields don't accumulate stale data.
+    if (prefilledMode) clearPrefill()
+
+    const job = (async () => {
+      // VAT codes are needed to render labels on prefilled item/charge lines;
+      // fetched in parallel with the prefill (no-op if already cached).
+      const [prefill] = await Promise.all([
+        apiRequest<InvoicePrefill>({
+          url: `/legal-entities/${legalEntityId}/invoices/prefill`,
+          method: 'GET',
+          queryParams: { source_type: sourceType, source_id: sourceId },
+        }),
+        ensureVatCodesLoaded(),
+      ])
+
+      // The prefill response ships the resolved entity objects (`customer`,
+      // `payment_term`, `legal_entity_bank`) inline — no per-entity GETs needed.
+      if (prefill.customer) customerSnapshotImport.value = prefill.customer as unknown as SnapshotShape
+      if (prefill.payment_term) paymentTermSnapshotImport.value = prefill.payment_term as unknown as SnapshotShape
+      if (prefill.legal_entity_bank)
+        legalEntityBankSnapshotImport.value = prefill.legal_entity_bank as unknown as SnapshotShape
+
+      const update = formApi!.updateField as FormFieldUpdater
+      if (prefill.document_date) update('document_date', prefill.document_date)
+      if (prefill.document_type) update('document_type', prefill.document_type)
+      if (prefill.customer_id) update('customer_id', prefill.customer_id)
+      if (prefill.sales_order_id) update('sales_order_id', prefill.sales_order_id)
+      if (prefill.payment_term_id) update('payment_term_id', prefill.payment_term_id)
+      if (prefill.legal_entity_bank_id) update('legal_entity_bank_id', prefill.legal_entity_bank_id)
+      if (prefill.currency) update('currency', prefill.currency)
+      if (prefill.notes_internal) update('notes_internal', prefill.notes_internal)
+      if (prefill.notes_external) update('notes_external', prefill.notes_external)
+
+      if (prefill.customer_id) await fetchCustomerCommercialTerms(prefill.customer_id)
+
+      const editorItems = mapPrefillItemsToEditorShape(prefill.items ?? [])
+      if (editorItems.length > 0) {
+        itemsEditorRef!.addItems(editorItems, { groupId: generateId() })
+      }
+
+      // Display-only data: server-computed totals and projected due dates.
+      prefillTotals = prefill.totals ?? null
+      prefillDueDates = prefill.due_dates ?? []
+
+      prefilledMode = true
+      return { added: editorItems.length }
+    })()
+
+    toast.promise(job, {
+      loading: m.import_in_progress(),
+      success: res => m.import_completed({ count: res.added }),
+      error: () => m.import_failed(),
+    })
+
+    await job
+  }
+
+  function handleImportInvoiceable(items: InvoiceableDocument[]) {
+    const [doc] = items
+    if (!doc) return
+    applyPrefillFromSource(doc.type, doc.source.id)
+  }
+
+  // Tracks whether the form has been populated by a prefill workflow. Drives the
+  // visibility of the inline "Clear" button and the re-import reset behavior.
+  let prefilledMode = $state(false)
+  // Forces the items editor to re-hydrate from the (now empty) form values on
+  // clear. Bumped by `clearPrefill`; threaded through `refreshKey` below.
+  let prefillResetCounter = $state(0)
+
+  /**
+   * Reverts the form to its initial empty state — resets header fields, drops
+   * imported snapshots, clears item lines and strips the `?source_type/source_id`
+   * query params (so a reload doesn't re-trigger the auto-prefill).
+   */
+  function clearPrefill() {
+    customerSnapshotImport.reset()
+    paymentTermSnapshotImport.reset()
+    legalEntityBankSnapshotImport.reset()
+    commercialTermsVatCode = undefined
+    prefillTotals = null
+    prefillDueDates = []
+
+    // Clear items first — bypasses the per-row remove-button gating so
+    // backend-locked rows (e.g. `charge`) are wiped just like the rest.
+    itemsEditorRef?.clearItems()
+
+    formApi?.reset()
+    // Bump the editor's refreshKey so it re-reads `form.values.items` (now empty).
+    prefillResetCounter++
+
+    if (browser) {
+      const url = page.url
+      const params = new URLSearchParams(url.searchParams)
+      if (params.has('source_type') || params.has('source_id')) {
+        params.delete('source_type')
+        params.delete('source_id')
+        const next = params.toString()
+        replaceState(next ? `${url.pathname}?${next}` : url.pathname, page.state)
+      }
+    }
+
+    prefilledMode = false
+    // Intentionally NOT resetting `autoPrefillTriggered`: that flag exists to
+    // make the URL-driven auto-prefill a one-shot per mount. Toggling it back
+    // here re-fires the auto-trigger $effect, and if the URL strip below
+    // hasn't propagated to `page.url` yet (microtask timing), the effect sees
+    // stale params and re-runs the very prefill we just cleared.
+  }
+
+  // Auto-trigger prefill on create mode when `?source_type=…&source_id=…` is in the URL
+  // (entry point from the InvoiceableDocumentsTable action). Runs at most once per mount.
+  let autoPrefillTriggered = $state(false)
+  $effect(() => {
+    if (autoPrefillTriggered) return
+    if (!browser || !formApi || !itemsEditorRef || !legalEntityId) return
+    if (uuid) return // edit mode — skip
+    const params = page.url.searchParams
+    const sourceType = params.get('source_type') as InvoiceableDocumentType | null
+    const sourceId = params.get('source_id')
+    if (!sourceType || !sourceId) return
+    autoPrefillTriggered = true
+    applyPrefillFromSource(sourceType, sourceId)
+  })
 
   // Actions
   const invoiceActions = $derived(
@@ -403,6 +737,33 @@
       {#snippet withContext(formAPI)}
         {((formApi = formAPI as unknown as FormAPI<InvoiceFormValues>), '')}
         <FormErrorMessage columnsLayout />
+
+        {#if !record}
+          <GroupTitle heading={m.import_records()}>
+            {#snippet description()}
+              {m.import_records_description()}
+            {/snippet}
+
+            {#snippet content()}
+              <div class="flex items-center gap-2">
+                <ImportMenu
+                  singleSelect
+                  fetchFunction={fetchImportableInvoiceableDocuments}
+                  optionMappingFunction={mapInvoiceableToOption}
+                  onimport={handleImportInvoiceable} />
+
+                {#if prefilledMode}
+                  <BaseButton variant="ghost" size="sm" onclick={clearPrefill}>
+                    <IconX class="size-4" />
+                    {m.reset_import()}
+                  </BaseButton>
+                {/if}
+              </div>
+            {/snippet}
+          </GroupTitle>
+
+          <Separator />
+        {/if}
 
         {#if validationStatus === 'invalid' && validationViolations.length > 0}
           <Alert.Root variant="destructive" class="max-w-md lg:max-w-none">
@@ -483,14 +844,61 @@
 
           {#snippet content()}
             <InvoiceItemsListEditor
+              bind:this={itemsEditorRef}
               name="items"
               showLabel={false}
               required={!record}
               currency={(formAPI.values.currency as string) ?? DEFAULT_CURRENCY_CODE}
               defaultVatCode={commercialTermsVatCode}
-              refreshKey={record?.version} />
+              lockStructure={prefilledMode || !!record}
+              isItemLocked={line => !!line.transport_document_item_id || !!line.sales_order_item_id}
+              refreshKey={record?.version ?? prefillResetCounter} />
+
+            {#if displayTotals}
+              {@const totalsCurrency = (formAPI.values.currency as string) ?? DEFAULT_CURRENCY_CODE}
+              <div class="pr-12">
+                <StackedAmountValues
+                  title={m.total()}
+                  rows={[
+                    { label: m.net_total(), value: displayTotals.net, currencyCode: totalsCurrency },
+                    { label: m.tax_total(), value: displayTotals.tax, currencyCode: totalsCurrency },
+                    {
+                      type: 'grandtotal',
+                      label: m.total(),
+                      value: displayTotals.total,
+                      currencyCode: totalsCurrency,
+                    },
+                  ]} />
+              </div>
+            {/if}
           {/snippet}
         </GroupTitle>
+
+        {#if displayDueDates.length > 0}
+          <Separator />
+
+          <!-- Payments — backend-computed due dates, display-only -->
+          <GroupTitle heading={m.invoice_payments_section()}>
+            {#snippet description()}
+              {m.invoice_payments_section_description()}
+            {/snippet}
+
+            {#snippet content()}
+              {@const paymentsCurrency = (formAPI.values.currency as string) ?? DEFAULT_CURRENCY_CODE}
+              <div class="flex flex-col gap-2">
+                {#each displayDueDates as due (due.position)}
+                  <div
+                    class="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 rounded border bg-muted/30 px-3 py-2 text-sm">
+                    <span class="font-mono text-muted-foreground">#{due.position}</span>
+                    <span>{new Date(due.due_date).toLocaleDateString()}</span>
+                    <span class="tabular-nums">{floatToPriceString(due.amount, paymentsCurrency)}</span>
+                    <span class="text-muted-foreground">{getPaymentMethodLabel(due.payment_method)}</span>
+                  </div>
+                {/each}
+              </div>
+            {/snippet}
+          </GroupTitle>
+        {/if}
 
         <Separator />
 

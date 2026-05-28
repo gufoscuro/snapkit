@@ -352,6 +352,17 @@
   }
 
   /**
+   * Imperatively drop every item and immediately commit the empty list to the
+   * form context. Used by parent flows (e.g. the invoice "reset import" button)
+   * that need to wipe the list regardless of per-row removability.
+   */
+  export function clearItems() {
+    items = []
+    expandedIndices.clear()
+    flushFormUpdate()
+  }
+
+  /**
    * Write current items to form context and notify consumers
    */
   function commitToForm() {

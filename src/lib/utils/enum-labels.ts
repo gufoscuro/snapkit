@@ -19,6 +19,7 @@ import type {
   InvoiceableDocumentType,
   InvoiceDocumentType,
   InvoiceState,
+  PaymentMethod,
   ItemCategory,
   ItemStatus,
   LegalEntityWarehouse,
@@ -746,6 +747,39 @@ export const salesTransactionTypeLabels: EnumLabelMap<SalesTransactionType> = {
   RIP: () => 'RIP - Riparazione',
   'RIP-RES': () => 'RIP-RES - Reso Riparazione',
   CAMP: () => 'CAMP - Campionatura',
+}
+
+// FatturaPA ModalitaPagamento (MP01..MP23). Labels are SDI-stable Italian terms
+// — hardcoded here for the same reason as salesTransactionTypeLabels: they are
+// part of the FatturaPA spec and don't need i18n by paraglide.
+export const paymentMethodLabels: EnumLabelMap<PaymentMethod> = {
+  MP01: () => 'MP01 - Contanti',
+  MP02: () => 'MP02 - Assegno',
+  MP03: () => 'MP03 - Assegno circolare',
+  MP04: () => 'MP04 - Contanti presso Tesoreria',
+  MP05: () => 'MP05 - Bonifico',
+  MP06: () => 'MP06 - Vaglia cambiario',
+  MP07: () => 'MP07 - Bollettino bancario',
+  MP08: () => 'MP08 - Carta di pagamento',
+  MP09: () => 'MP09 - RID',
+  MP10: () => 'MP10 - RID utenze',
+  MP11: () => 'MP11 - RID veloce',
+  MP12: () => 'MP12 - RIBA',
+  MP13: () => 'MP13 - MAV',
+  MP14: () => 'MP14 - Quietanza erario',
+  MP15: () => 'MP15 - Giroconto su conti di contabilità speciale',
+  MP16: () => 'MP16 - Domiciliazione bancaria',
+  MP17: () => 'MP17 - Domiciliazione postale',
+  MP18: () => 'MP18 - Bollettino di c/c postale',
+  MP19: () => 'MP19 - SEPA Direct Debit',
+  MP20: () => 'MP20 - SEPA Direct Debit CORE',
+  MP21: () => 'MP21 - SEPA Direct Debit B2B',
+  MP22: () => 'MP22 - Trattenuta su somme già riscosse',
+  MP23: () => 'MP23 - PagoPA',
+}
+
+export function getPaymentMethodLabel(method: PaymentMethod): string {
+  return paymentMethodLabels[method]?.() ?? method
 }
 
 export type SalesDocumentKind = 'quotation' | 'sales_order' | 'warehouse_order' | 'transport_document'

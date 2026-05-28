@@ -17,9 +17,9 @@
 </script>
 
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
-  import InvoiceableDocumentStatusBadge from '$lib/components/features/invoiceable-documents/InvoiceableDocumentStatusBadge.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { InvoiceableDocument } from '$lib/types/api-types'
@@ -28,6 +28,7 @@
   import { createApiFetcher } from '$lib/utils/table-fetchers'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
+  import FilePlusIcon from '@lucide/svelte/icons/file-plus'
   import { InvoiceableDocumentsTableContract } from './InvoiceableDocumentsTable.contract.js'
 
   let { legalEntity }: SnippetProps = $props()
@@ -95,14 +96,37 @@
         currencyAccessor: (row: InvoiceableDocument) => row.currency,
       },
     },
+    // Disabled the fullfillment/invoicing status badge for now as it adds complexity that can lead to lack of clarity for users
+    // {
+    //   accessorKey: 'fulfillment_status',
+    //   header: m.status(),
+    //   renderer: 'component',
+    //   rendererConfig: {
+    //     component: InvoiceableDocumentStatusBadge,
+    //     propsMapper: (row: InvoiceableDocument) => ({ row }),
+    //   },
+    // },
     {
-      accessorKey: 'fulfillment_status',
-      header: m.status(),
-      renderer: 'component',
+      header: '',
+      renderer: 'actions',
       rendererConfig: {
-        component: InvoiceableDocumentStatusBadge,
-        propsMapper: (row: InvoiceableDocument) => ({ row }),
+        actions: [
+          {
+            icon: FilePlusIcon,
+            variant: 'ghost',
+            label: m.invoice_create_from_invoiceable(),
+            onClick: (row: InvoiceableDocument) => {
+              const url = createRoute({
+                $id: 'invoice-details',
+                query: { source_type: row.type, source_id: row.source.id },
+              })
+              // eslint-disable-next-line svelte/no-navigation-without-resolve
+              goto(url)
+            },
+          },
+        ],
       },
+      meta: { cellClassName: 'p-0 h-10 w-12' },
     },
   ]
 
