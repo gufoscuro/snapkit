@@ -457,6 +457,17 @@
     } as unknown as LegalEntityBank
   })
 
+  // Currency used for displaying totals and due-date amounts. Resolves to the
+  // selected/prefilled customer's `default_currency` when available, falling
+  // back to the invoice's own currency field (and ultimately the system default).
+  const displayCurrency = $derived.by<string>(() => {
+    return (
+      customerAttr?.default_currency ||
+      (formApi?.values.currency as string | undefined) ||
+      DEFAULT_CURRENCY_CODE
+    )
+  })
+
   // ---- SDI validation status ----
   // Tracks the outcome of the last `validate` action so the form can surface a
   // persistent green badge on success or an inline error alert with the SDI
@@ -855,18 +866,17 @@
               refreshKey={record?.version ?? prefillResetCounter} />
 
             {#if displayTotals}
-              {@const totalsCurrency = (formAPI.values.currency as string) ?? DEFAULT_CURRENCY_CODE}
               <div class="pr-12">
                 <StackedAmountValues
                   title={m.total()}
                   rows={[
-                    { label: m.net_total(), value: displayTotals.net, currencyCode: totalsCurrency },
-                    { label: m.tax_total(), value: displayTotals.tax, currencyCode: totalsCurrency },
+                    { label: m.net_total(), value: displayTotals.net, currencyCode: displayCurrency },
+                    { label: m.tax_total(), value: displayTotals.tax, currencyCode: displayCurrency },
                     {
                       type: 'grandtotal',
                       label: m.total(),
                       value: displayTotals.total,
-                      currencyCode: totalsCurrency,
+                      currencyCode: displayCurrency,
                     },
                   ]} />
               </div>
@@ -884,14 +894,13 @@
             {/snippet}
 
             {#snippet content()}
-              {@const paymentsCurrency = (formAPI.values.currency as string) ?? DEFAULT_CURRENCY_CODE}
               <div class="flex flex-col gap-2">
                 {#each displayDueDates as due (due.position)}
                   <div
                     class="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 rounded border bg-muted/30 px-3 py-2 text-sm">
                     <span class="font-mono text-muted-foreground">#{due.position}</span>
                     <span>{new Date(due.due_date).toLocaleDateString()}</span>
-                    <span class="tabular-nums">{floatToPriceString(due.amount, paymentsCurrency)}</span>
+                    <span class="tabular-nums">{floatToPriceString(due.amount, displayCurrency)}</span>
                     <span class="text-muted-foreground">{getPaymentMethodLabel(due.payment_method)}</span>
                   </div>
                 {/each}
