@@ -379,6 +379,7 @@
   "product_line_archived_success": "Product line \"{name}\" archived successfully",
   "product_line_archive_error": "Failed to archive product line",
   "custom_fields": "Custom fields",
+  "open_moddo_assistant": "Open Moddo Assistant",
   "custom_fields_description": "Additional fields for this resource.",
   "bank": "Bank",
   "banks": "Banks",

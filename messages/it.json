@@ -379,6 +379,7 @@
   "product_line_archived_success": "Linea prodotto \"{name}\" archiviata con successo",
   "product_line_archive_error": "Impossibile archiviare la linea prodotto",
   "custom_fields": "Campi aggiuntivi",
+  "open_moddo_assistant": "Apri assistente Moddo",
   "custom_fields_description": "Campi addizionali per questa risorsa.",
   "bank": "Banca",
   "banks": "Banche",
