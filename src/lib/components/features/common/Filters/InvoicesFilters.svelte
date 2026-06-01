@@ -16,6 +16,8 @@
 <script lang="ts">
   import GenericFilters from '$components/features/common/GenericFilters/default/GenericFilters.svelte'
   import Button from '$components/ui/button/button.svelte'
+  import { usePageChat } from '$lib/chat/hooks/usePageChat'
+  import { invoicesFilterChatRegistration } from '$lib/chat/page-tools/invoices-filter'
   import * as m from '$lib/paraglide/messages'
   import type { CustomerSummary, InvoiceState } from '$lib/types/api-types'
   import { invoiceStateLabels } from '$lib/utils/enum-labels'
@@ -30,6 +32,8 @@
   import type { SnippetProps } from '$utils/runtime'
 
   const props: SnippetProps = $props()
+
+  usePageChat(invoicesFilterChatRegistration)
 
   const legalEntityId = $derived(props.legalEntity?.id)
 

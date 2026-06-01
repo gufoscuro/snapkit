@@ -17,6 +17,8 @@
 <script lang="ts">
   import { replaceState } from '$app/navigation'
   import { page } from '$app/state'
+  import { usePageChat } from '$lib/chat/hooks/usePageChat'
+  import { makeListingChatRegistration } from '$lib/chat/page-tools/listing-chat'
   import { FilterDropdown } from '$components/core/common/filter-dropdown'
   import { Input } from '$lib/components/ui/input'
   import { useProvides } from '$lib/contexts/page-state'
@@ -42,6 +44,11 @@
 
   // Effective config for the URL helpers — empty when the caller hasn't passed one.
   const effectiveConfig = $derived(config ?? ({} as FilterConfig))
+
+  // Auto-register the universal listing-page chat tools (search_in_page, clear_filters)
+  // for every page that uses GenericFilters. The keys getter stays live so reactive
+  // config changes are honored at tool-call time.
+  usePageChat(makeListingChatRegistration({ filterKeys: () => getFilterUrlKeys(effectiveConfig) }))
 
   // ---- Initial state from URL ----
   const initial = untrack(() => readFiltersFromUrl(page.url, effectiveConfig))
