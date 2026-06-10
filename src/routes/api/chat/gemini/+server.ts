@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private'
 import type { MessagesApiPayload } from '@diaphora/chat'
+import { chatEnabled } from '$lib/chat/enabled'
 import { resolveServerContext } from '$lib/chat/server/chat-contexts/resolve'
 import {
   fromGeminiResponse,
@@ -7,7 +8,7 @@ import {
   type GeminiResponse,
 } from '$lib/chat/server/chat-providers/gemini-translate'
 import { GoogleGenAI, type Content, type GenerateContentConfig, type Tool } from '@google/genai'
-import { json } from '@sveltejs/kit'
+import { error, json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 
 const GEMINI_MODEL = env.GEMINI_MODEL || 'gemini-2.5-flash'
@@ -18,6 +19,10 @@ const GEMINI_API_KEY = env.GEMINI_API_KEY
 const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null
 
 export const POST: RequestHandler = async event => {
+  // Chat is gated by `chatEnabled` (currently subordinated to `dev`). When the
+  // gate is off, hide the endpoint entirely so it can't be probed or abused
+  // while the API key is unauthenticated.
+  if (!chatEnabled) error(404)
   if (!ai) {
     return json({ error: 'GEMINI_API_KEY is not set' }, { status: 503 })
   }

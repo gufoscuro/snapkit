@@ -2,6 +2,7 @@
   import { afterNavigate, onNavigate } from '$app/navigation'
   import { updated } from '$app/state'
   import ChatMount from '$lib/chat/components/ChatMount.svelte'
+  import { chatEnabled } from '$lib/chat/enabled'
   import { chatStore } from '$lib/chat/store'
   import DevtoolsPanel from '$lib/components/runtime/devtools/DevtoolsPanel.svelte'
   import ConfirmActionDialog from '$lib/components/ui/confirm-action-dialog/confirm-action-dialog.svelte'
@@ -25,9 +26,10 @@
   })
 
   // Reset chat conversation + breadcrumbs whenever the active user changes
-  // (login, logout, account switch).
+  // (login, logout, account switch). Chat is dev-only for now.
   let lastUserId: string | null = null
   $effect(() => {
+    if (!chatEnabled) return
     const currentId = data.user?.id ?? null
     if (currentId !== lastUserId) {
       chatStore.reset()
@@ -84,7 +86,7 @@
   afterNavigate(({ to }) => {
     if (to?.url.pathname) {
       pushUrl(to.url.pathname + to.url.search + to.url.hash)
-      chatStore.pushNavigation(to.url.pathname)
+      if (chatEnabled) chatStore.pushNavigation(to.url.pathname)
     }
   })
 
@@ -110,5 +112,7 @@
 <Toaster position="top-right" swipeDirections={['right']} />
 <ConfirmArchiveDialog />
 <ConfirmActionDialog />
-<ChatMount />
+{#if chatEnabled}
+  <ChatMount />
+{/if}
 <DevtoolsPanel />

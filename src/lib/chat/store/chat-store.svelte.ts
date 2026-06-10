@@ -7,6 +7,7 @@ import {
   type PageToolsRegistry,
 } from '$lib/chat/core/page-tools-registry.svelte'
 import { buildChatContext, type PageSummary } from '$lib/chat/core/context-composer'
+import { chatEnabled } from '$lib/chat/enabled'
 import { globalHandlers, globalTools } from '$lib/chat/tools/global-tools'
 import { tenantConfigStore } from '$lib/stores/tenant-config'
 import type { PageConfig } from '$lib/utils/page-registry'
@@ -22,7 +23,10 @@ let _state: Internals | null = null
 
 function ensure(): Internals | null {
   if (_state) return _state
-  if (!browser) return null
+  // `chatEnabled` is a compile-time constant in production builds (`false`
+  // outside dev), so the rest of this function is unreachable and Vite drops
+  // the entire chat infrastructure from the prod bundle.
+  if (!browser || !chatEnabled) return null
 
   const breadcrumbs = createBreadcrumbStore()
   const pageRegistry = createPageToolsRegistry()
