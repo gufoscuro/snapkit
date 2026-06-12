@@ -20,6 +20,7 @@ snapkit-content/
 │   ├── table-filters.md           # Table filters (enum, tags, date) for listing pages
 │   ├── quotation-items-list-editor.md  # Quotation/sales order line items editor
 │   ├── import-menu.md             # Generic ImportMenu for bulk-importing records
+│   ├── payment-composition.md     # Payment composition editor, signature & document integration
 │   └── legal-entity-policies.md   # Accessing and extending legal entity behavioral policies
 ├── pages/                # Page architecture and CRUD patterns
 │   ├── crud-workflow.md           # End-to-end CRUD workflow (list + form + filters)
@@ -50,7 +51,8 @@ snapkit-content/
 - **editable-list-field.md**: EditableListField pattern for editing arrays as vertical cards. Alternative to EditableTableField for items with many fields. Covers explicit add/remove, multi-type lists with custom add buttons, responsive card layout, rich text in cards, and styling constants
 - **table-filters.md**: Structured filter system for listing pages. Covers FilterConfig definition (enum, tags, date types), FilterDropdown component, standalone vs grouped modes, data flow through the contract system, serialization, and step-by-step guide for adding filters to any listing page
 - **quotation-items-list-editor.md**: Production editor for quotation/sales order line items. Covers QuotationLineItem superset type, deliveryDateKey field mapping, addItems() API, notifyFormUpdate pattern for external mutations, validators (quotationItemsRequired/Valid), date timezone handling (toLocalISOString), and the SalesOrderItemsListEditor wrapper that adds quotation import
-- **import-menu.md**: Generic core ImportMenu for bulk-importing records from any async source. Covers the typed generic pattern (fetchFunction + optionMappingFunction + onimport), debounced server-side search, optional HoverCard preview snippet, standalone vs submenu modes, and the Escape-key workaround for closing (since shadcn-svelte DropdownMenu doesn't forward open prop)
+- **import-menu.md**: Generic core ImportMenu for bulk-importing records from any async source. Covers the typed generic pattern (fetchFunction + optionMappingFunction + onimport), debounced server-side search, optional HoverCard preview snippet, standalone vs submenu modes, compatibility locking (`compatKey` record-anchored + `lockWhen` form-anchored), and the Escape-key workaround for closing (since shadcn-svelte DropdownMenu doesn't forward open prop)
+- **payment-composition.md**: Payment composition (Acconto/SAL/Saldo slices) replacing single payment terms. Covers the shared `PaymentComposition` type, `PaymentCompositionEditor`, the `$lib/utils/payment-composition.ts` helpers (`compositionSignature`, `compositionRules`, `compositionFromSnapshot`, `toCompositionPayload`), document integration (snapshot prefill, `{#key}` remount, submit strip), and two-layer import compatibility. Which resources have a composition (commercial terms, quotation, sales order) vs not (transport document, warehouse order, invoice)
 - **legal-entity-policies.md**: How to read and extend `entityConfig.policies` (behavioral flags, not per-resource fields). Covers the `getPolicy` helper, typed constants to avoid magic literals, `$derived` integration with validation schemas and field enablement, step-by-step for adding a new policy, and when to promote comparisons into predicate helpers
 
 ### Pages
@@ -124,6 +126,12 @@ When updating guidelines:
 - "How to use ImportMenu?" → `components/import-menu.md`
 - "How to make a generic searchable multi-select dropdown?" → `components/import-menu.md`
 - "How to add a hover preview to dropdown items?" → `components/import-menu.md`
+- "How to disable incompatible rows in an import picker?" → `components/import-menu.md`
+- "How to edit a payment composition (acconto/SAL/saldo)?" → `components/payment-composition.md`
+- "How to use PaymentCompositionEditor?" → `components/payment-composition.md`
+- "How to compute a composition signature?" → `components/payment-composition.md`
+- "How to migrate a document from payment_term_id to composition?" → `components/payment-composition.md`
+- "How to prefill composition from payment_composition_snapshot?" → `components/payment-composition.md`
 - "How to read a legal entity policy?" → `components/legal-entity-policies.md`
 - "How to use getPolicy?" → `components/legal-entity-policies.md`
 - "How to add a new legal entity policy?" → `components/legal-entity-policies.md`
