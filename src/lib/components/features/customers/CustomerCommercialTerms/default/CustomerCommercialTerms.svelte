@@ -24,16 +24,16 @@
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
-  import PaymentTermSelector from '$components/features/form/PaymentTermSelector.svelte'
+  import PaymentCompositionEditor, { compositionRules } from '$components/features/form/PaymentCompositionEditor.svelte'
   import VatCodeSelector from '$components/features/form/VatCodeSelector.svelte'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
   import Separator from '$components/ui/separator/separator.svelte'
   import { useProvides } from '$lib/contexts/page-state'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
-  import type { Customer, CustomerCommercialTerms } from '$lib/types/api-types'
+  import type { Customer, CustomerCommercialTerms, PaymentComposition } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import { billingFrequencyLabels, billingTypeLabels, incotermLabels, toSelectItems } from '$lib/utils/enum-labels'
+  import { incotermLabels, toSelectItems } from '$lib/utils/enum-labels'
   import { api } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import type { SnippetProps } from '$utils/runtime'
@@ -111,7 +111,6 @@
   }
 
   const initialValues = $derived.by(() => ({
-    payment_term_id: '',
     vat_code_id: '',
     iban: '',
     bic_swift: '',
@@ -121,25 +120,25 @@
     incoterm_place: '',
     free_shipping_threshold: undefined,
     minimum_order_value: undefined,
-    billing_type: '' as const,
-    billing_frequency: null as string | null,
+    composition: [{ position: 1, percentage: 100, type: 'saldo', payment_term_id: '' }] as PaymentComposition[],
     ...(record ?? {}),
   }))
 
   const incotermItems = toSelectItems(incotermLabels)
-  const billingTypeItems = toSelectItems(billingTypeLabels)
-  const billingFrequencyItems = toSelectItems(billingFrequencyLabels)
 
   const validateCreate = v
     .schema<Partial<CustomerCommercialTerms>>({
-      payment_term_id: [v.required()],
       vat_code_id: [v.required()],
       incoterm: [v.required()],
-      billing_type: [v.required()],
+      composition: [compositionRules()],
     })
     .build()
 
-  const validateUpdate = v.schema<Partial<CustomerCommercialTerms>>({}).build()
+  const validateUpdate = v
+    .schema<Partial<CustomerCommercialTerms>>({
+      composition: [compositionRules()],
+    })
+    .build()
 
   const validate = $derived(!record ? validateCreate : validateUpdate)
 </script>
@@ -163,33 +162,16 @@
           {/snippet}
 
           {#snippet content()}
-            <PaymentTermSelector name="payment_term_id" attr={record?.payment_term} />
-            <VatCodeSelector name="vat_code_id" direction="vendita" attr={record?.vat_code} />
+            <PaymentCompositionEditor name="composition" value={initialValues.composition} required />
+            <VatCodeSelector
+              name="vat_code_id"
+              direction="vendita"
+              attr={record?.vat_code}
+              class={FormFieldClass.MaxWidth} />
             <TextField name="iban" label={m.bank_iban()} class={FormFieldClass.MaxWidth} />
             <TextField name="bic_swift" label={m.bic_swift()} class={FormFieldClass.MaxWidth} />
             <TextField name="support_bank" label={m.support_bank()} class={FormFieldClass.MaxWidth} />
-            <NumberField name="trade_discount" label={m.trade_discount()} class={FormFieldClass.MinWidth} />
-          {/snippet}
-        </GroupTitle>
-
-        <Separator />
-
-        <GroupTitle heading={m.billing_information()}>
-          {#snippet description()}
-            {m.billing_information_description()}
-          {/snippet}
-
-          {#snippet content()}
-            <SelectField
-              name="billing_type"
-              label={m.billing_type()}
-              items={billingTypeItems}
-              class={FormFieldClass.MinWidth} />
-            <SelectField
-              name="billing_frequency"
-              label={m.billing_frequency()}
-              items={billingFrequencyItems}
-              class={FormFieldClass.MinWidth} />
+            <NumberField name="trade_discount" label={m.trade_discount()} class={FormFieldClass.MaxWidth} />
           {/snippet}
         </GroupTitle>
 
@@ -201,20 +183,13 @@
           {/snippet}
 
           {#snippet content()}
-            <SelectField
-              name="incoterm"
-              label={m.incoterm()}
-              items={incotermItems}
-              class={FormFieldClass.MinWidth} />
+            <SelectField name="incoterm" label={m.incoterm()} items={incotermItems} class={FormFieldClass.MinWidth} />
             <TextField name="incoterm_place" label={m.incoterm_location()} class={FormFieldClass.MaxWidth} />
             <NumberField
               name="free_shipping_threshold"
               label={m.free_shipping_threshold()}
-              class={FormFieldClass.MinWidth} />
-            <NumberField
-              name="minimum_order_value"
-              label={m.minimum_order_value()}
-              class={FormFieldClass.MinWidth} />
+              class={FormFieldClass.MaxWidth} />
+            <NumberField name="minimum_order_value" label={m.minimum_order_value()} class={FormFieldClass.MaxWidth} />
           {/snippet}
         </GroupTitle>
       {/snippet}

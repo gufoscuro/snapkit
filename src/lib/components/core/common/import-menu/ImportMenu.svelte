@@ -29,6 +29,15 @@
      * soon as the selection becomes empty.
      */
     compatKey?: (item: T) => string
+    /**
+     * Optional form-anchored lock predicate. When it returns `true` for an item,
+     * that item is rendered disabled and cannot be added — independently of the
+     * `compatKey` first-selection anchor. Already-selected items are never locked
+     * (so the user can always deselect). Use this to gate rows against state that
+     * lives outside the picker (e.g. the document form's current payment
+     * composition signature), which must reflect later edits, not just the first pick.
+     */
+    lockWhen?: (item: T) => boolean
     /** Optional label for the trigger button */
     label?: string
     /** Whether the component renders as a sub-menu inside another dropdown */
@@ -49,6 +58,7 @@
     onimport,
     previewSnippet,
     compatKey,
+    lockWhen,
     label = m.common_import(),
     submenu = false,
     disabled = false,
@@ -83,8 +93,11 @@
   })
 
   function isLocked(item: T, value: string): boolean {
-    if (compatAnchor === undefined || !compatKey) return false
+    // Already-selected items are never locked, so the user can always deselect.
     if (selectedValues.has(value)) return false
+    // Form-anchored lock (independent of the first-selection compat anchor).
+    if (lockWhen?.(item)) return true
+    if (compatAnchor === undefined || !compatKey) return false
     return compatKey(item) !== compatAnchor
   }
 
@@ -117,13 +130,13 @@
 
   function toggle(value: string) {
     const item = getItemByValue(value)
+    if (item && isLocked(item, value)) return
     if (singleSelect) {
       if (!item) return
       onimport([item])
       closeMenu()
       return
     }
-    if (item && isLocked(item, value)) return
     if (selectedValues.has(value)) {
       selectedValues.delete(value)
     } else {

@@ -31,7 +31,7 @@
   import CustomerAddressSelector from '$components/features/form/CustomerAddressSelector.svelte'
   import CustomerContactSelector from '$components/features/form/CustomerContactSelector.svelte'
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
-  import PaymentTermSelector from '$components/features/form/PaymentTermSelector.svelte'
+  import PaymentCompositionEditor from '$components/features/form/PaymentCompositionEditor.svelte'
   import QuotationItemsListEditor from '$components/features/form/QuotationItemsListEditor.svelte'
   import type { VatCodeSummary } from '$components/features/form/VatCodeSelector.svelte'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
@@ -45,9 +45,15 @@
   import { useProvides } from '$lib/contexts/page-state'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
-  import type { Currency, CustomerCommercialTerms, PaymentTerm, Quotation } from '$lib/types/api-types'
+  import type { Currency, CustomerCommercialTerms, PaymentComposition, Quotation } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { currencyLabels, getSalesTransactionTypeItemsFor, incotermLabels, toSelectItems } from '$lib/utils/enum-labels'
+  import {
+    compositionFromSnapshot,
+    compositionRules,
+    toCompositionPayload,
+    type PaymentCompositionSnapshotRow,
+  } from '$lib/utils/payment-composition'
   import { api, apiDownload } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
@@ -68,10 +74,10 @@
   const detail = useDetailRecord<Quotation>({
     getUuid: () => uuid,
     fetch: id => api.safe.get<Quotation>(`/legal-entities/${legalEntityId}/quotations/${id}`),
-    create: data => api.post(`/legal-entities/${legalEntityId}/quotations`, { data }),
+    create: data => api.post(`/legal-entities/${legalEntityId}/quotations`, { data: toQuotationRequest(data) }),
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     update: (id, { document_number, ...data }) =>
-      api.put(`/legal-entities/${legalEntityId}/quotations/${id}`, { data }),
+      api.put(`/legal-entities/${legalEntityId}/quotations/${id}`, { data: toQuotationRequest(data) }),
     getDetailRoute: record => createRoute({ $id: 'quotation-details', params: { uuid: record.id } }),
     onUpdated: data => {
       quotationHandle.set(data)
@@ -120,10 +126,19 @@
   const rejectAction = $derived(quotationActions.find(a => a.id === 'reject'))
 
   // Commercial terms state (always populated when a customer is known)
-  let commercialTermsPaymentTerm = $state<PaymentTerm | undefined>(undefined)
   let commercialTermsVatCode = $state<VatCodeSummary | undefined>(undefined)
 
+  // Bumped to remount the composition editor when its value is set externally
+  // (customer commercial-terms default), forcing a fresh hydrate.
+  let compositionKey = $state(0)
+
   type FormFieldUpdater = (name: string, value: unknown) => void
+
+  /** Strips the form payload down to the API request shape (clean composition). */
+  function toQuotationRequest(data: object): Record<string, unknown> {
+    const d = data as Record<string, unknown>
+    return { ...d, composition: toCompositionPayload(d.composition as PaymentComposition[] | undefined) }
+  }
 
   /**
    * Fetches commercial terms for a customer and populates state.
@@ -131,7 +146,6 @@
    */
   async function fetchCustomerCommercialTerms(customerId: string, updateField?: FormFieldUpdater) {
     if (!customerId || !legalEntityId) {
-      commercialTermsPaymentTerm = undefined
       commercialTermsVatCode = undefined
       return
     }
@@ -141,17 +155,16 @@
     )
 
     if (data) {
-      commercialTermsPaymentTerm = data.payment_term
       commercialTermsVatCode = data.vat_code as VatCodeSummary | undefined
 
-      if (updateField && !record && data.payment_term) {
-        updateField('payment_term_id', data.payment_term.id)
+      if (updateField && !record && data.composition?.length) {
+        updateField('composition', data.composition)
+        compositionKey++
       }
       if (updateField && !record && data.incoterm) {
         updateField('incoterm', data.incoterm)
       }
     } else {
-      commercialTermsPaymentTerm = undefined
       commercialTermsVatCode = undefined
     }
   }
@@ -160,7 +173,6 @@
     updateField('ship_to_address_id', '')
     updateField('contact_person_id', '')
 
-    commercialTermsPaymentTerm = undefined
     commercialTermsVatCode = undefined
 
     if (item?.value) {
@@ -172,6 +184,10 @@
   const incotermItems = toSelectItems(incotermLabels)
   const transactionTypeItems = $derived(getSalesTransactionTypeItemsFor('quotation', record?.sales_transaction_type))
 
+  const defaultComposition: PaymentComposition[] = [
+    { position: 1, percentage: 100, type: 'saldo', payment_term_id: '' },
+  ]
+
   const initialValues = $derived.by(() => ({
     document_number: '',
     document_date: new Date().toISOString(),
@@ -182,35 +198,42 @@
     currency: DEFAULT_CURRENCY_CODE as Currency,
     valid_from: new Date().toISOString(),
     valid_to: '',
-    payment_term_id: '',
     incoterm: undefined,
     incoterm_location: '',
     requested_delivery_date: '',
     notes_internal: '',
     notes_external: '',
     items: [],
+    composition: defaultComposition,
     ...(record
       ? {
           ...record,
           items: record.items ?? [],
+          composition: compositionFromSnapshot(
+            record.payment_composition_snapshot as PaymentCompositionSnapshotRow[] | undefined,
+          ),
         }
       : {}),
   }))
 
   const validateCreate = v
-    .schema<Partial<Quotation>>({
+    .schema<Partial<Quotation & { composition: PaymentComposition[] }>>({
       document_date: [v.required({ field: m.document_date() })],
       sales_transaction_type: [v.required({ field: m.sales_transaction_type() })],
       customer_id: [v.required({ field: m.customer() })],
       currency: [v.required({ field: m.currency_label() })],
       valid_from: [v.required({ field: m.valid_from() })],
       valid_to: [v.required({ field: m.valid_to() })],
-      payment_term_id: [v.required({ field: m.payment_term() })],
       incoterm: [v.required({ field: m.incoterm() })],
+      composition: [compositionRules()],
     })
     .build()
 
-  const validateUpdate = v.schema<Partial<Quotation>>({}).build()
+  const validateUpdate = v
+    .schema<Partial<Quotation & { composition: PaymentComposition[] }>>({
+      composition: [compositionRules()],
+    })
+    .build()
 
   const validate = $derived(!record ? validateCreate : validateUpdate)
 
@@ -224,24 +247,6 @@
     }
     if (snapshot && !Array.isArray(snapshot)) {
       return snapshot as unknown as Record<string, unknown>
-    }
-    return undefined
-  })
-
-  // Resolve payment term: edit mode uses snapshot, create mode uses commercial terms
-  const paymentTermAttr = $derived.by(() => {
-    if (record) {
-      const snapshot = record.payment_term_snapshot
-      if (Array.isArray(snapshot) && snapshot.length > 0) {
-        return snapshot[0] as Record<string, unknown>
-      }
-      if (snapshot && !Array.isArray(snapshot)) {
-        return snapshot as unknown as Record<string, unknown>
-      }
-      return undefined
-    }
-    if (commercialTermsPaymentTerm) {
-      return commercialTermsPaymentTerm as unknown as Record<string, unknown>
     }
     return undefined
   })
@@ -393,19 +398,12 @@
 
             <DateField name="valid_to" label={m.valid_to()} class={FormFieldClass.MaxWidth} allowClear />
 
-            <PaymentTermSelector
-              name="payment_term_id"
-              attr={paymentTermAttr
-                ? {
-                    id: paymentTermAttr.id as string,
-                    name: paymentTermAttr.name as string,
-                    code: paymentTermAttr.code as string,
-                    description: '',
-                    terms: { reference_date: 'invoice_date', due_dates: [] },
-                    is_active: true,
-                  }
-                : undefined}
-              class={FormFieldClass.MaxWidth} />
+            {#key compositionKey}
+              <PaymentCompositionEditor
+                name="composition"
+                value={formAPI.values.composition as PaymentComposition[]}
+                required />
+            {/key}
 
             <SelectField name="incoterm" label={m.incoterm()} items={incotermItems} class={FormFieldClass.MinWidth} />
 

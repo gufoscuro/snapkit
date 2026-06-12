@@ -24,7 +24,7 @@ export const QuotationDataSchema = Type.Object({
   currency: Type.String(),
   valid_from: Type.String(),
   valid_to: Type.String(),
-  payment_term_id: Type.String(),
+  composition_signature: Type.String(),
   incoterm: Type.String(),
   incoterm_location: Type.String(),
   state: QuotationStatusSchema,

@@ -9,11 +9,12 @@ const SalesOrderStatusSchema = Type.Union([
 
 const SalesOrderTagSchema = Type.Union([
   Type.Literal('sent'),
-  Type.Literal('advance_pending'),
+  Type.Literal('payment_pending'),
   Type.Literal('requires_direct_invoicing'),
 ])
 
 const SalesOrderFulfillmentStatusSchema = Type.Union([
+  Type.Literal('none'),
   Type.Literal('in_progress'),
   Type.Literal('picked'),
   Type.Literal('partially_shipped'),
@@ -28,7 +29,7 @@ export const SalesOrderDataSchema = Type.Object({
   sales_transaction_type: Type.String(),
   customer_id: Type.String(),
   currency: Type.String(),
-  payment_term_id: Type.String(),
+  composition_signature: Type.String(),
   incoterm: Type.String(),
   incoterm_location: Type.String(),
   customer_purchase_order: Type.String(),

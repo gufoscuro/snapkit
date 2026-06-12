@@ -35,7 +35,7 @@
   import CustomerContactSelector from '$components/features/form/CustomerContactSelector.svelte'
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
   import LegalEntityBankSelector from '$components/features/form/LegalEntityBankSelector.svelte'
-  import PaymentTermSelector from '$components/features/form/PaymentTermSelector.svelte'
+  import PaymentCompositionEditor from '$components/features/form/PaymentCompositionEditor.svelte'
   import type { QuotationLineItem } from '$components/features/form/QuotationItemsEditor.svelte'
   import SalesOrderItemsListEditor from '$components/features/form/SalesOrderItemsListEditor.svelte'
   import type { VatCodeSummary } from '$components/features/form/VatCodeSelector.svelte'
@@ -50,7 +50,7 @@
   import { useProvides } from '$lib/contexts/page-state'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
-  import type { Currency, CustomerCommercialTerms, PaymentTerm, SalesOrder } from '$lib/types/api-types'
+  import type { Currency, CustomerCommercialTerms, PaymentComposition, SalesOrder } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { currencyLabels, getSalesTransactionTypeItemsFor, incotermLabels, toSelectItems } from '$lib/utils/enum-labels'
   import type { BasicOption } from '$lib/utils/generics'
@@ -58,6 +58,13 @@
   import { api, apiDownload, apiRequest } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import { extractSnapshotString, type SnapshotShape } from '$lib/utils/snapshots'
+  import {
+    compositionFromSnapshot,
+    compositionRules,
+    compositionSignature,
+    toCompositionPayload,
+    type PaymentCompositionSnapshotRow,
+  } from '$lib/utils/payment-composition'
   import { DEFAULT_CURRENCY_CODE, floatToPriceString } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
@@ -77,10 +84,11 @@
   const detail = useDetailRecord<SalesOrder>({
     getUuid: () => uuid,
     fetch: id => api.safe.get<SalesOrder>(`/legal-entities/${legalEntityId}/sales-orders/${id}`),
-    create: data => api.post(`/legal-entities/${legalEntityId}/sales-orders`, { data }),
+    create: data =>
+      api.post(`/legal-entities/${legalEntityId}/sales-orders`, { data: toSalesOrderRequest(data) }),
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     update: (id, { document_number, ...data }) =>
-      api.put(`/legal-entities/${legalEntityId}/sales-orders/${id}`, { data }),
+      api.put(`/legal-entities/${legalEntityId}/sales-orders/${id}`, { data: toSalesOrderRequest(data) }),
     getDetailRoute: record => createRoute({ $id: 'sales-order-details', params: { uuid: record.id } }),
     onUpdated: data => {
       salesOrderHandle.set(data)
@@ -111,7 +119,16 @@
   const customerSnapshotImport = createImportedSnapshot()
   const shipToSnapshotImport = createImportedSnapshot()
   const contactPersonSnapshotImport = createImportedSnapshot()
-  const paymentTermSnapshotImport = createImportedSnapshot()
+
+  // Bumped to remount the composition editor when its value is set externally
+  // (import prefill / customer commercial-terms default), forcing a fresh hydrate.
+  let compositionKey = $state(0)
+
+  /** Strips the form payload down to the API request shape (clean composition). */
+  function toSalesOrderRequest(data: object): Record<string, unknown> {
+    const d = data as Record<string, unknown>
+    return { ...d, composition: toCompositionPayload(d.composition as PaymentComposition[] | undefined) }
+  }
 
   type QuotationWithItems = {
     id: string
@@ -126,8 +143,8 @@
     ship_to_snapshot?: SnapshotShape
     contact_person_id?: string
     contact_person_snapshot?: SnapshotShape
-    payment_term_id?: string
-    payment_term_snapshot?: SnapshotShape
+    payment_composition_snapshot?: PaymentCompositionSnapshotRow[]
+    composition_signature?: string
     incoterm?: string
     incoterm_location?: string
     notes_internal?: string
@@ -195,7 +212,25 @@
   }
 
   function quotationCompatKey(q: QuotationWithItems): string {
-    return `${q.customer_id}|${q.ship_to_address_id ?? ''}|${q.incoterm ?? ''}`
+    const sig = q.payment_composition_snapshot
+      ? compositionSignature(q.payment_composition_snapshot)
+      : (q.composition_signature ?? '')
+    return `${q.customer_id}|${q.ship_to_address_id ?? ''}|${q.incoterm ?? ''}|${sig}`
+  }
+
+  /**
+   * Form-anchored composition lock: once the form has a complete (real) composition,
+   * importable quotations whose composition signature differs are disabled. Inactive
+   * while the form composition is still the unpinned default (no payment terms chosen),
+   * so a fresh order can import its first quotation.
+   */
+  function isCompositionLocked(q: QuotationWithItems, values: Record<string, unknown>): boolean {
+    const comp = values.composition as PaymentComposition[] | undefined
+    if (!comp || comp.length === 0 || comp.some(c => !c.type || !c.payment_term_id)) return false
+    const sig = q.payment_composition_snapshot
+      ? compositionSignature(q.payment_composition_snapshot)
+      : (q.composition_signature ?? '')
+    return sig !== compositionSignature(comp)
   }
 
   /**
@@ -249,7 +284,10 @@
           if (q.ship_to_address_id) formAPI.updateField('ship_to_address_id', q.ship_to_address_id)
           if (q.contact_person_id) formAPI.updateField('contact_person_id', q.contact_person_id)
           if (q.currency) formAPI.updateField('currency', q.currency)
-          if (q.payment_term_id) formAPI.updateField('payment_term_id', q.payment_term_id)
+          if (q.payment_composition_snapshot?.length) {
+            formAPI.updateField('composition', compositionFromSnapshot(q.payment_composition_snapshot))
+            compositionKey++
+          }
           if (q.incoterm) formAPI.updateField('incoterm', q.incoterm)
           if (q.incoterm_location) formAPI.updateField('incoterm_location', q.incoterm_location)
           if (q.notes_internal) formAPI.updateField('notes_internal', q.notes_internal)
@@ -257,9 +295,8 @@
           customerSnapshotImport.value = q.customer_snapshot
           shipToSnapshotImport.value = q.ship_to_snapshot
           contactPersonSnapshotImport.value = q.contact_person_snapshot
-          paymentTermSnapshotImport.value = q.payment_term_snapshot
           // Populate commercialTermsVatCode for default-VAT on new manual rows.
-          // No `updateField` passed so payment_term_id / incoterm just set above are not overwritten.
+          // No `updateField` passed so composition / incoterm just set above are not overwritten.
           if (q.customer_id) fetchCustomerCommercialTerms(q.customer_id)
         }
 
@@ -345,7 +382,6 @@
   const rejectAction = $derived(salesOrderActions.find(a => a.id === 'reject'))
 
   // Commercial terms state (always populated when a customer is known)
-  let commercialTermsPaymentTerm = $state<PaymentTerm | undefined>(undefined)
   let commercialTermsVatCode = $state<VatCodeSummary | undefined>(undefined)
 
   type FormFieldUpdater = (name: string, value: unknown) => void
@@ -356,7 +392,6 @@
    */
   async function fetchCustomerCommercialTerms(customerId: string, updateField?: FormFieldUpdater) {
     if (!customerId || !legalEntityId) {
-      commercialTermsPaymentTerm = undefined
       commercialTermsVatCode = undefined
       return
     }
@@ -366,17 +401,16 @@
     )
 
     if (data) {
-      commercialTermsPaymentTerm = data.payment_term
       commercialTermsVatCode = data.vat_code as VatCodeSummary | undefined
 
-      if (updateField && !record && data.payment_term) {
-        updateField('payment_term_id', data.payment_term.id)
+      if (updateField && !record && data.composition?.length) {
+        updateField('composition', data.composition)
+        compositionKey++
       }
       if (updateField && !record && data.incoterm) {
         updateField('incoterm', data.incoterm)
       }
     } else {
-      commercialTermsPaymentTerm = undefined
       commercialTermsVatCode = undefined
     }
   }
@@ -385,7 +419,6 @@
     updateField('ship_to_address_id', '')
     updateField('contact_person_id', '')
 
-    commercialTermsPaymentTerm = undefined
     commercialTermsVatCode = undefined
 
     if (item?.value) {
@@ -397,6 +430,10 @@
   const incotermItems = toSelectItems(incotermLabels)
   const transactionTypeItems = $derived(getSalesTransactionTypeItemsFor('sales_order', record?.sales_transaction_type))
 
+  const defaultComposition: PaymentComposition[] = [
+    { position: 1, percentage: 100, type: 'saldo', payment_term_id: '' },
+  ]
+
   const initialValues = $derived.by(() => ({
     document_number: '',
     document_date: new Date().toISOString(),
@@ -406,7 +443,6 @@
     contact_person_id: '',
     legal_entity_bank_id: '',
     currency: DEFAULT_CURRENCY_CODE as Currency,
-    payment_term_id: '',
     incoterm: undefined,
     incoterm_location: '',
     customer_purchase_order: '',
@@ -416,45 +452,43 @@
     notes_internal: '',
     notes_external: '',
     items: [],
+    composition: defaultComposition,
     ...(record
       ? {
           ...record,
           items: record.items ?? [],
+          composition: compositionFromSnapshot(
+            record.payment_composition_snapshot as PaymentCompositionSnapshotRow[] | undefined,
+          ),
         }
       : {}),
   }))
 
   const validateCreate = v
-    .schema<Partial<SalesOrder>>({
+    .schema<Partial<SalesOrder & { composition: PaymentComposition[] }>>({
       document_date: [v.required({ field: m.document_date() })],
       sales_transaction_type: [v.required({ field: m.sales_transaction_type() })],
       customer_id: [v.required({ field: m.customer() })],
       currency: [v.required({ field: m.currency_label() })],
-      payment_term_id: [v.required({ field: m.payment_term() })],
       incoterm: [v.required({ field: m.incoterm() })],
+      composition: [compositionRules()],
     })
     .build()
 
-  const validateUpdate = v.schema<Partial<SalesOrder>>({}).build()
+  const validateUpdate = v
+    .schema<Partial<SalesOrder & { composition: PaymentComposition[] }>>({
+      composition: [compositionRules()],
+    })
+    .build()
 
   const validate = $derived(!record ? validateCreate : validateUpdate)
 
   // *Attr derived: read from `record.*_snapshot` in edit mode, fall back to the
   // `*SnapshotImport` state populated by the import flow in create mode.
-  // `paymentTermAttr` adds a third fallback to commercial terms loaded for the customer.
 
   const customerAttr = $derived(
     customerSnapshotImport.resolve(record?.customer_snapshot as SnapshotShape | undefined),
   )
-
-  const paymentTermAttr = $derived.by(() => {
-    const fromSnapshots = paymentTermSnapshotImport.resolve(
-      record?.payment_term_snapshot as SnapshotShape | undefined,
-    )
-    if (fromSnapshots) return fromSnapshots
-    if (commercialTermsPaymentTerm) return commercialTermsPaymentTerm as unknown as Record<string, unknown>
-    return undefined
-  })
 
   const shipToAddressAttr = $derived(
     shipToSnapshotImport.resolve(record?.ship_to_snapshot as SnapshotShape | undefined),
@@ -510,6 +544,7 @@
                     })}
                   optionMappingFunction={mapQuotationToOption}
                   compatKey={quotationCompatKey}
+                  lockWhen={q => isCompositionLocked(q, formAPI.values)}
                   onimport={selected => handleImportQuotations(formAPI as never, selected)}>
                   {#snippet previewSnippet(quotation)}
                     {@const productItems = (quotation.items ?? []).filter(i => i.type === 'item')}
@@ -652,19 +687,12 @@
           {/snippet}
 
           {#snippet content()}
-            <PaymentTermSelector
-              name="payment_term_id"
-              attr={paymentTermAttr
-                ? {
-                    id: paymentTermAttr.id as string,
-                    name: paymentTermAttr.name as string,
-                    code: paymentTermAttr.code as string,
-                    description: '',
-                    terms: { reference_date: 'invoice_date', due_dates: [] },
-                    is_active: true,
-                  }
-                : undefined}
-              class={FormFieldClass.MaxWidth} />
+            {#key compositionKey}
+              <PaymentCompositionEditor
+                name="composition"
+                value={formAPI.values.composition as PaymentComposition[]}
+                required />
+            {/key}
 
             <SelectField name="incoterm" label={m.incoterm()} items={incotermItems} class={FormFieldClass.MinWidth} />
 

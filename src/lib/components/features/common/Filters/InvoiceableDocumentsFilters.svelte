@@ -43,9 +43,10 @@
   }
 
   const documentTypeOptions: { value: InvoiceableDocumentType; label: string }[] = [
-    { value: 'order_advance', label: m.enum_invoiceable_document_type_order_advance() },
-    { value: 'transport_document', label: m.enum_invoiceable_document_type_transport_document() },
-    { value: 'direct_order', label: m.enum_invoiceable_document_type_direct_order() },
+    { value: 'order_acconto', label: m.enum_invoiceable_document_type_order_acconto() },
+    { value: 'order_sal', label: m.enum_invoiceable_document_type_order_sal() },
+    { value: 'order_saldo_from_transport', label: m.enum_invoiceable_document_type_order_saldo_from_transport() },
+    { value: 'order_saldo_direct', label: m.enum_invoiceable_document_type_order_saldo_direct() },
   ]
 
   const config: FilterConfig = {

@@ -579,13 +579,18 @@ export type LegalEntityEmail = {
 }
 
 /**
+ * Amount base a due-date percentage is applied to (`PaymentAmountType` enum).
+ */
+export type PaymentAmountType = 'imponibile' | 'iva' | 'totale_documento'
+
+/**
  * Payment term due date from Moddo API
  */
 export type PaymentTermDueDate = {
   days: number
   percentage: number
-  payment_method: string
-  amount_type: string
+  payment_method: PaymentMethod
+  amount_type: PaymentAmountType
 }
 
 /**
@@ -606,6 +611,7 @@ export type PaymentTerm = {
   description: string
   terms: PaymentTermTerms
   is_active: boolean
+  is_archivable?: boolean
 }
 
 export interface DataWrapper<T> {
@@ -1057,10 +1063,6 @@ export type Document = {
 // Customer Commercial Terms Types
 // ============================================================================
 
-export type BillingType = 'by_order' | 'by_delivery' | 'monthly_summary' | 'pro_forma'
-
-export type BillingFrequency = 'per_event' | 'weekly' | 'biweekly' | 'monthly'
-
 /**
  * Customer commercial terms from Moddo API
  * GET /api/legal-entities/{legalEntity}/customers/{customer}/commercial-terms
@@ -1081,10 +1083,31 @@ export type VatCode = {
   is_default: boolean
 }
 
-export type CustomerCommercialTerms = {
-  id: string
+/**
+ * Type of a payment composition slice (`PaymentSliceType` enum).
+ * - `acconto` — advance
+ * - `stato_avanzamento_lavori` — progress billing (SAL)
+ * - `saldo` — final balance
+ */
+export type PaymentSliceType = 'acconto' | 'stato_avanzamento_lavori' | 'saldo'
+
+/**
+ * A single slice of a payment composition (Acconto / SAL / Saldo), each with its
+ * own percentage and payment term. Shared shape across customer/supplier commercial
+ * terms and document payment compositions (quotation / sales order / transport document).
+ * `id` is present on responses, omitted on create.
+ */
+export type PaymentComposition = {
+  id?: string
+  position: number
+  percentage: number
+  type: PaymentSliceType
   payment_term_id: string
   payment_term?: PaymentTerm
+}
+
+export type CustomerCommercialTerms = {
+  id: string
   vat_code_id: string
   vat_code?: VatCode
   iban: string
@@ -1095,8 +1118,7 @@ export type CustomerCommercialTerms = {
   incoterm_place: string
   free_shipping_threshold: number
   minimum_order_value: number
-  billing_type: BillingType
-  billing_frequency: BillingFrequency | null
+  composition?: PaymentComposition[]
   version: number
 }
 
@@ -1106,8 +1128,6 @@ export type CustomerCommercialTerms = {
  */
 export type SupplierCommercialTerms = {
   id: string
-  payment_term_id: string
-  payment_term?: PaymentTerm
   vat_code_id: string
   vat_code?: VatCode
   iban: string
@@ -1118,8 +1138,7 @@ export type SupplierCommercialTerms = {
   incoterm_place: string
   free_shipping_threshold: number
   minimum_order_value: number
-  billing_type: BillingType
-  billing_frequency: BillingFrequency | null
+  composition?: PaymentComposition[]
   version: number
 }
 
@@ -1202,8 +1221,10 @@ export type Quotation = {
   currency: Currency
   valid_from: string
   valid_to: string
-  payment_term_id: string
-  payment_term_snapshot: Record<string, unknown>[]
+  /** Read-only snapshot of the payment composition (prefill source for the editor). */
+  payment_composition_snapshot: Record<string, unknown>[]
+  /** Backend-computed `(type|payment_term_id)` signature; recomputed FE-side for import compatibility. */
+  composition_signature: string
   incoterm: Incoterm
   incoterm_location: string
   sales_rep_id: string
@@ -1226,7 +1247,7 @@ export type Quotation = {
 // Sales Orders API Types
 // ============================================================================
 
-export type SalesOrderTag = 'sent' | 'advance_pending' | 'requires_direct_invoicing'
+export type SalesOrderTag = 'sent' | 'payment_pending' | 'requires_direct_invoicing'
 
 export type SalesOrderStatus = 'open' | 'approved' | 'rejected'
 
@@ -1272,8 +1293,10 @@ export type SalesOrder = {
   legal_entity_bank_id: string
   legal_entity_bank_snapshot: Record<string, unknown>[]
   currency: Currency
-  payment_term_id: string
-  payment_term_snapshot: Record<string, unknown>[]
+  /** Read-only snapshot of the payment composition (prefill source for the editor). */
+  payment_composition_snapshot: Record<string, unknown>[]
+  /** Backend-computed `(type|payment_term_id)` signature; recomputed FE-side for import compatibility. */
+  composition_signature: string
   incoterm: Incoterm
   incoterm_location: string
   customer_purchase_order: string
@@ -1289,6 +1312,7 @@ export type SalesOrder = {
   gross_value: number
   notes_internal: string
   notes_external: string
+  custom_fields?: Record<string, unknown>
   version: number
   created_by: string
   items?: SalesOrderItem[]
@@ -1442,7 +1466,11 @@ export type TransportDocument = {
 // Invoiceable Documents API Types
 // ============================================================================
 
-export type InvoiceableDocumentType = 'order_advance' | 'transport_document' | 'direct_order'
+export type InvoiceableDocumentType =
+  | 'order_acconto'
+  | 'order_sal'
+  | 'order_saldo_from_transport'
+  | 'order_saldo_direct'
 
 export type InvoiceableDocumentSourceType = 'sales_order' | 'transport_document'
 

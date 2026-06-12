@@ -5,8 +5,6 @@ import type {
   AbcClass,
   AnnualRevenueRange,
   AtecoCode,
-  BillingFrequency,
-  BillingType,
   BinLocationType,
   CompanySize,
   Currency,
@@ -20,6 +18,7 @@ import type {
   InvoiceDocumentType,
   InvoiceState,
   PaymentMethod,
+  PaymentSliceType,
   ItemCategory,
   ItemStatus,
   LegalEntityWarehouse,
@@ -522,13 +521,13 @@ export function getSalesOrderStatusVariant(status: SalesOrder['state']): BadgeVa
 // Sales Order Tags
 export const salesOrderTagConfig: Record<SalesOrderTag, EnumDisplayConfig> = {
   sent: { label: m.enum_sales_order_tag_sent, variant: 'default' },
-  advance_pending: { label: m.enum_sales_order_tag_advance_pending, variant: 'secondary' },
+  payment_pending: { label: m.enum_sales_order_tag_payment_pending, variant: 'secondary' },
   requires_direct_invoicing: { label: m.enum_sales_order_tag_requires_direct_invoicing, variant: 'secondary' },
 }
 
 export const salesOrderTagStatusVariantConfig: Record<SalesOrderTag, StatusVariant> = {
   sent: 'active',
-  advance_pending: 'paused',
+  payment_pending: 'paused',
   requires_direct_invoicing: 'alert',
 }
 
@@ -606,9 +605,10 @@ export function getTransportDocumentInvoicingStatusLabel(status: TransportDocume
 
 // Invoiceable Document Type Labels
 export const invoiceableDocumentTypeLabels: EnumLabelMap<InvoiceableDocumentType> = {
-  order_advance: m.enum_invoiceable_document_type_order_advance,
-  transport_document: m.enum_invoiceable_document_type_transport_document,
-  direct_order: m.enum_invoiceable_document_type_direct_order,
+  order_acconto: m.enum_invoiceable_document_type_order_acconto,
+  order_sal: m.enum_invoiceable_document_type_order_sal,
+  order_saldo_from_transport: m.enum_invoiceable_document_type_order_saldo_from_transport,
+  order_saldo_direct: m.enum_invoiceable_document_type_order_saldo_direct,
 }
 
 export function getInvoiceableDocumentTypeLabel(type: InvoiceableDocumentType): string {
@@ -715,20 +715,11 @@ export const incotermLabels: EnumLabelMap<Incoterm> = {
   DDP: () => 'DDP - Delivered Duty Paid',
 }
 
-// Billing Type Labels
-export const billingTypeLabels: EnumLabelMap<BillingType> = {
-  by_order: m.enum_billing_type_by_order,
-  by_delivery: m.enum_billing_type_by_delivery,
-  monthly_summary: m.enum_billing_type_monthly_summary,
-  pro_forma: m.enum_billing_type_pro_forma,
-}
-
-// Billing Frequency Labels
-export const billingFrequencyLabels: EnumLabelMap<BillingFrequency> = {
-  per_event: m.enum_billing_frequency_per_event,
-  weekly: m.enum_billing_frequency_weekly,
-  biweekly: m.enum_billing_frequency_biweekly,
-  monthly: m.enum_billing_frequency_monthly,
+// Payment Slice Type Labels (payment composition: Acconto / SAL / Saldo)
+export const paymentSliceTypeLabels: EnumLabelMap<PaymentSliceType> = {
+  acconto: m.enum_payment_slice_type_acconto,
+  stato_avanzamento_lavori: m.enum_payment_slice_type_stato_avanzamento_lavori,
+  saldo: m.enum_payment_slice_type_saldo,
 }
 
 // Sales Transaction Type Labels
