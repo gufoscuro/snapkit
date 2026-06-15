@@ -415,6 +415,7 @@
   "payment_term": "Payment Term",
   "payment_composition": "Payment composition",
   "payment_composition_total": "Total",
+  "payment_slice_type": "Payment phase",
   "enum_payment_slice_type_acconto": "Advance",
   "enum_payment_slice_type_stato_avanzamento_lavori": "Progress billing (SAL)",
   "enum_payment_slice_type_saldo": "Final balance",

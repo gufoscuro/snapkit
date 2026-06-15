@@ -416,6 +416,7 @@
   "payment_terms": "Condizioni di Pagamento",
   "payment_composition": "Composizione pagamento",
   "payment_composition_total": "Totale",
+  "payment_slice_type": "Fase di pagamento",
   "enum_payment_slice_type_acconto": "Acconto",
   "enum_payment_slice_type_stato_avanzamento_lavori": "SAL (Stato Avanzamento Lavori)",
   "enum_payment_slice_type_saldo": "Saldo",

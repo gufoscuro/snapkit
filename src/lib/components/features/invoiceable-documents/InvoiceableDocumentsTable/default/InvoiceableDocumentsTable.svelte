@@ -118,7 +118,9 @@
             onClick: (row: InvoiceableDocument) => {
               const url = createRoute({
                 $id: 'invoice-details',
-                query: { source_type: row.type, source_id: row.source.id },
+                // `slice_position` addresses the specific unpaid slice; the invoice
+                // prefill only consumes it for Acconto/SAL sources.
+                query: { source_type: row.type, source_id: row.source.id, slice_position: String(row.slice_position) },
               })
               // eslint-disable-next-line svelte/no-navigation-without-resolve
               goto(url)

@@ -80,6 +80,7 @@
     InvoiceTransition,
     LegalEntityBank,
     PaymentMethod,
+    PaymentSliceType,
     PaymentTerm,
   } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
@@ -87,8 +88,14 @@
     currencyLabels,
     getPaymentMethodLabel,
     invoiceDocumentTypeLabels,
+    paymentSliceTypeLabels,
     toSelectItems,
   } from '$lib/utils/enum-labels'
+  import {
+    compositionFromSnapshot,
+    toCompositionPayload,
+    type PaymentCompositionSnapshotRow,
+  } from '$lib/utils/payment-composition'
   import type { BasicOption } from '$lib/utils/generics'
   import { generateId } from '$lib/utils/id'
   import { api, apiDownload, apiRequest } from '$lib/utils/request'
@@ -220,7 +227,16 @@
       document_type: data.document_type,
       customer_id: data.customer_id,
       sales_order_id: (data.sales_order_id as string) || undefined,
-      payment_term_id: data.payment_term_id,
+      // An invoice bills exactly one composition slice — assemble the single-row
+      // `composition[]` the API expects from the flat slice form fields.
+      composition: toCompositionPayload([
+        {
+          position: (data.slice_position as number) ?? 1,
+          percentage: (data.composition_percentage as number) ?? 100,
+          type: (data.slice_type as PaymentSliceType) ?? 'saldo',
+          payment_term_id: (data.payment_term_id as string) ?? '',
+        },
+      ]),
       legal_entity_bank_id: (data.legal_entity_bank_id as string) || undefined,
       currency: data.currency,
       notes_internal: data.notes_internal,
@@ -351,12 +367,17 @@
 
   const documentTypeItems = toSelectItems(invoiceDocumentTypeLabels)
   const currencyItems = toSelectItems(currencyLabels)
+  const sliceTypeItems = toSelectItems(paymentSliceTypeLabels)
 
   type InvoiceFormValues = {
     document_date: string
     document_type: InvoiceDocumentType
     customer_id: string
     sales_order_id: string
+    // Single composition slice this invoice bills (assembled into `composition[]` on submit).
+    slice_type: PaymentSliceType
+    slice_position: number
+    composition_percentage: number
     payment_term_id: string
     legal_entity_bank_id: string
     currency: Currency
@@ -365,11 +386,33 @@
     items: QuotationLineItem[]
   }
 
+  /**
+   * Flatten a record's single-row `payment_composition_snapshot` into the slice
+   * form fields. Falls back to a standalone `saldo @ 100%` slice when empty.
+   */
+  function sliceFormFields(snapshot: unknown): {
+    slice_type: PaymentSliceType
+    slice_position: number
+    composition_percentage: number
+    payment_term_id: string
+  } {
+    const row = compositionFromSnapshot(snapshot as PaymentCompositionSnapshotRow[] | undefined)[0]
+    return {
+      slice_type: (row?.type ?? 'saldo') as PaymentSliceType,
+      slice_position: row?.position ?? 1,
+      composition_percentage: row?.percentage ?? 100,
+      payment_term_id: row?.payment_term_id ?? '',
+    }
+  }
+
   const initialValues = $derived.by<InvoiceFormValues>(() => ({
     document_date: new Date().toISOString(),
     document_type: 'TD01' as InvoiceDocumentType,
     customer_id: '',
     sales_order_id: '',
+    slice_type: 'saldo' as PaymentSliceType,
+    slice_position: 1,
+    composition_percentage: 100,
     payment_term_id: '',
     legal_entity_bank_id: '',
     currency: DEFAULT_CURRENCY_CODE as Currency,
@@ -380,6 +423,8 @@
       ? {
           ...record,
           items: mapItemsToEditorShape(record.items),
+          // `...record` has no flat slice fields — derive them from the snapshot (wins over the spread).
+          ...sliceFormFields(record.payment_composition_snapshot),
         }
       : {}),
   }))
@@ -439,9 +484,17 @@
     }
   })
 
+  // The billed slice from the loaded record's composition snapshot — source of the
+  // payment-term name/id in edit mode (replaces the old flat payment_term snapshot).
+  const recordCompositionRow = $derived(
+    record
+      ? compositionFromSnapshot(record.payment_composition_snapshot as PaymentCompositionSnapshotRow[] | undefined)[0]
+      : undefined,
+  )
+
   const paymentTermAttr = $derived.by<PaymentTerm | undefined>(() => {
-    const s = resolveSelectorSnapshot(record?.payment_term_snapshot, paymentTermSnapshotImport.value)
-    const id = record?.payment_term_id || (formApi?.values.payment_term_id as string | undefined)
+    const s = resolveSelectorSnapshot(recordCompositionRow?.payment_term, paymentTermSnapshotImport.value)
+    const id = recordCompositionRow?.payment_term_id || (formApi?.values.payment_term_id as string | undefined)
     if (!id || !s) return undefined
     return { id, name: (s.name as string) ?? '' } as unknown as PaymentTerm
   })
@@ -566,14 +619,20 @@
   }
 
   /**
-   * Run the full prefill workflow from a source (type + id):
-   * - GET /invoices/prefill (header + lines + totals)
+   * Run the full prefill workflow from a source (type + slice):
+   * - GET /invoices/prefill (header + lines + totals). `slice_position` is
+   *   required for slice-addressed sources (`order_acconto` / `order_sal`) and
+   *   must be omitted for the Saldo-bearing ones.
    * - In parallel, GET the entity records to populate the selector snapshots
    *   (no `attr` round-trip on first paint).
-   * - Populate the form fields, fetch commercial terms (for default VAT),
-   *   and append the line items to the editor.
+   * - Populate the form fields (including the single billed composition slice),
+   *   fetch commercial terms (for default VAT), and append the line items.
    */
-  async function applyPrefillFromSource(sourceType: InvoiceableDocumentType, sourceId: string) {
+  async function applyPrefillFromSource(
+    sourceType: InvoiceableDocumentType,
+    sourceId: string,
+    slicePosition?: number,
+  ) {
     if (!legalEntityId || !formApi || !itemsEditorRef) return
 
     // Re-import: wipe the previous prefill before fetching the new one so the
@@ -581,21 +640,27 @@
     if (prefilledMode) clearPrefill()
 
     const job = (async () => {
+      // `slice_position` addresses the specific unpaid slice for Acconto/SAL
+      // sources; it must be omitted for the Saldo-bearing sources (one prefill each).
+      const queryParams: Record<string, string> = { source_type: sourceType, source_id: sourceId }
+      if ((sourceType === 'order_acconto' || sourceType === 'order_sal') && slicePosition != null) {
+        queryParams.slice_position = String(slicePosition)
+      }
+
       // VAT codes are needed to render labels on prefilled item/charge lines;
       // fetched in parallel with the prefill (no-op if already cached).
       const [prefill] = await Promise.all([
         apiRequest<InvoicePrefill>({
           url: `/legal-entities/${legalEntityId}/invoices/prefill`,
           method: 'GET',
-          queryParams: { source_type: sourceType, source_id: sourceId },
+          queryParams,
         }),
         ensureVatCodesLoaded(),
       ])
 
       // The prefill response ships the resolved entity objects (`customer`,
-      // `payment_term`, `legal_entity_bank`) inline — no per-entity GETs needed.
+      // `legal_entity_bank`) inline — no per-entity GETs needed.
       if (prefill.customer) customerSnapshotImport.value = prefill.customer as unknown as SnapshotShape
-      if (prefill.payment_term) paymentTermSnapshotImport.value = prefill.payment_term as unknown as SnapshotShape
       if (prefill.legal_entity_bank)
         legalEntityBankSnapshotImport.value = prefill.legal_entity_bank as unknown as SnapshotShape
 
@@ -604,11 +669,27 @@
       if (prefill.document_type) update('document_type', prefill.document_type)
       if (prefill.customer_id) update('customer_id', prefill.customer_id)
       if (prefill.sales_order_id) update('sales_order_id', prefill.sales_order_id)
-      if (prefill.payment_term_id) update('payment_term_id', prefill.payment_term_id)
       if (prefill.legal_entity_bank_id) update('legal_entity_bank_id', prefill.legal_entity_bank_id)
       if (prefill.currency) update('currency', prefill.currency)
       if (prefill.notes_internal) update('notes_internal', prefill.notes_internal)
       if (prefill.notes_external) update('notes_external', prefill.notes_external)
+
+      // Resolve the single composition slice this invoice bills (by position, then
+      // by type), and flatten it into the slice form fields + payment-term snapshot.
+      const slice =
+        prefill.payment_composition?.find(s => s.position === prefill.slice_position) ??
+        prefill.payment_composition?.find(s => s.type === prefill.slice_type) ??
+        prefill.payment_composition?.[0]
+      if (slice) {
+        if (slice.payment_term) paymentTermSnapshotImport.value = slice.payment_term as unknown as SnapshotShape
+        update('slice_type', slice.type)
+        update('slice_position', slice.position)
+        update('composition_percentage', slice.percentage)
+        update('payment_term_id', slice.payment_term_id)
+      } else {
+        if (prefill.slice_type) update('slice_type', prefill.slice_type)
+        update('slice_position', prefill.slice_position)
+      }
 
       if (prefill.customer_id) await fetchCustomerCommercialTerms(prefill.customer_id)
 
@@ -637,7 +718,7 @@
   function handleImportInvoiceable(items: InvoiceableDocument[]) {
     const [doc] = items
     if (!doc) return
-    applyPrefillFromSource(doc.type, doc.source.id)
+    applyPrefillFromSource(doc.type, doc.source.id, doc.slice_position)
   }
 
   // Tracks whether the form has been populated by a prefill workflow. Drives the
@@ -671,9 +752,10 @@
     if (browser) {
       const url = page.url
       const params = new URLSearchParams(url.searchParams)
-      if (params.has('source_type') || params.has('source_id')) {
+      if (params.has('source_type') || params.has('source_id') || params.has('slice_position')) {
         params.delete('source_type')
         params.delete('source_id')
+        params.delete('slice_position')
         const next = params.toString()
         replaceState(next ? `${url.pathname}?${next}` : url.pathname, page.state)
       }
@@ -687,8 +769,8 @@
     // stale params and re-runs the very prefill we just cleared.
   }
 
-  // Auto-trigger prefill on create mode when `?source_type=…&source_id=…` is in the URL
-  // (entry point from the InvoiceableDocumentsTable action). Runs at most once per mount.
+  // Auto-trigger prefill on create mode when `?source_type=…&source_id=…[&slice_position=…]`
+  // is in the URL (entry point from the InvoiceableDocumentsTable action). Runs at most once per mount.
   let autoPrefillTriggered = $state(false)
   $effect(() => {
     if (autoPrefillTriggered) return
@@ -698,8 +780,9 @@
     const sourceType = params.get('source_type') as InvoiceableDocumentType | null
     const sourceId = params.get('source_id')
     if (!sourceType || !sourceId) return
+    const slicePositionRaw = params.get('slice_position')
     autoPrefillTriggered = true
-    applyPrefillFromSource(sourceType, sourceId)
+    applyPrefillFromSource(sourceType, sourceId, slicePositionRaw ? Number(slicePositionRaw) : undefined)
   })
 
   // Actions
@@ -834,6 +917,12 @@
           {/snippet}
 
           {#snippet content()}
+            <SelectField
+              name="slice_type"
+              label={m.payment_slice_type()}
+              items={sliceTypeItems}
+              class={FormFieldClass.MaxWidth} />
+
             <PaymentTermSelector name="payment_term_id" attr={paymentTermAttr} class={FormFieldClass.MaxWidth} />
 
             <SelectField name="currency" label={m.currency()} items={currencyItems} class={FormFieldClass.MinWidth} />
