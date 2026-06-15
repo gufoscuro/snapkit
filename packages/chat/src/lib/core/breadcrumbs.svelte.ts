@@ -1,5 +1,6 @@
-// PACKAGE-PROMOTABLE: no host imports allowed in this file.
-// Only deps: Svelte runes + @diaphora/chat types.
+// Conversation navigation/action trace ("breadcrumbs") injected into the system
+// prompt as ambient memory. Part of the @diaphora/chat orchestration layer.
+// Deps: Svelte runes only — no host imports.
 
 export type BreadcrumbAction = {
   tool: string

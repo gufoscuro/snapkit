@@ -1,6 +1,6 @@
 import { onMount } from 'svelte'
 import { chatStore } from '$lib/chat/store'
-import type { PageContextRegistration } from '$lib/chat/core/page-tools-registry.svelte'
+import type { PageContextRegistration } from '@diaphora/chat'
 
 /**
  * Register a page-scoped contribution to the chat context (tools, handlers,

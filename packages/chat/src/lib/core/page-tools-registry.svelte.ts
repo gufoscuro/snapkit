@@ -1,8 +1,8 @@
-// PACKAGE-PROMOTABLE: no host imports allowed in this file.
-// Only deps: Svelte runes + @diaphora/chat types.
+// Page-scoped tool registry. Part of the @diaphora/chat orchestration layer.
+// Deps: Svelte runes + package types only — no host imports.
 
 import { SvelteMap } from 'svelte/reactivity'
-import type { ToolDefinition, ToolHandler } from '@diaphora/chat'
+import type { ToolDefinition, ToolHandler } from '../types'
 
 export type PageContextRegistration = {
   /** Stable id for register/unregister. Usually the page route or a feature key. */

@@ -1,7 +1,6 @@
 import { goto } from '$app/navigation'
 import { page } from '$app/state'
-import type { PageContextRegistration } from '$lib/chat/core/page-tools-registry.svelte'
-import type { ToolDefinition, ToolHandler } from '@diaphora/chat'
+import type { PageContextRegistration, ToolDefinition, ToolHandler } from '@diaphora/chat'
 
 const INVOICE_STATES = [
   'draft',

@@ -26,5 +26,30 @@ export {
 	showStructuredDataTool
 } from './builtin-tools'
 export { builtinCommands, clearCommand } from './builtin-commands'
+export {
+	createPageToolsRegistry,
+	type PageContextRegistration,
+	type PageToolsRegistry
+} from './core/page-tools-registry.svelte'
+export {
+	createBreadcrumbStore,
+	type Breadcrumb,
+	type BreadcrumbAction,
+	type BreadcrumbStore
+} from './core/breadcrumbs.svelte'
+export {
+	buildChatContext,
+	type BuildChatContextOptions,
+	type PageSummary
+} from './core/context-composer'
+export {
+	createChatOrchestrator,
+	type ChatOrchestrator,
+	type ChatOrchestratorConfig
+} from './core/orchestrator.svelte'
+export { makeToastTool, TOAST_VARIANTS, type ToastAdapter, type ToastVariant } from './tools/toast'
+export { makeThemeTool, type ThemeAdapter } from './tools/theme'
+export { makeNavigateTool, type NavigateAdapter, type NavigateResolution } from './tools/navigate'
+export { makeListingTools, type ListingToolsConfig } from './tools/listing'
 export * from './types'
 export * from './transport'

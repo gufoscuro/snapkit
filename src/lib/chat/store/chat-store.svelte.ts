@@ -1,51 +1,36 @@
 import { browser } from '$app/environment'
-import { createChatState, httpTransport, type ChatState } from '@diaphora/chat'
-import { createBreadcrumbStore, type BreadcrumbStore } from '$lib/chat/core/breadcrumbs.svelte'
 import {
-  createPageToolsRegistry,
+  createChatOrchestrator,
+  httpTransport,
+  type ChatOrchestrator,
+  type ChatState,
   type PageContextRegistration,
-  type PageToolsRegistry,
-} from '$lib/chat/core/page-tools-registry.svelte'
-import { buildChatContext, type PageSummary } from '$lib/chat/core/context-composer'
+  type PageSummary,
+} from '@diaphora/chat'
 import { chatEnabled } from '$lib/chat/enabled'
 import { globalHandlers, globalTools } from '$lib/chat/tools/global-tools'
 import { tenantConfigStore } from '$lib/stores/tenant-config'
 import type { PageConfig } from '$lib/utils/page-registry'
 import { chatUi } from './chat-ui.svelte'
 
-type Internals = {
-  chat: ChatState
-  breadcrumbs: BreadcrumbStore
-  pageRegistry: PageToolsRegistry
-}
+let _orchestrator: ChatOrchestrator | null = null
 
-let _state: Internals | null = null
-
-function ensure(): Internals | null {
-  if (_state) return _state
+function ensure(): ChatOrchestrator | null {
+  if (_orchestrator) return _orchestrator
   // `chatEnabled` is a compile-time constant in production builds (`false`
   // outside dev), so the rest of this function is unreachable and Vite drops
   // the entire chat infrastructure from the prod bundle.
   if (!browser || !chatEnabled) return null
 
-  const breadcrumbs = createBreadcrumbStore()
-  const pageRegistry = createPageToolsRegistry()
-
-  const context = buildChatContext({
+  _orchestrator = createChatOrchestrator({
     serverContextId: 'global-assistant',
     globalTools,
     globalHandlers,
-    pageRegistry,
-    breadcrumbs,
+    transport: httpTransport({ url: '/api/chat/gemini' }),
     availablePages: collectAvailablePages,
     currentDate: currentDateLine,
-    transport: httpTransport({ url: '/api/chat/gemini' }),
   })
-
-  const chat = createChatState(() => context)
-
-  _state = { chat, breadcrumbs, pageRegistry }
-  return _state
+  return _orchestrator
 }
 
 /**
@@ -129,28 +114,26 @@ export const chatStore = {
 
   /** Send a user message programmatically (e.g. from an "Ask the assistant" button). */
   send(text: string): Promise<void> {
-    return ensure()?.chat.send(text) ?? Promise.resolve()
+    return ensure()?.send(text) ?? Promise.resolve()
   },
 
   /** Clear conversation history AND breadcrumbs. Called on user/session change. */
   reset() {
-    if (!_state) return
-    _state.chat.reset()
-    _state.breadcrumbs.reset()
+    _orchestrator?.reset()
   },
 
   /** Register page-scoped tools, handlers, and a state snapshot getter. */
   pushPageContext(registration: PageContextRegistration) {
-    ensure()?.pageRegistry.register(registration)
+    ensure()?.pushPageContext(registration)
   },
 
   /** Unregister a previously pushed page context by its id. */
   clearPageContext(id: string) {
-    _state?.pageRegistry.unregister(id)
+    _orchestrator?.clearPageContext(id)
   },
 
   /** Record a route change in the breadcrumb trace (typically called from `afterNavigate`). */
   pushNavigation(pageId: string) {
-    ensure()?.breadcrumbs.pushPage(pageId)
+    ensure()?.pushNavigation(pageId)
   },
 }

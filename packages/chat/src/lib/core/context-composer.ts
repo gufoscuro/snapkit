@@ -1,6 +1,8 @@
-// PACKAGE-PROMOTABLE: no host imports allowed in this file.
+// Composes a ChatContext from global + page-scoped tools, breadcrumbs and
+// ambient page/date vars. Part of the @diaphora/chat orchestration layer.
+// Deps: package types + sibling orchestration primitives — no host imports.
 
-import type { ChatContext, ToolDefinition, ToolHandler, Transport } from '@diaphora/chat'
+import type { ChatContext, ToolDefinition, ToolHandler, Transport } from '../types'
 import type { BreadcrumbStore } from './breadcrumbs.svelte'
 import type { PageToolsRegistry } from './page-tools-registry.svelte'
 
