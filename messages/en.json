@@ -724,6 +724,7 @@
   "import_completed": "{count} item(s) imported",
   "import_completed_with_skipped": "{added} item(s) imported, {skipped} skipped (already present)",
   "import_failed": "Import failed",
+  "import_load_error": "Failed to load items to import",
   "add_item_line": "Add item",
   "add_description_line": "Add description",
   "download_pdf": "Download PDF",

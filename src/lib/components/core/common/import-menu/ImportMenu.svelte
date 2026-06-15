@@ -11,6 +11,7 @@
   import IconDatabaseImport from '@tabler/icons-svelte/icons/database-import'
   import type { Snippet } from 'svelte'
   import { SvelteSet } from 'svelte/reactivity'
+  import { toast } from 'svelte-sonner'
 
   interface Props {
     /** Async function to fetch the items to import. Receives optional search query. */
@@ -105,6 +106,12 @@
     loading = true
     try {
       items = await fetchFunction(search || undefined)
+    } catch {
+      // A failed fetch in the picker is recoverable — degrade to an empty list and
+      // surface a toast instead of letting the rejection bubble to the global error
+      // overlay. A stable toast id collapses repeated failures (e.g. retried searches).
+      items = []
+      toast.error(m.import_load_error(), { id: 'import-menu-load-error' })
     } finally {
       loading = false
     }
