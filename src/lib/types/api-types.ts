@@ -1501,6 +1501,10 @@ export type InvoiceableDocument = {
   }
   fulfillment_status: SalesOrderFulfillmentStatus | null
   invoicing_status: TransportDocumentInvoicingStatus | null
+  /** Type of the composition slice this row represents (one invoiceable row per unpaid slice). */
+  slice_type: PaymentSliceType | null
+  /** Position of the composition slice this row represents — passed to the prefill as `slice_position`. */
+  slice_position: number
 }
 
 // ============================================================================
@@ -1558,6 +1562,12 @@ export type InvoiceDueDate = {
   amount: string | number
   payment_method: PaymentMethod
   invoice_id: string
+  /** Enriched fields present on the cross-invoice `GET /invoice-due-dates` list view (omitted on the invoice's own `due_dates`). */
+  document_number?: string
+  document_date?: string
+  document_type?: InvoiceDocumentType
+  state?: InvoiceState
+  customer_name?: string
 }
 
 /**
@@ -1605,8 +1615,8 @@ export type Invoice = {
   customer_snapshot: Record<string, unknown>[]
   sales_order_id: string
   legal_entity_snapshot: Record<string, unknown>[]
-  payment_term_id: string
-  payment_term_snapshot: Record<string, unknown>[]
+  /** Read-only snapshot of the payment composition (the single slice this invoice bills). */
+  payment_composition_snapshot: Record<string, unknown>[]
   legal_entity_bank_id: string
   legal_entity_bank_snapshot: Record<string, unknown>[]
   currency: Currency
@@ -1661,9 +1671,12 @@ export type InvoicePrefill = {
   /** Full customer record — `null` when the customer cannot be resolved. */
   customer: Customer | null
   sales_order_id: string
-  payment_term_id: string
-  /** Full payment term — `null` when unset on the source. */
-  payment_term: PaymentTerm | null
+  /** Full payment composition resolved from the source document (each slice with its `payment_term`). */
+  payment_composition: PaymentComposition[]
+  /** Type of the composition slice this invoice bills. `null` for a standalone/manual prefill. */
+  slice_type: PaymentSliceType | null
+  /** Position of the composition slice this invoice bills within the source composition. */
+  slice_position: number
   legal_entity_bank_id: string
   /** Full legal-entity bank — `null` when unset on the source. */
   legal_entity_bank: LegalEntityBank | null

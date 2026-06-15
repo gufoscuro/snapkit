@@ -27,7 +27,6 @@ export const InvoiceDataSchema = Type.Object({
   document_type: InvoiceDocumentTypeSchema,
   customer_id: Type.String(),
   sales_order_id: Type.String(),
-  payment_term_id: Type.String(),
   legal_entity_bank_id: Type.String(),
   currency: Type.String(),
   total_net: Type.Number(),
