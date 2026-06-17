@@ -2,7 +2,7 @@
 // ambient page/date vars. Part of the @diaphora/chat orchestration layer.
 // Deps: package types + sibling orchestration primitives — no host imports.
 
-import type { ChatContext, ToolDefinition, ToolHandler, Transport } from '../types'
+import type { AttachmentMenuItem, ChatContext, ToolDefinition, ToolHandler, Transport } from '../types'
 import type { BreadcrumbStore } from './breadcrumbs.svelte'
 import type { PageToolsRegistry } from './page-tools-registry.svelte'
 
@@ -17,7 +17,8 @@ export type PageSummary = {
 }
 
 export type BuildChatContextOptions = {
-  /** Registry id of the server-side prompt template (e.g. 'global-assistant'). */
+  /** Fallback registry id of the server-side prompt template (e.g. 'global-assistant'),
+   * used whenever no active page registration claims its own `serverContextId`. */
   serverContextId: string
   /** Tools always available regardless of current page. */
   globalTools: ToolDefinition[]
@@ -31,6 +32,8 @@ export type BuildChatContextOptions = {
   availablePages?: () => PageSummary[]
   /** Lazy getter for the current date/time line injected as ambient context. Evaluated on every send. */
   currentDate?: () => string
+  /** Lazy getter for the user's overarching cross-page goal, injected as `SESSION_GOAL`. */
+  sessionGoal?: () => string | null
   transport?: Transport
   model?: string
   maxToolRounds?: number
@@ -51,6 +54,7 @@ export function buildChatContext(opts: BuildChatContextOptions): ChatContext {
     breadcrumbs,
     availablePages,
     currentDate,
+    sessionGoal,
     transport,
     model,
     maxToolRounds,
@@ -58,12 +62,18 @@ export function buildChatContext(opts: BuildChatContextOptions): ChatContext {
 
   return {
     serverContext: {
-      id: serverContextId,
+      // Resolved on every send: a page registration may claim its own context
+      // (skill), otherwise we fall back to the host's global context id.
+      id: () => pageRegistry.activeServerContextId ?? serverContextId,
       vars: () => ({
         BREADCRUMBS: breadcrumbs.format(),
         CURRENT_PAGE: pageRegistry.currentPageState,
         AVAILABLE_PAGES: availablePages ? formatPages(availablePages()) : '',
         CURRENT_DATE: currentDate ? currentDate() : '',
+        SESSION_GOAL: sessionGoal?.() ?? '',
+        // Vars contributed by the active registration's claimed context (e.g. { fml }).
+        // Last so a page can override an ambient key if it ever needs to.
+        ...pageRegistry.activeVars(),
       }),
     },
     get tools(): ToolDefinition[] {
@@ -71,6 +81,9 @@ export function buildChatContext(opts: BuildChatContextOptions): ChatContext {
     },
     get toolHandlers(): Record<string, ToolHandler> {
       return { ...globalHandlers, ...pageRegistry.handlers }
+    },
+    get attachmentMenuItems(): AttachmentMenuItem[] {
+      return pageRegistry.attachmentMenuItems
     },
     transport,
     model,

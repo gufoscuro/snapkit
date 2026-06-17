@@ -1,8 +1,8 @@
 {
   "sourceRemote": "git@github.com:diaphora-ai/diaphora.git",
   "sourcePath": "/Users/lorenzofontana/Documents/js-apps/diaphora/webapp",
-  "ref": "master",
-  "commit": "7e993c088763d79aa76b6a4de4da3f79f7bc42c0",
-  "syncedAt": "2026-06-15T15:46:25Z",
+  "ref": "feat/global-assistant",
+  "commit": "b7a9de4701f87487f4f2afb02f5ba06b624ddb23",
+  "syncedAt": "2026-06-17T20:58:46Z",
   "syncedBy": "gufoscuro@gmail.com"
 }

@@ -5,9 +5,14 @@
   import { createAttachmentDraftState, setAttachmentDraftState } from '../attachment-draft.svelte'
   import { setChatState } from '../chat-context'
   import { createChatState, type ChatState } from '../chat-state.svelte'
-  import type { ChatContext } from '../types'
+  import type { ChatContext, ChatMessage } from '../types'
+  import ChatAgentTurn from './ChatAgentTurn.svelte'
   import ChatInput from './ChatInput.svelte'
   import ChatMessageBubble from './ChatMessageBubble.svelte'
+
+  type RenderGroup =
+    | { kind: 'user'; key: string; message: ChatMessage }
+    | { kind: 'agent'; key: string; messages: ChatMessage[]; pending: boolean }
 
   type Props = {
     context?: ChatContext
@@ -41,6 +46,30 @@
   })
 
   const visibleMessages = $derived(chat.messages.filter(msg => msg.content.some(block => block.type !== 'tool_result')))
+
+  // Group consecutive assistant messages into a single agent "turn" so their
+  // timeline rail stays continuous across tool calls. The in-progress spinner
+  // attaches to the trailing agent turn (or starts a fresh one).
+  const renderGroups = $derived.by<RenderGroup[]>(() => {
+    const groups: RenderGroup[] = []
+    for (const message of visibleMessages) {
+      if (message.role === 'user') {
+        groups.push({ kind: 'user', key: message.id, message })
+      } else {
+        const last = groups.at(-1)
+        if (last?.kind === 'agent') last.messages.push(message)
+        else groups.push({ kind: 'agent', key: message.id, messages: [message], pending: false })
+      }
+    }
+
+    if (chat.status === 'sending' || chat.status === 'executing_tools') {
+      const last = groups.at(-1)
+      if (last?.kind === 'agent') last.pending = true
+      else groups.push({ kind: 'agent', key: '__pending__', messages: [], pending: true })
+    }
+
+    return groups
+  })
 
   let dragDepth = $state(0)
   const isDraggingFiles = $derived(dragDepth > 0)
@@ -93,15 +122,13 @@
       {@render empty()}
     {:else}
       <Chat.List>
-        {#each visibleMessages as message (message.id)}
-          <ChatMessageBubble {message} />
+        {#each renderGroups as group (group.key)}
+          {#if group.kind === 'user'}
+            <ChatMessageBubble message={group.message} />
+          {:else}
+            <ChatAgentTurn messages={group.messages} pending={group.pending} />
+          {/if}
         {/each}
-
-        {#if chat.status === 'sending' || chat.status === 'executing_tools'}
-          <Chat.Bubble variant="received">
-            <Chat.BubbleMessage typing />
-          </Chat.Bubble>
-        {/if}
       </Chat.List>
     {/if}
   </div>

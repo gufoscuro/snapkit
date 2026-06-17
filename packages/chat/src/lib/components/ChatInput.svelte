@@ -4,6 +4,7 @@
   import { Textarea } from '../ui/textarea'
   import PaperclipIcon from '@lucide/svelte/icons/paperclip'
   import SendIcon from '@lucide/svelte/icons/send-horizontal'
+  import SquareIcon from '@lucide/svelte/icons/square'
   import { onMount } from 'svelte'
   import { getAttachmentDraftState } from '../attachment-draft.svelte'
   import { getChatState } from '../chat-context'
@@ -270,9 +271,20 @@
           </ChatCommandMenu>
         </div>
 
-        <Button type="submit" size="icon" class="size-8" disabled={!canSend} aria-label="Send message">
-          <SendIcon class="size-4 -rotate-90" />
-        </Button>
+        {#if chat.isSending}
+          <Button
+            type="button"
+            size="icon"
+            class="size-8"
+            aria-label="Stop generating"
+            onclick={() => chat.abort()}>
+            <SquareIcon class="size-3.5 fill-current" />
+          </Button>
+        {:else}
+          <Button type="submit" size="icon" class="size-8" disabled={!canSend} aria-label="Send message">
+            <SendIcon class="size-4 -rotate-90" />
+          </Button>
+        {/if}
       </div>
     </form>
   </div>

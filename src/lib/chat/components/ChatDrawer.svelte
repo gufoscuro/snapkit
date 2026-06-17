@@ -1,11 +1,25 @@
 <script lang="ts">
-  import XIcon from '@lucide/svelte/icons/x'
-  import { ChatBox } from '@diaphora/chat'
-  import { fly } from 'svelte/transition'
   import { chatStore, chatUi } from '$lib/chat/store'
   import { Button } from '$lib/components/ui/button'
+  import { ChatBox } from '@diaphora/chat'
+  import XIcon from '@lucide/svelte/icons/x'
+  import { cubicOut } from 'svelte/easing'
 
   const VIEWPORT_MARGIN = 16
+
+  // The panel "emerges" from its top-right corner — where the floating button sits —
+  // scaling up and drifting in from that corner with a fade. Pair with `origin-top-right`
+  // on the node so the scale anchors to that corner.
+  function emerge(_node: Element, { duration = 200 }: { duration?: number } = {}) {
+    return {
+      duration,
+      easing: cubicOut,
+      css: (t: number) => `
+        opacity: ${t};
+        transform: translate(${(1 - t) * 16}px, ${(1 - t) * -16}px) scale(${0.82 + 0.18 * t});
+      `,
+    }
+  }
 
   let panelRef: HTMLElement | null = $state(null)
   let dragOffset = $state({ x: 0, y: 0 })
@@ -81,12 +95,12 @@
 
 {#if chatUi.isOpen}
   <div
-    transition:fly={{ x: 460, duration: 240, opacity: 0 }}
-    class="fixed top-[calc(var(--spacing-breadcrumbs)+1rem)] right-4 bottom-[calc(var(--spacing-breadcrumbs)+1rem)] z-40 flex w-[calc(100vw-2rem)] max-h-200 max-w-110">
+    bind:this={panelRef}
+    style:transform="translate({dragOffset.x}px, {dragOffset.y}px)"
+    class="pointer-events-none fixed top-[calc(var(--spacing-breadcrumbs)+1rem)] right-4 bottom-[calc(var(--spacing-breadcrumbs)+1rem)] z-40 flex max-h-200 w-[calc(100vw-2rem)] max-w-110">
     <aside
-      bind:this={panelRef}
-      style:transform="translate({dragOffset.x}px, {dragOffset.y}px)"
-      class="bg-sidebar relative flex h-full w-full flex-col overflow-hidden rounded-lg border shadow-2xl"
+      transition:emerge
+      class="pointer-events-auto relative flex h-full w-full origin-top-right flex-col overflow-hidden rounded-lg border bg-sidebar shadow-2xl"
       aria-label="Moddo assistant">
       <header
         onpointerdown={onHeaderPointerDown}
@@ -94,12 +108,7 @@
         onpointerup={onHeaderPointerUp}
         class="flex shrink-0 cursor-grab items-center justify-between border-b px-4 py-3 select-none active:cursor-grabbing">
         <h2 class="text-sm font-semibold">Assistente</h2>
-        <Button
-          size="icon"
-          variant="ghost"
-          class="size-7"
-          onclick={() => chatUi.close()}
-          aria-label="Close">
+        <Button size="icon" variant="ghost" class="size-7" onclick={() => chatUi.close()} aria-label="Close">
           <XIcon class="size-4" />
         </Button>
       </header>

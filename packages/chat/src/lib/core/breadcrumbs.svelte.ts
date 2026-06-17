@@ -23,6 +23,11 @@ export function createBreadcrumbStore(opts: Options = {}) {
   const max = opts.maxEntries ?? 20
   const entries = $state<Breadcrumb[]>([])
   let current = $state<Breadcrumb | null>(null)
+  // The user's overarching, cross-page objective ("set up tool X, then build a
+  // plan around it"). Survives soft resets (which clear only the message
+  // history on a scope change) so a freshly-reskinned assistant retains the
+  // north star; cleared by `reset()` (hard reset on user/session change).
+  let goal = $state<string | null>(null)
 
   function pushPage(pageId: string) {
     if (current && current.pageId === pageId) return
@@ -52,9 +57,18 @@ export function createBreadcrumbStore(opts: Options = {}) {
       .join('\n')
   }
 
+  function setGoal(next: string) {
+    goal = next.trim() || null
+  }
+
+  function clearGoal() {
+    goal = null
+  }
+
   function reset() {
     entries.length = 0
     current = null
+    goal = null
   }
 
   return {
@@ -64,8 +78,13 @@ export function createBreadcrumbStore(opts: Options = {}) {
     get current() {
       return current
     },
+    get goal() {
+      return goal
+    },
     pushPage,
     recordAction,
+    setGoal,
+    clearGoal,
     format,
     reset,
   }

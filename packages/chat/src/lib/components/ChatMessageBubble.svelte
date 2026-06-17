@@ -1,23 +1,23 @@
 <script lang="ts">
-  import * as Chat from '../ui/chat'
   import type { AttachmentRef, ChatMessage } from '../types'
+  import * as Chat from '../ui/chat'
   import AttachmentChip from './AttachmentChip.svelte'
   import ChatTextBlock from './ChatTextBlock.svelte'
   import ChatToolBlock from './ChatToolBlock.svelte'
 
+  // User messages only — the agent's turn is rendered as a timeline rail by
+  // <ChatAgentTurn>. <ChatBox> routes by role.
   let { message }: { message: ChatMessage } = $props()
-
-  const variant = $derived(message.role === 'user' ? 'sent' : 'received')
 
   const visibleBlocks = $derived(message.content.filter(block => block.type !== 'tool_result'))
 
   const imageAttachments = $derived(
-    (message.attachments ?? []).filter((a): a is Extract<AttachmentRef, { kind: 'image' }> => a.kind === 'image')
+    (message.attachments ?? []).filter((a): a is Extract<AttachmentRef, { kind: 'image' }> => a.kind === 'image'),
   )
 </script>
 
-<Chat.Bubble {variant}>
-  <Chat.BubbleMessage class="py-2">
+<Chat.Bubble variant="sent">
+  <Chat.BubbleMessage class="">
     <div class="flex flex-col gap-2">
       {#if imageAttachments.length > 0}
         <div class="flex flex-wrap gap-2">

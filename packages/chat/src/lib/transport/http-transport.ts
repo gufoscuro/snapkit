@@ -10,14 +10,15 @@ export function httpTransport(config: HttpTransportConfig): Transport {
 	const fetchImpl = config.fetch ?? globalThis.fetch
 
 	return {
-		async send(payload: MessagesApiPayload): Promise<MessagesApiResponse> {
+		async send(payload: MessagesApiPayload, signal?: AbortSignal): Promise<MessagesApiResponse> {
 			const response = await fetchImpl(config.url, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					...config.headers
 				},
-				body: JSON.stringify(payload)
+				body: JSON.stringify(payload),
+				signal
 			})
 
 			if (!response.ok) {

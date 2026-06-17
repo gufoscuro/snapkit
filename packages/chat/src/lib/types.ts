@@ -110,7 +110,9 @@ export type MessagesApiResponse = {
 }
 
 export type Transport = {
-	send: (payload: MessagesApiPayload) => Promise<MessagesApiResponse>
+	/** `signal`, when provided, aborts the in-flight request. Transports that cannot
+	 * cancel (mock, deterministic scenarios) may ignore it. */
+	send: (payload: MessagesApiPayload, signal?: AbortSignal) => Promise<MessagesApiResponse>
 }
 
 export type ChatCommandApi = {
@@ -164,7 +166,7 @@ export type ChatContext = {
 	 * server-side; the client only supplies the `id` plus any dynamic `vars()`
 	 * evaluated fresh at send-time. */
 	serverContext?: {
-		id: string
+		id: string | (() => string)
 		vars?: () => Record<string, unknown>
 	}
 	tools: ToolDefinition[]

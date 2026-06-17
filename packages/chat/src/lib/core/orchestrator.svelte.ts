@@ -66,6 +66,7 @@ export function createChatOrchestrator(config: ChatOrchestratorConfig) {
     breadcrumbs,
     availablePages: config.availablePages,
     currentDate: config.currentDate,
+    sessionGoal: () => breadcrumbs.goal,
     transport: config.transport,
     model: config.model,
     maxToolRounds: config.maxToolRounds,
@@ -86,10 +87,26 @@ export function createChatOrchestrator(config: ChatOrchestratorConfig) {
     send(text: string): Promise<void> {
       return chat.send(text)
     },
-    /** Clear conversation history AND the breadcrumb trace. */
+    /** Hard reset: clear conversation history AND the breadcrumb trace + goal.
+     * Use on user/session change. */
     reset() {
       chat.reset()
       breadcrumbs.reset()
+    },
+    /** Soft reset: clear only the message history, preserving the breadcrumb
+     * trace and session goal. Use on a scope change (entering an authoring
+     * surface, switching entity) so the reskinned assistant starts a clean
+     * thread but keeps its ambient memory. */
+    softReset() {
+      chat.reset()
+    },
+    /** Set the user's overarching cross-page goal (survives soft resets). */
+    setGoal(goal: string) {
+      breadcrumbs.setGoal(goal)
+    },
+    /** Clear the session goal (e.g. once the assistant marks it complete). */
+    clearGoal() {
+      breadcrumbs.clearGoal()
     },
     /** Register page-scoped tools, handlers, and a state snapshot getter. */
     pushPageContext(registration: PageContextRegistration) {

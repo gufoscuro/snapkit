@@ -33,6 +33,9 @@ export function createChatState(getContext: () => ChatContext) {
 	let status = $state<ChatStatus>('idle')
 	let errorMessage = $state<string | null>(null)
 	let pendingInteractive = $state<PendingInteractive | null>(null)
+	/** Live controller while a transport request is in flight; null otherwise. Used by
+	 * `abort()` to cancel the current `sending` round. */
+	let sendController: AbortController | null = null
 
 	function resolveTransport(context: ChatContext): Transport {
 		return context.transport ?? httpTransport({ url: DEFAULT_HTTP_URL })
@@ -109,8 +112,9 @@ export function createChatState(getContext: () => ChatContext) {
 			tools: context.tools
 		}
 		if (context.serverContext) {
+			const { id } = context.serverContext
 			payload.serverContext = {
-				id: context.serverContext.id,
+				id: typeof id === 'function' ? id() : id,
 				vars: context.serverContext.vars?.() ?? {}
 			}
 		} else {
@@ -232,10 +236,13 @@ export function createChatState(getContext: () => ChatContext) {
 		const transport = resolveTransport(context)
 		const maxRounds = context.maxToolRounds ?? DEFAULT_MAX_TOOL_ROUNDS
 
+		const controller = new AbortController()
+		sendController = controller
+
 		try {
 			for (let round = 0; round < maxRounds; round++) {
 				status = 'sending'
-				const response = await transport.send(buildPayload(context))
+				const response = await transport.send(buildPayload(context), controller.signal)
 				appendMessage('assistant', response.content)
 
 				if (response.stop_reason === 'end_turn') {
@@ -256,9 +263,26 @@ export function createChatState(getContext: () => ChatContext) {
 			status = 'error'
 			errorMessage = `Tool loop exceeded max rounds (${maxRounds})`
 		} catch (err) {
-			status = 'error'
-			errorMessage = err instanceof Error ? err.message : String(err)
+			// A user-triggered abort surfaces as a rejected fetch; there is no partial
+			// assistant content to keep (request/response, no streaming), so settle
+			// silently back to idle instead of showing an error.
+			if (controller.signal.aborted) {
+				status = 'idle'
+			} else {
+				status = 'error'
+				errorMessage = err instanceof Error ? err.message : String(err)
+			}
+		} finally {
+			sendController = null
 		}
+	}
+
+	/** Cancel the in-flight request during the `sending` phase. No-op otherwise:
+	 * tool execution and interactive waits are not network requests and have their
+	 * own resolution paths. */
+	function abort(): void {
+		if (status !== 'sending') return
+		sendController?.abort()
 	}
 
 	function appendAssistant(text: string): void {
@@ -341,6 +365,9 @@ export function createChatState(getContext: () => ChatContext) {
 		get isBusy() {
 			return status === 'sending' || status === 'executing_tools' || status === 'waiting_user'
 		},
+		get isSending() {
+			return status === 'sending'
+		},
 		get isWaitingUser() {
 			return status === 'waiting_user'
 		},
@@ -352,6 +379,7 @@ export function createChatState(getContext: () => ChatContext) {
 		},
 		findToolResult,
 		send,
+		abort,
 		appendAssistant,
 		appendUser,
 		reset,
