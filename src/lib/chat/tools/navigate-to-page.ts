@@ -1,5 +1,6 @@
 import { goto } from '$app/navigation'
 import { makeNavigateTool, type NavigateResolution } from '@diaphora/chat'
+import { waitForPageContextRegister } from '$lib/chat/page-context-signal'
 import { tenantConfigStore } from '$lib/stores/tenant-config'
 import { createRoute } from '$lib/utils/route-builder'
 
@@ -20,5 +21,13 @@ export const { tool: navigateToPageTool, handler: navigateToPageHandler } = make
       }
     }
   },
-  goto,
+  // eslint-disable-next-line svelte/no-navigation-without-resolve -- href is a resolved dynamic string from the route builder
+  goto: href => goto(href),
+  // Wait for the destination page to register its scoped chat tools before the
+  // chat loop builds its next round. Without it, the loop can race ahead of the
+  // page's onMount registration and land on (say) the invoices list with no
+  // filter_invoices tool yet — the model then "can't filter". The package arms
+  // this BEFORE goto and awaits it after, so a registration during navigation
+  // isn't missed; it self-times-out for pages that contribute no tools.
+  awaitPageReady: waitForPageContextRegister,
 })

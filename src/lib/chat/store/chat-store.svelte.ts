@@ -8,6 +8,7 @@ import {
   type PageSummary,
 } from '@diaphora/chat'
 import { chatEnabled } from '$lib/chat/enabled'
+import { bindPageContextWaiter } from '$lib/chat/page-context-signal'
 import { globalHandlers, globalTools } from '$lib/chat/tools/global-tools'
 import { tenantConfigStore } from '$lib/stores/tenant-config'
 import type { PageConfig } from '$lib/utils/page-registry'
@@ -29,7 +30,14 @@ function ensure(): ChatOrchestrator | null {
     transport: httpTransport({ url: '/api/chat/gemini' }),
     availablePages: collectAvailablePages,
     currentDate: currentDateLine,
+    // Inject set_session_goal / clear_session_goal, wired to the orchestrator's
+    // own goal store (no host-side late binding needed).
+    sessionGoalTools: true,
   })
+  // Let the navigate_to_page handler wait for a destination page to register
+  // its scoped tools before the chat loop's next round (closes the race where
+  // the model lands on a list page before its filter tool is registered).
+  bindPageContextWaiter(timeoutMs => _orchestrator?.pageRegistry.waitForNextRegistration(timeoutMs) ?? Promise.resolve())
   return _orchestrator
 }
 
@@ -120,6 +128,17 @@ export const chatStore = {
   /** Clear conversation history AND breadcrumbs. Called on user/session change. */
   reset() {
     _orchestrator?.reset()
+  },
+
+  /** Set the user's overarching cross-page goal (survives navigation; injected
+   * into the prompt as SESSION_GOAL). Backs the set_session_goal tool. */
+  setGoal(goal: string) {
+    ensure()?.setGoal(goal)
+  },
+
+  /** Clear the recorded session goal. Backs the clear_session_goal tool. */
+  clearGoal() {
+    _orchestrator?.clearGoal()
   },
 
   /** Register page-scoped tools, handlers, and a state snapshot getter. */

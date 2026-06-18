@@ -15,6 +15,7 @@ import { createChatState, type ChatState } from '../chat-state.svelte'
 import { createBreadcrumbStore } from './breadcrumbs.svelte'
 import { createPageToolsRegistry, type PageContextRegistration } from './page-tools-registry.svelte'
 import { buildChatContext, type PageSummary } from './context-composer'
+import { makeSessionGoalTools } from '../tools/session-goal'
 import type { ToolDefinition, ToolHandler, Transport } from '../types'
 
 export type ChatOrchestratorConfig = {
@@ -34,6 +35,11 @@ export type ChatOrchestratorConfig = {
   maxToolRounds?: number
   /** Cap on archived breadcrumbs (FIFO when exceeded). Forwarded to the breadcrumb store. */
   breadcrumbMaxEntries?: number
+  /** When true, inject the `set_session_goal` / `clear_session_goal` tools,
+   * wired to this orchestrator's own goal store. The goal is already injected
+   * into the prompt as SESSION_GOAL regardless; this just lets the model record
+   * and clear it. Prefer this over wiring the tools manually in `globalTools`. */
+  sessionGoalTools?: boolean
 }
 
 /**
@@ -58,10 +64,24 @@ export function createChatOrchestrator(config: ChatOrchestratorConfig) {
   const breadcrumbs = createBreadcrumbStore({ maxEntries: config.breadcrumbMaxEntries })
   const pageRegistry = createPageToolsRegistry()
 
+  // Optionally fold in the session-goal tools, wired to this orchestrator's own
+  // goal store. Done here (not in the host's globalTools) so the tools bind to
+  // the live store without the host needing a late-binding indirection.
+  let globalTools = config.globalTools
+  let globalHandlers = config.globalHandlers
+  if (config.sessionGoalTools) {
+    const goal = makeSessionGoalTools({
+      setGoal: breadcrumbs.setGoal,
+      clearGoal: breadcrumbs.clearGoal,
+    })
+    globalTools = [...globalTools, ...goal.tools]
+    globalHandlers = { ...globalHandlers, ...goal.handlers }
+  }
+
   const context = buildChatContext({
     serverContextId: config.serverContextId,
-    globalTools: config.globalTools,
-    globalHandlers: config.globalHandlers,
+    globalTools,
+    globalHandlers,
     pageRegistry,
     breadcrumbs,
     availablePages: config.availablePages,

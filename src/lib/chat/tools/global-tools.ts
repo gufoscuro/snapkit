@@ -7,6 +7,9 @@ import { showToastHandler, showToastTool } from './show-toast'
 // Builtins from @diaphora/chat: show_structured_data, show_action_links,
 // request_user_input, request_user_choice, request_user_multichoice. The
 // interactive ones are rendered as in-chat forms/choice cards by ChatBox.
+// The set_session_goal / clear_session_goal tools are NOT listed here: the
+// orchestrator injects them itself (sessionGoalTools: true) wired to its own
+// goal store.
 export const globalTools: ToolDefinition[] = [
   ...builtinTools,
   navigateToPageTool,

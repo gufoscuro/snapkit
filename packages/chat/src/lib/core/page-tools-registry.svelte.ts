@@ -29,9 +29,17 @@ export type PageContextRegistration = {
 
 export function createPageToolsRegistry() {
   const registrations = new SvelteMap<string, PageContextRegistration>()
+  // Fired synchronously after each register(). Lets a navigation wait for the
+  // destination page to contribute its scoped tools before the chat loop builds
+  // its next round — see waitForNextRegistration. A plain (non-reactive) Set: a
+  // pub/sub bag mutated and read only imperatively, never tracked by an effect.
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
+  const registerListeners = new Set<() => void>()
 
   function register(reg: PageContextRegistration) {
     registrations.set(reg.id, reg)
+    // Copy before iterating: a listener removes itself on fire.
+    for (const listener of [...registerListeners]) listener()
   }
 
   function unregister(id: string) {
@@ -41,6 +49,33 @@ export function createPageToolsRegistry() {
   return {
     register,
     unregister,
+    /**
+     * Resolve once the next registration lands, or after `timeoutMs` (whichever
+     * comes first). The chat send loop reads `tools` fresh every round, so a
+     * page-scoped tool registered mid-turn DOES surface next round — but only if
+     * it registered in time. A navigation handler awaits this right after `goto`
+     * so the loop doesn't race ahead of the destination page's onMount
+     * registration (e.g. landing on a list with no filter tool yet). A page that
+     * contributes no tools never registers, so the timeout is the expected exit.
+     */
+    waitForNextRegistration(timeoutMs = 1200): Promise<void> {
+      return new Promise(resolve => {
+        let settled = false
+        const finish = () => {
+          if (settled) return
+          settled = true
+          registerListeners.delete(onRegister)
+          clearTimeout(timer)
+          resolve()
+        }
+        // A page can contribute several registrations in one mount flush (e.g. a
+        // generic filter bar plus an entity-specific one). Defer a microtask
+        // after the first so siblings in the same flush also land first.
+        const onRegister = () => queueMicrotask(finish)
+        const timer = setTimeout(finish, timeoutMs)
+        registerListeners.add(onRegister)
+      })
+    },
     get tools(): ToolDefinition[] {
       const out: ToolDefinition[] = []
       for (const reg of registrations.values()) {

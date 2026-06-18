@@ -51,5 +51,6 @@ export { makeToastTool, TOAST_VARIANTS, type ToastAdapter, type ToastVariant } f
 export { makeThemeTool, type ThemeAdapter } from './tools/theme'
 export { makeNavigateTool, type NavigateAdapter, type NavigateResolution } from './tools/navigate'
 export { makeListingTools, type ListingToolsConfig } from './tools/listing'
+export { makeSessionGoalTools, type SessionGoalAdapter } from './tools/session-goal'
 export * from './types'
 export * from './transport'

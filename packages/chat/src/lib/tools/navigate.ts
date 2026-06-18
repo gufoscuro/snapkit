@@ -18,6 +18,15 @@ export type NavigateAdapter = {
   resolveHref: (pageId: string, params?: Record<string, string>) => NavigateResolution
   /** Perform the navigation to the resolved href. */
   goto: (href: string) => void | Promise<void>
+  /**
+   * Optional: arm a wait for the destination page to contribute its scoped chat
+   * tools, returning a promise the handler awaits AFTER `goto`. Called BEFORE
+   * `goto` so the listener is attached before the destination's onMount fires —
+   * typically `() => orchestrator.pageRegistry.waitForNextRegistration()`. This
+   * closes the race where the chat loop builds its next round before the page's
+   * tools register. Omit it and navigation simply returns once `goto` resolves.
+   */
+  awaitPageReady?: () => void | Promise<void>
 }
 
 const navigateToPageTool: ToolDefinition = {
@@ -58,7 +67,12 @@ export function makeNavigateTool(adapter: NavigateAdapter): {
         return JSON.stringify({ error: resolved.error, details: resolved.details })
       }
 
+      // Arm the page-ready wait BEFORE navigating so the destination page's
+      // onMount registration can't land unobserved, then await it after goto so
+      // the chat loop's next round sees the page's freshly-registered tools.
+      const pageReady = adapter.awaitPageReady?.()
       await adapter.goto(resolved.href)
+      await pageReady
       return JSON.stringify({ navigated: true, page_id: pageId, url: resolved.href })
     },
   }
