@@ -44,6 +44,10 @@
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
+  import InvoiceDueDatesEditor, {
+    dueDatesMatchTotal,
+    type InvoiceDueDateInput,
+  } from '$components/features/form/InvoiceDueDatesEditor.svelte'
   import InvoiceItemsListEditor from '$components/features/form/InvoiceItemsListEditor.svelte'
   import LegalEntityBankSelector from '$components/features/form/LegalEntityBankSelector.svelte'
   import PaymentTermSelector from '$components/features/form/PaymentTermSelector.svelte'
@@ -72,7 +76,6 @@
     InvoiceableDocument,
     InvoiceableDocumentType,
     InvoiceDocumentType,
-    InvoiceDueDate,
     InvoiceItem,
     InvoiceItemInput,
     InvoicePrefill,
@@ -86,7 +89,6 @@
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import {
     currencyLabels,
-    getPaymentMethodLabel,
     invoiceDocumentTypeLabels,
     paymentSliceTypeLabels,
     toSelectItems,
@@ -101,7 +103,7 @@
   import { api, apiDownload, apiRequest } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import { extractSnapshotString, type SnapshotShape } from '$lib/utils/snapshots'
-  import { DEFAULT_CURRENCY_CODE, floatToPriceString } from '$utils/prices.js'
+  import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import AlertCircleIcon from '@lucide/svelte/icons/alert-circle'
   import CircleCheckFilled from '@tabler/icons-svelte/icons/circle-check-filled'
@@ -215,6 +217,25 @@
   }
 
   /**
+   * Normalize a due-dates list (record / prefill / editor shape) to the API
+   * contract: drop `id`/`invoice_id`, re-index `position`, keep the calendar day
+   * only, and coerce `amount` to a number. Tolerant of partially-shaped input.
+   */
+  function mapDueDatesToPayload(
+    dueDates:
+      | Array<{ position?: number; due_date: string; amount: string | number; payment_method: PaymentMethod }>
+      | undefined,
+  ): InvoiceDueDateInput[] {
+    if (!dueDates) return []
+    return dueDates.map((d, index) => ({
+      position: d.position ?? index + 1,
+      due_date: typeof d.due_date === 'string' && d.due_date.length > 10 ? d.due_date.slice(0, 10) : d.due_date,
+      amount: typeof d.amount === 'string' ? Number.parseFloat(d.amount) : d.amount,
+      payment_method: d.payment_method,
+    }))
+  }
+
+  /**
    * Whitelist payload to the fields accepted by the invoice create/update
    * contract. Snapshots, totals, computed state, timestamps and the document
    * number are server-managed and excluded. `document_date` is excluded by the
@@ -242,6 +263,7 @@
       notes_internal: data.notes_internal,
       notes_external: data.notes_external,
       items: mapItemsToInvoicePayload((data.items as QuotationLineItem[] | undefined) ?? []),
+      due_dates: mapDueDatesToPayload(data.due_dates as InvoiceDueDateInput[] | undefined),
     }
   }
 
@@ -286,37 +308,22 @@
   // editor-shape items. VAT codes are session-stable, no need to invalidate.
   let vatCodesById = $state<Map<string, VatCodeSummary>>(new Map())
 
-  // Server-computed totals + due dates captured from the prefill response.
-  // Display-only — the backend recomputes both on save from the line items
-  // and the selected payment term. Cleared by `clearPrefill`.
+  // Server-computed totals captured from the prefill response. Display-only —
+  // the backend recomputes them on save from the line items. Cleared by
+  // `clearPrefill`. The prefill due dates seed the editable schedule below.
   let prefillTotals = $state<InvoicePrefill['totals'] | null>(null)
   let prefillDueDates = $state<InvoicePrefillDueDate[]>([])
 
-  // Unified display shape — `record` takes precedence in edit mode, falling
-  // back to the prefill payload in create mode. Returns `null` when there's
-  // nothing to show (manual create, no prefill yet).
-  type DisplayDueDate = {
-    position: number
-    due_date: string
-    amount: number
-    payment_method: PaymentMethod
-  }
   const displayTotals = $derived.by<{ net: number; tax: number; total: number } | null>(() => {
     if (record) return { net: record.total_net, tax: record.total_tax, total: record.total_amount }
     if (prefillTotals) return prefillTotals
     return null
   })
-  const displayDueDates = $derived.by<DisplayDueDate[]>(() => {
-    if (record?.due_dates) {
-      return record.due_dates.map(d => ({
-        position: d.position,
-        due_date: d.due_date,
-        amount: typeof d.amount === 'string' ? Number.parseFloat(d.amount) : d.amount,
-        payment_method: d.payment_method,
-      }))
-    }
-    return prefillDueDates
-  })
+
+  // Seed value for the editable due-dates schedule — the loaded record in edit
+  // mode, falling back to the prefill-suggested schedule in create mode. The
+  // editor re-hydrates whenever this content changes (load, prefill, clear).
+  const dueDatesEditorValue = $derived(record?.due_dates ?? prefillDueDates)
 
   async function ensureVatCodesLoaded(): Promise<void> {
     if (vatCodesById.size > 0) return
@@ -384,6 +391,8 @@
     notes_internal: string
     notes_external: string
     items: QuotationLineItem[]
+    // FE-owned payment schedule — synced wholesale to the API on save.
+    due_dates: InvoiceDueDateInput[]
   }
 
   /**
@@ -419,15 +428,22 @@
     notes_internal: '',
     notes_external: '',
     items: [],
+    due_dates: [],
     ...(record
       ? {
           ...record,
           items: mapItemsToEditorShape(record.items),
+          due_dates: mapDueDatesToPayload(record.due_dates),
           // `...record` has no flat slice fields — derive them from the snapshot (wins over the spread).
           ...sliceFormFields(record.payment_composition_snapshot),
         }
       : {}),
   }))
+
+  // The scheduled due-date amounts must add up to the invoice total. The total is
+  // server-computed (not a form field), so the validator reads it lazily from
+  // `displayTotals` at validation time. Applied to both create and update.
+  const validateDueDatesTotal = dueDatesMatchTotal<Partial<InvoiceFormValues>>(() => displayTotals?.total)
 
   const validateCreate = v
     .schema<Partial<InvoiceFormValues>>({
@@ -436,10 +452,11 @@
       customer_id: [v.required({ field: m.customer() })],
       payment_term_id: [v.required({ field: m.payment_term() })],
       currency: [v.required({ field: m.currency() })],
+      due_dates: [validateDueDatesTotal],
     })
     .build()
 
-  const validateUpdate = v.schema<Partial<InvoiceFormValues>>({}).build()
+  const validateUpdate = v.schema<Partial<InvoiceFormValues>>({ due_dates: [validateDueDatesTotal] }).build()
 
   const validate = $derived(!record ? validateCreate : validateUpdate)
 
@@ -514,11 +531,7 @@
   // selected/prefilled customer's `default_currency` when available, falling
   // back to the invoice's own currency field (and ultimately the system default).
   const displayCurrency = $derived.by<string>(() => {
-    return (
-      customerAttr?.default_currency ||
-      (formApi?.values.currency as string | undefined) ||
-      DEFAULT_CURRENCY_CODE
-    )
+    return customerAttr?.default_currency || (formApi?.values.currency as string | undefined) || DEFAULT_CURRENCY_CODE
   })
 
   // ---- SDI validation status ----
@@ -628,11 +641,7 @@
    * - Populate the form fields (including the single billed composition slice),
    *   fetch commercial terms (for default VAT), and append the line items.
    */
-  async function applyPrefillFromSource(
-    sourceType: InvoiceableDocumentType,
-    sourceId: string,
-    slicePosition?: number,
-  ) {
+  async function applyPrefillFromSource(sourceType: InvoiceableDocumentType, sourceId: string, slicePosition?: number) {
     if (!legalEntityId || !formApi || !itemsEditorRef) return
 
     // Re-import: wipe the previous prefill before fetching the new one so the
@@ -698,9 +707,11 @@
         itemsEditorRef!.addItems(editorItems, { groupId: generateId() })
       }
 
-      // Display-only data: server-computed totals and projected due dates.
+      // Server-computed totals (display-only) and the suggested payment schedule.
+      // The schedule seeds the editable due-dates field so it submits even if untouched.
       prefillTotals = prefill.totals ?? null
       prefillDueDates = prefill.due_dates ?? []
+      update('due_dates', mapDueDatesToPayload(prefill.due_dates))
 
       prefilledMode = true
       return { added: editorItems.length }
@@ -973,30 +984,23 @@
           {/snippet}
         </GroupTitle>
 
-        {#if displayDueDates.length > 0}
-          <Separator />
+        <Separator />
 
-          <!-- Payments — backend-computed due dates, display-only -->
-          <GroupTitle heading={m.invoice_payments_section()}>
-            {#snippet description()}
-              {m.invoice_payments_section_description()}
-            {/snippet}
+        <!-- Payments — editable FE-owned due-date schedule (synced wholesale on save) -->
+        <GroupTitle heading={m.invoice_payments_section()}>
+          {#snippet description()}
+            {m.invoice_payments_section_description()}
+          {/snippet}
 
-            {#snippet content()}
-              <div class="flex flex-col gap-2">
-                {#each displayDueDates as due (due.position)}
-                  <div
-                    class="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 rounded border bg-muted/30 px-3 py-2 text-sm">
-                    <span class="font-mono text-muted-foreground">#{due.position}</span>
-                    <span>{new Date(due.due_date).toLocaleDateString()}</span>
-                    <span class="tabular-nums">{floatToPriceString(due.amount, displayCurrency)}</span>
-                    <span class="text-muted-foreground">{getPaymentMethodLabel(due.payment_method)}</span>
-                  </div>
-                {/each}
-              </div>
-            {/snippet}
-          </GroupTitle>
-        {/if}
+          {#snippet content()}
+            <InvoiceDueDatesEditor
+              name="due_dates"
+              showLabel={false}
+              value={dueDatesEditorValue}
+              currency={displayCurrency}
+              expectedTotal={displayTotals?.total} />
+          {/snippet}
+        </GroupTitle>
 
         <Separator />
 
