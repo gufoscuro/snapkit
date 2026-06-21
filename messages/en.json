@@ -646,6 +646,8 @@
 	"quotation_reference": "Quotation reference: {documentNumber} of {date}",
 	"sales_order_reference": "Sales order ref. {documentNumber} of {date}",
 	"sales_order_reference_with_customer_po": "Sales order ref. {documentNumber} of {date} -\n\n Customer ref. {customerPo} of {customerPoDate}",
+	"invoice_reference_order": "Your order ref. {documentNumber} of {date}",
+	"invoice_reference_transport_document": "Our delivery note {documentNumber} of {date}",
 	"quotation": "Quotation",
 	"new_quotation": "New quotation",
 	"quotations": "Quotations",

@@ -632,6 +632,62 @@
   }
 
   /**
+   * Partition the prefilled editor lines by their source document (order and/or
+   * transport document) and prepend a `descriptive` reference header to each
+   * group (e.g. "Rif. Vs ordine: PO-… del … - Rif. Ns DDT DDT-… del …"). The
+   * source link is read from `source_references`, whose `line_positions` are
+   * 1-based indices into the original `prefill.items` array — so this must run on
+   * the mapped items in their original order, before any header is inserted.
+   * Groups preserve first-seen order; lines with no matching source fall into an
+   * unreferenced group (no header). The header itself carries no link id, so it
+   * stays user-editable/removable and isn't treated as a locked imported line.
+   */
+  function buildPrefilledItemGroups(
+    items: QuotationLineItem[],
+    sourceRefs: InvoicePrefill['source_references'],
+  ): QuotationLineItem[][] {
+    const orders = sourceRefs?.orders ?? []
+    const transportDocuments = sourceRefs?.transport_documents ?? []
+
+    const groups = new Map<string, { ref: string; items: QuotationLineItem[] }>()
+
+    items.forEach((item, index) => {
+      const position = index + 1
+      const orderRef = orders.find(o => o.line_positions.includes(position))
+      const ddtRef = transportDocuments.find(t => t.line_positions.includes(position))
+      const key = `${orderRef?.sales_order_id ?? ''}|${ddtRef?.transport_document_id ?? ''}`
+
+      let group = groups.get(key)
+      if (!group) {
+        const parts: string[] = []
+        if (orderRef) {
+          parts.push(
+            m.invoice_reference_order({
+              documentNumber: orderRef.number,
+              date: new Date(orderRef.date).toLocaleDateString(),
+            }),
+          )
+        }
+        if (ddtRef) {
+          parts.push(
+            m.invoice_reference_transport_document({
+              documentNumber: ddtRef.number,
+              date: new Date(ddtRef.date).toLocaleDateString(),
+            }),
+          )
+        }
+        group = { ref: parts.join(' - '), items: [] }
+        groups.set(key, group)
+      }
+      group.items.push(item)
+    })
+
+    return Array.from(groups.values()).map(g =>
+      g.ref ? [{ type: 'descriptive' as const, description: g.ref }, ...g.items] : g.items,
+    )
+  }
+
+  /**
    * Run the full prefill workflow from a source (type + slice):
    * - GET /invoices/prefill (header + lines + totals). `slice_position` is
    *   required for slice-addressed sources (`order_acconto` / `order_sal`) and
@@ -704,7 +760,12 @@
 
       const editorItems = mapPrefillItemsToEditorShape(prefill.items ?? [])
       if (editorItems.length > 0) {
-        itemsEditorRef!.addItems(editorItems, { groupId: generateId() })
+        // Split the flat prefill lines into per-source groups, each led by a
+        // reference descriptive header, and append every group with its own
+        // `groupId` so the editor color-codes lines by source document.
+        for (const group of buildPrefilledItemGroups(editorItems, prefill.source_references)) {
+          itemsEditorRef!.addItems(group, { groupId: generateId() })
+        }
       }
 
       // Server-computed totals (display-only) and the suggested payment schedule.

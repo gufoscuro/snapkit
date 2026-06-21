@@ -1684,6 +1684,20 @@ export type InvoicePrefill = {
   notes_external: string
   notes_internal: string
   items: InvoiceItemInput[]
+  /**
+   * Source documents the prefilled lines were composed from, with the human-readable
+   * `number`/`date` used to render the per-group reference descriptive header. Each
+   * `line_positions` entry is a 1-based index into `items` (position 1 = first item).
+   */
+  source_references?: {
+    orders: { sales_order_id: string; number: string; date: string; line_positions: number[] }[]
+    transport_documents: {
+      transport_document_id: string
+      number: string
+      date: string
+      line_positions: number[]
+    }[]
+  }
   totals: {
     net: number
     tax: number

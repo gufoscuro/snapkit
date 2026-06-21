@@ -648,6 +648,8 @@
 	"quotation_reference": "Riferimento preventivo: {documentNumber} del {date}",
 	"sales_order_reference": "Rif. ordine {documentNumber} del {date}",
 	"sales_order_reference_with_customer_po": "Rif. ordine {documentNumber} del {date} - \n\n Rif. vs ordine: {customerPo} del {customerPoDate}",
+	"invoice_reference_order": "Rif. Vs ordine: {documentNumber} del {date}",
+	"invoice_reference_transport_document": "Rif. Ns DDT {documentNumber} del {date}",
 	"quotation": "Preventivo",
 	"new_quotation": "Nuovo preventivo",
 	"quotations": "Preventivi",
