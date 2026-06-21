@@ -28,6 +28,7 @@
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
   import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
+  import VatSummaryTable from '$components/core/VatSummaryTable.svelte'
   import CustomerAddressSelector from '$components/features/form/CustomerAddressSelector.svelte'
   import CustomerContactSelector from '$components/features/form/CustomerContactSelector.svelte'
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
@@ -47,7 +48,12 @@
   import * as m from '$lib/paraglide/messages'
   import type { Currency, CustomerCommercialTerms, PaymentComposition, Quotation } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import { currencyLabels, getSalesTransactionTypeItemsFor, incotermLabels, toSelectItems } from '$lib/utils/enum-labels'
+  import {
+    currencyLabels,
+    getSalesTransactionTypeItemsFor,
+    incotermLabels,
+    toSelectItems,
+  } from '$lib/utils/enum-labels'
   import {
     compositionFromSnapshot,
     compositionRules,
@@ -444,7 +450,9 @@
               defaultDeliveryDate={formAPI?.values?.requested_delivery_date} />
 
             {@const currencyCode = formAPI.values.currency}
-            <div class="pr-14">
+            <div class="flex flex-col items-end gap-6 pr-14">
+              <VatSummaryTable rows={record?.vat_summary} {currencyCode} class="w-full max-w-md" />
+
               <StackedAmountValues
                 title={m.total()}
                 rows={[

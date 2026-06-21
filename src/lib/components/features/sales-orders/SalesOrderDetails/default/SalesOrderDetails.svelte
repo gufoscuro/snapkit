@@ -31,6 +31,7 @@
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
   import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
+  import VatSummaryTable from '$components/core/VatSummaryTable.svelte'
   import CustomerAddressSelector from '$components/features/form/CustomerAddressSelector.svelte'
   import CustomerContactSelector from '$components/features/form/CustomerContactSelector.svelte'
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
@@ -52,7 +53,12 @@
   import * as m from '$lib/paraglide/messages'
   import type { Currency, CustomerCommercialTerms, PaymentComposition, SalesOrder } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
-  import { currencyLabels, getSalesTransactionTypeItemsFor, incotermLabels, toSelectItems } from '$lib/utils/enum-labels'
+  import {
+    currencyLabels,
+    getSalesTransactionTypeItemsFor,
+    incotermLabels,
+    toSelectItems,
+  } from '$lib/utils/enum-labels'
   import type { BasicOption } from '$lib/utils/generics'
   import { generateId } from '$lib/utils/id'
   import { api, apiDownload, apiRequest } from '$lib/utils/request'
@@ -84,8 +90,7 @@
   const detail = useDetailRecord<SalesOrder>({
     getUuid: () => uuid,
     fetch: id => api.safe.get<SalesOrder>(`/legal-entities/${legalEntityId}/sales-orders/${id}`),
-    create: data =>
-      api.post(`/legal-entities/${legalEntityId}/sales-orders`, { data: toSalesOrderRequest(data) }),
+    create: data => api.post(`/legal-entities/${legalEntityId}/sales-orders`, { data: toSalesOrderRequest(data) }),
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     update: (id, { document_number, ...data }) =>
       api.put(`/legal-entities/${legalEntityId}/sales-orders/${id}`, { data: toSalesOrderRequest(data) }),
@@ -492,9 +497,7 @@
   // *Attr derived: read from `record.*_snapshot` in edit mode, fall back to the
   // `*SnapshotImport` state populated by the import flow in create mode.
 
-  const customerAttr = $derived(
-    customerSnapshotImport.resolve(record?.customer_snapshot as SnapshotShape | undefined),
-  )
+  const customerAttr = $derived(customerSnapshotImport.resolve(record?.customer_snapshot as SnapshotShape | undefined))
 
   const shipToAddressAttr = $derived(
     shipToSnapshotImport.resolve(record?.ship_to_snapshot as SnapshotShape | undefined),
@@ -756,7 +759,9 @@
               defaultDeliveryDate={formAPI?.values?.requested_delivery_date} />
 
             {@const currencyCode = formAPI.values.currency}
-            <div class="pr-12">
+            <div class="flex flex-col items-end gap-6 pr-12">
+              <VatSummaryTable rows={record?.vat_summary} {currencyCode} class="w-full max-w-md" />
+
               <StackedAmountValues
                 title={m.total()}
                 rows={[

@@ -31,6 +31,7 @@
   import { ImportMenu } from '$components/core/common/import-menu'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
+  import VatSummaryTable from '$components/core/VatSummaryTable.svelte'
   import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
   import BottomBar from '$components/core/form/BottomBar.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
@@ -1027,7 +1028,9 @@
               refreshKey={record?.version ?? prefillResetCounter} />
 
             {#if displayTotals}
-              <div class="pr-12">
+              <div class="flex flex-col items-end gap-6 pr-12">
+                <VatSummaryTable rows={record?.vat_summary} currencyCode={displayCurrency} class="w-full max-w-md" />
+
                 <StackedAmountValues
                   title={m.total()}
                   rows={[

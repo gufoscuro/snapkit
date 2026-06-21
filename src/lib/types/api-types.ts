@@ -1202,6 +1202,23 @@ export type QuotationItem = {
 }
 
 /**
+ * One VAT-rate bucket of a document's tax breakdown ("riepilogo IVA").
+ * Backend-computed, read-only. Shared by quotations, sales orders and invoices.
+ */
+export type VatSummaryEntry = {
+  /** VAT code (e.g. "IVA22-VB"). */
+  code: string
+  /** Human-readable VAT code description. */
+  description: string
+  /** VAT rate as a percentage (e.g. 22 for 22%). */
+  rate: number
+  /** Taxable amount (net) for this bucket. */
+  net: number
+  /** Tax amount for this bucket. */
+  tax: number
+}
+
+/**
  * Quotation from Moddo API GET /api/legal-entities/{legalEntity}/quotations
  */
 export type Quotation = {
@@ -1240,6 +1257,7 @@ export type Quotation = {
   version: number
   created_by: string
   items?: QuotationItem[]
+  vat_summary?: VatSummaryEntry[]
   available_transitions?: string[]
 }
 
@@ -1316,6 +1334,7 @@ export type SalesOrder = {
   version: number
   created_by: string
   items?: SalesOrderItem[]
+  vat_summary?: VatSummaryEntry[]
   available_transitions?: string[]
 }
 
@@ -1633,6 +1652,7 @@ export type Invoice = {
   created_at: string
   updated_at: string
   items?: InvoiceItem[]
+  vat_summary?: VatSummaryEntry[]
   due_dates?: InvoiceDueDate[]
   available_transitions?: InvoiceTransition[]
 }
