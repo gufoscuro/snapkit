@@ -51,6 +51,7 @@
 </script>
 
 <script lang="ts">
+  import ActionButton from '$components/core/ActionButton.svelte'
   import DateField from '$components/core/form/DateField.svelte'
   import EditableTableField from '$components/core/form/EditableTableField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
@@ -59,7 +60,6 @@
   import Label from '$components/ui/label/label.svelte'
   import * as Select from '$components/ui/select'
   import * as Table from '$components/ui/table'
-  import ActionButton from '$components/core/ActionButton.svelte'
   import { getPaymentMethodLabel, paymentMethodLabels, toSelectItems } from '$lib/utils/enum-labels'
   import X from '@lucide/svelte/icons/x'
   import { untrack } from 'svelte'
@@ -256,6 +256,7 @@
           showLabel={false}
           showErrorMessage={false}
           width="w-full"
+          class={FormFieldClass.TableCell}
           value={item.due_date}
           disabled={isDisabled}
           onChange={date => handleDateChange(index, date, updateItem)} />
