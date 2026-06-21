@@ -86,6 +86,12 @@
     refreshKey?: unknown
     /** Default VAT code from customer commercial terms (overrides global is_default) */
     defaultVatCode?: import('$components/features/form/VatCodeSelector.svelte').VatCodeSummary
+    /**
+     * Default discount percentage from customer commercial terms (`trade_discount`).
+     * Applied to item rows whose discount still follows the previous default; a
+     * user-set percent or a switch to fixed-amount mode is preserved.
+     */
+    defaultDiscountPercent?: number
     /** Additional actions snippet rendered in the header (e.g. ImportMenu) */
     headerActions?: Snippet
     /** API field name for the delivery date. Quotations use 'delivery_date', sales orders use 'confirmed_delivery_date'. */
@@ -126,6 +132,7 @@
     onChange,
     refreshKey = undefined,
     defaultVatCode = undefined,
+    defaultDiscountPercent = undefined,
     headerActions,
     allowNegativePrices = true,
     deliveryDateKey = 'delivery_date',
@@ -186,7 +193,7 @@
       quantity: 0,
       uom: UnitOfMeasures.Default,
       unit_price: 0,
-      discount_percent: undefined,
+      discount_percent: defaultDiscountPercent || undefined,
       discount_amount: undefined,
       vat_code_id: defaultVatCode?.id ?? '',
       vat_code_snapshot: defaultVatCode ? (defaultVatCode as unknown as Record<string, unknown>) : undefined,
@@ -217,6 +224,29 @@
         vatCodeAttr: vatCode,
       }
     })
+    editableListFieldRef?.flush()
+  })
+
+  // When defaultDiscountPercent arrives/changes (async from commercial terms),
+  // apply it to item rows whose discount still follows the previous default
+  // (unset, or equal to the last applied value). A user-entered percent, or a
+  // switch to fixed-amount mode, is treated as user-set and preserved.
+  let lastAppliedDefaultDiscount: number | undefined = undefined
+  $effect(() => {
+    const discount = defaultDiscountPercent
+    if (discount == null || discount === lastAppliedDefaultDiscount) return
+    const prevDefault = lastAppliedDefaultDiscount
+    lastAppliedDefaultDiscount = discount
+    const current = untrack(() => items)
+    const followsDefault = (item: InternalLineItem) =>
+      !item.useDiscountAmount && !item.discount_amount && (!item.discount_percent || item.discount_percent === prevDefault)
+    const needsUpdate = current.some(item => item.type === 'item' && followsDefault(item))
+    if (!needsUpdate) return
+    items = current.map(item =>
+      item.type === 'item' && followsDefault(item)
+        ? { ...item, discount_percent: discount, discount_amount: 0 }
+        : item,
+    )
     editableListFieldRef?.flush()
   })
 

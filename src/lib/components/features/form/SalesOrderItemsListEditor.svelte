@@ -35,6 +35,8 @@
     refreshKey?: unknown
     /** Default VAT code from customer commercial terms */
     defaultVatCode?: VatCodeSummary
+    /** Default discount percentage from customer commercial terms (`trade_discount`) */
+    defaultDiscountPercent?: number
     /** Default for requested_delivery_date on newly added items. Does not mutate existing items. */
     defaultDeliveryDate?: Date | string
     /** Allow negative prices in PriceField inputs */
@@ -55,6 +57,7 @@
     onChange,
     refreshKey = undefined,
     defaultVatCode = undefined,
+    defaultDiscountPercent = undefined,
     defaultDeliveryDate = undefined,
     allowNegativePrices = true,
     class: className = '',
@@ -94,6 +97,7 @@
   {onChange}
   {refreshKey}
   {defaultVatCode}
+  {defaultDiscountPercent}
   {defaultDeliveryDate}
   {allowNegativePrices}
   class={className} />

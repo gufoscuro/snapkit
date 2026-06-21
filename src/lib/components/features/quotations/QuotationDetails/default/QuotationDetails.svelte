@@ -127,6 +127,8 @@
 
   // Commercial terms state (always populated when a customer is known)
   let commercialTermsVatCode = $state<VatCodeSummary | undefined>(undefined)
+  // Default line-item discount from customer commercial terms (`trade_discount`)
+  let commercialTermsDiscount = $state<number | undefined>(undefined)
 
   // Bumped to remount the composition editor when its value is set externally
   // (customer commercial-terms default), forcing a fresh hydrate.
@@ -147,6 +149,7 @@
   async function fetchCustomerCommercialTerms(customerId: string, updateField?: FormFieldUpdater) {
     if (!customerId || !legalEntityId) {
       commercialTermsVatCode = undefined
+      commercialTermsDiscount = undefined
       return
     }
 
@@ -156,6 +159,7 @@
 
     if (data) {
       commercialTermsVatCode = data.vat_code as VatCodeSummary | undefined
+      commercialTermsDiscount = data.trade_discount || undefined
 
       if (updateField && !record && data.composition?.length) {
         updateField('composition', data.composition)
@@ -166,6 +170,7 @@
       }
     } else {
       commercialTermsVatCode = undefined
+      commercialTermsDiscount = undefined
     }
   }
 
@@ -174,6 +179,7 @@
     updateField('contact_person_id', '')
 
     commercialTermsVatCode = undefined
+    commercialTermsDiscount = undefined
 
     if (item?.value) {
       fetchCustomerCommercialTerms(item.value as string, updateField)
@@ -434,6 +440,7 @@
               refreshKey={record?.version}
               showDeliveryDates
               defaultVatCode={commercialTermsVatCode}
+              defaultDiscountPercent={commercialTermsDiscount}
               defaultDeliveryDate={formAPI?.values?.requested_delivery_date} />
 
             {@const currencyCode = formAPI.values.currency}
