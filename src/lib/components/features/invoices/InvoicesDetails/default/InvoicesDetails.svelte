@@ -30,8 +30,6 @@
   import ActionButton from '$components/core/ActionButton.svelte'
   import { ImportMenu } from '$components/core/common/import-menu'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
-  import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
-  import VatSummaryTable from '$components/core/VatSummaryTable.svelte'
   import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
   import BottomBar from '$components/core/form/BottomBar.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
@@ -44,6 +42,8 @@
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
+  import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
+  import VatSummaryTable from '$components/core/VatSummaryTable.svelte'
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
   import InvoiceDueDatesEditor, {
     dueDatesMatchTotal,
@@ -86,6 +86,7 @@
     PaymentMethod,
     PaymentSliceType,
     PaymentTerm,
+    VatSummaryEntry,
   } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import {
@@ -94,13 +95,13 @@
     paymentSliceTypeLabels,
     toSelectItems,
   } from '$lib/utils/enum-labels'
+  import type { BasicOption } from '$lib/utils/generics'
+  import { generateId } from '$lib/utils/id'
   import {
     compositionFromSnapshot,
     toCompositionPayload,
     type PaymentCompositionSnapshotRow,
   } from '$lib/utils/payment-composition'
-  import type { BasicOption } from '$lib/utils/generics'
-  import { generateId } from '$lib/utils/id'
   import { api, apiDownload, apiRequest } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import { extractSnapshotString, type SnapshotShape } from '$lib/utils/snapshots'
@@ -314,12 +315,19 @@
   // `clearPrefill`. The prefill due dates seed the editable schedule below.
   let prefillTotals = $state<InvoicePrefill['totals'] | null>(null)
   let prefillDueDates = $state<InvoicePrefillDueDate[]>([])
+  // Server-computed VAT breakdown captured from the prefill response. Display-only,
+  // cleared by `clearPrefill`. Mirrors `record.vat_summary` in edit mode.
+  let prefillVatSummary = $state<VatSummaryEntry[]>([])
 
   const displayTotals = $derived.by<{ net: number; tax: number; total: number } | null>(() => {
     if (record) return { net: record.total_net, tax: record.total_tax, total: record.total_amount }
     if (prefillTotals) return prefillTotals
     return null
   })
+
+  // VAT breakdown for display — the loaded record in edit mode, falling back to the
+  // prefill-supplied summary in create mode.
+  const displayVatSummary = $derived<VatSummaryEntry[] | undefined>(record?.vat_summary ?? prefillVatSummary)
 
   // Seed value for the editable due-dates schedule — the loaded record in edit
   // mode, falling back to the prefill-suggested schedule in create mode. The
@@ -772,6 +780,7 @@
       // Server-computed totals (display-only) and the suggested payment schedule.
       // The schedule seeds the editable due-dates field so it submits even if untouched.
       prefillTotals = prefill.totals ?? null
+      prefillVatSummary = prefill.vat_summary ?? []
       prefillDueDates = prefill.due_dates ?? []
       update('due_dates', mapDueDatesToPayload(prefill.due_dates))
 
@@ -812,6 +821,7 @@
     legalEntityBankSnapshotImport.reset()
     commercialTermsVatCode = undefined
     prefillTotals = null
+    prefillVatSummary = []
     prefillDueDates = []
 
     // Clear items first — bypasses the per-row remove-button gating so
@@ -1029,7 +1039,7 @@
 
             {#if displayTotals}
               <div class="flex flex-col items-end gap-6 pr-12">
-                <VatSummaryTable rows={record?.vat_summary} currencyCode={displayCurrency} class="w-full max-w-md" />
+                <VatSummaryTable rows={displayVatSummary} currencyCode={displayCurrency} class="w-full max-w-md" />
 
                 <StackedAmountValues
                   title={m.total()}

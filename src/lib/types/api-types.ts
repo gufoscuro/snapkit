@@ -1723,6 +1723,8 @@ export type InvoicePrefill = {
     tax: number
     total: number
   }
+  /** Server-computed VAT breakdown ("riepilogo IVA"), one row per rate bucket. */
+  vat_summary?: VatSummaryEntry[]
   due_dates: InvoicePrefillDueDate[]
 }
 
