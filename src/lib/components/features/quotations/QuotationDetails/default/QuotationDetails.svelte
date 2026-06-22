@@ -448,7 +448,18 @@
               defaultVatCode={commercialTermsVatCode}
               defaultDiscountPercent={commercialTermsDiscount}
               defaultDeliveryDate={formAPI?.values?.requested_delivery_date} />
+          {/snippet}
+        </GroupTitle>
 
+        <Separator />
+
+        <!-- Totals — VAT breakdown + document totals -->
+        <GroupTitle heading={m.quotation_totals_section()}>
+          {#snippet description()}
+            {m.quotation_totals_section_description()}
+          {/snippet}
+
+          {#snippet content()}
             {@const currencyCode = formAPI.values.currency}
             <div class="flex flex-col items-end gap-6 pr-14">
               <VatSummaryTable rows={record?.vat_summary} {currencyCode} class="w-full max-w-md" />

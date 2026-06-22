@@ -1036,8 +1036,19 @@
               lockStructure={!!record}
               isItemLocked={line => !!line.transport_document_item_id || !!line.sales_order_item_id}
               refreshKey={record?.version ?? prefillResetCounter} />
+          {/snippet}
+        </GroupTitle>
 
-            {#if displayTotals}
+        {#if displayTotals}
+          <Separator />
+
+          <!-- Totals — VAT breakdown + document totals (display-only, server-computed) -->
+          <GroupTitle heading={m.invoice_totals_section()}>
+            {#snippet description()}
+              {m.invoice_totals_section_description()}
+            {/snippet}
+
+            {#snippet content()}
               <div class="flex flex-col items-end gap-6 pr-12">
                 <VatSummaryTable rows={displayVatSummary} currencyCode={displayCurrency} class="w-full max-w-md" />
 
@@ -1054,9 +1065,9 @@
                     },
                   ]} />
               </div>
-            {/if}
-          {/snippet}
-        </GroupTitle>
+            {/snippet}
+          </GroupTitle>
+        {/if}
 
         <Separator />
 
