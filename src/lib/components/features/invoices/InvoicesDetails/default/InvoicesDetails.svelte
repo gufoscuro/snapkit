@@ -1033,7 +1033,7 @@
               required={!record}
               currency={(formAPI.values.currency as string) ?? DEFAULT_CURRENCY_CODE}
               defaultVatCode={commercialTermsVatCode}
-              lockStructure={!!record}
+              lockStructure={isReadOnly}
               isItemLocked={line => !!line.transport_document_item_id || !!line.sales_order_item_id}
               refreshKey={record?.version ?? prefillResetCounter} />
           {/snippet}
