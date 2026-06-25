@@ -653,7 +653,9 @@
   "sales_order_reference": "Rif. ordine {documentNumber} del {date}",
   "sales_order_reference_with_customer_po": "Rif. ordine {documentNumber} del {date} - \n\n Rif. vs ordine: {customerPo} del {customerPoDate}",
   "invoice_reference_order": "Rif. Vs ordine: {documentNumber} del {date}",
+  "invoice_reference_order_no_date": "Rif. Vs ordine: {documentNumber}",
   "invoice_reference_transport_document": "Rif. Ns DDT {documentNumber} del {date}",
+  "invoice_reference_transport_document_no_date": "Rif. Ns DDT {documentNumber}",
   "quotation": "Preventivo",
   "new_quotation": "Nuovo preventivo",
   "quotations": "Preventivi",
@@ -966,6 +968,7 @@
   "invoice_line_items_description": "Articoli, descrizioni, prezzi e IVA.",
   "invoice_totals_section": "Totali",
   "invoice_totals_section_description": "Riepilogo IVA e totali del documento.",
+  "invoice_totals_computed_on_save": "I totali verranno calcolati dal sistema al salvataggio del documento.",
   "invoice_notes_section": "Note",
   "invoice_notes_section_description": "Note interne ed esterne.",
   "invoice_payments_section": "Pagamenti",
@@ -1008,5 +1011,6 @@
   "due_date": "Scadenza",
   "invoice_due_dates": "Scadenze",
   "invoice_due_dates_total": "Totale programmato",
+  "invoice_due_dates_term_changed_notice": "Le scadenze verranno ricalcolate dal sistema al salvataggio del documento.",
   "validation_due_dates_total_mismatch": "Le scadenze devono corrispondere al totale della fattura ({total})."
 }

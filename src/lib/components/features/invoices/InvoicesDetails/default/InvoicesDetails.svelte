@@ -41,7 +41,7 @@
   import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
-  import { v } from '$components/core/form/validation'
+  import { v, type FieldValidator } from '$components/core/form/validation'
   import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
   import VatSummaryTable from '$components/core/VatSummaryTable.svelte'
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
@@ -97,11 +97,6 @@
   } from '$lib/utils/enum-labels'
   import type { BasicOption } from '$lib/utils/generics'
   import { generateId } from '$lib/utils/id'
-  import {
-    compositionFromSnapshot,
-    toCompositionPayload,
-    type PaymentCompositionSnapshotRow,
-  } from '$lib/utils/payment-composition'
   import { api, apiDownload, apiRequest } from '$lib/utils/request'
   import { createRoute } from '$lib/utils/route-builder'
   import { extractSnapshotString, type SnapshotShape } from '$lib/utils/snapshots'
@@ -114,6 +109,7 @@
   import { tick } from 'svelte'
   import { toast } from 'svelte-sonner'
   import { fly } from 'svelte/transition'
+  import ImportDateRange from './ImportDateRange.svelte'
   import { InvoicesDetailsContract } from './InvoicesDetails.contract.js'
 
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
@@ -249,23 +245,25 @@
       document_date: data.document_date,
       document_type: data.document_type,
       customer_id: data.customer_id,
-      sales_order_id: (data.sales_order_id as string) || undefined,
-      // An invoice bills exactly one composition slice — assemble the single-row
-      // `composition[]` the API expects from the flat slice form fields.
-      composition: toCompositionPayload([
-        {
-          position: (data.slice_position as number) ?? 1,
-          percentage: (data.composition_percentage as number) ?? 100,
-          type: (data.slice_type as PaymentSliceType) ?? 'saldo',
-          payment_term_id: (data.payment_term_id as string) ?? '',
-        },
-      ]),
+      // A cumulative invoice bills several orders/DDTs — the header can't point to a
+      // single one, so it's nulled and every line stays traced by its own
+      // `sales_order_item_id` (otherwise the create rejects the other orders' lines).
+      sales_order_id: isCumulative ? null : (data.sales_order_id as string) || undefined,
+      // Flat slice pointer (payment gate) + the standalone payment term that drives
+      // server-side due-date regeneration. The invoice carries no payment composition.
+      // `payment_slice_position` is `null` for Saldo (DDT / direct) — echoed as-is.
+      payment_slice_type: (data.slice_type as PaymentSliceType) || undefined,
+      payment_slice_position: (data.slice_position ?? null) as number | null,
+      payment_term_id: (data.payment_term_id as string) || undefined,
       legal_entity_bank_id: (data.legal_entity_bank_id as string) || undefined,
       currency: data.currency,
       notes_internal: data.notes_internal,
       notes_external: data.notes_external,
       items: mapItemsToInvoicePayload((data.items as QuotationLineItem[] | undefined) ?? []),
-      due_dates: mapDueDatesToPayload(data.due_dates as InvoiceDueDateInput[] | undefined),
+      // Send an empty schedule whenever it's server-managed (term changed, or a
+      // cumulative invoice) so the backend regenerates it from the shared term on
+      // the combined total (see business-logic → Invoice → Payment due dates).
+      due_dates: dueDatesServerManaged ? [] : mapDueDatesToPayload(data.due_dates as InvoiceDueDateInput[] | undefined),
     }
   }
 
@@ -318,6 +316,10 @@
   // Server-computed VAT breakdown captured from the prefill response. Display-only,
   // cleared by `clearPrefill`. Mirrors `record.vat_summary` in edit mode.
   let prefillVatSummary = $state<VatSummaryEntry[]>([])
+  // The payment term the prefilled schedule was computed against. The schedule is
+  // only directly editable while the selected term still matches this baseline —
+  // see `paymentTermMismatch`. Cleared by `clearPrefill`.
+  let prefillPaymentTermId = $state<string | null>(null)
 
   const displayTotals = $derived.by<{ net: number; tax: number; total: number } | null>(() => {
     if (record) return { net: record.total_net, tax: record.total_tax, total: record.total_amount }
@@ -390,10 +392,10 @@
     document_type: InvoiceDocumentType
     customer_id: string
     sales_order_id: string
-    // Single composition slice this invoice bills (assembled into `composition[]` on submit).
+    // Lean slice pointer this invoice realizes (sent flat as `payment_slice_*` on save).
+    // `slice_position` is null for Saldo invoices (DDT / direct).
     slice_type: PaymentSliceType
-    slice_position: number
-    composition_percentage: number
+    slice_position: number | null
     payment_term_id: string
     legal_entity_bank_id: string
     currency: Currency
@@ -404,33 +406,13 @@
     due_dates: InvoiceDueDateInput[]
   }
 
-  /**
-   * Flatten a record's single-row `payment_composition_snapshot` into the slice
-   * form fields. Falls back to a standalone `saldo @ 100%` slice when empty.
-   */
-  function sliceFormFields(snapshot: unknown): {
-    slice_type: PaymentSliceType
-    slice_position: number
-    composition_percentage: number
-    payment_term_id: string
-  } {
-    const row = compositionFromSnapshot(snapshot as PaymentCompositionSnapshotRow[] | undefined)[0]
-    return {
-      slice_type: (row?.type ?? 'saldo') as PaymentSliceType,
-      slice_position: row?.position ?? 1,
-      composition_percentage: row?.percentage ?? 100,
-      payment_term_id: row?.payment_term_id ?? '',
-    }
-  }
-
   const initialValues = $derived.by<InvoiceFormValues>(() => ({
     document_date: new Date().toISOString(),
     document_type: 'TD01' as InvoiceDocumentType,
     customer_id: '',
     sales_order_id: '',
     slice_type: 'saldo' as PaymentSliceType,
-    slice_position: 1,
-    composition_percentage: 100,
+    slice_position: null,
     payment_term_id: '',
     legal_entity_bank_id: '',
     currency: DEFAULT_CURRENCY_CODE as Currency,
@@ -443,23 +425,30 @@
           ...record,
           items: mapItemsToEditorShape(record.items),
           due_dates: mapDueDatesToPayload(record.due_dates),
-          // `...record` has no flat slice fields — derive them from the snapshot (wins over the spread).
-          ...sliceFormFields(record.payment_composition_snapshot),
+          // Map the record's flat slice pointer onto the form field names.
+          slice_type: (record.payment_slice_type ?? 'saldo') as PaymentSliceType,
+          slice_position: record.payment_slice_position ?? null,
+          payment_term_id: record.payment_term_id ?? '',
         }
       : {}),
   }))
 
   // The scheduled due-date amounts must add up to the invoice total. The total is
   // server-computed (not a form field), so the validator reads it lazily from
-  // `displayTotals` at validation time. Applied to both create and update.
-  const validateDueDatesTotal = dueDatesMatchTotal<Partial<InvoiceFormValues>>(() => displayTotals?.total)
+  // `displayTotals` at validation time. Skipped while the payment term diverges
+  // from the baseline — the schedule is then cleared and the backend regenerates
+  // it on save, so there's nothing to balance. Applied to both create and update.
+  const dueDatesTotalRule = dueDatesMatchTotal<Partial<InvoiceFormValues>>(() => displayTotals?.total)
+  const validateDueDatesTotal: FieldValidator<Partial<InvoiceFormValues>> = (value, values) =>
+    dueDatesServerManaged ? undefined : dueDatesTotalRule(value, values)
 
+  // Payment term is no longer mandatory — an invoice may save without one (the
+  // server simply skips due-date generation).
   const validateCreate = v
     .schema<Partial<InvoiceFormValues>>({
       document_date: [v.required({ field: m.document_date() })],
       document_type: [v.required({ field: m.document_type() })],
       customer_id: [v.required({ field: m.customer() })],
-      payment_term_id: [v.required({ field: m.payment_term() })],
       currency: [v.required({ field: m.currency() })],
       due_dates: [validateDueDatesTotal],
     })
@@ -510,19 +499,44 @@
     }
   })
 
-  // The billed slice from the loaded record's composition snapshot — source of the
-  // payment-term name/id in edit mode (replaces the old flat payment_term snapshot).
-  const recordCompositionRow = $derived(
-    record
-      ? compositionFromSnapshot(record.payment_composition_snapshot as PaymentCompositionSnapshotRow[] | undefined)[0]
-      : undefined,
-  )
+  // Neither the prefill nor the saved invoice ships a payment-term snapshot — only
+  // the id. We fetch the term once per id (edit load / prefill) so the selector can
+  // render its name without the user having to open the dropdown. The fetched term
+  // lands in `paymentTermSnapshotImport`, consumed by `paymentTermAttr` below.
+  let paymentTermSnapshotFetchedId: string | undefined
+  async function ensurePaymentTermSnapshot(id: string | undefined): Promise<void> {
+    if (!id || !legalEntityId) return
+    if (paymentTermSnapshotFetchedId === id) return
+    paymentTermSnapshotFetchedId = id
+    const { data } = await api.safe.get<PaymentTerm>(`/legal-entities/${legalEntityId}/payment-terms/${id}`)
+    if (data && paymentTermSnapshotFetchedId === id) {
+      paymentTermSnapshotImport.value = data as unknown as SnapshotShape
+    }
+  }
+
+  // Resolve the saved invoice's payment term for display on edit-mode load.
+  $effect(() => {
+    if (record?.payment_term_id) ensurePaymentTermSnapshot(record.payment_term_id)
+  })
 
   const paymentTermAttr = $derived.by<PaymentTerm | undefined>(() => {
-    const s = resolveSelectorSnapshot(recordCompositionRow?.payment_term, paymentTermSnapshotImport.value)
-    const id = recordCompositionRow?.payment_term_id || (formApi?.values.payment_term_id as string | undefined)
-    if (!id || !s) return undefined
-    return { id, name: (s.name as string) ?? '' } as unknown as PaymentTerm
+    const s = resolveSelectorSnapshot(undefined, paymentTermSnapshotImport.value)
+    const id = record?.payment_term_id || (formApi?.values.payment_term_id as string | undefined)
+    if (!id || !s || s.id !== id) return undefined
+    return { id, name: (s.name as string) ?? '', code: (s.code as string) ?? '' } as unknown as PaymentTerm
+  })
+
+  // Baseline payment term the due-date schedule was generated against: the saved
+  // invoice's term in edit mode, the prefill's term in create mode.
+  const baselinePaymentTermId = $derived<string | null>(record ? record.payment_term_id || null : prefillPaymentTermId)
+
+  // True once a baseline exists (prefill done / editing a draft) and the user has
+  // picked a different payment term. While true the due-date editor is hidden and
+  // the schedule is sent empty so the backend regenerates it on save.
+  const paymentTermMismatch = $derived.by<boolean>(() => {
+    if (baselinePaymentTermId == null) return false
+    const selected = (formApi?.values.payment_term_id as string | undefined) ?? ''
+    return selected !== baselinePaymentTermId
   })
 
   const legalEntityBankAttr = $derived.by<LegalEntityBank | undefined>(() => {
@@ -584,6 +598,8 @@
     if (!legalEntityId) return []
     const queryParams: Record<string, string> = { per_page: '200' }
     if (search) queryParams.search = search
+    if (importDateFrom) queryParams.date_from = importDateFrom
+    if (importDateTo) queryParams.date_to = importDateTo
     const response = await apiRequest<{ data: InvoiceableDocument[] }>({
       url: `/legal-entities/${legalEntityId}/invoiceable-documents`,
       method: 'GET',
@@ -627,11 +643,14 @@
       return {
         type: 'item',
         item_id: line.item_id,
+        // The prefill ships the article code flat (no item snapshot) — wrap it in a
+        // minimal snapshot so locked lines render the code like saved invoices do.
+        item_snapshot: line.code ? { code: line.code, name: line.description } : undefined,
         description: line.description,
         quantity: line.quantity,
         uom: line.unit_of_measure,
         unit_price: line.unit_price,
-        discount_percent: line.discount_percentage,
+        discount_percent: line.discount_percentage ?? undefined,
         vat_code_id: line.vat_code_id,
         vat_code_snapshot: buildVatCodeSnapshot(line.vat_code_id),
         sales_order_item_id: line.sales_order_item_id,
@@ -641,104 +660,120 @@
   }
 
   /**
-   * Partition the prefilled editor lines by their source document (order and/or
-   * transport document) and prepend a `descriptive` reference header to each
-   * group (e.g. "Rif. Vs ordine: PO-… del … - Rif. Ns DDT DDT-… del …"). The
-   * source link is read from `source_references`, whose `line_positions` are
-   * 1-based indices into the original `prefill.items` array — so this must run on
-   * the mapped items in their original order, before any header is inserted.
-   * Groups preserve first-seen order; lines with no matching source fall into an
-   * unreferenced group (no header). The header itself carries no link id, so it
-   * stays user-editable/removable and isn't treated as a locked imported line.
+   * Build the `descriptive` reference header for a prefill line's `source_reference`
+   * (e.g. "Rif. Vs ordine: SO-… del … - Rif. Ns DDT DDT-… del …"). Each part is
+   * dropped when its document is absent, and falls back to the date-less copy when
+   * the source ships no date. Returns "" when the line cites neither.
    */
-  function buildPrefilledItemGroups(
-    items: QuotationLineItem[],
-    sourceRefs: InvoicePrefill['source_references'],
-  ): QuotationLineItem[][] {
-    const orders = sourceRefs?.orders ?? []
-    const transportDocuments = sourceRefs?.transport_documents ?? []
-
-    const groups = new Map<string, { ref: string; items: QuotationLineItem[] }>()
-
-    items.forEach((item, index) => {
-      const position = index + 1
-      const orderRef = orders.find(o => o.line_positions.includes(position))
-      const ddtRef = transportDocuments.find(t => t.line_positions.includes(position))
-      const key = `${orderRef?.sales_order_id ?? ''}|${ddtRef?.transport_document_id ?? ''}`
-
-      let group = groups.get(key)
-      if (!group) {
-        const parts: string[] = []
-        if (orderRef) {
-          parts.push(
-            m.invoice_reference_order({
-              documentNumber: orderRef.number,
-              date: new Date(orderRef.date).toLocaleDateString(),
-            }),
-          )
-        }
-        if (ddtRef) {
-          parts.push(
-            m.invoice_reference_transport_document({
-              documentNumber: ddtRef.number,
-              date: new Date(ddtRef.date).toLocaleDateString(),
-            }),
-          )
-        }
-        group = { ref: parts.join(' - '), items: [] }
-        groups.set(key, group)
-      }
-      group.items.push(item)
-    })
-
-    return Array.from(groups.values()).map(g =>
-      g.ref ? [{ type: 'descriptive' as const, description: g.ref }, ...g.items] : g.items,
-    )
+  function buildReferenceHeader(ref: InvoiceItemInput['source_reference']): string {
+    const parts: string[] = []
+    const order = ref?.order
+    if (order?.number) {
+      parts.push(
+        order.date
+          ? m.invoice_reference_order({ documentNumber: order.number, date: new Date(order.date).toLocaleDateString() })
+          : m.invoice_reference_order_no_date({ documentNumber: order.number }),
+      )
+    }
+    const td = ref?.transport_document
+    if (td?.number) {
+      parts.push(
+        td.date
+          ? m.invoice_reference_transport_document({
+              documentNumber: td.number,
+              date: new Date(td.date).toLocaleDateString(),
+            })
+          : m.invoice_reference_transport_document_no_date({ documentNumber: td.number }),
+      )
+    }
+    return parts.join(' - ')
   }
 
   /**
-   * Run the full prefill workflow from a source (type + slice):
-   * - GET /invoices/prefill (header + lines + totals). `slice_position` is
-   *   required for slice-addressed sources (`order_acconto` / `order_sal`) and
-   *   must be omitted for the Saldo-bearing ones.
-   * - In parallel, GET the entity records to populate the selector snapshots
-   *   (no `attr` round-trip on first paint).
-   * - Populate the form fields (including the single billed composition slice),
-   *   fetch commercial terms (for default VAT), and append the line items.
+   * Partition the prefilled lines into consecutive runs by their per-line
+   * `source_reference`, prepending a `descriptive` reference header whenever the
+   * `(order number, DDT number)` key changes from the previous line (walking the
+   * lines top-to-bottom, in the order the backend returned them). A run with no
+   * order/DDT (e.g. a scomputo charge) gets no header. The header carries no link
+   * id, so it stays user-editable/removable and isn't treated as a locked line.
+   * `rawItems` and `editorItems` are parallel arrays (same index = same line).
    */
-  async function applyPrefillFromSource(sourceType: InvoiceableDocumentType, sourceId: string, slicePosition?: number) {
-    if (!legalEntityId || !formApi || !itemsEditorRef) return
+  function buildPrefilledItemGroups(
+    rawItems: InvoiceItemInput[],
+    editorItems: QuotationLineItem[],
+  ): QuotationLineItem[][] {
+    const groups: QuotationLineItem[][] = []
+    let currentKey: string | null = null
+    let current: QuotationLineItem[] | null = null
 
-    // Re-import: wipe the previous prefill before fetching the new one so the
-    // items editor and header fields don't accumulate stale data.
-    if (prefilledMode) clearPrefill()
+    editorItems.forEach((item, index) => {
+      const ref = rawItems[index]?.source_reference
+      const key = `${ref?.order?.number ?? ''}|${ref?.transport_document?.number ?? ''}`
 
-    const job = (async () => {
-      // `slice_position` addresses the specific unpaid slice for Acconto/SAL
-      // sources; it must be omitted for the Saldo-bearing sources (one prefill each).
-      const queryParams: Record<string, string> = { source_type: sourceType, source_id: sourceId }
-      if ((sourceType === 'order_acconto' || sourceType === 'order_sal') && slicePosition != null) {
-        queryParams.slice_position = String(slicePosition)
+      if (key !== currentKey) {
+        currentKey = key
+        current = []
+        groups.push(current)
+        const header = buildReferenceHeader(ref)
+        if (header) current.push({ type: 'descriptive', description: header })
       }
+      current!.push(item)
+    })
 
-      // VAT codes are needed to render labels on prefilled item/charge lines;
-      // fetched in parallel with the prefill (no-op if already cached).
-      const [prefill] = await Promise.all([
-        apiRequest<InvoicePrefill>({
-          url: `/legal-entities/${legalEntityId}/invoices/prefill`,
-          method: 'GET',
-          queryParams,
-        }),
-        ensureVatCodesLoaded(),
-      ])
+    return groups
+  }
 
+  /**
+   * Prefill the form from a single invoiceable source and ACCUMULATE its lines:
+   * - GET /invoices/prefill (header + lines + totals). `slice_position` is required
+   *   for slice-addressed sources (`order_acconto` / `order_sal`) and omitted for the
+   *   Saldo-bearing ones.
+   * - The FIRST imported source (form still empty) fills the header, slice pointer,
+   *   payment term, totals and the suggested schedule; subsequent compatible sources
+   *   only append their line groups. This composes the cumulative invoice (fattura
+   *   riepilogativa) entirely on the FE — the merged schedule is regenerated by the
+   *   backend on save from the shared term (we POST empty `due_dates[]`).
+   * Deduplicates by source id. Returns the number of line items appended.
+   */
+  async function prefillSource(
+    sourceType: InvoiceableDocumentType,
+    sourceId: string,
+    slicePosition?: number,
+  ): Promise<number> {
+    if (!legalEntityId || !formApi || !itemsEditorRef) return 0
+    // Skip a source already merged (e.g. re-picked in the menu).
+    if (prefilledSources.some(s => s.id === sourceId)) return 0
+
+    // The first imported source fills the header; later ones only append lines.
+    const fillHeader = prefilledSources.length === 0
+
+    // `slice_position` addresses the specific unpaid slice for Acconto/SAL sources;
+    // it must be omitted for the Saldo-bearing sources (one prefill each).
+    const queryParams: Record<string, string> = { source_type: sourceType, source_id: sourceId }
+    if ((sourceType === 'order_acconto' || sourceType === 'order_sal') && slicePosition != null) {
+      queryParams.slice_position = String(slicePosition)
+    }
+
+    // VAT codes are needed to render labels on prefilled item/charge lines;
+    // fetched in parallel with the prefill (no-op if already cached).
+    const [prefill] = await Promise.all([
+      apiRequest<InvoicePrefill>({
+        url: `/legal-entities/${legalEntityId}/invoices/prefill`,
+        method: 'GET',
+        queryParams,
+      }),
+      ensureVatCodesLoaded(),
+    ])
+
+    const update = formApi.updateField as FormFieldUpdater
+
+    if (fillHeader) {
       // The prefill response ships the resolved entity objects (`customer`,
       // `legal_entity_bank`) inline — no per-entity GETs needed.
       if (prefill.customer) customerSnapshotImport.value = prefill.customer as unknown as SnapshotShape
       if (prefill.legal_entity_bank)
         legalEntityBankSnapshotImport.value = prefill.legal_entity_bank as unknown as SnapshotShape
 
-      const update = formApi!.updateField as FormFieldUpdater
       if (prefill.document_date) update('document_date', prefill.document_date)
       if (prefill.document_type) update('document_type', prefill.document_type)
       if (prefill.customer_id) update('customer_id', prefill.customer_id)
@@ -748,67 +783,155 @@
       if (prefill.notes_internal) update('notes_internal', prefill.notes_internal)
       if (prefill.notes_external) update('notes_external', prefill.notes_external)
 
-      // Resolve the single composition slice this invoice bills (by position, then
-      // by type), and flatten it into the slice form fields + payment-term snapshot.
-      const slice =
-        prefill.payment_composition?.find(s => s.position === prefill.slice_position) ??
-        prefill.payment_composition?.find(s => s.type === prefill.slice_type) ??
-        prefill.payment_composition?.[0]
-      if (slice) {
-        if (slice.payment_term) paymentTermSnapshotImport.value = slice.payment_term as unknown as SnapshotShape
-        update('slice_type', slice.type)
-        update('slice_position', slice.position)
-        update('composition_percentage', slice.percentage)
-        update('payment_term_id', slice.payment_term_id)
-      } else {
-        if (prefill.slice_type) update('slice_type', prefill.slice_type)
-        update('slice_position', prefill.slice_position)
-      }
+      // Flat slice pointer + standalone payment term echoed by the prefill.
+      // `payment_slice_position` is null for Saldo (DDT / direct) — written through
+      // as-is so the payload echoes it. The term seeds the selector and becomes the
+      // baseline the due-date schedule is measured against (`paymentTermMismatch`).
+      if (prefill.payment_slice_type) update('slice_type', prefill.payment_slice_type)
+      update('slice_position', prefill.payment_slice_position)
+      update('payment_term_id', prefill.payment_term_id ?? '')
+      prefillPaymentTermId = prefill.payment_term_id || null
+      // The prefill ships only the term id (no snapshot) — fetch its name so the
+      // selector renders the preselected term without the user opening it.
+      if (prefill.payment_term_id) ensurePaymentTermSnapshot(prefill.payment_term_id)
 
       if (prefill.customer_id) await fetchCustomerCommercialTerms(prefill.customer_id)
 
-      const editorItems = mapPrefillItemsToEditorShape(prefill.items ?? [])
-      if (editorItems.length > 0) {
-        // Split the flat prefill lines into per-source groups, each led by a
-        // reference descriptive header, and append every group with its own
-        // `groupId` so the editor color-codes lines by source document.
-        for (const group of buildPrefilledItemGroups(editorItems, prefill.source_references)) {
-          itemsEditorRef!.addItems(group, { groupId: generateId() })
-        }
-      }
-
-      // Server-computed totals (display-only) and the suggested payment schedule.
-      // The schedule seeds the editable due-dates field so it submits even if untouched.
+      // Server-computed totals (display-only) and the suggested payment schedule of
+      // the FIRST source. For a single source these drive the totals panel and the
+      // editable schedule; once a second source is merged the invoice becomes
+      // cumulative and both are deferred to save (see `isCumulative`).
       prefillTotals = prefill.totals ?? null
       prefillVatSummary = prefill.vat_summary ?? []
       prefillDueDates = prefill.due_dates ?? []
       update('due_dates', mapDueDatesToPayload(prefill.due_dates))
+    }
 
-      prefilledMode = true
-      return { added: editorItems.length }
-    })()
+    const rawItems = prefill.items ?? []
+    const editorItems = mapPrefillItemsToEditorShape(rawItems)
+    if (editorItems.length > 0) {
+      // Split the source's lines into consecutive per-reference runs, each led by a
+      // reference descriptive header, and append every run with its own `groupId`
+      // so the editor color-codes lines by source document.
+      for (const group of buildPrefilledItemGroups(rawItems, editorItems)) {
+        itemsEditorRef.addItems(group, { groupId: generateId() })
+      }
+    }
 
+    prefilledSources = [...prefilledSources, { id: sourceId, type: sourceType }]
+    return editorItems.length
+  }
+
+  /** Single-source entry point (URL auto-prefill): prefill + accumulate, with a toast. */
+  async function applyPrefillFromSource(sourceType: InvoiceableDocumentType, sourceId: string, slicePosition?: number) {
+    const job = prefillSource(sourceType, sourceId, slicePosition).then(added => ({ added }))
     toast.promise(job, {
       loading: m.import_in_progress(),
       success: res => m.import_completed({ count: res.added }),
       error: () => m.import_failed(),
     })
-
     await job
   }
 
-  function handleImportInvoiceable(items: InvoiceableDocument[]) {
-    const [doc] = items
-    if (!doc) return
-    applyPrefillFromSource(doc.type, doc.source.id, doc.slice_position)
+  /**
+   * Multi-select import: prefill each picked invoiceable document in turn and
+   * accumulate the lines into a single invoice (cumulative-invoice flow). Sequential
+   * so the first source fills the header before the rest append onto it.
+   */
+  async function handleImportInvoiceable(selected: InvoiceableDocument[]) {
+    if (selected.length === 0) return
+    const job = (async () => {
+      let added = 0
+      for (const doc of selected) {
+        added += await prefillSource(doc.type, doc.source.id, doc.slice_position)
+      }
+      return { added }
+    })()
+    toast.promise(job, {
+      loading: m.import_in_progress(),
+      success: res => m.import_completed({ count: res.added }),
+      error: () => m.import_failed(),
+    })
+    await job
   }
 
-  // Tracks whether the form has been populated by a prefill workflow. Drives the
-  // visibility of the inline "Clear" button and the re-import reset behavior.
-  let prefilledMode = $state(false)
+  /**
+   * Compatibility key for the multi-select picker. DDTs (`order_saldo_from_transport`)
+   * sharing the same customer + Saldo payment term + suggested document type can be
+   * merged into one cumulative invoice. Every other type — and DDTs with no resolved
+   * Saldo term — get a unique key, so they can only ever be imported on their own.
+   */
+  // Saldo-type sources that can be merged into one cumulative invoice (riepilogativa):
+  // several DDTs, or several direct service orders. The two kinds never mix (TD24/25
+  // vs TD01). Acconto / SAL are single-slice and never accumulate.
+  function isAccumulableSourceType(type: InvoiceableDocumentType): boolean {
+    return type === 'order_saldo_from_transport' || type === 'order_saldo_direct'
+  }
+
+  function importCompatKey(doc: InvoiceableDocument): string {
+    if (isAccumulableSourceType(doc.type) && doc.payment_term_id) {
+      // Keyed by source kind too, so DDTs and direct orders never share an anchor.
+      return `${doc.type}|${doc.customer_id}|${doc.payment_term_id}|${doc.document_type ?? ''}`
+    }
+    return `SINGLE|${doc.source.id}`
+  }
+
+  /**
+   * Form-anchored lock: once the form already holds an imported source, only
+   * additional compatible DDTs may be added. Anything stacked onto a non-DDT source,
+   * or a DDT whose customer / term / document type differs from the form, is locked.
+   * Inactive while the form is still empty (the compat anchor handles the first
+   * multi-select session).
+   */
+  function isImportLocked(doc: InvoiceableDocument): boolean {
+    if (prefilledSources.length === 0) return false
+    // Accumulation is anchored to the first imported source's kind: only the same
+    // accumulable Saldo type may stack onto it (no DDT + direct-order mixing).
+    const anchorType = prefilledSources[0].type
+    if (!isAccumulableSourceType(anchorType)) return true
+    if (doc.type !== anchorType || !doc.payment_term_id) return true
+    return (
+      doc.customer_id !== formApi?.values.customer_id ||
+      doc.payment_term_id !== formApi?.values.payment_term_id ||
+      doc.document_type !== formApi?.values.document_type
+    )
+  }
+
+  // Invoiceable sources merged into this draft (one entry per imported DDT/slice).
+  // Drives the reset-button visibility, the cumulative-invoice state and the
+  // picker's compatibility lock.
+  let prefilledSources = $state<{ id: string; type: InvoiceableDocumentType }[]>([])
+  const prefilledMode = $derived(prefilledSources.length > 0)
+  // Cumulative invoice = more than one source merged. The totals/VAT panel and the
+  // due-date schedule are then deferred to save (the backend recomputes both from
+  // the combined lines + shared term), since per-source previews don't combine.
+  const isCumulative = $derived(prefilledSources.length > 1)
+
+  // The schedule is server-managed (editor hidden, POST empty `due_dates[]`, backend
+  // regenerates) when the term diverges from the baseline OR when the invoice is
+  // cumulative — the merged DDTs share one term and the schedule is sized on the
+  // combined total, which only the backend can compute.
+  const dueDatesServerManaged = $derived(paymentTermMismatch || isCumulative)
+
   // Forces the items editor to re-hydrate from the (now empty) form values on
   // clear. Bumped by `clearPrefill`; threaded through `refreshKey` below.
   let prefillResetCounter = $state(0)
+
+  // Picker date-range filter (`date_from` / `date_to`), seeded to the current month
+  // for end-of-month recap invoices. The user can widen it; the picker re-fetches
+  // on its next open. Detached from the form via the ImportDateRange island.
+  const initialImportMonth = browser ? monthBoundsIso(new Date()) : { from: '', to: '' }
+  let importDateFrom = $state(initialImportMonth.from)
+  let importDateTo = $state(initialImportMonth.to)
+
+  /** First and last calendar day of the given date's month, as `YYYY-MM-DD`. */
+  function monthBoundsIso(date: Date): { from: string; to: string } {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const from = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-01`
+    const last = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+    const to = `${last.getFullYear()}-${pad(last.getMonth() + 1)}-${pad(last.getDate())}`
+    return { from, to }
+  }
 
   /**
    * Reverts the form to its initial empty state — resets header fields, drops
@@ -818,11 +941,14 @@
   function clearPrefill() {
     customerSnapshotImport.reset()
     paymentTermSnapshotImport.reset()
+    paymentTermSnapshotFetchedId = undefined
     legalEntityBankSnapshotImport.reset()
     commercialTermsVatCode = undefined
     prefillTotals = null
     prefillVatSummary = []
     prefillDueDates = []
+    prefillPaymentTermId = null
+    prefilledSources = []
 
     // Clear items first — bypasses the per-row remove-button gating so
     // backend-locked rows (e.g. `charge`) are wiped just like the rest.
@@ -844,7 +970,6 @@
       }
     }
 
-    prefilledMode = false
     // Intentionally NOT resetting `autoPrefillTriggered`: that flag exists to
     // make the URL-driven auto-prefill a one-shot per mount. Toggling it back
     // here re-fires the auto-trigger $effect, and if the URL strip below
@@ -922,11 +1047,20 @@
             {/snippet}
 
             {#snippet content()}
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-end gap-2">
+                <!-- Scope the candidate DDTs to a period (defaults to the current month
+                     for end-of-month recap invoices); feeds date_from/date_to to the picker. -->
+                <ImportDateRange
+                  from={importDateFrom}
+                  to={importDateTo}
+                  onFromChange={v => (importDateFrom = v)}
+                  onToChange={v => (importDateTo = v)} />
+
                 <ImportMenu
-                  singleSelect
                   fetchFunction={fetchImportableInvoiceableDocuments}
                   optionMappingFunction={mapInvoiceableToOption}
+                  compatKey={importCompatKey}
+                  lockWhen={isImportLocked}
                   onimport={handleImportInvoiceable} />
 
                 {#if prefilledMode}
@@ -1039,7 +1173,24 @@
           {/snippet}
         </GroupTitle>
 
-        {#if displayTotals}
+        {#if isCumulative}
+          <Separator />
+
+          <!-- Cumulative invoice: per-source previews don't combine, so totals + VAT
+               are deferred to save (the backend recomputes them on the merged lines). -->
+          <GroupTitle heading={m.invoice_totals_section()}>
+            {#snippet description()}
+              {m.invoice_totals_section_description()}
+            {/snippet}
+
+            {#snippet content()}
+              <Alert.Root class="max-w-md lg:max-w-none">
+                <AlertCircleIcon />
+                <Alert.Description>{m.invoice_totals_computed_on_save()}</Alert.Description>
+              </Alert.Root>
+            {/snippet}
+          </GroupTitle>
+        {:else if displayTotals}
           <Separator />
 
           <!-- Totals — VAT breakdown + document totals (display-only, server-computed) -->
@@ -1078,12 +1229,21 @@
           {/snippet}
 
           {#snippet content()}
-            <InvoiceDueDatesEditor
-              name="due_dates"
-              showLabel={false}
-              value={dueDatesEditorValue}
-              currency={displayCurrency}
-              expectedTotal={displayTotals?.total} />
+            {#if dueDatesServerManaged}
+              <!-- Schedule is server-managed (term changed, or cumulative invoice): not
+                   editable here; the backend regenerates it from the shared term on save. -->
+              <Alert.Root class="max-w-md lg:max-w-none">
+                <AlertCircleIcon />
+                <Alert.Description>{m.invoice_due_dates_term_changed_notice()}</Alert.Description>
+              </Alert.Root>
+            {:else}
+              <InvoiceDueDatesEditor
+                name="due_dates"
+                showLabel={false}
+                value={dueDatesEditorValue}
+                currency={displayCurrency}
+                expectedTotal={displayTotals?.total} />
+            {/if}
           {/snippet}
         </GroupTitle>
 

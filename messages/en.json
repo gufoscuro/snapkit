@@ -651,7 +651,9 @@
   "sales_order_reference": "Sales order ref. {documentNumber} of {date}",
   "sales_order_reference_with_customer_po": "Sales order ref. {documentNumber} of {date} -\n\n Customer ref. {customerPo} of {customerPoDate}",
   "invoice_reference_order": "Your order ref. {documentNumber} of {date}",
+  "invoice_reference_order_no_date": "Your order ref. {documentNumber}",
   "invoice_reference_transport_document": "Our delivery note {documentNumber} of {date}",
+  "invoice_reference_transport_document_no_date": "Our delivery note {documentNumber}",
   "quotation": "Quotation",
   "new_quotation": "New quotation",
   "quotations": "Quotations",
@@ -964,6 +966,7 @@
   "invoice_line_items_description": "Items, descriptions, prices and VAT.",
   "invoice_totals_section": "Totals",
   "invoice_totals_section_description": "VAT breakdown and document totals.",
+  "invoice_totals_computed_on_save": "Totals will be calculated by the system when you save the document.",
   "invoice_notes_section": "Notes",
   "invoice_notes_section_description": "Internal and external notes.",
   "invoice_payments_section": "Payments",
@@ -1006,5 +1009,6 @@
   "due_date": "Due Date",
   "invoice_due_dates": "Due dates",
   "invoice_due_dates_total": "Scheduled total",
+  "invoice_due_dates_term_changed_notice": "The payment schedule will be recalculated by the system when you save the document.",
   "validation_due_dates_total_mismatch": "The payment schedule must add up to the invoice total ({total})."
 }

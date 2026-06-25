@@ -1524,6 +1524,14 @@ export type InvoiceableDocument = {
   slice_type: PaymentSliceType | null
   /** Position of the composition slice this row represents — passed to the prefill as `slice_position`. */
   slice_position: number
+  /**
+   * Cumulative-invoice compatibility key (exposed on every row). For a DDT it is the
+   * Saldo-slice payment term agreed across its source SOs — `null` when they disagree
+   * (the DDT would 422 at prefill) or there is no Saldo slice.
+   */
+  payment_term_id: string | null
+  /** Suggested FatturaPA document type (the other cumulative-invoice compatibility axis). */
+  document_type: InvoiceDocumentType | null
 }
 
 // ============================================================================
@@ -1634,8 +1642,18 @@ export type Invoice = {
   customer_snapshot: Record<string, unknown>[]
   sales_order_id: string
   legal_entity_snapshot: Record<string, unknown>[]
-  /** Read-only snapshot of the payment composition (the single slice this invoice bills). */
-  payment_composition_snapshot: Record<string, unknown>[]
+  /**
+   * Lean slice pointer echoed from the prefill — identifies which order slice this
+   * invoice realizes (for the payment gate). `null`/manual for a standalone invoice.
+   */
+  payment_slice_type: PaymentSliceType | null
+  /** `null` for Saldo invoices (DDT / direct), which can span multiple invoices. */
+  payment_slice_position: number | null
+  /**
+   * Standalone payment term (decoupled from the slice pointer) that drives
+   * server-side due-date regeneration when `due_dates` is sent empty.
+   */
+  payment_term_id: string
   legal_entity_bank_id: string
   legal_entity_bank_snapshot: Record<string, unknown>[]
   currency: Currency
@@ -1666,14 +1684,25 @@ export type Invoice = {
 export type InvoiceItemInput = {
   type: 'item' | 'charge' | 'descriptive'
   item_id?: string
+  /** Article catalog code, shipped flat by the prefill (used to render locked lines). */
+  code?: string
   description: string
   quantity?: number
   unit_of_measure?: UnitOfMeasure
   unit_price?: number
-  discount_percentage?: number
+  /** Line discount; the prefill may send `null` (no discount). */
+  discount_percentage?: number | null
   vat_code_id?: string
   sales_order_item_id?: string
   transport_document_item_id?: string
+  /**
+   * Per-line source citation used to build the "Rif. Vs ordine / Rif. Ns DDT"
+   * descriptive headers. `date` may be `null` (no date available).
+   */
+  source_reference?: {
+    order?: { sales_order_id?: string; number: string; date: string | null } | null
+    transport_document?: { transport_document_id?: string; number: string; date: string | null } | null
+  } | null
 }
 
 /**
@@ -1691,12 +1720,15 @@ export type InvoicePrefill = {
   /** Full customer record — `null` when the customer cannot be resolved. */
   customer: Customer | null
   sales_order_id: string
-  /** Full payment composition resolved from the source document (each slice with its `payment_term`). */
-  payment_composition: PaymentComposition[]
-  /** Type of the composition slice this invoice bills. `null` for a standalone/manual prefill. */
-  slice_type: PaymentSliceType | null
-  /** Position of the composition slice this invoice bills within the source composition. */
-  slice_position: number
+  /**
+   * Lean slice pointer echoed by the prefill — type of the source-order slice this
+   * invoice realizes. `null` for a standalone/manual prefill.
+   */
+  payment_slice_type: PaymentSliceType | null
+  /** Position of the source-order slice this invoice realizes. `null` for Saldo. */
+  payment_slice_position: number | null
+  /** Standalone payment term suggested by the prefill (drives server-side due-date generation). */
+  payment_term_id: string
   legal_entity_bank_id: string
   /** Full legal-entity bank — `null` when unset on the source. */
   legal_entity_bank: LegalEntityBank | null
