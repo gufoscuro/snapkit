@@ -239,13 +239,13 @@
     lastAppliedDefaultDiscount = discount
     const current = untrack(() => items)
     const followsDefault = (item: InternalLineItem) =>
-      !item.useDiscountAmount && !item.discount_amount && (!item.discount_percent || item.discount_percent === prevDefault)
+      !item.useDiscountAmount &&
+      !item.discount_amount &&
+      (!item.discount_percent || item.discount_percent === prevDefault)
     const needsUpdate = current.some(item => item.type === 'item' && followsDefault(item))
     if (!needsUpdate) return
     items = current.map(item =>
-      item.type === 'item' && followsDefault(item)
-        ? { ...item, discount_percent: discount, discount_amount: 0 }
-        : item,
+      item.type === 'item' && followsDefault(item) ? { ...item, discount_percent: discount, discount_amount: 0 } : item,
     )
     editableListFieldRef?.flush()
   })
@@ -521,7 +521,7 @@
         </div>
       {:else}
         <span class="min-w-0 flex-1 truncate text-sm">
-          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+          {item.item_snapshot?.name || item.description || item.item_snapshot?.code || m.item()}
         </span>
         <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
           <span class="w-20 text-right whitespace-nowrap">
@@ -565,7 +565,7 @@
         </div>
       {:else}
         <span class="min-w-0 flex-1 truncate text-sm">
-          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+          {item.item_snapshot?.name || item.description || item.item_snapshot?.code || m.item()}
         </span>
         <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
           <span class="w-20 text-right whitespace-nowrap">
@@ -635,11 +635,10 @@
       </div>
     {:else if itemIsLocked(item)}
       <!-- Locked item (e.g. linked to a transport document line). Only the
-           description is editable; quantity, unit_price and VAT code are shown
-           read-only. The product reference is intentionally omitted — the
-           description already labels the line, and the item_snapshot is not
-           always populated on prefilled lines. The row cannot be removed
-           (handled by `removeButton`). -->
+           description is editable; code, quantity, unit_price, discount and VAT
+           code are shown read-only. The code falls back to "—" when the line
+           carries no item snapshot (some prefilled lines). The row cannot be
+           removed (handled by `removeButton`). -->
       <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
         <div class="sm:col-span-2 lg:col-span-3">
           <TextField
@@ -654,16 +653,45 @@
         </div>
 
         <div class="flex flex-col justify-end">
+          <span class="block text-sm leading-6 font-medium">{m.code()}</span>
+          <div class="flex h-9 items-center">
+            {#if item.item_snapshot?.code}
+              <Tooltip.Root>
+                <Tooltip.Trigger class="max-w-64 cursor-default truncate text-sm text-muted-foreground">
+                  {item.item_snapshot.code}
+                </Tooltip.Trigger>
+                <Tooltip.Content>{item.item_snapshot.code}</Tooltip.Content>
+              </Tooltip.Root>
+            {:else}
+              <span class="text-muted-foreground">-</span>
+            {/if}
+          </div>
+        </div>
+
+        <div class="flex flex-col justify-end">
           <span class="block text-sm leading-6 font-medium">{m.quantity()}</span>
-          <div class="flex h-9 items-center text-sm tabular-nums text-muted-foreground">
+          <div class="flex h-9 items-center text-sm text-muted-foreground tabular-nums">
             {#if item.quantity !== undefined}{item.quantity} {item.uom ?? ''}{:else}-{/if}
           </div>
         </div>
 
         <div class="flex flex-col justify-end">
           <span class="block text-sm leading-6 font-medium">{m.unit_price()}</span>
-          <div class="flex h-9 items-center text-sm tabular-nums text-muted-foreground">
+          <div class="flex h-9 items-center text-sm text-muted-foreground tabular-nums">
             {#if item.unit_price !== undefined}{renderPrice(item.unit_price, currency)}{:else}-{/if}
+          </div>
+        </div>
+
+        <div class="flex flex-col justify-end">
+          <span class="block text-sm leading-6 font-medium">
+            {item.useDiscountAmount ? m.discount_amount() : m.discount_percent()}
+          </span>
+          <div class="flex h-9 items-center text-sm text-muted-foreground tabular-nums">
+            {#if item.useDiscountAmount && item.discount_amount}
+              {renderPrice(item.discount_amount, currency)}
+            {:else}
+              {item.discount_percent ?? 0}%
+            {/if}
           </div>
         </div>
 
