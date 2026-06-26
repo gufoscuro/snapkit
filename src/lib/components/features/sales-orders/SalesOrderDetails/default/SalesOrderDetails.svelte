@@ -481,7 +481,6 @@
       sales_transaction_type: [v.required({ field: m.sales_transaction_type() })],
       customer_id: [v.required({ field: m.customer() })],
       currency: [v.required({ field: m.currency_label() })],
-      incoterm: [v.required({ field: m.incoterm() })],
       composition: [compositionRules()],
     })
     .build()

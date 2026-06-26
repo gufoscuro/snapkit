@@ -363,7 +363,6 @@
     .schema<Partial<WarehouseOrder>>({
       sales_transaction_type: [v.required({ field: m.sales_transaction_type() })],
       customer_id: [v.required({ field: m.customer() })],
-      incoterm: [v.required({ field: m.incoterm() })],
       planned_ship_date: [v.required({ field: m.planned_ship_date() })],
     })
     .build()
