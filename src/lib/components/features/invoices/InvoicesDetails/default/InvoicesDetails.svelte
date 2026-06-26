@@ -598,8 +598,8 @@
     if (!legalEntityId) return []
     const queryParams: Record<string, string> = { per_page: '200' }
     if (search) queryParams.search = search
-    if (importDateFrom) queryParams.date_from = importDateFrom
-    if (importDateTo) queryParams.date_to = importDateTo
+    if (IMPORT_DATE_RANGE_ENABLED && importDateFrom) queryParams.date_from = importDateFrom
+    if (IMPORT_DATE_RANGE_ENABLED && importDateTo) queryParams.date_to = importDateTo
     const response = await apiRequest<{ data: InvoiceableDocument[] }>({
       url: `/legal-entities/${legalEntityId}/invoiceable-documents`,
       method: 'GET',
@@ -918,8 +918,11 @@
   let prefillResetCounter = $state(0)
 
   // Picker date-range filter (`date_from` / `date_to`), seeded to the current month
-  // for end-of-month recap invoices. The user can widen it; the picker re-fetches
-  // on its next open. Detached from the form via the ImportDateRange island.
+  // for end-of-month recap invoices. Detached from the form via the ImportDateRange
+  // island. Temporarily DISABLED: the selector is hidden and the params aren't sent
+  // (the picker lists all candidates). Flip the flag to re-enable — the seeding and
+  // wiring are kept ready.
+  const IMPORT_DATE_RANGE_ENABLED: boolean = false
   const initialImportMonth = browser ? monthBoundsIso(new Date()) : { from: '', to: '' }
   let importDateFrom = $state(initialImportMonth.from)
   let importDateTo = $state(initialImportMonth.to)
@@ -1048,13 +1051,15 @@
 
             {#snippet content()}
               <div class="flex flex-wrap items-end gap-2">
-                <!-- Scope the candidate DDTs to a period (defaults to the current month
-                     for end-of-month recap invoices); feeds date_from/date_to to the picker. -->
-                <ImportDateRange
-                  from={importDateFrom}
-                  to={importDateTo}
-                  onFromChange={v => (importDateFrom = v)}
-                  onToChange={v => (importDateTo = v)} />
+                {#if IMPORT_DATE_RANGE_ENABLED}
+                  <!-- Scope the candidate DDTs to a period (defaults to the current month
+                       for end-of-month recap invoices); feeds date_from/date_to to the picker. -->
+                  <ImportDateRange
+                    from={importDateFrom}
+                    to={importDateTo}
+                    onFromChange={v => (importDateFrom = v)}
+                    onToChange={v => (importDateTo = v)} />
+                {/if}
 
                 <ImportMenu
                   fetchFunction={fetchImportableInvoiceableDocuments}
