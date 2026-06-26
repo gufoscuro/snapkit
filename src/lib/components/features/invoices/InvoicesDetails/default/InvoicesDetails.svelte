@@ -526,6 +526,17 @@
     return { id, name: (s.name as string) ?? '', code: (s.code as string) ?? '' } as unknown as PaymentTerm
   })
 
+  // Sync the imported snapshot to the user's pick. The `PaymentTermSelector` is a
+  // controlled selector (its display follows `attr`), so without this `paymentTermAttr`
+  // would briefly resolve to `undefined` — the cached snapshot still points at the old
+  // term while the form value is already the new one — and the dropdown would reset to
+  // empty on every change.
+  function handlePaymentTermChoose(term: PaymentTerm): void {
+    if (!term?.id) return
+    paymentTermSnapshotFetchedId = term.id
+    paymentTermSnapshotImport.value = term as unknown as SnapshotShape
+  }
+
   // Baseline payment term the due-date schedule was generated against: the saved
   // invoice's term in edit mode, the prefill's term in create mode.
   const baselinePaymentTermId = $derived<string | null>(record ? record.payment_term_id || null : prefillPaymentTermId)
@@ -1145,7 +1156,11 @@
               items={sliceTypeItems}
               class={FormFieldClass.MaxWidth} />
 
-            <PaymentTermSelector name="payment_term_id" attr={paymentTermAttr} class={FormFieldClass.MaxWidth} />
+            <PaymentTermSelector
+              name="payment_term_id"
+              attr={paymentTermAttr}
+              onChoose={handlePaymentTermChoose}
+              class={FormFieldClass.MaxWidth} />
 
             <SelectField name="currency" label={m.currency()} items={currencyItems} class={FormFieldClass.MinWidth} />
 
