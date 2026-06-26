@@ -531,7 +531,6 @@
     ship_to_address_id: '',
     warehouse_id: '',
     carrier_id: '',
-    transport_reason: '',
     transport_method: null,
     shipping_date: '',
     shipping_time: '',
@@ -761,8 +760,6 @@
             <DateField name="shipping_date" label={m.shipping_date()} class={FormFieldClass.MaxWidth} />
 
             <TextField name="shipping_time" label={m.shipping_time()} class={FormFieldClass.MaxWidth} />
-
-            <TextField name="transport_reason" label={m.transport_reason()} class={FormFieldClass.MaxWidth} />
 
             <SelectField name="incoterm" label={m.incoterm()} items={incotermItems} class={FormFieldClass.MinWidth} />
 
