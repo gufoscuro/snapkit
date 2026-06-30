@@ -22,6 +22,42 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Extracts the best human-readable, already-localized message out of an error.
+ *
+ * The backend localizes error/validation messages server-side (resolved from the
+ * `Accept-Language` header we already send), so `error.data.message` is safe to
+ * surface directly to the user.
+ *
+ * - **422**: Laravel returns `{ message, errors: { field: [msg] } }`. The top-level
+ *   `message` is generic ("The given data was invalid"), so the concatenated field
+ *   messages are preferred when present.
+ * - **Other ApiError**: uses `data.message`, falling back to `error.message` (unless
+ *   it's the placeholder `'Request failed'`).
+ * - **Non-API errors**: uses `error.message` when available.
+ *
+ * Returns `undefined` when nothing meaningful can be extracted, so callers can fall
+ * back to a generic message of their own.
+ */
+export function extractApiErrorMessage(err: unknown): string | undefined {
+  if (err instanceof ApiError) {
+    const data = err.data as { message?: string; errors?: Record<string, unknown> } | null
+
+    if (err.status === 422 && data?.errors && typeof data.errors === 'object') {
+      const fieldMessages = Object.values(data.errors)
+        .flat()
+        .filter((msg): msg is string => typeof msg === 'string')
+      if (fieldMessages.length > 0) return fieldMessages.join('\n')
+    }
+
+    if (data?.message) return data.message
+    return err.message && err.message !== 'Request failed' ? err.message : undefined
+  }
+
+  if (err instanceof Error && err.message) return err.message
+  return undefined
+}
+
 export type ExtendedFetchOptions = RequestInit & {
   url: string
   data?: any

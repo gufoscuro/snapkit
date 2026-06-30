@@ -7,6 +7,7 @@
 -->
 <script lang="ts" module>
   import { toast } from 'svelte-sonner'
+  import { showActionErrorToast } from '$lib/utils/action-error-toast'
   import type { ButtonVariant } from '$lib/components/ui/button'
 
   class ConfirmActionDialogState {
@@ -47,9 +48,7 @@
       } catch (err) {
         console.error('Action failed:', err)
 
-        if (this.options.errorMessage) {
-          toast.error(this.options.errorMessage)
-        }
+        showActionErrorToast(this.options.errorMessage, err)
 
         this.options.onError?.(err)
       } finally {

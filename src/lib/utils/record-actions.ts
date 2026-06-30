@@ -2,6 +2,7 @@ import { toast } from 'svelte-sonner'
 import { confirmAction } from '$lib/components/ui/confirm-action-dialog'
 import { confirmArchive } from '$lib/components/ui/confirm-archive-dialog'
 import { api, apiRequest } from '$lib/utils/request'
+import { showActionErrorToast } from '$lib/utils/action-error-toast'
 import * as m from '$lib/paraglide/messages.js'
 import type { ButtonVariant } from '$lib/components/ui/button'
 import type { Component } from 'svelte'
@@ -98,9 +99,7 @@ export async function executeRecordAction<T extends RecordActionRequestOptions>(
 			console.error(`Action "${action.id}" failed:`, err)
 
 			const errorMsg = action.errorMessage ? resolveText(action.errorMessage, options, '') : undefined
-			if (errorMsg) {
-				toast.error(errorMsg)
-			}
+			showActionErrorToast(errorMsg, err)
 		}
 	}
 }

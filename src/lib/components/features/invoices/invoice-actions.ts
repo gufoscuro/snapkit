@@ -6,6 +6,7 @@ import {
   type RecordActionRequestOptions,
 } from '$lib/utils/record-actions'
 import { api, ApiError } from '$lib/utils/request'
+import { showActionErrorToast } from '$lib/utils/action-error-toast'
 import { toast } from 'svelte-sonner'
 
 export type InvoiceActionOptions = RecordActionRequestOptions & {
@@ -106,7 +107,7 @@ export function createInvoiceActions({
               return
             }
           }
-          toast.error(m.invoice_action_error())
+          showActionErrorToast(m.invoice_action_error(), err)
         }
       },
     },
