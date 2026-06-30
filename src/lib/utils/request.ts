@@ -176,14 +176,36 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
 }
 
 /**
+ * Extract the filename from a `Content-Disposition` response header. Handles
+ * both the RFC 5987 `filename*=UTF-8''...` form (percent-decoded) and the plain
+ * `filename="..."` form. Returns `undefined` when no filename is present.
+ */
+function filenameFromContentDisposition(header: string | null): string | undefined {
+  if (!header) return undefined
+  const utf8Match = header.match(/filename\*=(?:UTF-8'')?([^;]+)/i)
+  if (utf8Match) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim().replace(/^["']|["']$/g, ''))
+    } catch {
+      // fall through to the plain filename below
+    }
+  }
+  const plainMatch = header.match(/filename="?([^";]+)"?/i)
+  return plainMatch ? plainMatch[1].trim() : undefined
+}
+
+/**
  * Client-side API request that downloads a binary response (e.g. PDF) and
  * triggers a browser file-save dialog.
  *
  * Unlike apiRequest, this reads the response as a Blob instead of JSON.
+ *
+ * When `filename` is omitted, the name advertised by the backend via the
+ * `Content-Disposition` header is used, falling back to `'download'`.
  */
 export async function apiDownload(options: {
   url: string
-  filename: string
+  filename?: string
   redirectOnUnauthorized?: boolean
 }): Promise<void> {
   const { url, filename, redirectOnUnauthorized = true } = options
@@ -205,11 +227,14 @@ export async function apiDownload(options: {
     throw new ApiError('Download failed', result.status, null, result)
   }
 
+  const resolvedFilename =
+    filename || filenameFromContentDisposition(result.headers.get('Content-Disposition')) || 'download'
+
   const blob = await result.blob()
   const blobUrl = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = blobUrl
-  a.download = filename
+  a.download = resolvedFilename
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

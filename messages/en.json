@@ -992,6 +992,7 @@
   "invoice_archive": "Archive invoice",
   "invoice_validate": "Validate invoice",
   "invoice_xml_download": "Download XML",
+  "invoice_pdf_download": "Download PDF",
   "invoice_submitted_successfully": "Invoice submitted successfully.",
   "invoice_validated_successfully": "Invoice validated successfully.",
   "invoice_validation_valid": "Invoice valid",

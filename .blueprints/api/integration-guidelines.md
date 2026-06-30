@@ -99,6 +99,35 @@ const orders = await salesApi.get<OrderSummary[]>('/order');
 const order = await salesApi.get<OrderSummary>('/order/123');
 ```
 
+### Downloading Files (binary responses)
+
+Use `apiDownload` from `$lib/utils/request.ts` for endpoints that return a binary
+payload (PDF, XML, …) instead of JSON. It reads the response as a `Blob` and
+triggers the browser save dialog. Never hand-roll this with raw `fetch` — the
+utility already carries the base headers (locale + XSRF) and the 401 redirect.
+
+```typescript
+import { apiDownload } from '$lib/utils/request';
+
+// filename omitted → uses the name advertised by the backend via the
+// `Content-Disposition` header, falling back to `'download'`.
+await apiDownload({ url: `/legal-entities/${legalEntityId}/invoices/${id}/pdf` });
+
+// pass `filename` explicitly only to override the backend-provided name.
+await apiDownload({ url: `/.../invoices/${id}/xml`, filename: `${documentNumber}.xml` });
+```
+
+**`filename` resolution order:** explicit `filename` → `Content-Disposition`
+header → `'download'`. For the backend name to be readable cross-origin, the API
+gateway must expose the header via `Access-Control-Expose-Headers: Content-Disposition`;
+otherwise the download falls back to `'download'`.
+
+**In the UI**, wrap the call in `DownloadActionButton`
+(`$components/core/DownloadActionButton.svelte`) — it owns the busy/spinner state
+and the error toast, so the `onDownload` callback only needs to invoke
+`apiDownload`. Each button currently renders the same generic download icon, so
+differentiate concurrent download actions by `tooltip`.
+
 ### Error Handling
 
 Always handle loading and error states when fetching data:

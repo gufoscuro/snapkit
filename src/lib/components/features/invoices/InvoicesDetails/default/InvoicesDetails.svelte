@@ -16,6 +16,7 @@
   @api POST /api/legal-entities/{legalEntity}/invoices/{invoice}/transition
   @api POST /api/legal-entities/{legalEntity}/invoices/{invoice}/validate
   @api GET /api/legal-entities/{legalEntity}/invoices/{invoice}/xml
+  @api GET /api/legal-entities/{legalEntity}/invoices/{invoice}/pdf
   @route invoices, invoice-details
 -->
 <script lang="ts" module>
@@ -1302,12 +1303,21 @@
               <RecordActionMenu buttonVariant="outline" actions={invoiceActions} {actionOptions} />
             {/if}
 
+            <!-- TODO: collapse these into a single download button with a dropdown
+                 listing the available export formats (XML / PDF / …) once a third
+                 format lands or the bottom bar gets crowded. -->
             <DownloadActionButton
               tooltip={m.invoice_xml_download()}
               onDownload={() =>
                 apiDownload({
                   url: `/legal-entities/${legalEntityId}/invoices/${record.id}/xml`,
-                  filename: `${record.document_number}.xml`,
+                })} />
+
+            <DownloadActionButton
+              tooltip={m.invoice_pdf_download()}
+              onDownload={() =>
+                apiDownload({
+                  url: `/legal-entities/${legalEntityId}/invoices/${record.id}/pdf`,
                 })} />
 
             {#if record.state === 'draft'}

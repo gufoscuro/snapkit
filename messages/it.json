@@ -994,6 +994,7 @@
   "invoice_archive": "Archivia fattura",
   "invoice_validate": "Valida fattura",
   "invoice_xml_download": "Scarica XML",
+  "invoice_pdf_download": "Scarica PDF",
   "invoice_submitted_successfully": "Fattura inviata correttamente.",
   "invoice_validated_successfully": "Fattura validata correttamente.",
   "invoice_validation_valid": "Fattura valida",
