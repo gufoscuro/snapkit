@@ -12,6 +12,7 @@
   import * as Popover from '$components/ui/popover'
   import * as m from '$lib/paraglide/messages'
   import { getLocale } from '$lib/paraglide/runtime'
+  import { calendarDayParts } from '$lib/utils/date'
   import { joinClassnames } from '$utils/classnames'
   import { getUserMessagingClasses } from '$utils/form'
   import { CalendarDate, getLocalTimeZone, today, type DateValue } from '@internationalized/date'
@@ -99,14 +100,14 @@
     maxDaysFromNow !== undefined ? today(getLocalTimeZone()).add({ days: maxDaysFromNow }) : undefined,
   )
 
-  // Convert Date or ISO string to DateValue (using UTC to keep day stable across timezones)
+  // Convert a Date or ISO string to the calendar day it represents. String values
+  // are read by their literal date part (local day) so a local datetime near
+  // midnight isn't shifted by a UTC re-projection; see calendarDayParts.
   function toDateValue(value: Date | string | undefined): DateValue | undefined {
-    if (!value) return undefined
+    const parts = calendarDayParts(value)
+    if (!parts) return undefined
 
-    const date = value instanceof Date ? value : new Date(value)
-    if (isNaN(date.getTime())) return undefined
-
-    return new CalendarDate(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate())
+    return new CalendarDate(parts.year, parts.month, parts.day)
   }
 
   // Sync internal date value with form/prop value when it changes externally.

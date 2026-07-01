@@ -52,6 +52,7 @@
   import * as m from '$lib/paraglide/messages'
   import type { CustomerCommercialTerms, TransportDocument } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
+  import { todayLocalISO } from '$lib/utils/date'
   import {
     incotermLabels,
     salesTransactionTypeLabels,
@@ -525,7 +526,7 @@
 
   const initialValues = $derived.by(() => ({
     document_number: '',
-    document_date: new Date().toISOString(),
+    document_date: todayLocalISO(),
     sales_transaction_type: undefined,
     customer_id: '',
     ship_to_address_id: '',

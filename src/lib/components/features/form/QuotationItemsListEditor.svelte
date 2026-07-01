@@ -37,6 +37,7 @@
   import { UnitOfMeasures } from '$lib/config/uoms'
   import * as m from '$lib/paraglide/messages'
   import type { Item } from '$lib/types/api-types'
+  import { toLocalISOString } from '$lib/utils/date'
   import { generateId } from '$lib/utils/id'
   import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol, renderPrice } from '$utils/prices'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
@@ -159,15 +160,6 @@
   // (where the parent form context is still in scope) and pass it down explicitly.
   function getFieldError(idx: number, field: string): string | undefined {
     return form?.errors[`${name}.${idx}.${field}` as never] as string | undefined
-  }
-
-  /**
-   * Format a Date as a local ISO-like string (YYYY-MM-DDTHH:mm:ss.sss)
-   * to avoid UTC timezone shift (e.g. Apr 30 CET → Apr 29 22:00 UTC).
-   */
-  function toLocalISOString(date: Date): string {
-    const pad = (n: number, len = 2) => String(n).padStart(len, '0')
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`
   }
 
   function normalizeDateInput(value: Date | string | undefined): string {

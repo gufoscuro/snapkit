@@ -2,8 +2,6 @@
 
 Rules for serializing dates in forms and payloads. The core hazard is the **UTC day-shift**: `new Date().toISOString()` converts to UTC, so near midnight in a positive-offset timezone (CET/CEST) "today" rolls back to yesterday.
 
-> **Status (2026-07-02):** the shared util described below is the **target state** — it does **not exist yet**. This file doubles as the implementation spec for extracting it. Until the "Migration" checklist is done, `toLocalISOString` still lives privately inside `QuotationItemsListEditor.svelte` and the header defaults still use the buggy `new Date().toISOString()`. Delete this status note and the Migration section once the refactor lands.
-
 ---
 
 ## Rule: calendar-day fields never go through UTC
@@ -63,20 +61,6 @@ Cases to cover:
    ```
 3. **DST boundary sanity.** A date in CET (+01:00, winter) and one in CEST (+02:00, summer) both serialize to their local wall-clock day/time (no off-by-one across the DST change).
 4. **`todayLocalISO()` shape.** Matches `/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$/` and its date part equals the local `new Date()` day. (If asserting an exact value, mock the clock with `vi.setSystemTime(...)`.)
-
----
-
-## Migration checklist
-
-1. Create `src/lib/utils/date.ts` with `toLocalISOString` + `todayLocalISO` (code above).
-2. Create `src/lib/utils/date.unit.test.ts` with the cases above; ensure the file runs under a fixed TZ (`Europe/Rome`).
-3. Replace the buggy UTC defaults (4 sites) with `todayLocalISO()`:
-   - `src/lib/components/features/invoices/InvoicesDetails/default/InvoicesDetails.svelte` — `document_date`
-   - `src/lib/components/features/sales-orders/SalesOrderDetails/default/SalesOrderDetails.svelte` — `document_date`
-   - `src/lib/components/features/quotations/QuotationDetails/default/QuotationDetails.svelte` — `document_date` **and** `valid_from`
-4. In `src/lib/components/features/form/QuotationItemsListEditor.svelte`, delete the private `toLocalISOString` and import it from `$lib/utils/date` (the `SalesOrderItemsListEditor` wrapper needs no change — it reuses the same editor).
-5. Grep for any other `new Date().toISOString()` on a calendar-day field and convert it too.
-6. Rebuild blueprint embeddings and remove the Status note + this Migration section from this file.
 
 ---
 

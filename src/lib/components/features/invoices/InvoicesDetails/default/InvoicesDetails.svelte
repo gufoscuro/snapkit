@@ -90,6 +90,7 @@
     VatSummaryEntry,
   } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
+  import { todayLocalISO } from '$lib/utils/date'
   import {
     currencyLabels,
     invoiceDocumentTypeLabels,
@@ -410,7 +411,7 @@
   }
 
   const initialValues = $derived.by<InvoiceFormValues>(() => ({
-    document_date: new Date().toISOString(),
+    document_date: todayLocalISO(),
     document_type: 'TD01' as InvoiceDocumentType,
     customer_id: '',
     sales_order_id: '',
