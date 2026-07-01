@@ -8,6 +8,7 @@ vi.mock('$lib/paraglide/messages', () => ({
   validation_error_generic: () => 'Validation Error',
   common_error: () => 'Generic Error',
   custom_fields: () => 'Custom Fields',
+  custom_fields_description: () => 'Custom Fields Description',
 }))
 
 import FormUtil from './FormUtil.svelte'
