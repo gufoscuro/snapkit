@@ -504,6 +504,74 @@ When a resource exposes a state machine via a `/transition` endpoint, the backen
 - Labels, confirmation texts, and success messages must use Paraglide (`m.xxx()`)
 - For destructive operations (suspend, cease), use `confirmationVariant: { set: 'destructive' }`
 
+## Download Actions
+
+For downloading a record's exported files (PDF, XML, …) in the bottom bar. Both
+components own the busy/spinner state and the error toast, so the callback only
+invokes `apiDownload`. See **[API Integration → Downloading Files](../api/integration-guidelines.md)**
+for `apiDownload` itself (filename resolution, CORS caveat).
+
+### DownloadActionButton — single format
+
+Use when the record exposes **one** downloadable file. Renders a generic
+download icon; differentiate concurrent buttons by `tooltip`.
+
+**File:** `src/lib/components/core/DownloadActionButton.svelte`
+
+```svelte
+<DownloadActionButton
+  tooltip={m.invoice_xml_download()}
+  onDownload={() => apiDownload({ url: `/legal-entities/${leId}/invoices/${id}/xml` })} />
+```
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `onDownload` | `() => Promise<void>` | required | Async callback that performs the download |
+| `tooltip` | `string` | `m.download_pdf()` | Tooltip / aria-label |
+| `variant` | `ButtonVariant` | `'outline'` | Button variant |
+| `size` | `'sm' \| 'default' \| 'lg' \| 'icon'` | `'icon'` | Button size |
+
+### DownloadActionMenu — multiple formats
+
+Use when the same record can be exported in **more than one format**. Prefer this
+over stacking several `DownloadActionButton` — a single trigger button opens a
+dropdown of formats, with one shared busy state (the trigger spins while any item
+downloads).
+
+**File:** `src/lib/components/core/DownloadActionMenu.svelte`
+
+```svelte
+<DownloadActionMenu
+  tooltip={m.download_document()}
+  items={[
+    { id: 'xml', label: m.invoice_xml_download(), icon: FileCodeIcon,
+      onDownload: () => apiDownload({ url: `/legal-entities/${leId}/invoices/${id}/xml` }) },
+    { id: 'pdf', label: m.invoice_pdf_download(), icon: FileTextIcon,
+      onDownload: () => apiDownload({ url: `/legal-entities/${leId}/invoices/${id}/pdf` }) },
+  ]} />
+```
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `items` | `DownloadMenuItem[]` | required | Download actions listed in the dropdown |
+| `tooltip` | `string` | `m.download_document()` | Trigger tooltip / aria-label |
+| `label` | `string` | — | Optional dropdown header; omit for no header |
+| `align` | `'start' \| 'end'` | `'end'` | Dropdown alignment |
+| `variant` | `ButtonVariant` | `'outline'` | Trigger button variant |
+| `size` | `'sm' \| 'default' \| 'lg' \| 'icon'` | `'icon'` | Trigger button size |
+
+`DownloadMenuItem` is `{ id, label, icon?, disabled?, onDownload }` — the
+per-format `icon` (a Lucide component) is optional.
+
+### Best practices
+
+- Use `DownloadActionButton` for a single file, `DownloadActionMenu` for 2+ formats
+- Do **not** disable a menu item based on the shared busy flag — bits-ui cancels
+  the dropdown's close-on-select when an item goes disabled in the same tick.
+  Concurrent downloads are already blocked by the internal busy guard + the
+  disabled trigger. Only use `item.disabled` for domain conditions.
+- Labels and tooltips must use Paraglide (`m.xxx()`)
+
 ## Creating Selector Components
 
 Use the existing generic selector components:
