@@ -10,6 +10,7 @@ snapkit-content/
 │   └── overview.md       # All available MCP servers and their tools
 ├── components/           # Component development guidelines
 │   ├── development-guidelines.md  # Component creation, organization, testing rules
+│   ├── date-handling.md           # Date serialization rules (avoid UTC day-shift); shared $lib/utils/date helper
 │   ├── patterns.md                # Common component patterns (selectors, etc.)
 │   ├── state-sharing.md           # Sibling component state sharing architecture
 │   ├── forms.md                   # Form system with context API and validation
@@ -25,6 +26,10 @@ snapkit-content/
 ├── pages/                # Page architecture and CRUD patterns
 │   ├── crud-workflow.md           # End-to-end CRUD workflow (list + form + filters)
 │   └── fixed-pages.md            # Fixed pages (settings, admin) vs configurable pages
+├── domain-logic/         # Frontend-specific special cases per feature/view
+│   ├── invoices.md       # Invoice form/import/validation frontend quirks (the WHY behind special cases)
+│   ├── quotations.md     # Quotation form/state/validation frontend quirks (import source)
+│   └── sales-orders.md   # Sales order frontend quirks, incl. quotation-import flow
 ├── testing/              # Testing strategy and patterns
 │   └── strategy.md       # Test projects, mocking, what/how to test
 ├── api/                  # API integration guidelines
@@ -42,6 +47,7 @@ snapkit-content/
 ### Components
 
 - **development-guidelines.md**: Rules for creating, organizing, and documenting components. Covers file locations, composition patterns, and the decision flow for new components
+- **date-handling.md**: Date serialization rules for forms/payloads. Calendar-day fields (`document_date`, `valid_from/to`, delivery/due dates) must serialize from local components, never `toISOString()` (which day-shifts near midnight in CET/CEST). Specifies the shared `$lib/utils/date.ts` helper (`toLocalISOString`, `todayLocalISO`), its unit tests, and the migration checklist to extract it. **Contains a pending-implementation spec** (the util doesn't exist yet).
 - **patterns.md**: Specific patterns: record actions (RecordActionMenu, flag toggles, confirmAction), selector components, enum translations
 - **state-sharing.md**: Architecture for sharing state between sibling components using contracts and bindings. Covers PageState, useProvides/useConsumes hooks, and database-driven configuration
 - **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, and scaffolding examples
@@ -59,6 +65,14 @@ snapkit-content/
 
 - **crud-workflow.md**: End-to-end guide for building a CRUD (list, filters, detail form, archive). Covers the anatomy of a CRUD, step-by-step instructions, the difference between configurable and fixed pages, and i18n conventions
 - **fixed-pages.md**: Complete guide for creating fixed pages (settings, admin) that use file-based routing instead of the configurable page system. Covers layout structure, sidebar with fixed links, list/detail page patterns, `setSnippetBindings()` usage, custom `handleSuccess` for navigation, breadcrumbs, and the header pattern
+
+### Domain Logic
+
+This is a per-feature pattern: one file per view/feature that accumulates non-obvious **frontend** logic — the *why* behind special cases that look arbitrary in code. Frontend only, no backend business rules. Where behavior is shared across features (e.g. commercial-terms defaults, payment composition, line-item editor internals), the files cross-reference each other and the relevant `components/` blueprint instead of duplicating.
+
+- **invoices.md**: editability gating by state, cumulative-invoice merging, URL-driven prefill flow, payment-term/due-date schedule sync, line-item locking, SDI validation UX, status badges, filter quirks, chat-filter-tool gotchas.
+- **quotations.md**: the import *source*. Editability gating by `open` state, create-vs-edit validation, sales-transaction-type filtering, customer-driven defaults, composition remount, snapshot dual-shape (array/object), actions/badges, page-state lifecycle.
+- **sales-orders.md**: shares most of quotations' surface (cross-referenced, not duplicated); the sales-order-specific focus is the **quotation-import flow** (eligibility, composition-signature compatibility locking, header-from-first-record, importable-quantity clamping), fulfillment badge, and confirmation date.
 
 ### Testing
 
@@ -91,6 +105,9 @@ When updating guidelines:
 ## Semantic Search Examples
 
 - "How do I create a new component?" → `components/development-guidelines.md`
+- "How to serialize dates without a timezone shift?" → `components/date-handling.md`
+- "Why does document_date default use toISOString / how to fix it?" → `components/date-handling.md`
+- "Where is toLocalISOString / todayLocalISO?" → `components/date-handling.md`
 - "How to fetch data from API?" → `api/integration-guidelines.md`
 - "What MCP server should I use for icons?" → `mcp-servers/overview.md`
 - "How to create links?" → `routing/navigation.md`
@@ -145,3 +162,17 @@ When updating guidelines:
 - "How to set up snippet bindings manually?" → `pages/fixed-pages.md`
 - "How to handle navigation in fixed pages?" → `pages/fixed-pages.md`
 - "How to create a sidebar with fixed links?" → `pages/fixed-pages.md`
+- "What are the special cases on the invoice form?" → `domain-logic/invoices.md`
+- "Why is the invoice document date not editable?" → `domain-logic/invoices.md`
+- "How does a cumulative invoice work on the frontend?" → `domain-logic/invoices.md`
+- "When is the due-date schedule managed by the server?" → `domain-logic/invoices.md`
+- "Why does the invoice prefill strip URL params?" → `domain-logic/invoices.md`
+- "Why is the invoice form read-only / when can I edit an invoice?" → `domain-logic/invoices.md`
+- "Why does the validate action not refetch the invoice?" → `domain-logic/invoices.md`
+- "What are the special cases on the quotation form?" → `domain-logic/quotations.md`
+- "When can I edit a quotation / why is it read-only?" → `domain-logic/quotations.md`
+- "Why do quotation snapshots come as array or object?" → `domain-logic/quotations.md`
+- "What are the special cases on the sales order form?" → `domain-logic/sales-orders.md`
+- "How does importing quotations into a sales order work?" → `domain-logic/sales-orders.md`
+- "Why are some quotations locked in the sales order import picker?" → `domain-logic/sales-orders.md`
+- "Why does the sales order use confirmed_delivery_date?" → `domain-logic/sales-orders.md`
