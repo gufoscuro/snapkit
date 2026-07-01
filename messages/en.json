@@ -739,6 +739,8 @@
   "add_description_line": "Add description",
   "download_pdf": "Download PDF",
   "download_pdf_error": "Failed to download PDF",
+  "download_document": "Download document",
+  "download_error": "Failed to download",
   "customize_columns": "Customize columns",
   "reset_defaults": "Reset to defaults",
   "customer_commercial_terms": "Customer commercial terms",

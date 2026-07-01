@@ -125,8 +125,26 @@ otherwise the download falls back to `'download'`.
 **In the UI**, wrap the call in `DownloadActionButton`
 (`$components/core/DownloadActionButton.svelte`) — it owns the busy/spinner state
 and the error toast, so the `onDownload` callback only needs to invoke
-`apiDownload`. Each button currently renders the same generic download icon, so
-differentiate concurrent download actions by `tooltip`.
+`apiDownload`. The button renders a generic download icon, so use it when the
+record exposes a **single** downloadable file.
+
+When the same record can be exported in **more than one format** (XML, PDF, …),
+prefer `DownloadActionMenu` (`$components/core/DownloadActionMenu.svelte`) over
+stacking several `DownloadActionButton`. It renders one trigger button with a
+dropdown of formats, owns a single busy state (the trigger spins while any item
+downloads), and shows the error toast — each item only supplies `{ id, label,
+icon?, onDownload }`. The per-format `icon` is optional.
+
+```svelte
+<DownloadActionMenu
+  tooltip={m.download_document()}
+  items={[
+    { id: 'xml', label: m.invoice_xml_download(), icon: FileCodeIcon,
+      onDownload: () => apiDownload({ url: `/.../invoices/${id}/xml` }) },
+    { id: 'pdf', label: m.invoice_pdf_download(), icon: FileTextIcon,
+      onDownload: () => apiDownload({ url: `/.../invoices/${id}/pdf` }) },
+  ]} />
+```
 
 ### Error Handling
 

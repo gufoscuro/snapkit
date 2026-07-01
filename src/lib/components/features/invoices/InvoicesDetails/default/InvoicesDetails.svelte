@@ -9,7 +9,7 @@
   in edit mode so the user can review the assigned `document_number` and trigger
   the SDI flow. Edits are blocked when the invoice has left the `draft` state.
   @keywords invoice, invoices, fatturapa, create, edit, billing, sdi, acube
-  @uses FormUtil, CustomerSelector, PaymentTermSelector, LegalEntityBankSelector, InvoiceItemsListEditor, RecordActionMenu, DownloadActionButton
+  @uses FormUtil, CustomerSelector, PaymentTermSelector, LegalEntityBankSelector, InvoiceItemsListEditor, RecordActionMenu, DownloadActionMenu
   @api GET /api/legal-entities/{legalEntity}/invoices/{invoice}
   @api POST /api/legal-entities/{legalEntity}/invoices
   @api PUT /api/legal-entities/{legalEntity}/invoices/{invoice}
@@ -31,7 +31,7 @@
   import ActionButton from '$components/core/ActionButton.svelte'
   import { ImportMenu } from '$components/core/common/import-menu'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
-  import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
+  import DownloadActionMenu from '$components/core/DownloadActionMenu.svelte'
   import BottomBar from '$components/core/form/BottomBar.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
   import DateField from '$components/core/form/DateField.svelte'
@@ -104,6 +104,8 @@
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import AlertCircleIcon from '@lucide/svelte/icons/alert-circle'
+  import FileCodeIcon from '@lucide/svelte/icons/file-code'
+  import FileTextIcon from '@lucide/svelte/icons/file-text'
   import CircleCheckFilled from '@tabler/icons-svelte/icons/circle-check-filled'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
   import IconX from '@tabler/icons-svelte/icons/x'
@@ -1303,22 +1305,22 @@
               <RecordActionMenu buttonVariant="outline" actions={invoiceActions} {actionOptions} />
             {/if}
 
-            <!-- TODO: collapse these into a single download button with a dropdown
-                 listing the available export formats (XML / PDF / …) once a third
-                 format lands or the bottom bar gets crowded. -->
-            <DownloadActionButton
-              tooltip={m.invoice_xml_download()}
-              onDownload={() =>
-                apiDownload({
-                  url: `/legal-entities/${legalEntityId}/invoices/${record.id}/xml`,
-                })} />
-
-            <DownloadActionButton
-              tooltip={m.invoice_pdf_download()}
-              onDownload={() =>
-                apiDownload({
-                  url: `/legal-entities/${legalEntityId}/invoices/${record.id}/pdf`,
-                })} />
+            <DownloadActionMenu
+              tooltip={m.download_document()}
+              items={[
+                {
+                  id: 'xml',
+                  label: m.invoice_xml_download(),
+                  icon: FileCodeIcon,
+                  onDownload: () => apiDownload({ url: `/legal-entities/${legalEntityId}/invoices/${record.id}/xml` }),
+                },
+                {
+                  id: 'pdf',
+                  label: m.invoice_pdf_download(),
+                  icon: FileTextIcon,
+                  onDownload: () => apiDownload({ url: `/legal-entities/${legalEntityId}/invoices/${record.id}/pdf` }),
+                },
+              ]} />
 
             {#if record.state === 'draft'}
               <ActionButton type="submit" variant="outline" size="icon" busyLabel="" tooltip={m.save_changes()}>

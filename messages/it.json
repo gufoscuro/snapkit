@@ -741,6 +741,8 @@
   "add_description_line": "Aggiungi descrizione",
   "download_pdf": "Scarica PDF",
   "download_pdf_error": "Impossibile scaricare il PDF",
+  "download_document": "Scarica documento",
+  "download_error": "Download non riuscito",
   "customize_columns": "Personalizza colonne",
   "reset_defaults": "Ripristina predefiniti",
   "customer_commercial_terms": "Condizioni commerciali cliente",
