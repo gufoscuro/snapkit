@@ -48,6 +48,12 @@
         pageId: 'sales-order-details',
         params: { uuid: salesOrder.id },
       },
+      {
+        type: 'link',
+        label: m.deliveries(),
+        pageId: 'sales-order-delivery-schedule',
+        params: { uuid: salesOrder.id },
+      },
     ]
 
     return { name: m.sales_order(), items }

@@ -30,6 +30,54 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
           },
         },
         {
+          $id: 'to-ship',
+          title: 'to_ship',
+          description: 'List of sales order lines awaiting shipment (delivery schedule)',
+          route: '/shipping/to-ship',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.DeliveryScheduleFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'delivery-schedule.deliveryscheduletable.default.DeliveryScheduleTable',
+              enabled: true,
+            },
+          },
+        },
+        {
+          $id: 'payments',
+          title: 'to_collect',
+          description: 'List of invoice due dates to be collected',
+          route: '/invoicing/payments',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.PaymentsFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'payments.paymentstable.default.PaymentsTable',
+              enabled: true,
+            },
+          },
+        },
+        {
           $id: 'customers',
           title: 'customers',
           description: 'List of all customers',
@@ -549,6 +597,28 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   enabled: true,
                 },
               },
+              subpages: [
+                {
+                  $id: 'sales-order-delivery-schedule',
+                  title: 'deliveries',
+                  description: 'Line-by-line delivery/shipment recap for a single sales order (delivered vs remaining)',
+                  route: '/sales/sales-orders/upsert/:uuid/delivery-schedule',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.SalesOrderSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'sales-orders.salesorderdeliveryscheduletable.default.SalesOrderDeliveryScheduleTable',
+                      enabled: true,
+                    },
+                  },
+                },
+              ],
             },
           ],
         },
@@ -721,7 +791,8 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
           name: 'sections',
           items: [
             {
-              label: 'general',
+              // First group intentionally has no label — actionables ("things to do").
+              label: '',
               icon: 'Layers',
               type: 'submenu',
               submenuStyle: 'simple',
@@ -732,6 +803,32 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   icon: 'House',
                   type: 'link',
                 },
+                {
+                  label: 'to_ship',
+                  pageId: 'to-ship',
+                  icon: 'Truck',
+                  type: 'link',
+                },
+                {
+                  label: 'to_collect',
+                  pageId: 'payments',
+                  icon: 'MoneybagMoveBack',
+                  type: 'link',
+                },
+                {
+                  label: 'to_invoice',
+                  pageId: 'to-invoice',
+                  icon: 'FileClock',
+                  type: 'link',
+                },
+              ],
+            },
+            {
+              label: 'master_data',
+              icon: 'Users',
+              type: 'submenu',
+              submenuStyle: 'simple',
+              children: [
                 {
                   label: 'customers',
                   pageId: 'customers',
@@ -790,12 +887,6 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               type: 'submenu',
               submenuStyle: 'simple',
               children: [
-                {
-                  label: 'to_invoice',
-                  pageId: 'to-invoice',
-                  icon: 'FileClock',
-                  type: 'link',
-                },
                 {
                   label: 'invoices',
                   pageId: 'invoices',

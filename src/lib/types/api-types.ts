@@ -1338,6 +1338,30 @@ export type SalesOrder = {
   available_transitions?: string[]
 }
 
+/**
+ * A single sales-order line awaiting delivery, from the cross-order
+ * `GET /delivery-schedule` view. One row per outstanding sales-order item.
+ */
+export type DeliveryScheduleLine = {
+  sales_order_id: string
+  sales_order_number: string
+  sales_order_date: string
+  customer_id: string
+  customer_name: string
+  customer_purchase_order: string
+  customer_purchase_order_date: string
+  sales_order_item_id: string
+  item_code: string
+  description: string
+  uom: UnitOfMeasure | null
+  requested_delivery_date: string
+  confirmed_delivery_date: string
+  quantity_ordered: number
+  quantity_shipped: number
+  quantity_remaining: number
+  payment_pending: boolean
+}
+
 // ============================================================================
 // Warehouse Orders API Types
 // ============================================================================
