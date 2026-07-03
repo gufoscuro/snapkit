@@ -19,6 +19,7 @@
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import RecordCustomerCell from '$lib/components/features/common/RecordCustomerCell.svelte'
   import InvoiceStateBadge from '$lib/components/features/invoices/InvoiceStateBadge.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
@@ -37,22 +38,25 @@
 
   const columns: ColumnConfig<InvoiceDueDate>[] = [
     {
-      accessorKey: 'due_date',
-      header: m.due_date(),
-      renderer: 'date',
-    },
-    {
-      accessorKey: 'document_number',
+      // Invoice number (linked) + customer stacked into one identity column.
+      // Enriched invoice fields arrive nested under `invoice` on this list endpoint;
+      // the href guards on `invoice` and degrades to plain text if it's ever missing.
+      accessorKey: 'invoice.document_number',
       header: m.document_number(),
-      renderer: 'link',
+      renderer: 'component',
       rendererConfig: {
-        urlBuilder: (row: InvoiceDueDate) => createRoute({ $id: 'invoice-details', params: { uuid: row.invoice_id } }),
+        component: RecordCustomerCell,
+        propsMapper: (row: InvoiceDueDate) => ({
+          code: row.invoice?.document_number,
+          customerName: row.invoice?.customer_name,
+          href: row.invoice ? createRoute({ $id: 'invoice-details', params: { uuid: row.invoice.id } }) : undefined,
+        }),
       },
     },
     {
-      accessorKey: 'customer_name',
-      header: m.customer(),
-      renderer: 'text',
+      accessorKey: 'due_date',
+      header: m.due_date(),
+      renderer: 'date',
     },
     {
       accessorKey: 'amount',
@@ -69,12 +73,12 @@
       },
     },
     {
-      accessorKey: 'state',
+      accessorKey: 'invoice.state',
       header: m.invoice_state(),
       renderer: 'component',
       rendererConfig: {
         component: InvoiceStateBadge,
-        propsMapper: (row: InvoiceDueDate) => ({ state: row.state as InvoiceState }),
+        propsMapper: (row: InvoiceDueDate) => ({ state: row.invoice?.state as InvoiceState }),
       },
     },
   ]

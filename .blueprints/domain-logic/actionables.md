@@ -34,15 +34,13 @@ The list views follow the read-only aggregate-list recipe in [resource-table.md]
 
 **Where:** `PaymentsTable.svelte` — `amount` column.
 
-## Da incassare — `InvoiceDueDate` field shape (flattened vs nested)
+## Da incassare — enriched invoice fields are nested under `invoice`
 
-**What:** the FE `InvoiceDueDate` type (`src/lib/types/api-types.ts`) carries the enriched invoice fields **flattened** (`document_number`, `document_date`, `document_type`, `state`, `customer_name`, plus `invoice_id`). Columns read them directly (`row.document_number`, `row.state`, `row.customer_name`) and the link uses `row.invoice_id`.
+**What:** on the cross-invoice `GET /invoice-due-dates` list, each row carries a **nested `invoice` object** (`{ id, document_number, document_date, document_type, state, customer_name }`) — *not* flattened top-level fields. Every column reads it defensively through `row.invoice?.…`: the identity cell's `propsMapper` maps `row.invoice?.document_number` / `row.invoice?.customer_name` and builds the `invoice-details` href only when `row.invoice` exists (else `href: undefined` → plain text, no link); the state column's `propsMapper` reads `row.invoice?.state`.
 
-**Why:** these enriched fields are present only on the cross-invoice `GET /invoice-due-dates` list (the invoice's own `due_dates` omit them). The repo type is the contract the columns rely on.
+**Why:** `invoice` is eager-loaded **only** on this list; an invoice's own `due_dates` omit it (the parent already carries those fields), so the type marks `invoice?` optional — hence the guarded accessors. *Confirmed against a real response* (2026-07): the runtime shape is nested, matching the OpenAPI surface; the earlier flattened repo type (`document_number`/`state`/`invoice_id` at top level) was wrong and has been corrected. If a column ever renders blank, first check whether the endpoint actually eager-loaded `invoice`.
 
-> ⚠️ The live OpenAPI surface currently documents these under a **nested** `invoice { … }` object rather than flattened. If the runtime response is nested, the flat accessors and `invoice_id` must be adapted (e.g. `row.invoice.document_number`). Verify against a real response before trusting either shape.
-
-**Where:** `PaymentsTable.svelte` (accessors), `api-types.ts` → `InvoiceDueDate`.
+**Where:** `PaymentsTable.svelte` (nested accessors + guarded urlBuilder), `api-types.ts` → `InvoiceDueDate.invoice`.
 
 ---
 
@@ -77,6 +75,26 @@ The list views follow the read-only aggregate-list recipe in [resource-table.md]
 2. **Ship gate ≠ scheduling gate.** A `payment_pending` line still belongs on the calendar — the warehouse prepares goods while the customer pays; only the TD load is payment-blocked. Show it with a marker, don't hide it.
 
 **Where:** not yet implemented — `DeliveryScheduleTable.svelte` is the v1 stand-in. The moddo-api `deferred` business-doc has no entry for this; it's a FE-side phase.
+
+## Da spedire — condensed quantity & date cells
+
+**What:** the actionable lists fuse columns to stay readable. The backlog `DeliveryScheduleTable` is the widest (multi-order: it carries `sales_order_number` + `customer_name` on top of the line data). Cell components back this via the `component` renderer:
+
+- **`RecordCustomerCell`** (shared, `features/common/`) — one identity column stacking a record **code** (linked, primary) over the **customer** name (muted subtitle). Used by all three actionable tables: *Da spedire* (`sales_order_number` → order delivery recap `sales-order-delivery-schedule`), *Da incassare* (`invoice.document_number` → `invoice-details`, href guarded on the nested `invoice`), *Da fatturare* (`source.document_number` → `sales-order-details`/`transport-document-details` by source kind; customer via `extractSnapshotString(customer_snapshot,'name')`). Replicates the `link` renderer's anchor styling; like `LeftSidebarMenu` it renders `<a href>` without `resolve()` — the project's accepted pattern (`svelte/no-navigation-without-resolve` is knowingly tolerated here, same as the built-in link renderer which emits an unresolved href via a raw string).
+- **`QuantityProgressCell`** (`features/delivery-schedule/`) — one column replacing `quantity_ordered` + `quantity_shipped` + `quantity_remaining` (+ `uom`). Shows the residual-to-ship prominently, `shipped / ordered` muted underneath.
+- **`DeliveryDateCell`** (`features/delivery-schedule/`) — one column fusing `requested_delivery_date` + `confirmed_delivery_date`: confirmed wins; the requested date shows muted with a clock marker (`delivery_date_unconfirmed` tooltip) when not yet confirmed. Formats the calendar day via `calendarDayParts` + a UTC-constructed date, honouring the local-parse rule in [date-handling.md](../components/date-handling.md) (the built-in `date` renderer's `new Date(str)` would risk the near-midnight shift).
+
+**Why:** code/customer, ordered/shipped/remaining and requested/confirmed are each pairs (or triples) an operator reads together; laying them out as separate columns crowds the table without adding scannability. Fusing keeps the actionable value (which record & who, residual, confirmed date) front and centre and buys back columns. The identity fusion is a cross-actionable convention, hence `RecordCustomerCell` lives in `features/common/` rather than any one domain.
+
+**Where:** `RecordCustomerCell.svelte` (`features/common/`), `QuantityProgressCell.svelte` + `DeliveryDateCell.svelte` (`features/delivery-schedule/`) — all registry-scanned. Consumed by `DeliveryScheduleTable.svelte`, `PaymentsTable.svelte`, `InvoiceableDocumentsTable.svelte` (identity cell) and the two delivery tables (quantity/date cells). The per-order recap (`SalesOrderDeliveryScheduleTable`) can adopt the quantity/date cells for consistency but currently still lists them as separate columns (and needs no identity column — it's already scoped to one order).
+
+## Da spedire — "Crea DDT dall'ordine" action (URL-driven auto-import)
+
+**What:** each backlog row has a trailing `actions` column whose button navigates to a **blank** transport document with the source order in the query string — `createRoute({ $id: 'transport-document-details', query: { sales_order_id } })` — and `TransportDocumentDetails` then auto-imports that order.
+
+**Why / how:** this mirrors the invoiceable-documents → invoice flow exactly ([invoices.md](./invoices.md)). No new import logic: `TransportDocumentDetails` gained a one-shot `$effect` (guarded by `autoImportTriggered`, create-mode only) that reads `?sales_order_id`, calls the **existing** `handleImportSalesOrders` with a `[{ id }]` stub (the handler re-fetches the full order, so only `id` is needed), then strips the param via `replaceState` so a reload doesn't re-import. The form API is captured from the `withContext` snippet into a `$state` so the effect can reach it — same technique as `InvoicesDetails` (`autoPrefillTriggered` + captured `formApi`). Assigning the latch inside the `$effect` is the sanctioned one-shot pattern here (the svelte-autofixer flags it generically; it's correct in this case).
+
+**Where:** `DeliveryScheduleTable.svelte` (action → `goto`), `TransportDocumentDetails.svelte` (`$effect` auto-import + `capturedFormApi`). Since the backlog is multi-order the per-row action is unambiguous; two rows of the same order both import that whole order (intrinsic, harmless — identical to invoiceable acting on the source document).
 
 ## Da spedire — payment-pending indicator
 

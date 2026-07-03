@@ -20,11 +20,13 @@
   import { goto } from '$app/navigation'
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import RecordCustomerCell from '$lib/components/features/common/RecordCustomerCell.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { InvoiceableDocument } from '$lib/types/api-types'
   import { getInvoiceableDocumentTypeLabel, salesTransactionTypeLabels } from '$lib/utils/enum-labels'
   import type { FilterQuery } from '$lib/utils/filters'
+  import { extractSnapshotString, type SnapshotShape } from '$lib/utils/snapshots'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
@@ -38,37 +40,27 @@
 
   const columns: ColumnConfig<InvoiceableDocument>[] = [
     {
+      // Source document number (linked to its detail) + customer stacked into one
+      // identity column. Link target depends on the source kind (SO vs DDT).
       accessorKey: 'source.document_number',
       header: m.document_number(),
-      renderer: 'link',
+      renderer: 'component',
       rendererConfig: {
-        urlBuilder: (row: InvoiceableDocument) =>
-          row.source.type === 'sales_order'
-            ? createRoute({ $id: 'sales-order-details', params: { uuid: row.source.id } })
-            : createRoute({ $id: 'transport-document-details', params: { uuid: row.source.id } }),
+        component: RecordCustomerCell,
+        propsMapper: (row: InvoiceableDocument) => ({
+          code: row.source.document_number,
+          customerName: extractSnapshotString(row.customer_snapshot as unknown as SnapshotShape | undefined, 'name'),
+          href:
+            row.source.type === 'sales_order'
+              ? createRoute({ $id: 'sales-order-details', params: { uuid: row.source.id } })
+              : createRoute({ $id: 'transport-document-details', params: { uuid: row.source.id } }),
+        }),
       },
     },
     {
       accessorKey: 'source.document_date',
       header: m.document_date(),
       renderer: 'date',
-    },
-    {
-      accessorKey: 'customer_snapshot',
-      header: m.customer(),
-      renderer: 'custom',
-      rendererConfig: {
-        cellRenderer: (row: InvoiceableDocument) => {
-          const snapshot = row.customer_snapshot as unknown
-          if (Array.isArray(snapshot) && snapshot.length > 0) {
-            return ((snapshot[0] as Record<string, unknown>)?.name as string) ?? '-'
-          }
-          if (snapshot && typeof snapshot === 'object') {
-            return ((snapshot as Record<string, unknown>).name as string) ?? '-'
-          }
-          return '-'
-        },
-      },
     },
     {
       accessorKey: 'type',

@@ -16,8 +16,12 @@
 </script>
 
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import RecordCustomerCell from '$lib/components/features/common/RecordCustomerCell.svelte'
+  import DeliveryDateCell from '$lib/components/features/delivery-schedule/DeliveryDateCell.svelte'
+  import QuantityProgressCell from '$lib/components/features/delivery-schedule/QuantityProgressCell.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { DeliveryScheduleLine } from '$lib/types/api-types'
@@ -25,6 +29,7 @@
   import { apiRequest } from '$lib/utils/request'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
+  import IconTruckDelivery from '@tabler/icons-svelte/icons/truck-delivery'
   import { DeliveryScheduleTableContract } from './DeliveryScheduleTable.contract.js'
 
   let { legalEntity }: SnippetProps = $props()
@@ -34,20 +39,20 @@
 
   const columns: ColumnConfig<DeliveryScheduleLine>[] = [
     {
+      // Order number (linked) + customer stacked into one identity column. The link
+      // jumps to that order's delivery recap (delivered vs remaining), not the
+      // generic order overview.
       accessorKey: 'sales_order_number',
       header: m.sales_order(),
-      renderer: 'link',
+      renderer: 'component',
       rendererConfig: {
-        // From a shipping-oriented list, jump straight to that order's delivery recap
-        // (delivered vs remaining), not the generic order overview.
-        urlBuilder: (row: DeliveryScheduleLine) =>
-          createRoute({ $id: 'sales-order-delivery-schedule', params: { uuid: row.sales_order_id } }),
+        component: RecordCustomerCell,
+        propsMapper: (row: DeliveryScheduleLine) => ({
+          code: row.sales_order_number,
+          customerName: row.customer_name,
+          href: createRoute({ $id: 'sales-order-delivery-schedule', params: { uuid: row.sales_order_id } }),
+        }),
       },
-    },
-    {
-      accessorKey: 'customer_name',
-      header: m.customer(),
-      renderer: 'text',
     },
     {
       accessorKey: 'item_code',
@@ -60,29 +65,34 @@
       renderer: 'long-text',
     },
     {
-      accessorKey: 'uom',
-      header: m.unit_of_measure(),
-      renderer: 'text',
-    },
-    {
-      accessorKey: 'quantity_ordered',
-      header: m.quantity_ordered(),
-      renderer: 'text',
-    },
-    {
+      // Ordered / shipped / remaining condensed into one cell (uom folded in) to
+      // keep this wide multi-order table readable.
       accessorKey: 'quantity_remaining',
-      header: m.quantity_remaining(),
-      renderer: 'text',
+      header: m.quantity(),
+      renderer: 'component',
+      rendererConfig: {
+        component: QuantityProgressCell,
+        propsMapper: (row: DeliveryScheduleLine) => ({
+          ordered: row.quantity_ordered,
+          shipped: row.quantity_shipped,
+          remaining: row.quantity_remaining,
+          uom: row.uom,
+        }),
+      },
     },
     {
-      accessorKey: 'requested_delivery_date',
-      header: m.requested_delivery_date(),
-      renderer: 'date',
-    },
-    {
+      // Requested + confirmed dates fused: confirmed wins, requested shown muted
+      // with a clock marker when not yet confirmed.
       accessorKey: 'confirmed_delivery_date',
-      header: m.confirmed_delivery_date(),
-      renderer: 'date',
+      header: m.delivery_date(),
+      renderer: 'component',
+      rendererConfig: {
+        component: DeliveryDateCell,
+        propsMapper: (row: DeliveryScheduleLine) => ({
+          requested: row.requested_delivery_date,
+          confirmed: row.confirmed_delivery_date,
+        }),
+      },
     },
     {
       accessorKey: 'payment_pending',
@@ -92,6 +102,30 @@
         variantMapper: (pending: boolean) => (pending ? 'error' : 'success'),
         labelMapper: (pending: boolean) => (pending ? m.payment_pending() : m.payment_settled()),
       },
+    },
+    {
+      header: '',
+      renderer: 'actions',
+      rendererConfig: {
+        actions: [
+          {
+            icon: IconTruckDelivery,
+            variant: 'ghost',
+            label: m.create_transport_document_from_order(),
+            onClick: (row: DeliveryScheduleLine) => {
+              // Jump to a blank DDT with the source order in the URL; the DDT page
+              // auto-imports it (mirrors the invoiceable-documents → invoice flow).
+              const url = createRoute({
+                $id: 'transport-document-details',
+                query: { sales_order_id: row.sales_order_id },
+              })
+              // eslint-disable-next-line svelte/no-navigation-without-resolve
+              goto(url)
+            },
+          },
+        ],
+      },
+      meta: { cellClassName: 'p-0 h-10 w-12' },
     },
   ]
 

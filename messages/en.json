@@ -8,6 +8,8 @@
   "quantity_shipped": "Shipped qty",
   "quantity_remaining": "Remaining qty",
   "deliveries": "Deliveries",
+  "delivery_date_unconfirmed": "Requested delivery — not yet confirmed",
+  "create_transport_document_from_order": "Create delivery note from order",
   "confirmed_delivery_date": "Confirmed delivery",
   "payment_status": "Payment",
   "payment_pending": "Payment pending",

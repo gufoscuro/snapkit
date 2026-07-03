@@ -8,6 +8,8 @@
   "quantity_shipped": "Q.tà spedita",
   "quantity_remaining": "Q.tà residua",
   "deliveries": "Consegne",
+  "delivery_date_unconfirmed": "Consegna richiesta — non ancora confermata",
+  "create_transport_document_from_order": "Crea DDT dall'ordine",
   "confirmed_delivery_date": "Consegna Confermata",
   "payment_status": "Pagamento",
   "payment_pending": "Pagamento in sospeso",

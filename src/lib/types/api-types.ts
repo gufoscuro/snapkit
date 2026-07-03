@@ -1612,13 +1612,19 @@ export type InvoiceDueDate = {
   due_date: string
   amount: string | number
   payment_method: PaymentMethod
-  invoice_id: string
-  /** Enriched fields present on the cross-invoice `GET /invoice-due-dates` list view (omitted on the invoice's own `due_dates`). */
-  document_number?: string
-  document_date?: string
-  document_type?: InvoiceDocumentType
-  state?: InvoiceState
-  customer_name?: string
+  /**
+   * Parent-invoice summary, eager-loaded ONLY on the cross-invoice
+   * `GET /invoice-due-dates` list. Omitted when a due date is nested inside an
+   * invoice's own `due_dates` (the invoice already carries these fields).
+   */
+  invoice?: {
+    id: string
+    document_number: string
+    document_date: string
+    document_type: InvoiceDocumentType
+    state: InvoiceState
+    customer_name: string
+  }
 }
 
 /**
