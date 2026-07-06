@@ -27,6 +27,10 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               componentKey: 'globals.sidebars.IndexSidebar',
               enabled: true,
             },
+            content: {
+              componentKey: 'dashboard.homedashboard.default.HomeDashboard',
+              enabled: true,
+            },
           },
         },
         {
@@ -219,7 +223,8 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'customer-documents',
                   title: 'customers_documents',
-                  description: 'List of all documents (quotations, orders, invoices, etc.) related to a single customer',
+                  description:
+                    'List of all documents (quotations, orders, invoices, etc.) related to a single customer',
                   route: '/contacts/customers/upsert/:uuid/documents',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -239,7 +244,8 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'customer-commercial-terms',
                   title: 'customer_commercial_terms',
-                  description: 'A form to manage the commercial terms (pricing, discounts, payment conditions) of a single customer',
+                  description:
+                    'A form to manage the commercial terms (pricing, discounts, payment conditions) of a single customer',
                   route: '/contacts/customers/upsert/:uuid/commercial-terms',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -419,7 +425,8 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'supplier-commercial-terms',
                   title: 'supplier_commercial_terms',
-                  description: 'A form to manage the commercial terms (pricing, discounts, payment conditions) of a single supplier',
+                  description:
+                    'A form to manage the commercial terms (pricing, discounts, payment conditions) of a single supplier',
                   route: '/contacts/suppliers/upsert/:uuid/commercial-terms',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -613,7 +620,8 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                       enabled: true,
                     },
                     content: {
-                      componentKey: 'sales-orders.salesorderdeliveryscheduletable.default.SalesOrderDeliveryScheduleTable',
+                      componentKey:
+                        'sales-orders.salesorderdeliveryscheduletable.default.SalesOrderDeliveryScheduleTable',
                       enabled: true,
                     },
                   },
@@ -735,6 +743,28 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   enabled: true,
                 },
               },
+              subpages: [
+                {
+                  $id: 'invoice-payments',
+                  title: 'payments',
+                  description: 'Payments recap for a single invoice, grouped by scadenza (record / history)',
+                  route: '/invoicing/invoices/upsert/:uuid/payments',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.InvoiceSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'invoices.invoicepayments.default.InvoicePayments',
+                      enabled: true,
+                    },
+                  },
+                },
+              ],
             },
           ],
         },
@@ -765,7 +795,8 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             {
               $id: 'transport-document-details',
               title: 'transport_document',
-              description: 'A form, with a detailed view of a single transport document, with its line items and actions',
+              description:
+                'A form, with a detailed view of a single transport document, with its line items and actions',
               route: '/sales/transport-documents/upsert{/:uuid}',
               layout: {
                 componentKey: 'layouts.LeftSidebar',

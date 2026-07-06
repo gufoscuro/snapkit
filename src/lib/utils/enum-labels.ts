@@ -16,6 +16,7 @@ import type {
   Incoterm,
   InvoiceableDocumentType,
   InvoiceDocumentType,
+  InvoicePaymentStatus,
   InvoiceState,
   PaymentMethod,
   PaymentSliceType,
@@ -632,6 +633,7 @@ export function getInvoiceDocumentTypeLabel(type: InvoiceDocumentType): string {
 // Invoice State Labels (Acube/SDI lifecycle)
 export const invoiceStateLabels: EnumLabelMap<InvoiceState> = {
   draft: m.enum_invoice_state_draft,
+  submitted: m.enum_invoice_state_submitted,
   sent: m.enum_invoice_state_sent,
   delivered: m.enum_invoice_state_delivered,
   accepted: m.enum_invoice_state_accepted,
@@ -646,6 +648,7 @@ export function getInvoiceStateLabel(state: InvoiceState): string {
 
 export const invoiceStateVariantConfig: Record<InvoiceState, StatusVariant> = {
   draft: 'neutral',
+  submitted: 'in-progress',
   sent: 'in-progress',
   delivered: 'in-progress',
   accepted: 'active',
@@ -656,6 +659,27 @@ export const invoiceStateVariantConfig: Record<InvoiceState, StatusVariant> = {
 
 export function getInvoiceStateVariant(state: InvoiceState): StatusVariant {
   return invoiceStateVariantConfig[state] ?? 'neutral'
+}
+
+// Invoice Payment Status Labels (tri-state derived from recorded payments)
+export const invoicePaymentStatusLabels: EnumLabelMap<InvoicePaymentStatus> = {
+  unpaid: m.enum_invoice_payment_status_unpaid,
+  partially_paid: m.enum_invoice_payment_status_partially_paid,
+  paid: m.enum_invoice_payment_status_paid,
+}
+
+export function getInvoicePaymentStatusLabel(status: InvoicePaymentStatus): string {
+  return invoicePaymentStatusLabels[status]?.() ?? status
+}
+
+export const invoicePaymentStatusVariantConfig: Record<InvoicePaymentStatus, StatusVariant> = {
+  unpaid: 'blocked',
+  partially_paid: 'in-progress',
+  paid: 'active',
+}
+
+export function getInvoicePaymentStatusVariant(status: InvoicePaymentStatus): StatusVariant {
+  return invoicePaymentStatusVariantConfig[status] ?? 'neutral'
 }
 
 // Transport Document Type Labels

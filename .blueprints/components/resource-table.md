@@ -453,6 +453,23 @@ Complete control over cell rendering.
 
 ---
 
+### Refreshing a table after an out-of-table mutation
+
+`ResourceTable` exposes its refetch **only** through the `ActionHelpers` handed to an action's `onClick(row, helpers)` — there is no public/bindable `refresh()`. So:
+
+- **Inside an action** (delete a row, toggle a flag, one-click mutate): call `helpers.refresh()` — or optimistic `helpers.removeRow(id)` / `helpers.updateRow(id, patch)` — directly.
+- **From a dialog mounted as a sibling of the table** (a form the action merely *opens*): the dialog can't see `helpers`. Capture it — the action stashes `helpers.refresh` into a `$state` var, opens the dialog, and the dialog's `onSaved` calls the stashed closure.
+
+```svelte
+let refreshTable = $state<(() => Promise<void>) | null>(null)
+const recordAction = {
+  onClick: (row, helpers) => { selected = row; refreshTable = helpers.refresh; open = true },
+}
+// <RecordDialog bind:open dueDate={selected} onSaved={() => refreshTable?.()} />
+```
+
+Real use: `PaymentsTable` + `RecordPaymentDialog` (see [../domain-logic/actionables.md](../domain-logic/actionables.md) -> *Refreshing the table after an out-of-table dialog save*).
+
 ## Utilities
 
 ### createApiFetcher<T>(url: string)

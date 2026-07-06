@@ -46,6 +46,12 @@
         pageId: 'invoice-details',
         params: { uuid: invoice.id },
       },
+      {
+        type: 'link',
+        label: m.payments(),
+        pageId: 'invoice-payments',
+        params: { uuid: invoice.id },
+      },
     ]
     return { name: m.invoice(), items }
   })

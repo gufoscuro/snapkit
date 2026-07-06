@@ -30,7 +30,7 @@ snapkit-content/
 │   ├── invoices.md       # Invoice form/import/validation frontend quirks (the WHY behind special cases)
 │   ├── quotations.md     # Quotation form/state/validation frontend quirks (import source)
 │   ├── sales-orders.md   # Sales order frontend quirks, incl. quotation-import flow
-│   └── actionables.md    # "Da spedire" / "Da incassare" list-view quirks (payment-tracking stub, baked filters)
+│   └── actionables.md    # "Da spedire" / "Da incassare" list-view quirks (payment recording & status, baked filters)
 ├── testing/              # Testing strategy and patterns
 │   └── strategy.md       # Test projects, mocking, what/how to test
 ├── api/                  # API integration guidelines
@@ -71,10 +71,10 @@ snapkit-content/
 
 This is a per-feature pattern: one file per view/feature that accumulates non-obvious **frontend** logic — the *why* behind special cases that look arbitrary in code. Frontend only, no backend business rules. Where behavior is shared across features (e.g. commercial-terms defaults, payment composition, line-item editor internals), the files cross-reference each other and the relevant `components/` blueprint instead of duplicating.
 
-- **invoices.md**: editability gating by state, cumulative-invoice merging, URL-driven prefill flow, payment-term/due-date schedule sync, line-item locking, SDI validation UX, status badges, filter quirks, chat-filter-tool gotchas.
+- **invoices.md**: editability gating by state, cumulative-invoice merging, URL-driven prefill flow, payment-term/due-date schedule sync, line-item locking, SDI validation UX, status badges, filter quirks, chat-filter-tool gotchas, payment recording & schedule freeze, and the payments subpage.
 - **quotations.md**: the import *source*. Editability gating by `open` state, create-vs-edit validation, sales-transaction-type filtering, customer-driven defaults, composition remount, snapshot dual-shape (array/object), actions/badges, page-state lifecycle.
 - **sales-orders.md**: shares most of quotations' surface (cross-referenced, not duplicated); the sales-order-specific focus is the **quotation-import flow** (eligibility, composition-signature compatibility locking, header-from-first-record, importable-quantity clamping), fulfillment badge, and confirmation date.
-- **actionables.md**: the read-only aggregate list views surfaced label-less at the top of the sidebar — **Da spedire** (`DeliveryScheduleTable`, `GET /delivery-schedule`) and **Da incassare** (`PaymentsTable`, `GET /invoice-due-dates`). Covers why there's no paid/unpaid column (payment-tracking stub → issued-as-paid proxy), the forward-only + credit-note-excluded + zero-due-dates-valid shapes, EUR-default amount, the nested `invoice` object on due-date rows (with guarded accessors), and the delivery schedule's `outstanding`-baked/line-granular/`payment_pending` quirks. Points at the moddo-api `deferred` business-doc for the backend rationale.
+- **actionables.md**: the aggregate list views surfaced label-less at the top of the sidebar — **Da spedire** (`DeliveryScheduleTable`, `GET /delivery-schedule`) and **Da incassare** (`PaymentsTable`, `GET /invoice-due-dates`). Covers collection progress / payment status / recording (manual payment tracking, superseding the old issued-as-paid proxy), the forward-only + credit-note-excluded + zero-due-dates-valid shapes, EUR-default amount, the nested `invoice` object on due-date rows (with guarded accessors), and the delivery schedule's `outstanding`-baked/line-granular/`payment_pending` quirks. Points at the moddo-api `deferred` business-doc for the backend rationale.
 
 ### Testing
 
@@ -178,7 +178,7 @@ When updating guidelines:
 - "How does importing quotations into a sales order work?" → `domain-logic/sales-orders.md`
 - "Why are some quotations locked in the sales order import picker?" → `domain-logic/sales-orders.md`
 - "Why does the sales order use confirmed_delivery_date?" → `domain-logic/sales-orders.md`
-- "Why is there no paid/unpaid column on the payments list?" → `domain-logic/actionables.md`
+- "How does recording a payment / marking a scadenza as paid work?" → `domain-logic/actionables.md`
 - "Why don't old invoices show in the to-collect / payments list?" → `domain-logic/actionables.md`
 - "What are the special cases on the delivery schedule / to-ship view?" → `domain-logic/actionables.md`
 - "Why is outstanding=true baked into the delivery schedule?" → `domain-logic/actionables.md`
@@ -186,7 +186,13 @@ When updating guidelines:
 - "Why does a sales-order subpage need to provide salesOrder to the sidebar?" → `domain-logic/actionables.md`
 - "How to add a subpage + sidebar link under a sales order?" → `domain-logic/actionables.md`
 - "How would the delivery calendar / weekly buckets / 'Da pianificare' work?" → `domain-logic/actionables.md`
+- "How do I record / delete an invoice payment or mark a scadenza paid?" → `domain-logic/actionables.md`
+- "When is the invoice schedule frozen / why can't I edit due dates or the payment term?" → `domain-logic/invoices.md`
+- "How does the invoice payments subpage (grouped by scadenza) work?" → `domain-logic/invoices.md`
+- "What is the invoice payment_status badge (unpaid / partially_paid / paid)?" → `domain-logic/invoices.md`
 - "How to build a read-only aggregate list that links to the source entity?" → `components/resource-table.md`
 - "How to bake a static query param into a ResourceTable fetcher?" → `components/resource-table.md`
+- "How to refresh a ResourceTable after an out-of-table dialog saves?" → `components/resource-table.md`
+- "Why do form fields overflow a narrow dialog / how to fix field width in a modal?" → `components/forms.md`
 - "How to render a sidebar group without a label?" → `routing/menu-system.md`
 - "Where do the actionables (Da spedire / Da incassare / Da fatturare) live in the menu?" → `routing/menu-system.md`

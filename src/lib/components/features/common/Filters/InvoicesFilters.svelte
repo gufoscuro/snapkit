@@ -19,8 +19,8 @@
   import { usePageChat } from '$lib/chat/hooks/usePageChat'
   import { invoicesFilterChatRegistration } from '$lib/chat/page-tools/invoices-filter'
   import * as m from '$lib/paraglide/messages'
-  import type { CustomerSummary, InvoiceState } from '$lib/types/api-types'
-  import { invoiceStateLabels } from '$lib/utils/enum-labels'
+  import type { CustomerSummary, InvoicePaymentStatus, InvoiceState } from '$lib/types/api-types'
+  import { invoicePaymentStatusLabels, invoiceStateLabels } from '$lib/utils/enum-labels'
   import {
     createQueryRequestObject,
     type FilterConfig,
@@ -50,6 +50,10 @@
     Object.keys(invoiceStateLabels) as InvoiceState[]
   ).map(value => ({ value, label: invoiceStateLabels[value]() }))
 
+  const paymentStatusOptions: { value: InvoicePaymentStatus; label: string }[] = (
+    Object.keys(invoicePaymentStatusLabels) as InvoicePaymentStatus[]
+  ).map(value => ({ value, label: invoicePaymentStatusLabels[value]() }))
+
   const config: FilterConfig = {
     customer_id: {
       type: 'customer',
@@ -60,6 +64,13 @@
       type: 'tags',
       label: m.filters_state(),
       options: stateOptions,
+    },
+    // Single-select: the backend matches one status and never returns schedule-less
+    // invoices (TD04 / pre-feature) for any payment_status value.
+    payment_status: {
+      type: 'enum',
+      label: m.payment_status(),
+      options: paymentStatusOptions,
     },
     document_date_from: {
       type: 'date',

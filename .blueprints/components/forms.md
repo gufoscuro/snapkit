@@ -543,6 +543,18 @@ See the POC implementation for a complete working example:
 - **Form Container:** `src/lib/components/features/_poc/FormPOC.svelte`
 - **Form Fields:** `src/lib/components/features/_poc/FormPOCInner.svelte`
 
+## Form fields in a narrow dialog (width override)
+
+Input/select field components default their `width` to `FormFieldClass.MinWidth` (`min-w-64 md:min-w-md` — a ~28rem minimum). Inside a narrow container — a `Dialog.Content` with `sm:max-w-md` — that min-width **overflows** the dialog: a flex column can't shrink a child below its own `min-width`, so a bare `min-w-0` on the container doesn't fix it. Override the field `width` instead:
+
+```svelte
+<DateField name="payment_date" width="w-full min-w-0" />
+<TextField name="amount" type="number" width="w-full min-w-0" />
+<SelectField name="payment_method" items={items} width="w-full min-w-0" allowClear />
+```
+
+`width` replaces the default min-width class on the field's input/trigger (both fields concatenate it into their class list), so the field fills the dialog and can shrink. Real use: `RecordPaymentDialog`.
+
 ## Best Practices
 
 1. **Always use autowired field components** - Every field should be a component that calls `getFormContext()` internally. This keeps forms simple and in a single file.

@@ -12,12 +12,20 @@ const InvoiceDocumentTypeSchema = Type.Union([
 
 const InvoiceStateSchema = Type.Union([
   Type.Literal('draft'),
+  Type.Literal('submitted'),
   Type.Literal('sent'),
   Type.Literal('delivered'),
   Type.Literal('accepted'),
   Type.Literal('rejected'),
   Type.Literal('archived'),
   Type.Literal('error'),
+])
+
+const InvoicePaymentStatusSchema = Type.Union([
+  Type.Literal('unpaid'),
+  Type.Literal('partially_paid'),
+  Type.Literal('paid'),
+  Type.Null(),
 ])
 
 export const InvoiceDataSchema = Type.Object({
@@ -33,6 +41,7 @@ export const InvoiceDataSchema = Type.Object({
   total_tax: Type.Number(),
   total_amount: Type.Number(),
   state: InvoiceStateSchema,
+  payment_status: Type.Optional(InvoicePaymentStatusSchema),
   notes_external: Type.String(),
   notes_internal: Type.String(),
   version: Type.Number(),

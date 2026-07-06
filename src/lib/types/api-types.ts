@@ -1565,8 +1565,12 @@ export type InvoiceableDocument = {
 /** FatturaPA TipoDocumento codes accepted by POST /invoices */
 export type InvoiceDocumentType = 'TD01' | 'TD02' | 'TD04' | 'TD05' | 'TD24' | 'TD25'
 
-/** Acube/SDI-driven lifecycle. `draft` is the entry state for any new invoice. */
-export type InvoiceState = 'draft' | 'sent' | 'delivered' | 'accepted' | 'rejected' | 'archived' | 'error'
+/**
+ * Acube/SDI-driven lifecycle. `draft` is the entry state for any new invoice;
+ * `submitted` is the first issued state (handed to SDI) and, like the later
+ * issued states, is collectable — payments can be recorded from here on.
+ */
+export type InvoiceState = 'draft' | 'submitted' | 'sent' | 'delivered' | 'accepted' | 'rejected' | 'archived' | 'error'
 
 export type InvoiceItemType = 'item' | 'descriptive' | 'charge'
 
@@ -1603,8 +1607,41 @@ export type PaymentMethod =
   | 'MP23'
 
 /**
- * Single due-date row attached to an invoice. The backend recomputes these from
- * the invoice's payment term on save, so the FE renders them as read-only info.
+ * Payment status of a single scadenza (or the invoice as a whole). Derived
+ * server-side from recorded payments vs the row's `amount`. `null` at the
+ * invoice level means the invoice has no payment schedule (e.g. TD04 credit
+ * notes or pre-feature invoices) — render no badge in that case.
+ */
+export type InvoicePaymentStatus = 'unpaid' | 'partially_paid' | 'paid'
+
+/**
+ * A single recorded payment against an invoice scadenza (`invoice_due_date`).
+ * Created via `POST /invoice-due-dates/{invoiceDueDate}/payments`. `amount` is
+ * serialized as a string (decimal) by the API.
+ */
+export type InvoicePayment = {
+  id: string
+  invoice_due_date_id: string
+  payment_date: string
+  amount: string
+  payment_method: PaymentMethod
+  /**
+   * Parent scadenza summary, eager-loaded ONLY on the per-invoice payment
+   * history (`GET /invoices/{invoice}/payments`). Omitted when a payment is
+   * nested inside its own due-date row (the parent already carries these).
+   */
+  invoice_due_date?: {
+    id: string
+    position: number
+    due_date: string
+    amount: string
+  }
+}
+
+/**
+ * Single due-date (scadenza) row attached to an invoice. Once the invoice is
+ * submitted the schedule is frozen; recorded payments accrue into `paid_amount`
+ * and shrink `residual_amount`, driving `payment_status`.
  */
 export type InvoiceDueDate = {
   id: string
@@ -1612,6 +1649,17 @@ export type InvoiceDueDate = {
   due_date: string
   amount: string | number
   payment_method: PaymentMethod
+  /** Sum of recorded payments on this scadenza (decimal string). */
+  paid_amount: string
+  /** `amount − paid_amount`; the max acceptable next payment. Never negative. */
+  residual_amount: number
+  payment_status: InvoicePaymentStatus
+  /**
+   * Payments recorded against this scadenza. Present on the invoice detail
+   * (`GET /invoices/{invoice}`) and the per-invoice history; omitted on the
+   * lean cross-invoice `GET /invoice-due-dates` list rows.
+   */
+  payments?: InvoicePayment[]
   /**
    * Parent-invoice summary, eager-loaded ONLY on the cross-invoice
    * `GET /invoice-due-dates` list. Omitted when a due date is nested inside an
@@ -1691,6 +1739,12 @@ export type Invoice = {
   total_tax: number
   total_amount: number
   state: InvoiceState
+  /**
+   * Tri-state payment status derived from the scadenze. `null` when the invoice
+   * has no schedule (TD04 credit notes, pre-feature invoices) — don't render a
+   * badge for `null`.
+   */
+  payment_status: InvoicePaymentStatus | null
   acube_invoice_uuid: string
   notes_external: string
   notes_internal: string

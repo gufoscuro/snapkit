@@ -258,16 +258,25 @@
       // `payment_slice_position` is `null` for Saldo (DDT / direct) — echoed as-is.
       payment_slice_type: (data.slice_type as PaymentSliceType) || undefined,
       payment_slice_position: (data.slice_position ?? null) as number | null,
-      payment_term_id: (data.payment_term_id as string) || undefined,
+      // A frozen schedule (≥1 payment) rejects any payment-term change — omit it so
+      // the PUT never trips the backend's freeze guard.
+      payment_term_id: scheduleFrozen ? undefined : (data.payment_term_id as string) || undefined,
       legal_entity_bank_id: (data.legal_entity_bank_id as string) || undefined,
       currency: data.currency,
       notes_internal: data.notes_internal,
       notes_external: data.notes_external,
       items: mapItemsToInvoicePayload((data.items as QuotationLineItem[] | undefined) ?? []),
-      // Send an empty schedule whenever it's server-managed (term changed, or a
-      // cumulative invoice) so the backend regenerates it from the shared term on
-      // the combined total (see business-logic → Invoice → Payment due dates).
-      due_dates: dueDatesServerManaged ? [] : mapDueDatesToPayload(data.due_dates as InvoiceDueDateInput[] | undefined),
+      // Schedule handling, in precedence order:
+      // - frozen (≥1 payment): omit `due_dates` entirely — sending it (even empty)
+      //   trips the backend's freeze guard (422). The existing schedule stays as-is.
+      // - server-managed (term changed, or cumulative): send `[]` so the backend
+      //   regenerates it from the shared term on the combined total.
+      // - otherwise: send the FE-owned schedule verbatim.
+      due_dates: scheduleFrozen
+        ? undefined
+        : dueDatesServerManaged
+          ? []
+          : mapDueDatesToPayload(data.due_dates as InvoiceDueDateInput[] | undefined),
     }
   }
 
@@ -298,6 +307,12 @@
   const promise = $derived(detail.promise)
   // Per business-logic doc: invoices are editable only in `draft` and `rejected` states.
   const isReadOnly = $derived(!!record && record.state !== 'draft' && record.state !== 'rejected')
+  // Once ≥1 payment is recorded the backend freezes the schedule: any `due_dates[]`
+  // or `payment_term_id` change on PUT is rejected (422). `payment_status` is `null`
+  // for schedule-less invoices and `'unpaid'` before the first payment — neither is
+  // frozen. Only `rejected` invoices reach here editable while frozen (issued states
+  // are already fully read-only via `isReadOnly`).
+  const scheduleFrozen = $derived(record?.payment_status === 'partially_paid' || record?.payment_status === 'paid')
 
   // Default VAT code resolved from the selected customer's commercial terms.
   // Used by the line items editor as the suggested VAT for newly added rows.
@@ -1164,6 +1179,7 @@
               name="payment_term_id"
               attr={paymentTermAttr}
               onChoose={handlePaymentTermChoose}
+              disabled={scheduleFrozen}
               class={FormFieldClass.MaxWidth} />
 
             <SelectField name="currency" label={m.currency()} items={currencyItems} class={FormFieldClass.MinWidth} />
@@ -1261,11 +1277,20 @@
                 <Alert.Description>{m.invoice_due_dates_term_changed_notice()}</Alert.Description>
               </Alert.Root>
             {:else}
+              {#if scheduleFrozen}
+                <!-- Schedule frozen by recorded payments: shown read-only. Unfreeze by
+                     deleting the payments from the invoice's payments subpage. -->
+                <Alert.Root class="max-w-md lg:max-w-none">
+                  <AlertCircleIcon />
+                  <Alert.Description>{m.invoice_schedule_frozen_notice()}</Alert.Description>
+                </Alert.Root>
+              {/if}
               <InvoiceDueDatesEditor
                 name="due_dates"
                 showLabel={false}
                 value={dueDatesEditorValue}
                 currency={displayCurrency}
+                disabled={scheduleFrozen}
                 expectedTotal={displayTotals?.total} />
             {/if}
           {/snippet}

@@ -12,6 +12,10 @@ Main files:
 - `src/lib/components/features/invoices/InvoiceStateBadge.svelte` + `InvoiceableDocumentStatusBadge.svelte` — status badges
 - `src/lib/components/features/common/Filters/InvoicesFilters.svelte` + `InvoiceableDocumentsFilters.svelte` — listing filters
 - `src/lib/chat/page-tools/invoices-filter.ts` — chat-driven filter tool
+- `src/lib/components/features/invoices/InvoicePaymentStatusBadge.svelte` — tri-state payment-status badge
+- `src/lib/components/features/invoices/InvoicePayments/default/InvoicePayments.svelte` — payments subpage (grouped by scadenza)
+- `src/lib/components/features/invoices/invoice-payment-actions.ts` — record / delete / mark-as-paid helpers + collectability guard
+- `src/lib/components/features/payments/RecordPaymentDialog.svelte` — record-payment dialog (shared with the *Da incassare* list)
 
 ---
 
@@ -87,6 +91,28 @@ Main files:
 
 ---
 
+## Schedule freeze after a recorded payment
+
+**What:** once an invoice has at least one recorded payment (`payment_status` is `partially_paid` or `paid`), `scheduleFrozen` is true and the form locks the schedule: the `InvoiceDueDatesEditor` and the `PaymentTermSelector` render **disabled** with a notice (`invoice_schedule_frozen_notice`), and `buildApiPayload` **omits** `due_dates` and `payment_term_id` from the PUT entirely. `payment_status` is `null` for schedule-less invoices and `unpaid` before the first payment — neither freezes.
+
+**Why:** the backend freezes the schedule after the first payment — sending `due_dates[]` (even empty, which would otherwise trigger regeneration) or a changed `payment_term_id` on PUT returns 422 (see moddo-api `deferred` -> *"Invoice payments — manual recording only"*). Omitting both fields keeps an edit valid. In practice only a **`rejected`** invoice reaches the editable form while frozen — issued states are already fully read-only via `isReadOnly` (see *Editability is gated by invoice state*). Unfreeze = delete the payments from the payments subpage.
+
+**Where:** `InvoicesDetails.svelte` — `scheduleFrozen`, `buildApiPayload` (`due_dates` / `payment_term_id` omission, frozen wins over the `dueDatesServerManaged` branch), `PaymentTermSelector disabled`, `InvoiceDueDatesEditor disabled` + frozen `Alert`. The distinct `dueDatesServerManaged` branch *regenerates* the schedule; freeze *suppresses* it — see *Payment term & due-date schedule sync* above.
+
+---
+
+## Payments subpage & recording
+
+**What:** the `invoice-payments` subpage (under `invoice-details`) shows the invoice's payments **grouped by scadenza** — one `GroupTitle` per due date (heading `Scadenza {date}`; description = residual + paid + `InvoicePaymentStatusBadge`; the right column holds the payment history and the action buttons). Each recorded payment is deletable (confirm dialog). Collectable scadenze expose **Registra pagamento** (`RecordPaymentDialog`) and an icon-only **Segna come incassato** (records the residual, confirm dialog). The subpage fetches the full invoice and `useProvides(...'invoice')` so `InvoiceSidebar` renders the header + menu — the standard entity-subpage pattern (cf. the order delivery recap in [actionables.md](./actionables.md)). After any mutation it **silently re-fetches** (updates `invoice` in place, no spinner flash) instead of resetting the request promise.
+
+**Why:** a payment belongs to a scadenza (`POST /invoice-due-dates/{id}/payments`), not to the invoice, so grouping by scadenza mirrors the domain. The subpage is the *provider* of `invoice` on its own page (InvoicesDetails isn't mounted there). Collectability is gated by `isDueDateCollectable` (see [actionables.md](./actionables.md)).
+
+**The record dialog** (`RecordPaymentDialog`, shared with the *Da incassare* list): prefills `payment_date` = today, `amount` = the scadenza's **residual** (not the full amount — a partially-paid scadenza would exceed the residual and be rejected), `payment_method` = the scadenza's own method; all editable. Client validation enforces `0.01 <= amount <= residual`; the backend's residual/state 422 surfaces as inline field errors via `FormUtil`. Its fields override `width` to `w-full min-w-0` so they don't overflow the narrow dialog (see [forms.md](../components/forms.md) -> *Form fields in a narrow dialog*).
+
+**Where:** `InvoicePayments.svelte` (+ `.contract.ts` provides `invoice`), `RecordPaymentDialog.svelte`, `invoice-payment-actions.ts`; `InvoiceSidebar.svelte` (payments menu item); `admin-config.ts` — `invoice-details.subpages` scaffold entry (a live tenant also needs the subpage added to its own config).
+
+---
+
 ## Line items editor
 
 **What:** A line item is locked (read-only except description, not removable) when it carries `transport_document_item_id` or `sales_order_item_id` (i.e. it traces back to an upstream document). Items are `required` on create but not on edit. The editor uses `uom` / `discount_percent`; the API uses `unit_of_measure` / `discount_percentage` — remapped at submit (`mapItemsToInvoicePayload`) and load (`mapItemsToEditorShape`).
@@ -139,21 +165,21 @@ Main files:
 
 ## Status badges
 
-**What:** `InvoiceStateBadge` maps state → icon/color: `accepted` green check, `rejected` red X, `error` yellow alert, `archived` gray archive, everything else (draft/sent/delivered) a gray dashed circle. `InvoiceableDocumentStatusBadge` picks its metric by source type: sales order → `fulfillment_status` (fully_shipped→active, partially_shipped→in-progress, picked→paused, else neutral); transport document → `invoicing_status` (full→active, partial→in-progress, else neutral); renders nothing if both are null.
+**What:** `InvoiceStateBadge` maps state → icon/color: `accepted` green check, `rejected` red X, `error` yellow alert, `archived` gray archive, everything else (draft/submitted/sent/delivered) a gray dashed circle — `submitted` (the first issued state, handed to SDI) was added to the `InvoiceState` union and falls in this branch. `InvoicePaymentStatusBadge` renders the tri-state **payment** status of an invoice or scadenza (`paid` green check, `partially_paid` amber, `unpaid` gray) and renders **nothing** when the status is `null` (schedule-less invoices, e.g. TD04) so callers can pass it straight through. `InvoiceableDocumentStatusBadge` picks its metric by source type: sales order → `fulfillment_status` (fully_shipped→active, partially_shipped→in-progress, picked→paused, else neutral); transport document → `invoicing_status` (full→active, partial→in-progress, else neutral); renders nothing if both are null.
 
 **Why:** Quick visual recognition of SDI status / invoice-readiness. Each source document type exposes a different readiness metric.
 
-**Where:** `InvoiceStateBadge.svelte`; `InvoiceableDocumentStatusBadge.svelte`.
+**Where:** `InvoiceStateBadge.svelte`; `InvoicePaymentStatusBadge.svelte`; `InvoiceableDocumentStatusBadge.svelte`. Labels/variants in `enum-labels.ts` (`invoicePaymentStatusLabels`, `invoicePaymentStatusVariantConfig`).
 
 ---
 
 ## Filters
 
-**What:** The invoice **state** filter options are generated by iterating `invoiceStateLabels` (no hard-coded state list). The invoiceable-documents **document_type** filter is rendered in the UI but **not yet wired to the backend** (TODO). Date-range filters apply `dayBoundary: 'startOf'` to `*_from` (00:00:00) and `'endOf'` to `*_to` (23:59:59) for inclusive day-level filtering.
+**What:** The invoice **state** filter options are generated by iterating `invoiceStateLabels` (no hard-coded state list). A **payment_status** filter (single-select `enum`, options from `invoicePaymentStatusLabels`) was added to both the invoices listing and the *Da incassare* payments listing; the backend matches one status and never returns schedule-less invoices for any value. The invoiceable-documents **document_type** filter is rendered in the UI but **not yet wired to the backend** (TODO). Date-range filters apply `dayBoundary: 'startOf'` to `*_from` (00:00:00) and `'endOf'` to `*_to` (23:59:59) for inclusive day-level filtering.
 
 **Why:** Enum-driven options auto-track backend states. The document_type filter is UI-only because the backend doesn't support it yet — keep the TODO visible. Boundary handling makes calendar-day ranges inclusive.
 
-**Where:** `InvoicesFilters.svelte`; `InvoiceableDocumentsFilters.svelte` (document_type TODO comment). See `.blueprints/components/table-filters.md` for the generic filter system.
+**Where:** `InvoicesFilters.svelte` (state + payment_status); `PaymentsFilters.svelte` (payment_status); `InvoiceableDocumentsFilters.svelte` (document_type TODO comment). See `.blueprints/components/table-filters.md` for the generic filter system.
 
 ---
 

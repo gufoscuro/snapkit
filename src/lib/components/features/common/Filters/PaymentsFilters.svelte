@@ -15,8 +15,14 @@
 <script lang="ts">
   import GenericFilters from '$components/features/common/GenericFilters/default/GenericFilters.svelte'
   import * as m from '$lib/paraglide/messages'
-  import type { CustomerSummary } from '$lib/types/api-types'
-  import { createQueryRequestObject, type FilterConfig, type FilterOption, type PaginatedResponse } from '$lib/utils/filters'
+  import type { CustomerSummary, InvoicePaymentStatus } from '$lib/types/api-types'
+  import { invoicePaymentStatusLabels } from '$lib/utils/enum-labels'
+  import {
+    createQueryRequestObject,
+    type FilterConfig,
+    type FilterOption,
+    type PaginatedResponse,
+  } from '$lib/utils/filters'
   import { api } from '$lib/utils/request'
   import type { SnippetProps } from '$utils/runtime'
 
@@ -33,11 +39,20 @@
     return res.data.map(c => ({ value: c.id as string, label: c.name }))
   }
 
+  const paymentStatusOptions: { value: InvoicePaymentStatus; label: string }[] = (
+    Object.keys(invoicePaymentStatusLabels) as InvoicePaymentStatus[]
+  ).map(value => ({ value, label: invoicePaymentStatusLabels[value]() }))
+
   const config: FilterConfig = {
     customer_id: {
       type: 'customer',
       label: m.customer(),
       fetchFunction: fetchCustomers,
+    },
+    payment_status: {
+      type: 'enum',
+      label: m.payment_status(),
+      options: paymentStatusOptions,
     },
     due_date_from: {
       type: 'date',
