@@ -1,0 +1,40 @@
+<!--
+  @component ToCollectKpi
+  @description Self-enclosed KPI: number of invoice due dates to collect this
+  week. A count of zero is treated as a positive "all clear" state. Lazily
+  fetches its own data; falls back to a mock until the endpoint ships.
+  @keywords dashboard, kpi, to-collect, incassare, payments, due-dates
+  @api GET /api/legal-entities/{legalEntity}/dashboard/kpis/to-collect (proposed) -> CountKpiResponse
+-->
+<script lang="ts">
+  import { StatCard } from '$lib/components/core/StatCard'
+  import { Resource } from '$lib/hooks/use-resource.svelte'
+  import * as m from '$lib/paraglide/messages.js'
+  import { renderPrice } from '$lib/utils/prices'
+  import { createRoute } from '$lib/utils/route-builder'
+  import type { SnippetProps } from '$utils/runtime'
+  import BanknoteIcon from '@lucide/svelte/icons/banknote'
+  import { fetchCountKpi } from '../../_shared/fetchers'
+  import { mockToCollect } from './ToCollectKpi.mock'
+
+  let { legalEntity }: SnippetProps = $props()
+
+  const resource = new Resource(() => fetchCountKpi(legalEntity?.id, 'to-collect', mockToCollect))
+  const kpi = $derived(resource.data?.value)
+  const isZero = $derived(kpi?.count === 0)
+  const amount = $derived(kpi?.amount ? renderPrice(kpi.amount.total, kpi.currency) : undefined)
+</script>
+
+<StatCard
+  title={m.dashboard_to_collect_title()}
+  loading={resource.loading}
+  error={resource.error}
+  onRetry={resource.reload}
+  value={kpi ? String(kpi.count) : undefined}
+  tone={isZero ? 'positive' : 'default'}
+  footerTitle={isZero ? m.dashboard_all_clear() : amount}
+  footerSubtext={isZero ? m.dashboard_to_collect_zero() : m.dashboard_to_collect_subtext()}
+  href={createRoute({ $id: 'payments' })}
+  demo={resource.data?.demo}>
+  {#snippet icon()}<BanknoteIcon class="size-4" />{/snippet}
+</StatCard>
