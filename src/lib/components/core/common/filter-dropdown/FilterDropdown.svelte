@@ -66,7 +66,20 @@
     const incomingKey = JSON.stringify(query ?? {})
     if (incomingKey === lastEmittedQueryKey) return
     lastEmittedQueryKey = incomingKey
-    internalState = deserializeFilters(config, query ?? {})
+
+    // Compare *canonically*, not by raw string. The URL may hold a non-canonical
+    // form of a value we serialize differently — e.g. a date-only
+    // `delivery_date_to=2026-07-07` vs the end-of-day ISO we emit. Resyncing +
+    // re-emitting on such a "difference" creates an infinite loop when the
+    // rewritten URL can't be read back identically (replaceState round-trip).
+    // If the incoming query means the same as our current state, do nothing.
+    const incomingState = deserializeFilters(config, query ?? {})
+    const sameAsCurrent =
+      JSON.stringify(serializeFilters(config, incomingState)) ===
+      JSON.stringify(serializeFilters(config, internalState))
+    if (sameAsCurrent) return
+
+    internalState = incomingState
   })
 
   $effect(() => {
