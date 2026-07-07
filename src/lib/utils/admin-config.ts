@@ -262,6 +262,77 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                     },
                   },
                 },
+                {
+                  $id: 'customer-intent-declarations',
+                  title: 'customer_intent_declarations',
+                  description:
+                    "List of all intent declarations (dichiarazioni d'intento) associated with a single customer",
+                  route: '/contacts/customers/upsert/:uuid/intent-declarations',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.CustomerSidebar',
+                      enabled: true,
+                    },
+                    filters: {
+                      componentKey: 'common.filters.CustomerIntentDeclarationsFilters',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'customers.customerintentdeclarationstable.default.CustomerIntentDeclarationsTable',
+                      enabled: true,
+                    },
+                  },
+                  subpages: [
+                    {
+                      $id: 'customer-intent-declaration-details',
+                      title: 'customer_intent_declaration_details',
+                      description: "A form to view and edit the details of a single intent declaration",
+                      route: '/contacts/customers/upsert/:uuid/intent-declarations/upsert{/:did}',
+                      layout: {
+                        componentKey: 'layouts.LeftSidebar',
+                        enabled: true,
+                      },
+                      snippets: {
+                        sidebar: {
+                          componentKey: 'globals.sidebars.IntentDeclarationSidebar',
+                          enabled: true,
+                        },
+                        content: {
+                          componentKey:
+                            'customers.customerintentdeclarationdetails.default.CustomerIntentDeclarationDetails',
+                          enabled: true,
+                        },
+                      },
+                      subpages: [
+                        {
+                          $id: 'customer-intent-declaration-usages',
+                          title: 'customer_intent_declaration_usages',
+                          description: 'Read-only ledger of plafond movements for a single intent declaration',
+                          route: '/contacts/customers/upsert/:uuid/intent-declarations/:did/usages',
+                          layout: {
+                            componentKey: 'layouts.LeftSidebar',
+                            enabled: true,
+                          },
+                          snippets: {
+                            sidebar: {
+                              componentKey: 'globals.sidebars.IntentDeclarationSidebar',
+                              enabled: true,
+                            },
+                            content: {
+                              componentKey:
+                                'customers.customerintentdeclarationusages.default.CustomerIntentDeclarationUsages',
+                              enabled: true,
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
               ],
             },
           ],

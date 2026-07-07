@@ -780,6 +780,90 @@ export type CustomerContact = {
 }
 
 /**
+ * Intent Declaration (dichiarazione d'intento) — a customer sub-resource.
+ * `amount_type` campo-1 (`single_operation`) exhausts on any usage; campo-2
+ * (`up_to_amount`) only at full plafond capacity.
+ */
+export type IntentDeclarationAmountType = 'single_operation' | 'up_to_amount'
+
+/**
+ * Computed status — derived from flags + used/declared amounts + reference year.
+ * Priority: invalidated > revoked > expired > exhausted.
+ */
+export type IntentDeclarationStatus =
+  | 'draft'
+  | 'active'
+  | 'exhausted'
+  | 'revoked'
+  | 'invalidated'
+  | 'expired'
+
+/** Ledger movement reason on `intent_declaration_usages` (append-only). */
+export type IntentDeclarationUsageReason =
+  | 'consumed'
+  | 'reversed_reopen'
+  | 'reversed_error'
+  | 'reversed_archived'
+  | 'resync_delta'
+  | 'credit_note_restore'
+
+/**
+ * Intent Declaration from Moddo API
+ * GET /api/legal-entities/{legalEntity}/customers/{customer}/intent-declarations
+ */
+export type IntentDeclaration = {
+  id: string
+  customer_id: string
+  protocol_number: string
+  protocol_progressive: string
+  /** Composed display protocol (`protocol_number-protocol_progressive`). */
+  protocol: string
+  receipt_date: string
+  reference_year: number
+  amount_type: IntentDeclarationAmountType
+  declared_amount: number
+  used_amount: number
+  residual_amount: number
+  /** Customs declaration (dogana) — registrable but never allocatable. */
+  is_customs: boolean
+  status: IntentDeclarationStatus
+  verified_at: string | null
+  verified_by: string | null
+  revoked_at: string | null
+  invalidated_at: string | null
+  note: string
+  version: number
+  /** Eager-loaded only on the cross-customer legal-entity list. */
+  customer?: {
+    id: string
+    name: string
+    vat_number: string
+  }
+}
+
+/**
+ * A single consumption/reversal row of an intent declaration's plafond.
+ * Exactly one of `transport_document` / `invoice` is set (DB XOR).
+ * GET /api/legal-entities/{legalEntity}/customers/{customer}/intent-declarations/{intentDeclaration}/usages
+ */
+export type IntentDeclarationUsage = {
+  id: string
+  intent_declaration_id: string
+  amount: number
+  reason: IntentDeclarationUsageReason
+  occurred_on: string
+  created_at: string
+  transport_document?: {
+    id: string
+    document_number: string
+  }
+  invoice?: {
+    id: string
+    document_number: string
+  }
+}
+
+/**
  * Customer from Moddo API GET /api/legal-entities/{legalEntity}/customers
  */
 export type Customer = {
