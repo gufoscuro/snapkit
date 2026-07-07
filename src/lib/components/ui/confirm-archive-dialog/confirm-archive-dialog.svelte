@@ -10,6 +10,7 @@
 -->
 <script lang="ts" module>
   import { toast } from 'svelte-sonner'
+  import { showActionErrorToast } from '$lib/utils/action-error-toast'
   import * as m from '$lib/paraglide/messages.js'
 
   type DialogMode = 'loading' | 'confirm' | 'blocked'
@@ -53,9 +54,7 @@
         } catch (err) {
           if (this.generation !== generation) return
           console.error('Archive prefetch failed:', err)
-          if (options.errorMessage) {
-            toast.error(options.errorMessage)
-          }
+          showActionErrorToast(options.errorMessage, err)
           options.onError?.(err)
           this.reset()
         }
@@ -92,10 +91,8 @@
       } catch (err) {
         console.error('Archive failed:', err)
 
-        // Show error toast
-        if (this.options.errorMessage) {
-          toast.error(this.options.errorMessage)
-        }
+        // Show error toast (with the localized server detail when available)
+        showActionErrorToast(this.options.errorMessage, err)
 
         // Call onError callback if provided
         this.options.onError?.(err)

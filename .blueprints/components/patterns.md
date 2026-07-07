@@ -117,6 +117,7 @@ Record actions are operations that can be performed on a specific record (e.g. s
 | **Types & execution** | `src/lib/utils/record-actions.ts` | `RecordAction` type, `executeRecordAction()`, `createFlagToggleAction()` factory |
 | **Confirmation dialog** | `src/lib/components/ui/confirm-action-dialog/` | Generic singleton dialog (like `confirmArchive` but for any action) |
 | **Menu component** | `src/lib/components/ui/record-action-menu/` | `RecordActionMenu` — DropdownMenu that renders a list of actions |
+| **Error toast** | `src/lib/utils/action-error-toast.ts` | `showActionErrorToast()` — surfaces the localized server error on a failed action |
 
 ### Core types
 
@@ -180,6 +181,30 @@ import { executeRecordAction } from '$lib/utils/record-actions'
 
 await executeRecordAction(suspendAction, { targetId: customer.id, name: customer.name })
 ```
+
+### Error handling
+
+When an action's `onAction` throws, the error is surfaced via `showActionErrorToast` (`$lib/utils/action-error-toast`). This is wired centrally into `executeRecordAction` **and** both confirmation dialogs (`confirm-action-dialog`, `confirm-archive-dialog`), so a plain action definition gets it for free — you don't call it yourself.
+
+What it does:
+
+- Extracts the **already-localized** server message via `extractApiErrorMessage` (`$lib/utils/request.ts`). The backend localizes error/validation messages server-side from the `Accept-Language` header the client already sends, so `error.data.message` is safe to display. For **422** it concatenates the per-field messages in `data.errors` (the generic top-level `message` is skipped); for other errors it uses `data.message`.
+- Renders a toast with the action's static `errorMessage` as the **headline** and the server detail as the **description** line. When only one is available it becomes the headline; with neither, a generic `m.common_error()` is shown.
+- Stays visible ~10s (`ACTION_ERROR_TOAST_DURATION`) with a close button — longer than the sonner default because the server detail is often actionable, but dismissible rather than fully persistent since these failures are recoverable.
+
+So in a normal action you only set `errorMessage` (the static headline) and let the helper add the server detail:
+
+```typescript
+{
+  id: 'submit',
+  errorMessage: m.invoice_action_error(),   // headline; server detail is appended automatically
+  onAction: async (opts) => {
+    await api.post(`/legal-entities/${leId}/invoices/${opts.targetId}/transition`, { data: { transition: 'submit' } })
+  },
+}
+```
+
+> ⚠️ **Actions that own their own `try/catch`** (e.g. a `validate` that surfaces 400 SDI violations inline in the form) bypass `executeRecordAction`'s catch — the thrown error never reaches it. In their fallback branch they **must** call `showActionErrorToast(staticMessage, err)` themselves instead of a bare `toast.error(staticMessage)`, otherwise the localized server detail is lost.
 
 ### Flag toggle actions
 
@@ -478,6 +503,74 @@ When a resource exposes a state machine via a `/transition` endpoint, the backen
 - The menu only renders when there are visible actions — no need for manual `{#if}` around it (but guard `actionOptions` to avoid passing null)
 - Labels, confirmation texts, and success messages must use Paraglide (`m.xxx()`)
 - For destructive operations (suspend, cease), use `confirmationVariant: { set: 'destructive' }`
+
+## Download Actions
+
+For downloading a record's exported files (PDF, XML, …) in the bottom bar. Both
+components own the busy/spinner state and the error toast, so the callback only
+invokes `apiDownload`. See **[API Integration → Downloading Files](../api/integration-guidelines.md)**
+for `apiDownload` itself (filename resolution, CORS caveat).
+
+### DownloadActionButton — single format
+
+Use when the record exposes **one** downloadable file. Renders a generic
+download icon; differentiate concurrent buttons by `tooltip`.
+
+**File:** `src/lib/components/core/DownloadActionButton.svelte`
+
+```svelte
+<DownloadActionButton
+  tooltip={m.invoice_xml_download()}
+  onDownload={() => apiDownload({ url: `/legal-entities/${leId}/invoices/${id}/xml` })} />
+```
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `onDownload` | `() => Promise<void>` | required | Async callback that performs the download |
+| `tooltip` | `string` | `m.download_pdf()` | Tooltip / aria-label |
+| `variant` | `ButtonVariant` | `'outline'` | Button variant |
+| `size` | `'sm' \| 'default' \| 'lg' \| 'icon'` | `'icon'` | Button size |
+
+### DownloadActionMenu — multiple formats
+
+Use when the same record can be exported in **more than one format**. Prefer this
+over stacking several `DownloadActionButton` — a single trigger button opens a
+dropdown of formats, with one shared busy state (the trigger spins while any item
+downloads).
+
+**File:** `src/lib/components/core/DownloadActionMenu.svelte`
+
+```svelte
+<DownloadActionMenu
+  tooltip={m.download_document()}
+  items={[
+    { id: 'xml', label: m.invoice_xml_download(), icon: FileCodeIcon,
+      onDownload: () => apiDownload({ url: `/legal-entities/${leId}/invoices/${id}/xml` }) },
+    { id: 'pdf', label: m.invoice_pdf_download(), icon: FileTextIcon,
+      onDownload: () => apiDownload({ url: `/legal-entities/${leId}/invoices/${id}/pdf` }) },
+  ]} />
+```
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `items` | `DownloadMenuItem[]` | required | Download actions listed in the dropdown |
+| `tooltip` | `string` | `m.download_document()` | Trigger tooltip / aria-label |
+| `label` | `string` | — | Optional dropdown header; omit for no header |
+| `align` | `'start' \| 'end'` | `'end'` | Dropdown alignment |
+| `variant` | `ButtonVariant` | `'outline'` | Trigger button variant |
+| `size` | `'sm' \| 'default' \| 'lg' \| 'icon'` | `'icon'` | Trigger button size |
+
+`DownloadMenuItem` is `{ id, label, icon?, disabled?, onDownload }` — the
+per-format `icon` (a Lucide component) is optional.
+
+### Best practices
+
+- Use `DownloadActionButton` for a single file, `DownloadActionMenu` for 2+ formats
+- Do **not** disable a menu item based on the shared busy flag — bits-ui cancels
+  the dropdown's close-on-select when an item goes disabled in the same tick.
+  Concurrent downloads are already blocked by the internal busy guard + the
+  disabled trigger. Only use `item.disabled` for domain conditions.
+- Labels and tooltips must use Paraglide (`m.xxx()`)
 
 ## Creating Selector Components
 

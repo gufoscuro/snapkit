@@ -1,8 +1,11 @@
 {
 	"name": "snapkit",
 	"private": true,
-	"version": "0.3.4",
+	"version": "0.11.5",
 	"type": "module",
+	"workspaces": [
+		"packages/*"
+	],
 	"scripts": {
 		"dev": "vite dev --host",
 		"build": "vite build",
@@ -12,6 +15,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
+		"sync:chat": "./scripts/sync-chat.sh",
 		"test:unit": "vitest --project unit",
 		"test:server": "vitest --project server",
 		"test:browser": "vitest --project client",
@@ -85,6 +89,7 @@
 		"@codemirror/language": "^6.12.2",
 		"@fontsource-variable/geist": "^5.2.8",
 		"@fullcalendar/daygrid": "^6.1.20",
+		"@google/genai": "^1.52.0",
 		"@sinclair/typebox": "^0.34.47",
 		"@tabler/icons-svelte": "^3.36.1",
 		"@tailwindcss/typography": "^0.5.19",

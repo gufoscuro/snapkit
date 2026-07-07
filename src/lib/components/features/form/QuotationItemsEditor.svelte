@@ -14,7 +14,7 @@
   /**
    * Quotation item type enum
    */
-  export type QuotationItemType = 'item' | 'descriptive'
+  export type QuotationItemType = 'item' | 'descriptive' | 'charge'
 
   /**
    * Output line item type (matches API schema for create/update).
@@ -48,6 +48,9 @@
     quotation_item_id?: string
     confirmed_delivery_date?: string
     is_editable?: boolean
+    // Invoice traceability fields (carried opaquely; no UI)
+    sales_order_item_id?: string
+    transport_document_item_id?: string
   }
 
   /**
@@ -123,6 +126,9 @@
     requestedDeliveryDate: string
     deliveryDate: string
     itemAttr?: Item
+    // Opaque upstream linkage (invoice flow: SO/TD source items)
+    salesOrderItemId?: string
+    transportDocumentItemId?: string
   }
 
   type Props = {
@@ -218,6 +224,8 @@
         return {
           type: 'descriptive' as const,
           description: item.description,
+          sales_order_item_id: item.salesOrderItemId,
+          transport_document_item_id: item.transportDocumentItemId,
         }
       }
 
@@ -233,6 +241,8 @@
         vat_code_id: item.vatCodeId || undefined,
         requested_delivery_date: item.requestedDeliveryDate || undefined,
         delivery_date: item.deliveryDate || undefined,
+        sales_order_item_id: item.salesOrderItemId,
+        transport_document_item_id: item.transportDocumentItemId,
       }
     })
   }
@@ -260,6 +270,8 @@
         requestedDeliveryDate: item.requested_delivery_date ?? '',
         deliveryDate: item.delivery_date ?? '',
         itemAttr: item.item_snapshot ? ({ id: item.item_id, ...item.item_snapshot } as Item) : undefined,
+        salesOrderItemId: item.sales_order_item_id,
+        transportDocumentItemId: item.transport_document_item_id,
       }))
     }
   })

@@ -1,5 +1,6 @@
 import { invalidateAll } from '$app/navigation'
 import { LEGAL_ENTITY_COOKIE_NAME } from '$lib/fixtures/constants'
+import { invalidateAllCache } from './request'
 
 /**
  * Reads the current legal-entity ID stored in the cookie.
@@ -20,6 +21,11 @@ export async function switchLegalEntity(entityId: string, { reload = true }: { r
   if (existing === entityId) return
 
   document.cookie = `${LEGAL_ENTITY_COOKIE_NAME}=${entityId}; path=/; SameSite=Lax`
+
+  // The in-memory API cache is keyed by URL but the legal entity comes from a
+  // cookie, so cached entries from the previous entity would otherwise be
+  // returned to code running under the new one.
+  invalidateAllCache()
 
   if (reload) {
     await invalidateAll()

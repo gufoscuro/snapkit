@@ -28,6 +28,14 @@ export type FormAPI<T extends Record<string, unknown> = Record<string, unknown>>
 	 * errors keyed by `{prefix}{index}.{field}` after the array is mutated.
 	 */
 	clearErrorsAtPrefix: (prefix: string) => void;
+	/**
+	 * Register a callback that runs synchronously right before submission,
+	 * after `preventDefault` and before validation. Used by fields that buffer
+	 * state behind a debounce (EditableListField, EditableTableField, …) so
+	 * pending writes land in `values` before the form is validated and sent.
+	 * Returns an unregister function — call it on component teardown.
+	 */
+	registerBeforeSubmit: (cb: () => void) => () => void;
 
 	// Custom Fields (parallel state — dynamic keys not part of T)
 	readonly customFieldValues: Record<string, unknown>;

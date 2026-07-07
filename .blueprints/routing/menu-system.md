@@ -118,6 +118,27 @@ A `simple` submenu always opens its own `<Sidebar.Group>`. If it's preceded by o
 
 If the submenu has no visible link children, the group is omitted entirely.
 
+#### Label-less group (for the actionables section)
+
+Set `label: ''` (empty string) on a `simple` submenu to render the group **without** a `GroupLabel` — just the flat iconated links, no section header. The render guards the label with `{#if segment.label}` in `LeftSidebarMenu.svelte`, so an empty (falsy) label emits no header row. `getI18nLabel('')` would return `''` anyway, but the guard avoids an empty header taking vertical space.
+
+```typescript
+{
+  type: 'submenu',
+  label: '',                    // no GroupLabel — renders as a bare list at the top
+  icon: 'Layers',
+  submenuStyle: 'simple',
+  children: [
+    { type: 'link', label: 'Home',        pageId: 'home',       icon: 'House' },
+    { type: 'link', label: 'to_ship',     pageId: 'to-ship',    icon: 'Truck' },
+    { type: 'link', label: 'to_collect',  pageId: 'payments',   icon: 'CreditCard' },
+    { type: 'link', label: 'to_invoice',  pageId: 'to-invoice', icon: 'FileClock' }
+  ]
+}
+```
+
+**Why:** this is how the scaffold's first group (`scaffoldDashboardStructure()` in `src/lib/utils/admin-config.ts`) renders the **actionables** — the cross-cutting "things to do" (Da spedire / Da incassare / Da fatturare) sit label-less at the very top, above the labelled `master_data` / `sales` / `invoicing` sections. Prefer this over a labelled group when the items are the primary landing actions and a header would be noise.
+
 ### 2. Collapsible Style (`'collapsible'`)
 
 **Best for:** keeping a long list of related links collapsed by default to save vertical space.

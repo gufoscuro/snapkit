@@ -62,15 +62,9 @@
     onChoose = () => {},
     onChange = () => {},
     onClear = () => {},
-    onCreateRecord = () =>
-      openRecordCreation('item-details', m.new_tab_opened_for_item(), `/legal-entities/${legalEntityId}/items`),
+    onCreateRecord = () => openRecordCreation('item-details', m.new_tab_opened_for_item()),
     onOpenRecord = (option: ExtendedOption) =>
-      openRecordEdit(
-        'item-details',
-        { uuid: option.value as string },
-        m.new_tab_opened_for_item_edit(),
-        `/legal-entities/${legalEntityId}/items`,
-      ),
+      openRecordEdit('item-details', { uuid: option.value as string }, m.new_tab_opened_for_item_edit()),
   }: Props = $props()
 
   const contextGetter = getSnippetPropsContext()

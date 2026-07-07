@@ -38,7 +38,7 @@
   import Label from '$components/ui/label/label.svelte'
   import * as Select from '$components/ui/select'
   import * as Table from '$components/ui/table'
-  import type { PaymentTermDueDate } from '$lib/types/api-types'
+  import type { PaymentAmountType, PaymentMethod, PaymentTermDueDate } from '$lib/types/api-types'
   import type { BasicOption } from '$utils/generics'
   import { untrack } from 'svelte'
 
@@ -129,7 +129,6 @@
     { value: 'totale_documento', label: m.payment_term_amount_type_totale_documento() },
     { value: 'imponibile', label: m.payment_term_amount_type_imponibile() },
     { value: 'iva', label: m.payment_term_amount_type_iva() },
-    { value: 'acconto', label: m.payment_term_amount_type_acconto() },
   ]
 
   // EditableTableField callbacks
@@ -156,8 +155,8 @@
     return internalItems.map(item => ({
       days: parseInt(item.days),
       percentage: parseFloat(item.percentage),
-      payment_method: item.payment_method,
-      amount_type: item.amount_type,
+      payment_method: item.payment_method as PaymentMethod,
+      amount_type: item.amount_type as PaymentAmountType,
     }))
   }
 

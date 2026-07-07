@@ -4,35 +4,40 @@
   Each item is either linked to a sales order item (description/UoM/item_id are
   derived server-side from the snapshot) or a free entry. Pricing/VAT are not
   part of the warehouse order item model.
-  Supports importing items from confirmed sales orders for the same customer.
-  @keywords warehouse-order, items, editor, line-items, picking, import, sales-order
-  @uses EditableListField, ItemSelector, ImportMenu
+  The import-from-sales-orders flow lives at the form level (WarehouseOrderDetails);
+  this component exposes `addItems` / `getItems` for that flow to drive imports.
+  @keywords warehouse-order, items, editor, line-items, picking
+  @uses EditableListField, ItemSelector
 -->
 <script lang="ts" module>
   export type WarehouseOrderLineItem = {
+    /** Line type: `item` carries quantity/UOM, `descriptive` is a free-text annotation. */
+    type: 'item' | 'descriptive'
     /** Persisted UUID — present only on existing items */
     id?: string
-    /** Linked sales order item UUID — when set, item_id/description/uom are derived server-side */
+    /** Linked sales order item UUID — when set on an `item` line, item_id/description/uom
+     * are derived server-side. On a `descriptive` line it is an FK back to a source SO line
+     * for chain traceability. */
     sales_order_item_id?: string
-    /** Item UUID — required when sales_order_item_id is not provided */
+    /** Item UUID — required for `item` lines when sales_order_item_id is not provided */
     item_id?: string
     /** Cached item snapshot for display */
     item_snapshot?: Record<string, unknown>
-    /** Description — required when sales_order_item_id is not provided */
+    /** Description — required for both `item` (when not linked) and `descriptive` lines */
     description?: string
-    /** Requested quantity */
-    quantity_requested: number
+    /** Requested quantity. Required on `item` lines, omitted on `descriptive`. */
+    quantity_requested?: number
     /** Picked quantity — read-only here, mutated via the pick-items endpoint */
     quantity_picked?: number
-    /** Unit of measure — required when sales_order_item_id is not provided */
+    /** Unit of measure (`item` lines only when not linked) */
     uom?: string
   }
 </script>
 
 <script lang="ts">
-  import { ImportMenu } from '$components/core/common/import-menu'
   import EditableListField from '$components/core/form/EditableListField.svelte'
   import NumberField from '$components/core/form/NumberField.svelte'
+  import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { FormFieldClass } from '$components/core/form/form'
@@ -45,48 +50,20 @@
   import * as m from '$lib/paraglide/messages'
   import type { Item, UnitOfMeasure } from '$lib/types/api-types'
   import { toSelectItems, unitOfMeasureLabels } from '$lib/utils/enum-labels'
-  import type { BasicOption } from '$lib/utils/generics'
-  import { apiRequest } from '$utils/request'
+  import { generateId } from '$lib/utils/id'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
+  import Pencil from '@lucide/svelte/icons/pencil'
   import Plus from '@lucide/svelte/icons/plus'
 
   type InternalLineItem = WarehouseOrderLineItem & {
     /** Cached item entity for the selector */
     itemAttr?: Item
+    /** UI-only: identifies a batch of items imported together (used for color coding). Stripped in transformOutput. */
+    _groupId?: string
   }
-
-  type SalesOrderWithItems = {
-    id: string
-    document_number: string
-    document_date: string
-    customer_id: string
-    sales_transaction_type?: string
-    incoterm?: string
-    items?: SalesOrderItemSnapshot[]
-  }
-
-  type SalesOrderItemSnapshot = {
-    id: string
-    type: 'item' | 'descriptive'
-    item_id: string
-    item_snapshot: Record<string, unknown>
-    description: string
-    quantity: number
-    uom: string
-  }
-
-  const MAX_PREVIEW_ITEMS = 10
 
   type Props = {
-    /** Legal entity ID for API calls */
-    legalEntityId: string | undefined
-    /** Customer ID — gates the import action and filters available sales orders */
-    customerId: string | undefined
-    /** Sales transaction type — passed as filter to the import menu */
-    salesTransactionType?: string
-    /** Incoterm — passed as filter to the import menu */
-    incoterm?: string
     /** Field name for form binding */
     name?: string
     /** Label for the field */
@@ -108,10 +85,6 @@
   }
 
   let {
-    legalEntityId,
-    customerId,
-    salesTransactionType,
-    incoterm,
     name = 'items',
     label = m.warehouse_order_line_items(),
     showLabel = true,
@@ -127,7 +100,6 @@
   const locked = $derived(form?.locked ?? false)
   const isDisabled = $derived(disabled || locked)
   const uomItems = toSelectItems(unitOfMeasureLabels)
-  const canImport = $derived(!!legalEntityId && !!customerId && !isDisabled)
 
   // EditableListField clears the form context for its children, so sub-fields
   // can't auto-resolve their error from `form.errors[name]`. We resolve it here
@@ -141,6 +113,7 @@
 
   function createEmptyItem(): InternalLineItem {
     return {
+      type: 'item',
       sales_order_item_id: undefined,
       item_id: '',
       description: '',
@@ -152,24 +125,37 @@
   }
 
   function isCompleteItem(item: InternalLineItem): boolean {
-    if (item.sales_order_item_id) {
-      return item.quantity_requested > 0
+    if (item.type === 'descriptive') {
+      return !!item.description
     }
-    return !!item.item_id && !!item.uom && !!item.description && item.quantity_requested > 0
+    const qty = item.quantity_requested ?? 0
+    if (item.sales_order_item_id) {
+      return qty > 0
+    }
+    return !!item.item_id && !!item.uom && !!item.description && qty > 0
   }
 
   function transformOutput(internalItems: InternalLineItem[]): WarehouseOrderLineItem[] {
     return internalItems.map(item => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { itemAttr, quantity_picked, ...rest } = item
+      const { itemAttr, _groupId, quantity_picked, ...rest } = item
+      if (rest.type === 'descriptive') {
+        return {
+          type: 'descriptive',
+          description: rest.description ?? '',
+          ...(rest.id ? { id: rest.id } : {}),
+          ...(rest.sales_order_item_id ? { sales_order_item_id: rest.sales_order_item_id } : {}),
+        }
+      }
       if (rest.sales_order_item_id) {
         return {
+          type: 'item',
           sales_order_item_id: rest.sales_order_item_id,
           quantity_requested: rest.quantity_requested,
           ...(rest.id ? { id: rest.id } : {}),
         }
       }
-      return rest
+      return { ...rest, type: 'item' }
     })
   }
 
@@ -178,6 +164,7 @@
       const snapshot = item.item_snapshot as Record<string, unknown> | undefined
       return {
         ...item,
+        type: item.type ?? 'item',
         itemAttr: snapshot ? ({ id: item.item_id, ...snapshot } as Item) : undefined,
       }
     })
@@ -229,66 +216,33 @@
     })
   }
 
-  function notifyFormUpdate() {
-    const output = transformOutput(items.filter(isCompleteItem))
-    onChange?.(output)
-    if (form) {
-      form.updateField(name, output as never)
-      // Stale server-side errors (keyed by `{name}.{index}.{field}`) reference
-      // indices that may have shifted after add/remove/reorder, or values that
-      // the user just corrected. Drop them all on every items mutation.
-      form.clearErrorsAtPrefix(`${name}.`)
-    }
-  }
-
+  /**
+   * Handle items change callback from EditableListField. Clears stale server-side
+   * errors keyed under `{name}.{index}.*` since indices may have shifted after
+   * an add/remove/reorder, or the user may have just corrected the field.
+   */
   function handleItemsChange(completedItems: InternalLineItem[]) {
     const output = transformOutput(completedItems)
     onChange?.(output)
     form?.clearErrorsAtPrefix(`${name}.`)
   }
 
-  async function fetchAvailableSalesOrders(search?: string): Promise<SalesOrderWithItems[]> {
-    if (!legalEntityId || !customerId) return []
-    const response = await apiRequest<{ data: SalesOrderWithItems[] }>({
-      url: `/legal-entities/${legalEntityId}/sales-orders`,
-      method: 'GET',
-      queryParams: {
-        state: 'approved',
-        customer_id: customerId,
-        ...(search ? { search } : {}),
-      },
-    })
-    const data = response.data ?? []
-    return data.filter(order => {
-      if (salesTransactionType && order.sales_transaction_type && order.sales_transaction_type !== salesTransactionType)
-        return false
-      if (incoterm && order.incoterm && order.incoterm !== incoterm) return false
-      return true
+  /**
+   * Append imported line items, tagged with a shared `_groupId` for color coding.
+   * Drives the import-from-sales-orders flow that lives in WarehouseOrderDetails.
+   */
+  export function addItems(newItems: WarehouseOrderLineItem[], options?: { groupId?: string }) {
+    editorRef?.addItems(mapFromApi(newItems), {
+      groupId: options?.groupId ?? generateId(),
     })
   }
 
-  function mapSalesOrderToOption(order: SalesOrderWithItems): BasicOption {
-    return { label: order.document_number, value: order.id }
-  }
-
-  function handleImport(orders: SalesOrderWithItems[]) {
-    const imported: InternalLineItem[] = orders.flatMap(order =>
-      (order.items ?? [])
-        .filter(item => item.type === 'item')
-        .map(item => ({
-          sales_order_item_id: item.id,
-          item_id: item.item_id,
-          item_snapshot: item.item_snapshot,
-          description: item.description,
-          quantity_requested: item.quantity,
-          uom: item.uom,
-          itemAttr: item.item_snapshot ? ({ id: item.item_id, ...item.item_snapshot } as Item) : undefined,
-        })),
-    )
-    if (imported.length === 0) return
-    const nonEmpty = items.filter(i => isCompleteItem(i))
-    items = [...nonEmpty, ...imported]
-    notifyFormUpdate()
+  /**
+   * Returns the current line items in API shape — used by WarehouseOrderDetails
+   * to dedupe imports against rows already in the editor.
+   */
+  export function getItems(): WarehouseOrderLineItem[] {
+    return (editorRef?.getItems() ?? []) as WarehouseOrderLineItem[]
   }
 </script>
 
@@ -306,50 +260,19 @@
   syncFromForm={false}
   onItemsChange={handleItemsChange}
   allowReorder
+  collapsible
   class={className}>
   {#snippet header({ options })}
     {#if !isDisabled}
       <div class="flex w-full items-center justify-end gap-2">
-        {#if canImport}
-          <ImportMenu
-            fetchFunction={fetchAvailableSalesOrders}
-            optionMappingFunction={mapSalesOrderToOption}
-            onimport={handleImport}
-            label={m.import_from_sales_orders()}>
-            {#snippet previewSnippet(order)}
-              {@const productItems = (order.items ?? []).filter(i => i.type === 'item')}
-              <div class="space-y-2">
-                <div>
-                  <p class="text-sm font-semibold">{order.document_number}</p>
-                  <p class="text-xs text-muted-foreground">{new Date(order.document_date).toLocaleDateString()}</p>
-                </div>
-                <div class="text-xs text-muted-foreground">
-                  {productItems.length}
-                  {m.items()}
-                </div>
-                {#if productItems.length > 0}
-                  <div class="space-y-1 border-t pt-2">
-                    {#each productItems.slice(0, MAX_PREVIEW_ITEMS) as item, idx (item.id + idx)}
-                      <div class="flex items-baseline justify-between gap-2 text-xs">
-                        <span class="truncate">{item.item_snapshot?.name ?? item.item_snapshot?.code ?? '-'}</span>
-                        <span class="shrink-0 text-muted-foreground">x{item.quantity}</span>
-                      </div>
-                    {/each}
-                    {#if productItems.length > MAX_PREVIEW_ITEMS}
-                      <p class="text-xs text-muted-foreground">
-                        +{productItems.length - MAX_PREVIEW_ITEMS}
-                        {m.items()}…
-                      </p>
-                    {/if}
-                  </div>
-                {/if}
-              </div>
-            {/snippet}
-          </ImportMenu>
-        {/if}
         <Button variant="outline" size="sm" onclick={options.toggleDragAndDrop}>
-          <ArrowUpDown class="mr-1 size-4" />
-          {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
+          {#if options.dragAndDropActive}
+            <Pencil class="mr-1 size-4" />
+            {m.edit_items()}
+          {:else}
+            <ArrowUpDown class="mr-1 size-4" />
+            {m.reorder_items()}
+          {/if}
         </Button>
       </div>
       <div class="my-8">
@@ -362,22 +285,57 @@
     <div class="flex w-full cursor-grab items-center gap-3 rounded border bg-muted/50 px-3 py-2">
       <GripVertical class="size-4 text-muted-foreground" />
       <span class="font-semibold text-primary"><span class="opacity-60">#</span>{index + 1}</span>
-      <span class="truncate text-sm">
-        {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
-      </span>
-      {#if item.quantity_requested}
-        <span class="text-xs text-muted-foreground">x{item.quantity_requested}</span>
+      {#if item.type === 'descriptive'}
+        <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {item.description || m.description()}
+        </span>
+      {:else}
+        <span class="min-w-0 flex-1 truncate text-sm">
+          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        </span>
+        <span class="w-20 shrink-0 text-right text-xs whitespace-nowrap tabular-nums">
+          {#if item.quantity_requested}{item.quantity_requested} {item.uom}{/if}
+        </span>
+      {/if}
+    </div>
+  {/snippet}
+
+  {#snippet collapsedItem({ item, index, groupColorClass })}
+    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 py-2 pr-12 pl-3 hover:bg-muted">
+      <span class="font-semibold {groupColorClass ?? 'text-primary'}"
+        ><span class="opacity-60">#</span>{index + 1}</span>
+      {#if item.type === 'descriptive'}
+        <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {item.description || m.description()}
+        </span>
+      {:else}
+        <span class="min-w-0 flex-1 truncate text-sm">
+          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        </span>
+        <span class="w-20 shrink-0 text-right text-xs whitespace-nowrap tabular-nums">
+          {#if item.quantity_requested}{item.quantity_requested} {item.uom}{/if}
+        </span>
       {/if}
     </div>
   {/snippet}
 
   {#snippet item({ item, index, updateItem })}
-    {@const isLinked = !!item.sales_order_item_id}
-    <div class="absolute -left-8 hidden h-6 text-sm leading-6 font-semibold text-primary md:block">
-      <span class="opacity-60">#</span>{index + 1}
-    </div>
-
-    <div class="grid grid-cols-1 gap-x-4 gap-y-3 pr-8 sm:grid-cols-2 lg:grid-cols-4">
+    {#if item.type === 'descriptive'}
+      <div>
+        <RichEditorField
+          name="{name}.{index}.description"
+          label={m.description()}
+          value={item.description}
+          error={getFieldError(index, 'description')}
+          errorPosition="floating-bottom"
+          disabled={isDisabled}
+          width="w-full"
+          minHeight="min-h-20 max-h-60 overflow-y-auto bg-input/10 dark:bg-input/30"
+          onChange={md => updateItem(index, { description: md })} />
+      </div>
+    {:else}
+      {@const isLinked = !!item.sales_order_item_id}
+      <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
       {#if isLinked}
         <div class="sm:col-span-2 lg:col-span-2">
           <span class="block text-sm leading-6 font-medium">{m.item()}</span>
@@ -471,15 +429,21 @@
           </div>
         </div>
       {/if} -->
-    </div>
+      </div>
+    {/if}
   {/snippet}
 
   {#snippet addButton({ addItem, disabled: addDisabled, options: opts })}
     {#if !opts.dragAndDropActive}
       <div class="mt-1 gap-2 md:flex">
-        <Button variant="outline" size="sm" disabled={addDisabled} onclick={() => addItem()}>
+        <Button variant="outline" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'item' })}>
           <Plus class="mr-1 size-4" />
           {m.add_item_line()}
+        </Button>
+
+        <Button variant="ghost" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'descriptive' })}>
+          <Plus class="mr-1 size-4" />
+          {m.add_description_line()}
         </Button>
       </div>
     {/if}

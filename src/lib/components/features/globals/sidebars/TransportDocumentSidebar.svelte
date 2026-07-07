@@ -77,9 +77,7 @@
           <TransportDocumentTypeBadge type={transportDocument.transport_document_type as TransportDocumentType} />
         {/if}
 
-        {#if transportDocument.invoicing_status}
-          <TransportDocumentInvoicingBadge invoicingStatus={transportDocument.invoicing_status} />
-        {/if}
+        <TransportDocumentInvoicingBadge invoicingStatus={transportDocument.invoicing_status} />
       </div>
 
       {#if carriedOnLabel}

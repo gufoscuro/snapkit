@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import type { StatusVariant } from '$lib/components/core/ResourceTable/renderers/StatusBadge.types'
+import type { StatusVariant as TableStatusVariant } from '$lib/components/core/ResourceTable/types'
 import * as m from '$lib/paraglide/messages.js'
 import type {
   AbcClass,
   AnnualRevenueRange,
   AtecoCode,
-  BillingFrequency,
-  BillingType,
   BinLocationType,
   CompanySize,
   Currency,
@@ -15,6 +15,16 @@ import type {
   DimensionUnit,
   EmployeeCountRange,
   Incoterm,
+  IntentDeclaration,
+  IntentDeclarationAmountType,
+  IntentDeclarationStatus,
+  IntentDeclarationUsageReason,
+  InvoiceableDocumentType,
+  InvoiceDocumentType,
+  InvoicePaymentStatus,
+  InvoiceState,
+  PaymentMethod,
+  PaymentSliceType,
   ItemCategory,
   ItemStatus,
   LegalEntityWarehouse,
@@ -517,14 +527,27 @@ export function getSalesOrderStatusVariant(status: SalesOrder['state']): BadgeVa
 // Sales Order Tags
 export const salesOrderTagConfig: Record<SalesOrderTag, EnumDisplayConfig> = {
   sent: { label: m.enum_sales_order_tag_sent, variant: 'default' },
+  payment_pending: { label: m.enum_sales_order_tag_payment_pending, variant: 'secondary' },
+  requires_direct_invoicing: { label: m.enum_sales_order_tag_requires_direct_invoicing, variant: 'secondary' },
+}
+
+export const salesOrderTagStatusVariantConfig: Record<SalesOrderTag, StatusVariant> = {
+  sent: 'active',
+  payment_pending: 'paused',
+  requires_direct_invoicing: 'alert',
 }
 
 export function getSalesOrderTagLabel(tag: SalesOrderTag): string {
   return salesOrderTagConfig[tag]?.label() ?? tag
 }
 
+export function getSalesOrderTagStatusVariant(tag: SalesOrderTag): StatusVariant {
+  return salesOrderTagStatusVariantConfig[tag] ?? 'active'
+}
+
 // Sales Order Fulfillment Status
 export const salesOrderFulfillmentStatusConfig: Record<SalesOrderFulfillmentStatus, EnumDisplayConfig> = {
+  none: { label: m.enum_sales_order_fulfillment_none, variant: 'secondary' },
   in_progress: { label: m.enum_sales_order_fulfillment_in_progress, variant: 'default' },
   picked: { label: m.enum_sales_order_fulfillment_picked, variant: 'default' },
   partially_shipped: { label: m.enum_sales_order_fulfillment_partially_shipped, variant: 'secondary' },
@@ -586,6 +609,84 @@ export function getTransportDocumentInvoicingStatusLabel(status: TransportDocume
   return transportDocumentInvoicingStatusConfig[status]?.label() ?? status
 }
 
+// Invoiceable Document Type Labels
+export const invoiceableDocumentTypeLabels: EnumLabelMap<InvoiceableDocumentType> = {
+  order_acconto: m.enum_invoiceable_document_type_order_acconto,
+  order_sal: m.enum_invoiceable_document_type_order_sal,
+  order_saldo_from_transport: m.enum_invoiceable_document_type_order_saldo_from_transport,
+  order_saldo_direct: m.enum_invoiceable_document_type_order_saldo_direct,
+}
+
+export function getInvoiceableDocumentTypeLabel(type: InvoiceableDocumentType): string {
+  return invoiceableDocumentTypeLabels[type]?.() ?? type
+}
+
+// Invoice Document Type (FatturaPA TipoDocumento) Labels
+export const invoiceDocumentTypeLabels: EnumLabelMap<InvoiceDocumentType> = {
+  TD01: m.enum_invoice_document_type_td01,
+  TD02: m.enum_invoice_document_type_td02,
+  TD04: m.enum_invoice_document_type_td04,
+  TD05: m.enum_invoice_document_type_td05,
+  TD24: m.enum_invoice_document_type_td24,
+  TD25: m.enum_invoice_document_type_td25,
+}
+
+export function getInvoiceDocumentTypeLabel(type: InvoiceDocumentType): string {
+  return invoiceDocumentTypeLabels[type]?.() ?? type
+}
+
+// Invoice State Labels (Acube/SDI lifecycle)
+export const invoiceStateLabels: EnumLabelMap<InvoiceState> = {
+  draft: m.enum_invoice_state_draft,
+  submitted: m.enum_invoice_state_submitted,
+  sent: m.enum_invoice_state_sent,
+  delivered: m.enum_invoice_state_delivered,
+  accepted: m.enum_invoice_state_accepted,
+  rejected: m.enum_invoice_state_rejected,
+  archived: m.enum_invoice_state_archived,
+  error: m.enum_invoice_state_error,
+}
+
+export function getInvoiceStateLabel(state: InvoiceState): string {
+  return invoiceStateLabels[state]?.() ?? state
+}
+
+export const invoiceStateVariantConfig: Record<InvoiceState, StatusVariant> = {
+  draft: 'neutral',
+  submitted: 'in-progress',
+  sent: 'in-progress',
+  delivered: 'in-progress',
+  accepted: 'active',
+  rejected: 'blocked',
+  archived: 'paused',
+  error: 'alert',
+}
+
+export function getInvoiceStateVariant(state: InvoiceState): StatusVariant {
+  return invoiceStateVariantConfig[state] ?? 'neutral'
+}
+
+// Invoice Payment Status Labels (tri-state derived from recorded payments)
+export const invoicePaymentStatusLabels: EnumLabelMap<InvoicePaymentStatus> = {
+  unpaid: m.enum_invoice_payment_status_unpaid,
+  partially_paid: m.enum_invoice_payment_status_partially_paid,
+  paid: m.enum_invoice_payment_status_paid,
+}
+
+export function getInvoicePaymentStatusLabel(status: InvoicePaymentStatus): string {
+  return invoicePaymentStatusLabels[status]?.() ?? status
+}
+
+export const invoicePaymentStatusVariantConfig: Record<InvoicePaymentStatus, StatusVariant> = {
+  unpaid: 'blocked',
+  partially_paid: 'in-progress',
+  paid: 'active',
+}
+
+export function getInvoicePaymentStatusVariant(status: InvoicePaymentStatus): StatusVariant {
+  return invoicePaymentStatusVariantConfig[status] ?? 'neutral'
+}
+
 // Transport Document Type Labels
 export const transportDocumentTypeLabels: EnumLabelMap<TransportDocumentType> = {
   sale: m.enum_transport_document_type_sale,
@@ -610,6 +711,7 @@ export function getTransportDocumentTypeLabel(type: TransportDocumentType): stri
 export const transportMethodLabels: EnumLabelMap<TransportMethod> = {
   sender: m.enum_transport_method_sender,
   recipient: m.enum_transport_method_recipient,
+  carrier: m.enum_transport_method_carrier,
 }
 
 export function getTransportMethodLabel(method: TransportMethod): string {
@@ -642,20 +744,11 @@ export const incotermLabels: EnumLabelMap<Incoterm> = {
   DDP: () => 'DDP - Delivered Duty Paid',
 }
 
-// Billing Type Labels
-export const billingTypeLabels: EnumLabelMap<BillingType> = {
-  by_order: m.enum_billing_type_by_order,
-  by_delivery: m.enum_billing_type_by_delivery,
-  monthly_summary: m.enum_billing_type_monthly_summary,
-  pro_forma: m.enum_billing_type_pro_forma,
-}
-
-// Billing Frequency Labels
-export const billingFrequencyLabels: EnumLabelMap<BillingFrequency> = {
-  per_event: m.enum_billing_frequency_per_event,
-  weekly: m.enum_billing_frequency_weekly,
-  biweekly: m.enum_billing_frequency_biweekly,
-  monthly: m.enum_billing_frequency_monthly,
+// Payment Slice Type Labels (payment composition: Acconto / SAL / Saldo)
+export const paymentSliceTypeLabels: EnumLabelMap<PaymentSliceType> = {
+  acconto: m.enum_payment_slice_type_acconto,
+  stato_avanzamento_lavori: m.enum_payment_slice_type_stato_avanzamento_lavori,
+  saldo: m.enum_payment_slice_type_saldo,
 }
 
 // Sales Transaction Type Labels
@@ -674,4 +767,141 @@ export const salesTransactionTypeLabels: EnumLabelMap<SalesTransactionType> = {
   RIP: () => 'RIP - Riparazione',
   'RIP-RES': () => 'RIP-RES - Reso Riparazione',
   CAMP: () => 'CAMP - Campionatura',
+}
+
+// FatturaPA ModalitaPagamento (MP01..MP23). Labels are SDI-stable Italian terms
+// — hardcoded here for the same reason as salesTransactionTypeLabels: they are
+// part of the FatturaPA spec and don't need i18n by paraglide.
+export const paymentMethodLabels: EnumLabelMap<PaymentMethod> = {
+  MP01: () => 'MP01 - Contanti',
+  MP02: () => 'MP02 - Assegno',
+  MP03: () => 'MP03 - Assegno circolare',
+  MP04: () => 'MP04 - Contanti presso Tesoreria',
+  MP05: () => 'MP05 - Bonifico',
+  MP06: () => 'MP06 - Vaglia cambiario',
+  MP07: () => 'MP07 - Bollettino bancario',
+  MP08: () => 'MP08 - Carta di pagamento',
+  MP09: () => 'MP09 - RID',
+  MP10: () => 'MP10 - RID utenze',
+  MP11: () => 'MP11 - RID veloce',
+  MP12: () => 'MP12 - RIBA',
+  MP13: () => 'MP13 - MAV',
+  MP14: () => 'MP14 - Quietanza erario',
+  MP15: () => 'MP15 - Giroconto su conti di contabilità speciale',
+  MP16: () => 'MP16 - Domiciliazione bancaria',
+  MP17: () => 'MP17 - Domiciliazione postale',
+  MP18: () => 'MP18 - Bollettino di c/c postale',
+  MP19: () => 'MP19 - SEPA Direct Debit',
+  MP20: () => 'MP20 - SEPA Direct Debit CORE',
+  MP21: () => 'MP21 - SEPA Direct Debit B2B',
+  MP22: () => 'MP22 - Trattenuta su somme già riscosse',
+  MP23: () => 'MP23 - PagoPA',
+}
+
+export function getPaymentMethodLabel(method: PaymentMethod): string {
+  return paymentMethodLabels[method]?.() ?? method
+}
+
+// ---------------------------------------------------------------------------
+// Intent Declarations (dichiarazioni d'intento)
+// ---------------------------------------------------------------------------
+
+// Intent Declaration Status (computed lifecycle status)
+export const intentDeclarationStatusLabels: EnumLabelMap<IntentDeclarationStatus> = {
+  draft: m.enum_intent_declaration_status_draft,
+  active: m.enum_intent_declaration_status_active,
+  exhausted: m.enum_intent_declaration_status_exhausted,
+  revoked: m.enum_intent_declaration_status_revoked,
+  invalidated: m.enum_intent_declaration_status_invalidated,
+  expired: m.enum_intent_declaration_status_expired,
+}
+
+export function getIntentDeclarationStatusLabel(status: IntentDeclarationStatus): string {
+  return intentDeclarationStatusLabels[status]?.() ?? status
+}
+
+// Kept within the ResourceTable StatusVariant subset so the same getter feeds
+// both the table `status` renderer and the sidebar StatusBadge.
+export const intentDeclarationStatusVariantConfig: Record<IntentDeclarationStatus, TableStatusVariant> = {
+  draft: 'neutral',
+  active: 'active',
+  exhausted: 'paused',
+  revoked: 'blocked',
+  invalidated: 'blocked',
+  expired: 'paused',
+}
+
+export function getIntentDeclarationStatusVariant(status: IntentDeclarationStatus): TableStatusVariant {
+  return intentDeclarationStatusVariantConfig[status] ?? 'neutral'
+}
+
+// Intent Declaration Amount Type (campo-1 / campo-2)
+export const intentDeclarationAmountTypeConfig: Record<IntentDeclarationAmountType, EnumDisplayConfig> = {
+  single_operation: { label: m.enum_intent_declaration_amount_type_single_operation, variant: 'secondary' },
+  up_to_amount: { label: m.enum_intent_declaration_amount_type_up_to_amount, variant: 'outline' },
+}
+
+export function getIntentDeclarationAmountTypeLabel(type: IntentDeclarationAmountType): string {
+  return intentDeclarationAmountTypeConfig[type]?.label() ?? type
+}
+
+export function getIntentDeclarationAmountTypeVariant(type: IntentDeclarationAmountType): BadgeVariant {
+  return intentDeclarationAmountTypeConfig[type]?.variant ?? 'outline'
+}
+
+// Intent Declaration Usage Reason (ledger movement)
+export const intentDeclarationUsageReasonConfig: Record<IntentDeclarationUsageReason, EnumDisplayConfig> = {
+  consumed: { label: m.enum_intent_declaration_usage_reason_consumed, variant: 'default' },
+  reversed_reopen: { label: m.enum_intent_declaration_usage_reason_reversed_reopen, variant: 'secondary' },
+  reversed_error: { label: m.enum_intent_declaration_usage_reason_reversed_error, variant: 'secondary' },
+  reversed_archived: { label: m.enum_intent_declaration_usage_reason_reversed_archived, variant: 'secondary' },
+  resync_delta: { label: m.enum_intent_declaration_usage_reason_resync_delta, variant: 'outline' },
+  credit_note_restore: { label: m.enum_intent_declaration_usage_reason_credit_note_restore, variant: 'outline' },
+}
+
+export function getIntentDeclarationUsageReasonLabel(reason: IntentDeclarationUsageReason): string {
+  return intentDeclarationUsageReasonConfig[reason]?.label() ?? reason
+}
+
+export function getIntentDeclarationUsageReasonVariant(reason: IntentDeclarationUsageReason): BadgeVariant {
+  return intentDeclarationUsageReasonConfig[reason]?.variant ?? 'outline'
+}
+
+export type SalesDocumentKind = 'quotation' | 'sales_order' | 'warehouse_order' | 'transport_document'
+
+const FORWARD_SALES_TRANSACTION_TYPES: readonly SalesTransactionType[] = [
+  'VEN',
+  'VEN-EXP',
+  'VEN-UE',
+  'C/VIS',
+  'OMG',
+  'RIP',
+  'CAMP',
+]
+
+const ALL_SALES_TRANSACTION_TYPES = Object.keys(salesTransactionTypeLabels) as SalesTransactionType[]
+
+export const salesTransactionTypeAvailability: Record<SalesDocumentKind, readonly SalesTransactionType[]> = {
+  quotation: FORWARD_SALES_TRANSACTION_TYPES,
+  sales_order: FORWARD_SALES_TRANSACTION_TYPES,
+  warehouse_order: ALL_SALES_TRANSACTION_TYPES,
+  transport_document: ALL_SALES_TRANSACTION_TYPES,
+}
+
+/**
+ * Returns select items for the SalesTransactionType select, filtered by document kind.
+ * Backend allows only a forward-sales subset on quotation/sales_order. If `currentValue` is
+ * provided and not in the kind's allowed set (legacy document), it is appended so the form
+ * preserves the value on edit.
+ */
+export function getSalesTransactionTypeItemsFor(
+  kind: SalesDocumentKind,
+  currentValue?: string,
+): { value: SalesTransactionType; label: string }[] {
+  const allowed = salesTransactionTypeAvailability[kind]
+  const codes =
+    currentValue && !allowed.includes(currentValue as SalesTransactionType)
+      ? [...allowed, currentValue as SalesTransactionType]
+      : allowed
+  return codes.map(code => ({ value: code, label: salesTransactionTypeLabels[code]() }))
 }

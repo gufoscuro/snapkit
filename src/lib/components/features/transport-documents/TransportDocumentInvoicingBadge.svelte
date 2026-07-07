@@ -1,7 +1,7 @@
 <!--
   @component TransportDocumentInvoicingBadge
   @description Badge showing the invoicing status of a transport document.
-  Renders nothing when invoicing_status is null.
+  Treats null as "none" so the badge always renders.
   @keywords transport-document, ddt, invoicing, badge, status
 -->
 <script lang="ts">
@@ -12,6 +12,8 @@
 
   let { invoicingStatus }: { invoicingStatus: TransportDocumentInvoicingStatus | null } = $props()
 
+  const effectiveStatus = $derived<TransportDocumentInvoicingStatus>(invoicingStatus ?? 'none')
+
   function getVariant(status: TransportDocumentInvoicingStatus): StatusVariant {
     if (status === 'full') return 'active'
     if (status === 'partial') return 'in-progress'
@@ -19,8 +21,6 @@
   }
 </script>
 
-{#if invoicingStatus}
-  <StatusBadge
-    variant={getVariant(invoicingStatus)}
-    label={getTransportDocumentInvoicingStatusLabel(invoicingStatus)} />
-{/if}
+<StatusBadge
+  variant={getVariant(effectiveStatus)}
+  label={getTransportDocumentInvoicingStatusLabel(effectiveStatus)} />

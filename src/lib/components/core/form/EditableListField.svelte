@@ -5,7 +5,10 @@
   Each item renders as a card with free-form layout via snippets.
   Provides add/remove management, form context autowiring, debounced updates,
   and optional drag-and-drop reordering via svelte-dnd-action.
-  @keywords editable, list, card, form, array, line-items, drag-and-drop
+  Optional collapsible mode renders items in a synthetic view by default and
+  expands them on click; incomplete items and items with validation errors are
+  always shown expanded.
+  @keywords editable, list, card, form, array, line-items, drag-and-drop, collapsible
   @uses ActionButton
 -->
 <script lang="ts" module>
@@ -15,6 +18,21 @@
     /** Toggle drag-and-drop mode on/off */
     toggleDragAndDrop: () => void
   }
+
+  /**
+   * Palette used to color-code groups of items (see the `_groupId` UI-only field).
+   * Listed verbatim so Tailwind's JIT picks up every class.
+   */
+  const GROUP_COLORS: Array<{ text: string; border: string }> = [
+    { text: 'text-blue-500', border: 'border-l-blue-500' },
+    { text: 'text-emerald-500', border: 'border-l-emerald-500' },
+    { text: 'text-amber-500', border: 'border-l-amber-500' },
+    { text: 'text-rose-500', border: 'border-l-rose-500' },
+    { text: 'text-violet-500', border: 'border-l-violet-500' },
+    { text: 'text-cyan-500', border: 'border-l-cyan-500' },
+    { text: 'text-orange-500', border: 'border-l-orange-500' },
+    { text: 'text-pink-500', border: 'border-l-pink-500' },
+  ]
 </script>
 
 <script lang="ts" generics="T extends Record<string, unknown>">
@@ -23,11 +41,13 @@
   import Label from '$components/ui/label/label.svelte'
   import * as m from '$lib/paraglide/messages'
   import ArrowUp from '@lucide/svelte/icons/arrow-up'
+  import ChevronUp from '@lucide/svelte/icons/chevron-up'
   import Plus from '@lucide/svelte/icons/plus'
   import X from '@lucide/svelte/icons/x'
   import type { Snippet } from 'svelte'
   import { dndzone } from 'svelte-dnd-action'
   import { flip } from 'svelte/animate'
+  import { SvelteSet } from 'svelte/reactivity'
   import { EditableListFieldClass } from './form'
   import { clearFormContext, getFormContextOptional } from './form-context'
 
@@ -62,6 +82,13 @@
     syncFromForm?: boolean
     /** Enable drag-and-drop reordering support */
     allowReorder?: boolean
+    /**
+     * Render items collapsed by default; click a row to expand it for editing.
+     * Incomplete items and items with validation errors are always shown expanded.
+     * Newly added items via the add button are auto-expanded; items added externally
+     * (e.g. via parent-managed `items` mutation) start collapsed.
+     */
+    collapsible?: boolean
     /** Item snippet - receives item, index, handlers, and options */
     item: Snippet<
       [
@@ -70,12 +97,24 @@
           index: number
           updateItem: (index: number, updates: Partial<T>) => void
           removeItem: (index: number) => void
+          toggleExpanded: () => void
+          /** When the item carries a `_groupId`, the corresponding text color class (e.g. `text-blue-500`); otherwise undefined. */
+          groupColorClass: string | undefined
           options: ListFieldOptions
         },
       ]
     >
     /** Optional snippet for simplified item rendering during drag-and-drop */
     dragItem?: Snippet<[{ item: T; index: number }]>
+    /**
+     * Snippet rendered when an item is collapsed (only when `collapsible`).
+     * Wrapped in a clickable container that toggles expansion; consumers should
+     * not set their own cursor in the snippet. `toggleExpanded` is provided for
+     * custom triggers nested inside the snippet.
+     */
+    collapsedItem?: Snippet<
+      [{ item: T; index: number; toggleExpanded: () => void; groupColorClass: string | undefined }]
+    >
     /** Optional header snippet rendered between label and list (inside cleared form context) */
     header?: Snippet<[{ options: ListFieldOptions }]>
     /** Optional custom add button snippet */
@@ -105,8 +144,10 @@
     onItemsChange,
     syncFromForm = true,
     allowReorder = false,
+    collapsible = false,
     item: itemSnippet,
     dragItem,
+    collapsedItem,
     header,
     addButton,
     removeButton,
@@ -130,6 +171,86 @@
   let dragAndDropActive = $state(false)
   const FLIP_DURATION_MS = 200
 
+  // Collapsible state — tracks indices the user has explicitly expanded.
+  // The "expanded" predicate also OR-folds in incomplete items and items with
+  // validation errors (computed from `errorIndices` below) so the user always
+  // sees what needs attention.
+  const expandedIndices = new SvelteSet<number>()
+
+  // Indices that have a server-side validation error keyed under
+  // `${name}.${index}.${field}`. Recomputed when the form errors object changes.
+  const errorIndices = $derived.by(() => {
+    const result = new SvelteSet<number>()
+    if (!form) return result
+    const prefix = `${name}.`
+    for (const key of Object.keys(form.errors)) {
+      if (!key.startsWith(prefix)) continue
+      const tail = key.slice(prefix.length)
+      const dot = tail.indexOf('.')
+      const idxStr = dot === -1 ? tail : tail.slice(0, dot)
+      const idx = parseInt(idxStr, 10)
+      if (!Number.isNaN(idx)) result.add(idx)
+    }
+    return result
+  })
+
+  /**
+   * An item is considered editable unless it carries an explicit `is_editable: false`
+   * flag (a backend-driven convention used to lock rows imported from upstream
+   * documents, etc.). Non-editable items render compact-only in collapsible mode.
+   */
+  function isItemEditable(currentItem: T): boolean {
+    return (currentItem as Record<string, unknown>).is_editable !== false
+  }
+
+  function isItemExpanded(index: number, currentItem: T): boolean {
+    if (!collapsible) return true
+    // Non-editable rows are forced compact: no expand even on errors / incomplete state.
+    if (!isItemEditable(currentItem)) return false
+    if (expandedIndices.has(index)) return true
+    if (errorIndices.has(index)) return true
+    if (!isCompleteItem(currentItem)) return true
+    return false
+  }
+
+  function toggleExpanded(index: number) {
+    if (expandedIndices.has(index)) expandedIndices.delete(index)
+    else expandedIndices.add(index)
+  }
+
+  // Group color assignment — items carrying `_groupId` (UI-only field set by
+  // import handlers) are color-coded so the user can see at a glance which
+  // rows came in together. First-seen groupId gets the first palette entry.
+  const groupColorMap = new Map<string, number>()
+
+  function getGroupColors(currentItem: T): { text: string; border: string } | undefined {
+    const raw = (currentItem as Record<string, unknown>)._groupId
+    if (typeof raw !== 'string' || !raw) return undefined
+    let idx = groupColorMap.get(raw)
+    if (idx === undefined) {
+      idx = groupColorMap.size % GROUP_COLORS.length
+      groupColorMap.set(raw, idx)
+    }
+    return GROUP_COLORS[idx]
+  }
+
+  /** Strip the UI-only `_groupId` field before items leave the component. */
+  function stripGroupId(item: T): T {
+    if (!(item as Record<string, unknown>)._groupId) return item
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _groupId, ...rest } = item as T & { _groupId?: string }
+    return rest as T
+  }
+
+  // Drop user-expanded indices that are no longer valid (items removed externally
+  // or replaced via parent-managed mutations).
+  $effect(() => {
+    const len = items.length
+    for (const i of [...expandedIndices]) {
+      if (i >= len) expandedIndices.delete(i)
+    }
+  })
+
   let dndIdCounter = 0
 
   function buildDndItems(): DndItem[] {
@@ -149,6 +270,8 @@
       // re-mounted form fields from overwriting the reordered state)
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       items = dndItems.map(({ _dndId, ...rest }) => rest as unknown as T)
+      // Indices have been reordered — drop user-expand state to avoid stale mappings.
+      expandedIndices.clear()
       flushFormUpdate()
     }
     dragAndDropActive = !dragAndDropActive
@@ -170,6 +293,13 @@
 
   function handleDndFinalize(e: CustomEvent<{ items: DndItem[] }>) {
     dndItems = e.detail.items
+    // Mirror the new order to `items` and flush immediately so a save while DnD
+    // is still active (i.e. the user reorders and submits without clicking "Done")
+    // persists the reorder. Indices shift, so drop user-expand state to avoid stale mappings.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    items = dndItems.map(({ _dndId, ...rest }) => rest as unknown as T)
+    expandedIndices.clear()
+    flushFormUpdate()
   }
 
   // Debounce timer for form updates
@@ -191,6 +321,13 @@
   function handleRemove(index: number) {
     if (index < 0 || index >= items.length) return
     items = items.filter((_, i) => i !== index)
+    // Shift expanded indices to track the removal
+    const oldIndices = [...expandedIndices]
+    expandedIndices.clear()
+    for (const i of oldIndices) {
+      if (i < index) expandedIndices.add(i)
+      else if (i > index) expandedIndices.add(i - 1)
+    }
     scheduleFormUpdate()
   }
 
@@ -203,6 +340,7 @@
     }
     const newItem = addOptions ? { ...createEmptyItem(), ...addOptions } : createEmptyItem()
     items = [...items, newItem]
+    if (collapsible) expandedIndices.add(items.length - 1)
   }
 
   /**
@@ -214,10 +352,21 @@
   }
 
   /**
+   * Imperatively drop every item and immediately commit the empty list to the
+   * form context. Used by parent flows (e.g. the invoice "reset import" button)
+   * that need to wipe the list regardless of per-row removability.
+   */
+  export function clearItems() {
+    items = []
+    expandedIndices.clear()
+    flushFormUpdate()
+  }
+
+  /**
    * Write current items to form context and notify consumers
    */
   function commitToForm() {
-    const completedItems = items.filter(isCompleteItem)
+    const completedItems = items.filter(isCompleteItem).map(stripGroupId)
     const output = transformOutput ? transformOutput(completedItems) : completedItems
 
     onItemsChange?.(completedItems)
@@ -266,6 +415,51 @@
       items = [createEmptyItem()]
     }
   })
+
+  // Flush pending debounced writes before submission so the payload reflects
+  // the latest input (e.g. Enter in a textbox triggers submit before the
+  // debounce timer would have fired).
+  $effect(() => {
+    if (!form) return
+    return form.registerBeforeSubmit(flushFormUpdate)
+  })
+
+  // ---------------------------------------------------------------------------
+  // Public API exposed via `bind:this`
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Append items from an external source (typically an import flow). Existing
+   * incomplete rows are dropped first to keep the list tidy. If `groupId` is
+   * provided, every appended item is tagged with `_groupId` for color-coding.
+   */
+  export function addItems(newItems: T[], options?: { groupId?: string }) {
+    if (newItems.length === 0) return
+    const groupId = options?.groupId
+    const tagged = groupId ? (newItems.map(it => ({ ...it, _groupId: groupId })) as T[]) : newItems
+    const nonEmpty = items.filter(isCompleteItem)
+    items = [...nonEmpty, ...tagged]
+    flushFormUpdate()
+  }
+
+  /**
+   * Returns the current complete items in form-output shape (after `transformOutput`
+   * if provided, with `_groupId` stripped). Used by parents to dedup imports
+   * against rows already in the editor.
+   */
+  export function getItems(): unknown[] {
+    const completedItems = items.filter(isCompleteItem).map(stripGroupId)
+    return transformOutput ? transformOutput(completedItems) : completedItems
+  }
+
+  /**
+   * Force the current items state to be committed to the form context now.
+   * Use after mutating `items` directly via `bind:items` from a $effect or
+   * similar — bypasses the debounced `scheduleFormUpdate`.
+   */
+  export function flush() {
+    flushFormUpdate()
+  }
 </script>
 
 <div class="w-full {className}">
@@ -300,8 +494,13 @@
     <!-- Normal edit mode -->
     <div class={EditableListFieldClass.List}>
       {#each items as currentItem, index (index)}
-        <div class="border-b pb-8 {itemClass} relative pr-6">
-          {#if !isDisabled}
+        {@const expanded = isItemExpanded(index, currentItem)}
+        {@const showCollapseAction =
+          collapsible && expanded && expandedIndices.has(index) && isCompleteItem(currentItem)}
+        {@const groupColors = getGroupColors(currentItem)}
+        {@const headerMode = collapsible && expanded}
+        <div class="{expanded ? 'border-b pb-8' : ''} {itemClass} relative">
+          {#if !isDisabled && !headerMode}
             {#if removeButton}
               {@render removeButton({
                 removeItem: () => handleRemove(index),
@@ -312,7 +511,7 @@
               <ActionButton
                 variant="ghost"
                 size="icon"
-                class="{EditableListFieldClass.RemoveButton} h-8 w-8 text-muted-foreground hover:text-destructive"
+                class="{EditableListFieldClass.RemoveButton} z-10 h-8 w-8 text-muted-foreground hover:text-destructive"
                 tooltip={m.remove_table_resource_line()}
                 disabled={isDisabled}
                 onclick={() => handleRemove(index)}>
@@ -321,13 +520,66 @@
             {/if}
           {/if}
 
-          {@render itemSnippet({
-            item: currentItem,
-            index,
-            updateItem: handleUpdate,
-            removeItem: handleRemove,
-            options,
-          })}
+          {#if expanded}
+            <div onfocusin={collapsible ? () => expandedIndices.add(index) : undefined}>
+              {#if headerMode}
+                <div
+                  class="mb-3 flex h-10 items-center justify-between gap-2 border-t border-l border-transparent pr-1.5 pl-3">
+                  <span class="font-semibold {groupColors?.text ?? 'text-primary'}"
+                    ><span class="opacity-60">#</span>{index + 1}</span>
+                  {#if showCollapseAction}
+                    <ActionButton
+                      variant="ghost"
+                      size="icon"
+                      class="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      tooltip={m.collapse_item()}
+                      onclick={() => toggleExpanded(index)}>
+                      <ChevronUp class="size-4" />
+                    </ActionButton>
+                  {/if}
+                </div>
+              {/if}
+              {@render itemSnippet({
+                item: currentItem,
+                index,
+                updateItem: handleUpdate,
+                removeItem: handleRemove,
+                toggleExpanded: () => toggleExpanded(index),
+                groupColorClass: groupColors?.text,
+                options,
+              })}
+            </div>
+          {:else}
+            {@const editable = isItemEditable(currentItem)}
+            <div
+              role="button"
+              tabindex={editable ? 0 : -1}
+              aria-disabled={!editable}
+              class={editable ? 'cursor-pointer' : 'cursor-not-allowed'}
+              onclick={() => editable && toggleExpanded(index)}
+              onkeydown={e => {
+                if (!editable) return
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  toggleExpanded(index)
+                }
+              }}>
+              {#if collapsedItem}
+                {@render collapsedItem({
+                  item: currentItem,
+                  index,
+                  toggleExpanded: () => toggleExpanded(index),
+                  groupColorClass: groupColors?.text,
+                })}
+              {:else if dragItem}
+                {@render dragItem({ item: currentItem, index })}
+              {:else}
+                <div class="flex items-center gap-2 text-sm">
+                  <span class="font-semibold text-primary"><span class="opacity-60">#</span>{index + 1}</span>
+                </div>
+              {/if}
+            </div>
+          {/if}
         </div>
       {/each}
 

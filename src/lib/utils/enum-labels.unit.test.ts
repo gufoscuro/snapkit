@@ -1,70 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 
-const mockModule = vi.hoisted(() => {
-	const keys = [
-		'enum_supply_status_draft', 'enum_supply_status_sent', 'enum_supply_status_accepted',
-		'enum_supply_status_shipped', 'enum_supply_status_rejected',
-		'enum_sales_status_draft', 'enum_sales_status_sent', 'enum_sales_status_accepted',
-		'enum_sales_shipped_completed', 'enum_sales_shipped_not_shipped', 'enum_sales_shipped_partial',
-		'enum_customer_type_company', 'enum_customer_type_individual', 'enum_customer_type_public_entity',
-		'enum_customer_type_consortium', 'enum_customer_type_association',
-		'enum_customer_status_active', 'enum_customer_status_suspended',
-		'enum_customer_status_ceased', 'enum_customer_status_prospect',
-		'enum_address_type_billing', 'enum_address_type_shipping', 'enum_address_type_legal',
-		'enum_contact_type_primary', 'enum_contact_type_technical_support',
-		'enum_contact_type_administrative', 'enum_contact_type_logistics', 'enum_contact_type_quality',
-		'enum_contact_type_purchasing', 'enum_contact_type_sales',
-		'enum_currency_EUR', 'enum_currency_USD', 'enum_currency_GBP', 'enum_currency_CHF',
-		'enum_currency_JPY', 'enum_currency_CNY', 'enum_currency_CAD', 'enum_currency_AUD',
-		'enum_currency_SEK', 'enum_currency_NOK', 'enum_currency_DKK', 'enum_currency_PLN',
-		'enum_currency_CZK', 'enum_currency_HUF', 'enum_currency_RON', 'enum_currency_BGN',
-		'enum_currency_TRY', 'enum_currency_BRL', 'enum_currency_INR', 'enum_currency_AED',
-		'enum_currency_SAR',
-		'enum_ateco_A', 'enum_ateco_B', 'enum_ateco_C', 'enum_ateco_D', 'enum_ateco_E',
-		'enum_ateco_F', 'enum_ateco_G', 'enum_ateco_H', 'enum_ateco_I', 'enum_ateco_J',
-		'enum_ateco_K', 'enum_ateco_L', 'enum_ateco_M', 'enum_ateco_N', 'enum_ateco_O',
-		'enum_ateco_P', 'enum_ateco_Q', 'enum_ateco_R', 'enum_ateco_S', 'enum_ateco_T',
-		'enum_ateco_U', 'enum_ateco_V',
-		'enum_company_size_micro', 'enum_company_size_small', 'enum_company_size_medium',
-		'enum_company_size_large', 'enum_company_size_enterprise',
-		'enum_employee_count_1_9', 'enum_employee_count_10_49', 'enum_employee_count_50_249',
-		'enum_employee_count_250_999', 'enum_employee_count_1000_plus',
-		'enum_annual_revenue_under_2m', 'enum_annual_revenue_2m_10m', 'enum_annual_revenue_10m_50m',
-		'enum_annual_revenue_50m_250m', 'enum_annual_revenue_over_250m',
-		'enum_warehouse_type_main', 'enum_warehouse_type_consignment', 'enum_warehouse_type_subcontracting',
-		'enum_warehouse_type_returns', 'enum_warehouse_type_defective', 'enum_warehouse_type_spare_parts',
-		'enum_warehouse_type_transit', 'enum_warehouse_type_quarantine',
-		'enum_valuation_method_weighted_average', 'enum_valuation_method_fifo',
-		'enum_valuation_method_standard', 'enum_valuation_method_last_cost',
-		'enum_zone_type_receiving', 'enum_zone_type_storage', 'enum_zone_type_shipping',
-		'enum_zone_type_quarantine', 'enum_zone_type_production',
-		'enum_bin_location_type_shelf', 'enum_bin_location_type_floor', 'enum_bin_location_type_cell',
-		'enum_bin_location_type_picking', 'enum_bin_location_type_bulk',
-		'enum_supplier_type_courier',
-		'enum_supplier_status_suspended', 'enum_supplier_status_ceased',
-		'enum_item_category_finished_good', 'enum_item_category_raw_material',
-		'enum_item_category_semi_finished', 'enum_item_category_component',
-		'enum_item_category_phantom', 'enum_item_category_packaging',
-		'enum_item_category_subcontract', 'enum_item_category_service_expense',
-		'enum_item_category_kit',
-		'enum_item_status_active', 'enum_item_status_inactive', 'enum_item_status_obsolete',
-		'enum_abc_class_A', 'enum_abc_class_B', 'enum_abc_class_C', 'enum_abc_class_D',
-		'enum_uom_PZ', 'enum_uom_KG', 'enum_uom_G', 'enum_uom_T', 'enum_uom_LT',
-		'enum_uom_ML', 'enum_uom_M', 'enum_uom_CM', 'enum_uom_MM', 'enum_uom_M2',
-		'enum_uom_M3', 'enum_uom_SET', 'enum_uom_BOX', 'enum_uom_PAL', 'enum_uom_ROL',
-		'enum_uom_FOG', 'enum_uom_PR', 'enum_uom_CF', 'enum_uom_H', 'enum_uom_NR',
-		'enum_weight_unit_KG', 'enum_weight_unit_G', 'enum_weight_unit_LB',
-		'enum_weight_unit_OZ', 'enum_weight_unit_T',
-		'enum_dimension_unit_MM', 'enum_dimension_unit_CM', 'enum_dimension_unit_M',
-		'enum_dimension_unit_IN', 'enum_dimension_unit_FT',
-		'enum_quotation_status_draft', 'enum_quotation_status_active',
-		'enum_quotation_status_approved', 'enum_quotation_status_rejected',
-		'enum_quotation_status_superseded',
-	]
-	return Object.fromEntries(keys.map((k) => [k, () => k]))
+// Stub every real paraglide message export with a function returning its own key.
+// Deriving the export names from the actual module (via importOriginal) keeps this
+// mock from drifting as new enum labels are added to enum-labels.ts — the assertions
+// below rely on a label being its own key (e.g. getSupplyStatusLabel('draft') === 'enum_supply_status_draft').
+vi.mock('$lib/paraglide/messages.js', async (importOriginal) => {
+	const actual = await importOriginal<Record<string, unknown>>()
+	return Object.fromEntries(Object.keys(actual).map((k) => [k, () => k]))
 })
-
-vi.mock('$lib/paraglide/messages.js', () => mockModule)
 
 import {
 	toSelectItems,

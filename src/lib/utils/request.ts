@@ -22,6 +22,42 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Extracts the best human-readable, already-localized message out of an error.
+ *
+ * The backend localizes error/validation messages server-side (resolved from the
+ * `Accept-Language` header we already send), so `error.data.message` is safe to
+ * surface directly to the user.
+ *
+ * - **422**: Laravel returns `{ message, errors: { field: [msg] } }`. The top-level
+ *   `message` is generic ("The given data was invalid"), so the concatenated field
+ *   messages are preferred when present.
+ * - **Other ApiError**: uses `data.message`, falling back to `error.message` (unless
+ *   it's the placeholder `'Request failed'`).
+ * - **Non-API errors**: uses `error.message` when available.
+ *
+ * Returns `undefined` when nothing meaningful can be extracted, so callers can fall
+ * back to a generic message of their own.
+ */
+export function extractApiErrorMessage(err: unknown): string | undefined {
+  if (err instanceof ApiError) {
+    const data = err.data as { message?: string; errors?: Record<string, unknown> } | null
+
+    if (err.status === 422 && data?.errors && typeof data.errors === 'object') {
+      const fieldMessages = Object.values(data.errors)
+        .flat()
+        .filter((msg): msg is string => typeof msg === 'string')
+      if (fieldMessages.length > 0) return fieldMessages.join('\n')
+    }
+
+    if (data?.message) return data.message
+    return err.message && err.message !== 'Request failed' ? err.message : undefined
+  }
+
+  if (err instanceof Error && err.message) return err.message
+  return undefined
+}
+
 export type ExtendedFetchOptions = RequestInit & {
   url: string
   data?: any
@@ -38,33 +74,14 @@ const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 type CacheEntry = { data: unknown; timestamp: number }
 const apiCache = new Map<string, CacheEntry>()
 
-function getBaseUrl(url: string): string {
-  return url.split('?')[0]
-}
-
-function getParentPath(path: string): string | null {
-  const lastSlash = path.lastIndexOf('/')
-  if (lastSlash <= 0) return null
-  return path.substring(0, lastSlash)
-}
-
-export function invalidateCacheByBasePath(url: string): void {
-  const basePath = getBaseUrl(url)
-
-  // Collect the mutation path and all ancestor paths.
-  // e.g. PUT /foo/bar/123/flags → invalidates /foo/bar/123/flags, /foo/bar/123, /foo/bar
-  const pathsToInvalidate = new Set<string>()
-  let current: string | null = basePath
-  while (current) {
-    pathsToInvalidate.add(current)
-    current = getParentPath(current)
-  }
-
-  for (const key of apiCache.keys()) {
-    if (pathsToInvalidate.has(getBaseUrl(key))) {
-      apiCache.delete(key)
-    }
-  }
+/**
+ * Drops every cached GET response. The backend is the source of truth and a
+ * mutation on one resource may have side effects on unrelated reads, so any
+ * non-GET request — and contexts like logout or legal-entity switch — clear
+ * the whole cache rather than trying to map mutation→reads.
+ */
+export function invalidateAllCache(): void {
+  apiCache.clear()
 }
 
 export type SafeApiResponse<T> = {
@@ -148,7 +165,7 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
       if (cached) apiCache.delete(url)
     }
   } else {
-    invalidateCacheByBasePath(url)
+    invalidateAllCache()
   }
 
   const headers: HeadersInit = {
@@ -195,14 +212,36 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
 }
 
 /**
+ * Extract the filename from a `Content-Disposition` response header. Handles
+ * both the RFC 5987 `filename*=UTF-8''...` form (percent-decoded) and the plain
+ * `filename="..."` form. Returns `undefined` when no filename is present.
+ */
+function filenameFromContentDisposition(header: string | null): string | undefined {
+  if (!header) return undefined
+  const utf8Match = header.match(/filename\*=(?:UTF-8'')?([^;]+)/i)
+  if (utf8Match) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim().replace(/^["']|["']$/g, ''))
+    } catch {
+      // fall through to the plain filename below
+    }
+  }
+  const plainMatch = header.match(/filename="?([^";]+)"?/i)
+  return plainMatch ? plainMatch[1].trim() : undefined
+}
+
+/**
  * Client-side API request that downloads a binary response (e.g. PDF) and
  * triggers a browser file-save dialog.
  *
  * Unlike apiRequest, this reads the response as a Blob instead of JSON.
+ *
+ * When `filename` is omitted, the name advertised by the backend via the
+ * `Content-Disposition` header is used, falling back to `'download'`.
  */
 export async function apiDownload(options: {
   url: string
-  filename: string
+  filename?: string
   redirectOnUnauthorized?: boolean
 }): Promise<void> {
   const { url, filename, redirectOnUnauthorized = true } = options
@@ -224,11 +263,14 @@ export async function apiDownload(options: {
     throw new ApiError('Download failed', result.status, null, result)
   }
 
+  const resolvedFilename =
+    filename || filenameFromContentDisposition(result.headers.get('Content-Disposition')) || 'download'
+
   const blob = await result.blob()
   const blobUrl = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = blobUrl
-  a.download = filename
+  a.download = resolvedFilename
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -268,7 +310,7 @@ export async function apiUploadRequest<T>(options: {
     throw new ApiError(data?.message || 'Request failed', result.status, data, result)
   }
 
-  invalidateCacheByBasePath(fullUrl)
+  invalidateAllCache()
 
   return data as T
 }

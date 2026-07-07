@@ -32,7 +32,7 @@ export function createBadgesRenderer<T>(config: ColumnConfig<T>) {
 
     // Handle missing/empty arrays
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return ''
+      return '-'
     }
 
     // Render the badges component with the items

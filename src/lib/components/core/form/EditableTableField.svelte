@@ -175,25 +175,38 @@
   }
 
   /**
+   * Write the current items to the form context immediately, cancelling
+   * any pending debounce. Invoked by the form's `registerBeforeSubmit` hook.
+   */
+  function flushFormUpdate() {
+    if (updateTimer) {
+      clearTimeout(updateTimer)
+      updateTimer = null
+    }
+    commitToForm()
+  }
+
+  function commitToForm() {
+    const completedItems = getCompletedItems()
+    const output = transformOutput ? transformOutput(completedItems) : completedItems
+
+    onItemsChange?.(completedItems)
+
+    if (form) {
+      // Update lastSyncedJson BEFORE writing to the form so the
+      // sync-from-form $effect recognises this as a self-write and skips it.
+      lastSyncedJson = JSON.stringify(output)
+      form.updateField(name, output)
+      if (error) form.validateField(name)
+    }
+  }
+
+  /**
    * Schedule a debounced form update
    */
   function scheduleFormUpdate() {
     if (updateTimer) clearTimeout(updateTimer)
-
-    updateTimer = setTimeout(() => {
-      const completedItems = getCompletedItems()
-      const output = transformOutput ? transformOutput(completedItems) : completedItems
-
-      onItemsChange?.(completedItems)
-
-      if (form) {
-        // Update lastSyncedJson BEFORE writing to the form so the
-        // sync-from-form $effect recognises this as a self-write and skips it.
-        lastSyncedJson = JSON.stringify(output)
-        form.updateField(name, output)
-        if (error) form.validateField(name)
-      }
-    }, DEBOUNCE_MS)
+    updateTimer = setTimeout(commitToForm, DEBOUNCE_MS)
   }
 
   // Track last synced value to prevent infinite loops
@@ -218,6 +231,14 @@
     if (items.length === 0) {
       items = [createEmptyItem()]
     }
+  })
+
+  // Flush pending debounced writes before submission so the payload reflects
+  // the latest input (e.g. Enter in a textbox triggers submit before the
+  // debounce timer would have fired).
+  $effect(() => {
+    if (!form) return
+    return form.registerBeforeSubmit(flushFormUpdate)
   })
 
   // Auto-manage empty rows: add when needed, remove extras

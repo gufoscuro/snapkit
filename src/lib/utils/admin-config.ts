@@ -16,6 +16,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
         {
           $id: 'home',
           title: 'Homepage',
+          description: 'The homepage of the application, usually hosting a dashboard with metrics and next actions.',
           route: '/',
           layout: {
             componentKey: 'layouts.LeftSidebar',
@@ -26,11 +27,64 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               componentKey: 'globals.sidebars.IndexSidebar',
               enabled: true,
             },
+            content: {
+              componentKey: 'dashboard.homedashboard.default.HomeDashboard',
+              enabled: true,
+            },
+          },
+        },
+        {
+          $id: 'to-ship',
+          title: 'to_ship',
+          description: 'List of sales order lines awaiting shipment (delivery schedule)',
+          route: '/shipping/to-ship',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.DeliveryScheduleFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'delivery-schedule.deliveryscheduletable.default.DeliveryScheduleTable',
+              enabled: true,
+            },
+          },
+        },
+        {
+          $id: 'payments',
+          title: 'to_collect',
+          description: 'List of invoice due dates to be collected',
+          route: '/invoicing/payments',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.PaymentsFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'payments.paymentstable.default.PaymentsTable',
+              enabled: true,
+            },
           },
         },
         {
           $id: 'customers',
           title: 'customers',
+          description: 'List of all customers',
           route: '/contacts/customers',
           layout: {
             componentKey: 'layouts.LeftSidebar',
@@ -57,6 +111,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             {
               $id: 'customer-details',
               title: 'customers_details',
+              description: 'A form, with a detailed view of a single customer, with related information and actions',
               route: '/contacts/customers/upsert{/:uuid}',
               layout: {
                 componentKey: 'layouts.LeftSidebar',
@@ -76,6 +131,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'customer-addresses',
                   title: 'customer_addresses',
+                  description: 'List of all addresses (shipping, billing, etc.) associated with a single customer',
                   route: '/contacts/customers/upsert/:uuid/addresses',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -99,6 +155,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                     {
                       $id: 'customer-address-details',
                       title: 'customer_address_details',
+                      description: 'A form to view and edit the details of a single customer address',
                       route: '/contacts/customers/upsert/:uuid/addresses/upsert{/:aid}',
                       layout: {
                         componentKey: 'layouts.LeftSidebar',
@@ -120,6 +177,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'customer-contacts',
                   title: 'customer_contacts',
+                  description: 'List of all contact people associated with a single customer',
                   route: '/contacts/customers/upsert/:uuid/contacts',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -143,6 +201,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                     {
                       $id: 'customer-contact-details',
                       title: 'customer_contact_details',
+                      description: 'A form to view and edit the details of a single customer contact person',
                       route: '/contacts/customers/upsert/:uuid/contact/upsert{/:cid}',
                       layout: {
                         componentKey: 'layouts.LeftSidebar',
@@ -164,6 +223,8 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'customer-documents',
                   title: 'customers_documents',
+                  description:
+                    'List of all documents (quotations, orders, invoices, etc.) related to a single customer',
                   route: '/contacts/customers/upsert/:uuid/documents',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -183,6 +244,8 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'customer-commercial-terms',
                   title: 'customer_commercial_terms',
+                  description:
+                    'A form to manage the commercial terms (pricing, discounts, payment conditions) of a single customer',
                   route: '/contacts/customers/upsert/:uuid/commercial-terms',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -199,6 +262,77 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                     },
                   },
                 },
+                {
+                  $id: 'customer-intent-declarations',
+                  title: 'customer_intent_declarations',
+                  description:
+                    "List of all intent declarations (dichiarazioni d'intento) associated with a single customer",
+                  route: '/contacts/customers/upsert/:uuid/intent-declarations',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.CustomerSidebar',
+                      enabled: true,
+                    },
+                    filters: {
+                      componentKey: 'common.filters.CustomerIntentDeclarationsFilters',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'customers.customerintentdeclarationstable.default.CustomerIntentDeclarationsTable',
+                      enabled: true,
+                    },
+                  },
+                  subpages: [
+                    {
+                      $id: 'customer-intent-declaration-details',
+                      title: 'customer_intent_declaration_details',
+                      description: "A form to view and edit the details of a single intent declaration",
+                      route: '/contacts/customers/upsert/:uuid/intent-declarations/upsert{/:did}',
+                      layout: {
+                        componentKey: 'layouts.LeftSidebar',
+                        enabled: true,
+                      },
+                      snippets: {
+                        sidebar: {
+                          componentKey: 'globals.sidebars.IntentDeclarationSidebar',
+                          enabled: true,
+                        },
+                        content: {
+                          componentKey:
+                            'customers.customerintentdeclarationdetails.default.CustomerIntentDeclarationDetails',
+                          enabled: true,
+                        },
+                      },
+                      subpages: [
+                        {
+                          $id: 'customer-intent-declaration-usages',
+                          title: 'customer_intent_declaration_usages',
+                          description: 'Read-only ledger of plafond movements for a single intent declaration',
+                          route: '/contacts/customers/upsert/:uuid/intent-declarations/:did/usages',
+                          layout: {
+                            componentKey: 'layouts.LeftSidebar',
+                            enabled: true,
+                          },
+                          snippets: {
+                            sidebar: {
+                              componentKey: 'globals.sidebars.IntentDeclarationSidebar',
+                              enabled: true,
+                            },
+                            content: {
+                              componentKey:
+                                'customers.customerintentdeclarationusages.default.CustomerIntentDeclarationUsages',
+                              enabled: true,
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
               ],
             },
           ],
@@ -206,6 +340,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
         {
           $id: 'suppliers',
           title: 'suppliers',
+          description: 'List of all suppliers',
           route: '/contacts/suppliers',
           layout: {
             componentKey: 'layouts.LeftSidebar',
@@ -229,6 +364,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             {
               $id: 'supplier-details',
               title: 'supplier_details',
+              description: 'A form, with a detailed view of a single supplier, with related information and actions',
               route: '/contacts/suppliers/upsert{/:uuid}',
               layout: {
                 componentKey: 'layouts.LeftSidebar',
@@ -248,6 +384,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'supplier-addresses',
                   title: 'addresses',
+                  description: 'List of all addresses (shipping, billing, etc.) associated with a single supplier',
                   route: '/contacts/suppliers/upsert/:uuid/addresses',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -271,6 +408,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                     {
                       $id: 'supplier-address-details',
                       title: 'addresses',
+                      description: 'A form to view and edit the details of a single supplier address',
                       route: '/contacts/suppliers/upsert/:uuid/addresses/upsert{/:aid}',
                       layout: {
                         componentKey: 'layouts.LeftSidebar',
@@ -292,6 +430,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'supplier-contacts',
                   title: 'contacts',
+                  description: 'List of all contact people associated with a single supplier',
                   route: '/contacts/suppliers/upsert/:uuid/contacts',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -315,6 +454,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                     {
                       $id: 'supplier-contact-details',
                       title: 'contacts',
+                      description: 'A form to view and edit the details of a single supplier contact person',
                       route: '/contacts/suppliers/upsert/:uuid/contact/upsert{/:cid}',
                       layout: {
                         componentKey: 'layouts.LeftSidebar',
@@ -336,6 +476,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'supplier-documents',
                   title: 'documents',
+                  description: 'List of all documents (orders, invoices, etc.) related to a single supplier',
                   route: '/contacts/suppliers/upsert/:uuid/documents',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -355,6 +496,8 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'supplier-commercial-terms',
                   title: 'supplier_commercial_terms',
+                  description:
+                    'A form to manage the commercial terms (pricing, discounts, payment conditions) of a single supplier',
                   route: '/contacts/suppliers/upsert/:uuid/commercial-terms',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -378,6 +521,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
         {
           $id: 'items',
           title: 'items',
+          description: 'List of all items (products and services)',
           route: '/items',
           layout: {
             componentKey: 'layouts.LeftSidebar',
@@ -401,6 +545,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             {
               $id: 'item-details',
               title: 'items',
+              description: 'A form, with a detailed view of a single item, with related information and actions',
               route: '/items/upsert{/:uuid}',
               layout: {
                 componentKey: 'layouts.LeftSidebar',
@@ -420,6 +565,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'item-documents',
                   title: 'documents',
+                  description: 'List of all documents (quotations, orders, invoices, etc.) where a single item appears',
                   route: '/items/upsert/:uuid/documents',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -443,6 +589,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
         {
           $id: 'quotations',
           title: 'quotations',
+          description: 'List of all quotations',
           route: '/sales/quotations',
           layout: {
             componentKey: 'layouts.LeftSidebar',
@@ -466,6 +613,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             {
               $id: 'quotation-details',
               title: 'quotation',
+              description: 'A form, with a detailed view of a single quotation, with its line items and actions',
               route: '/sales/quotations/upsert{/:uuid}',
               layout: {
                 componentKey: 'layouts.LeftSidebar',
@@ -487,6 +635,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
         {
           $id: 'sales-orders',
           title: 'sales_orders',
+          description: 'List of all sales orders',
           route: '/sales/sales-orders',
           layout: {
             componentKey: 'layouts.LeftSidebar',
@@ -510,6 +659,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             {
               $id: 'sales-order-details',
               title: 'sales_order',
+              description: 'A form, with a detailed view of a single sales order, with its line items and actions',
               route: '/sales/sales-orders/upsert{/:uuid}',
               layout: {
                 componentKey: 'layouts.LeftSidebar',
@@ -525,12 +675,36 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   enabled: true,
                 },
               },
+              subpages: [
+                {
+                  $id: 'sales-order-delivery-schedule',
+                  title: 'deliveries',
+                  description: 'Line-by-line delivery/shipment recap for a single sales order (delivered vs remaining)',
+                  route: '/sales/sales-orders/upsert/:uuid/delivery-schedule',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.SalesOrderSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey:
+                        'sales-orders.salesorderdeliveryscheduletable.default.SalesOrderDeliveryScheduleTable',
+                      enabled: true,
+                    },
+                  },
+                },
+              ],
             },
           ],
         },
         {
           $id: 'warehouse-orders',
           title: 'warehouse_orders',
+          description: 'List of all warehouse orders',
           route: '/warehouse/warehouse-orders',
           layout: {
             componentKey: 'layouts.LeftSidebar',
@@ -554,6 +728,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             {
               $id: 'warehouse-order-details',
               title: 'warehouse_order',
+              description: 'A form, with a detailed view of a single warehouse order, with its line items and actions',
               route: '/warehouse/warehouse-orders/upsert{/:uuid}',
               layout: {
                 componentKey: 'layouts.LeftSidebar',
@@ -573,8 +748,101 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
           ],
         },
         {
+          $id: 'to-invoice',
+          title: 'to_invoice',
+          description: 'List of all documents ready to be invoiced',
+          route: '/invoicing/to-invoice',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.InvoiceableDocumentsFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'invoiceable-documents.invoiceabledocumentstable.default.InvoiceableDocumentsTable',
+              enabled: true,
+            },
+          },
+        },
+        {
+          $id: 'invoices',
+          title: 'invoices',
+          description: 'List of all invoices',
+          route: '/invoicing/invoices',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.InvoicesFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'invoices.invoicestable.default.InvoicesTable',
+              enabled: true,
+            },
+          },
+          subpages: [
+            {
+              $id: 'invoice-details',
+              title: 'invoice',
+              description: 'A form, with a detailed view of a single invoice, with its line items and actions',
+              route: '/invoicing/invoices/upsert{/:uuid}',
+              layout: {
+                componentKey: 'layouts.LeftSidebar',
+                enabled: true,
+              },
+              snippets: {
+                sidebar: {
+                  componentKey: 'globals.sidebars.InvoiceSidebar',
+                  enabled: true,
+                },
+                content: {
+                  componentKey: 'invoices.invoicesdetails.default.InvoicesDetails',
+                  enabled: true,
+                },
+              },
+              subpages: [
+                {
+                  $id: 'invoice-payments',
+                  title: 'payments',
+                  description: 'Payments recap for a single invoice, grouped by scadenza (record / history)',
+                  route: '/invoicing/invoices/upsert/:uuid/payments',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.InvoiceSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'invoices.invoicepayments.default.InvoicePayments',
+                      enabled: true,
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        {
           $id: 'transport-documents',
           title: 'transport_documents',
+          description: 'List of all transport documents',
           route: '/sales/transport-documents',
           layout: {
             componentKey: 'layouts.LeftSidebar',
@@ -598,6 +866,8 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
             {
               $id: 'transport-document-details',
               title: 'transport_document',
+              description:
+                'A form, with a detailed view of a single transport document, with its line items and actions',
               route: '/sales/transport-documents/upsert{/:uuid}',
               layout: {
                 componentKey: 'layouts.LeftSidebar',
@@ -623,7 +893,8 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
           name: 'sections',
           items: [
             {
-              label: 'general',
+              // First group intentionally has no label — actionables ("things to do").
+              label: '',
               icon: 'Layers',
               type: 'submenu',
               submenuStyle: 'simple',
@@ -634,6 +905,32 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   icon: 'House',
                   type: 'link',
                 },
+                {
+                  label: 'to_ship',
+                  pageId: 'to-ship',
+                  icon: 'Truck',
+                  type: 'link',
+                },
+                {
+                  label: 'to_collect',
+                  pageId: 'payments',
+                  icon: 'MoneybagMoveBack',
+                  type: 'link',
+                },
+                {
+                  label: 'to_invoice',
+                  pageId: 'to-invoice',
+                  icon: 'FileClock',
+                  type: 'link',
+                },
+              ],
+            },
+            {
+              label: 'master_data',
+              icon: 'Users',
+              type: 'submenu',
+              submenuStyle: 'simple',
+              children: [
                 {
                   label: 'customers',
                   pageId: 'customers',
@@ -682,6 +979,20 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   label: 'transport_documents',
                   pageId: 'transport-documents',
                   icon: 'Truck',
+                  type: 'link',
+                },
+              ],
+            },
+            {
+              label: 'invoicing',
+              icon: 'Receipt',
+              type: 'submenu',
+              submenuStyle: 'simple',
+              children: [
+                {
+                  label: 'invoices',
+                  pageId: 'invoices',
+                  icon: 'Receipt',
                   type: 'link',
                 },
               ],

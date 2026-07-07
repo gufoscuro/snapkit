@@ -18,6 +18,7 @@
 </script>
 
 <script lang="ts">
+  import ActionButton from '$components/core/ActionButton.svelte'
   import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
   import DateField from '$components/core/form/DateField.svelte'
   import EditableListField from '$components/core/form/EditableListField.svelte'
@@ -36,10 +37,14 @@
   import { UnitOfMeasures } from '$lib/config/uoms'
   import * as m from '$lib/paraglide/messages'
   import type { Item } from '$lib/types/api-types'
-  import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol } from '$utils/prices'
+  import { toLocalISOString } from '$lib/utils/date'
+  import { generateId } from '$lib/utils/id'
+  import { DEFAULT_CURRENCY_CODE, floatToPriceString, getCurrencySymbol, renderPrice } from '$utils/prices'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
+  import Pencil from '@lucide/svelte/icons/pencil'
   import Plus from '@lucide/svelte/icons/plus'
+  import X from '@lucide/svelte/icons/x'
   import { untrack, type Snippet } from 'svelte'
   import type { QuotationLineItem } from './QuotationItemsEditor.svelte'
 
@@ -55,6 +60,8 @@
     vatCodeAttr?: VatCodeSummary
     /** Item base price from catalog (shown as suggestion, not auto-filled) */
     itemBasePrice?: number
+    /** UI-only: identifies a batch of items imported together (used for color coding). Stripped in transformOutput. */
+    _groupId?: string
   }
 
   type Props = {
@@ -80,6 +87,12 @@
     refreshKey?: unknown
     /** Default VAT code from customer commercial terms (overrides global is_default) */
     defaultVatCode?: import('$components/features/form/VatCodeSelector.svelte').VatCodeSummary
+    /**
+     * Default discount percentage from customer commercial terms (`trade_discount`).
+     * Applied to item rows whose discount still follows the previous default; a
+     * user-set percent or a switch to fixed-amount mode is preserved.
+     */
+    defaultDiscountPercent?: number
     /** Additional actions snippet rendered in the header (e.g. ImportMenu) */
     headerActions?: Snippet
     /** API field name for the delivery date. Quotations use 'delivery_date', sales orders use 'confirmed_delivery_date'. */
@@ -88,6 +101,22 @@
     defaultDeliveryDate?: Date | string
     /** Allow negative prices in PriceField inputs */
     allowNegativePrices?: boolean
+    /**
+     * When true, the list is treated as structurally rigid:
+     * - the "Add item line" / "Add description line" buttons are hidden
+     * - `type === 'charge'` rows cannot be removed (no remove icon rendered)
+     * Used by the invoices form to enforce the backend-authoritative shape of
+     * prefilled / saved invoices. Per-row editability is unaffected — only the
+     * shape of the list and the immutability of charge rows.
+     */
+    lockStructure?: boolean
+    /**
+     * Optional predicate that flags individual `type === 'item'` rows as
+     * locked. Locked items render with the same restricted shape as charges
+     * (only description editable, no remove button) — used by the invoices
+     * form to freeze item lines that came from an upstream transport document.
+     */
+    isItemLocked?: (item: QuotationLineItem) => boolean
     /** Additional CSS classes */
     class?: string
   }
@@ -104,12 +133,21 @@
     onChange,
     refreshKey = undefined,
     defaultVatCode = undefined,
+    defaultDiscountPercent = undefined,
     headerActions,
     allowNegativePrices = true,
     deliveryDateKey = 'delivery_date',
     defaultDeliveryDate = undefined,
+    lockStructure = false,
+    isItemLocked = () => false,
     class: className = '',
   }: Props = $props()
+
+  /** True for `item` rows the caller marked as locked (e.g. linked to a DDT). */
+  function itemIsLocked(item: { type?: string }): boolean {
+    if (item.type !== 'item') return false
+    return isItemLocked(item as QuotationLineItem)
+  }
 
   // Autowire to form context
   const form = getFormContextOptional()
@@ -124,23 +162,20 @@
     return form?.errors[`${name}.${idx}.${field}` as never] as string | undefined
   }
 
-  /**
-   * Format a Date as a local ISO-like string (YYYY-MM-DDTHH:mm:ss.sss)
-   * to avoid UTC timezone shift (e.g. Apr 30 CET → Apr 29 22:00 UTC).
-   */
-  function toLocalISOString(date: Date): string {
-    const pad = (n: number, len = 2) => String(n).padStart(len, '0')
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`
-  }
-
   function normalizeDateInput(value: Date | string | undefined): string {
     if (!value) return ''
     if (value instanceof Date) return toLocalISOString(value)
     return value
   }
 
+  // Compact ISO-date rendering for collapsed/drag rows (YYYY-MM-DD).
+  function formatDateShort(value: string | undefined): string {
+    return value ? value.slice(0, 10) : ''
+  }
+
   // Internal items state
   let items = $state<InternalLineItem[]>([])
+  let editableListFieldRef: EditableListField<InternalLineItem> | undefined = $state()
 
   function createEmptyItem(): InternalLineItem {
     return {
@@ -150,7 +185,7 @@
       quantity: 0,
       uom: UnitOfMeasures.Default,
       unit_price: 0,
-      discount_percent: undefined,
+      discount_percent: defaultDiscountPercent || undefined,
       discount_amount: undefined,
       vat_code_id: defaultVatCode?.id ?? '',
       vat_code_snapshot: defaultVatCode ? (defaultVatCode as unknown as Record<string, unknown>) : undefined,
@@ -163,9 +198,8 @@
   }
 
   // When defaultVatCode arrives (async from commercial terms), apply to items with empty vat_code_id.
-  // Uses untrack on items to avoid read→write loop.
-  // Calls notifyFormUpdate so items that become complete are pushed to the form field
-  // (EditableListField only commits on its own internal mutations).
+  // Uses untrack on items to avoid read→write loop. Flushes via the editor ref so items that
+  // become complete are pushed to the form field (EditableListField only commits on its own internal mutations).
   $effect(() => {
     const vatCode = defaultVatCode
     if (!vatCode) return
@@ -182,7 +216,30 @@
         vatCodeAttr: vatCode,
       }
     })
-    notifyFormUpdate()
+    editableListFieldRef?.flush()
+  })
+
+  // When defaultDiscountPercent arrives/changes (async from commercial terms),
+  // apply it to item rows whose discount still follows the previous default
+  // (unset, or equal to the last applied value). A user-entered percent, or a
+  // switch to fixed-amount mode, is treated as user-set and preserved.
+  let lastAppliedDefaultDiscount: number | undefined = undefined
+  $effect(() => {
+    const discount = defaultDiscountPercent
+    if (discount == null || discount === lastAppliedDefaultDiscount) return
+    const prevDefault = lastAppliedDefaultDiscount
+    lastAppliedDefaultDiscount = discount
+    const current = untrack(() => items)
+    const followsDefault = (item: InternalLineItem) =>
+      !item.useDiscountAmount &&
+      !item.discount_amount &&
+      (!item.discount_percent || item.discount_percent === prevDefault)
+    const needsUpdate = current.some(item => item.type === 'item' && followsDefault(item))
+    if (!needsUpdate) return
+    items = current.map(item =>
+      item.type === 'item' && followsDefault(item) ? { ...item, discount_percent: discount, discount_amount: 0 } : item,
+    )
+    editableListFieldRef?.flush()
   })
 
   // When defaultDeliveryDate changes, propagate it to empty items (no item_id yet) whose
@@ -209,12 +266,23 @@
         delivery_date: followsDefault(item.delivery_date) ? normalized : item.delivery_date,
       }
     })
-    notifyFormUpdate()
+    editableListFieldRef?.flush()
   })
 
   function isCompleteItem(item: InternalLineItem): boolean {
     if (item.type === 'descriptive') {
       return !!item.description
+    }
+    if (item.type === 'charge') {
+      // Charges have no product id (they're backend-computed fees); the API
+      // requires description, quantity, unit_price and a VAT code instead.
+      return (
+        !!item.description &&
+        !!item.quantity &&
+        item.quantity > 0 &&
+        item.unit_price !== undefined &&
+        !!item.vat_code_id
+      )
     }
     return !!item.item_id && !!item.quantity && item.quantity > 0 && !!item.vat_code_id
   }
@@ -222,12 +290,27 @@
   function transformOutput(internalItems: InternalLineItem[]): QuotationLineItem[] {
     return internalItems.map(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      ({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, delivery_date, ...rest }, index) => {
+      ({ useDiscountAmount, itemAttr, vatCodeAttr, itemBasePrice, _groupId, delivery_date, ...rest }, index) => {
         if (rest.type === 'descriptive')
           return {
             type: 'descriptive',
             description: rest.description,
           }
+
+        if (rest.type === 'charge') {
+          // Strip product-line-only fields (no item_id, no UOM, no delivery
+          // date, no discount); keep traceability ids so the chain back to the
+          // source document is preserved.
+          return {
+            type: 'charge',
+            description: rest.description,
+            quantity: rest.quantity,
+            unit_price: rest.unit_price,
+            vat_code_id: rest.vat_code_id,
+            sales_order_item_id: rest.sales_order_item_id,
+            transport_document_item_id: rest.transport_document_item_id,
+          }
+        }
 
         return { ...rest, [deliveryDateKey]: delivery_date }
       },
@@ -331,24 +414,9 @@
   }
 
   /**
-   * Notify onChange and form context of the current items state.
-   * EditableListField calls this internally via onItemsChange for its own mutations,
-   * but external mutations (addItems) must call this directly.
-   */
-  function notifyFormUpdate() {
-    const output = transformOutput(items.filter(isCompleteItem))
-    onChange?.(output)
-    if (form) {
-      form.updateField(name, output as never)
-      // Stale server-side errors (keyed by `{name}.{index}.{field}`) reference
-      // indices that may have shifted after add/remove/reorder, or values that
-      // the user just corrected. Drop them all on every items mutation.
-      form.clearErrorsAtPrefix(`${name}.`)
-    }
-  }
-
-  /**
-   * Handle items change callback from EditableListField
+   * Handle items change callback from EditableListField. Clears stale server-side
+   * errors keyed under `{name}.{index}.*` since indices may have shifted after
+   * an add/remove/reorder, or the user may have just corrected the field.
    */
   function handleItemsChange(completedItems: InternalLineItem[]) {
     const output = transformOutput(completedItems)
@@ -357,18 +425,36 @@
   }
 
   /**
-   * Append imported line items to the current list.
-   * Called by wrapper components (e.g. SalesOrderItemsListEditor) after import.
+   * Append imported line items, tagged with a shared `_groupId` for color coding.
+   * Callers should invoke once per source record (e.g. once per quotation) so each
+   * source gets its own color. If `groupId` is omitted, a fresh one is generated.
    */
-  export function addItems(newItems: QuotationLineItem[]) {
-    const mapped = mapFromApi(newItems)
-    const nonEmpty = items.filter(i => isCompleteItem(i))
-    items = [...nonEmpty, ...mapped]
-    notifyFormUpdate()
+  export function addItems(newItems: QuotationLineItem[], options?: { groupId?: string }) {
+    editableListFieldRef?.addItems(mapFromApi(newItems), {
+      groupId: options?.groupId ?? generateId(),
+    })
+  }
+
+  /**
+   * Returns the current line items in API shape — used by wrapper components
+   * (e.g. SalesOrderItemsListEditor) to dedupe imports against existing rows.
+   */
+  export function getItems(): QuotationLineItem[] {
+    return (editableListFieldRef?.getItems() ?? []) as QuotationLineItem[]
+  }
+
+  /**
+   * Drops every line item and commits the empty list to the form. Bypasses
+   * the per-row remove-button gating (so locked types like `charge` are also
+   * cleared). Used by parent flows that reset the entire prefill.
+   */
+  export function clearItems() {
+    editableListFieldRef?.clearItems()
   }
 </script>
 
 <EditableListField
+  bind:this={editableListFieldRef}
   {name}
   {label}
   {showLabel}
@@ -381,6 +467,7 @@
   syncFromForm={false}
   onItemsChange={handleItemsChange}
   allowReorder
+  collapsible
   class={className}>
   {#snippet header({ options })}
     {#if !isDisabled}
@@ -392,8 +479,13 @@
           variant={options.dragAndDropActive ? 'outline' : 'outline'}
           size="sm"
           onclick={options.toggleDragAndDrop}>
-          <ArrowUpDown class="mr-1 size-4" />
-          {options.dragAndDropActive ? m.done_reordering() : m.reorder_items()}
+          {#if options.dragAndDropActive}
+            <Pencil class="mr-1 size-4" />
+            {m.edit_items()}
+          {:else}
+            <ArrowUpDown class="mr-1 size-4" />
+            {m.reorder_items()}
+          {/if}
         </Button>
       </div>
       <div class="my-8">
@@ -407,26 +499,90 @@
       <GripVertical class="size-4 text-muted-foreground" />
       <span class="font-semibold text-primary"><span class="opacity-60">#</span>{index + 1}</span>
       {#if item.type === 'descriptive'}
-        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
-      {:else}
-        <span class="truncate text-sm">
-          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {item.description || m.description()}
         </span>
-        {#if item.quantity}
-          <span class="text-xs text-muted-foreground">x{item.quantity}</span>
-        {/if}
+      {:else if item.type === 'charge'}
+        <span class="min-w-0 flex-1 truncate text-sm">
+          {item.description || m.charge()}
+        </span>
+        <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
+          <span class="w-24 text-right whitespace-nowrap text-muted-foreground">
+            {#if item.unit_price !== undefined}{renderPrice(item.unit_price, currency)}{/if}
+          </span>
+        </div>
+      {:else}
+        <span class="min-w-0 flex-1 truncate text-sm">
+          {item.item_snapshot?.name || item.description || item.item_snapshot?.code || m.item()}
+        </span>
+        <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
+          <span class="w-20 text-right whitespace-nowrap">
+            {#if item.quantity}{item.quantity} {item.uom}{/if}
+          </span>
+          <span class="hidden w-24 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.unit_price && item.unit_price > 0}{renderPrice(item.unit_price, currency)}{/if}
+          </span>
+          <span class="hidden w-32 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.net_value && item.net_value > 0}Tot. {renderPrice(item.net_value, currency)}{/if}
+          </span>
+          {#if showDeliveryDates}
+            <span class="hidden w-28 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+              {#if item.delivery_date}{formatDateShort(item.delivery_date)}{/if}
+            </span>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {/snippet}
+
+  {#snippet collapsedItem({ item, index, groupColorClass })}
+    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 py-2 pr-12 pl-3 hover:bg-muted">
+      <span class="font-semibold {groupColorClass ?? 'text-primary'}"
+        ><span class="opacity-60">#</span>{index + 1}</span>
+      {#if item.type === 'descriptive'}
+        <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {item.description || m.description()}
+        </span>
+      {:else if item.type === 'charge'}
+        <span class="min-w-0 flex-1 truncate text-sm">
+          {item.description || m.charge()}
+        </span>
+        <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
+          <span class="w-24 text-right whitespace-nowrap text-muted-foreground">
+            {#if item.unit_price !== undefined}{renderPrice(item.unit_price, currency)}{/if}
+          </span>
+          <span class="hidden w-16 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.vat_code_snapshot?.code}{item.vat_code_snapshot.code}{/if}
+          </span>
+        </div>
+      {:else}
+        <span class="min-w-0 flex-1 truncate text-sm">
+          {item.item_snapshot?.name || item.description || item.item_snapshot?.code || m.item()}
+        </span>
+        <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
+          <span class="w-20 text-right whitespace-nowrap">
+            {#if item.quantity}{item.quantity} {item.uom}{/if}
+          </span>
+          <span class="hidden w-24 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.unit_price && item.unit_price > 0}{renderPrice(item.unit_price, currency)}{/if}
+          </span>
+          <span class="hidden w-32 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.net_value && item.net_value > 0}Tot. {renderPrice(item.net_value, currency)}{/if}
+          </span>
+          {#if showDeliveryDates}
+            <span class="hidden w-28 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+              {#if item.delivery_date}{formatDateShort(item.delivery_date)}{/if}
+            </span>
+          {/if}
+        </div>
       {/if}
     </div>
   {/snippet}
 
   {#snippet item({ item, index, updateItem })}
-    <div class="absolute -left-8 hidden h-6 text-sm leading-6 font-semibold text-primary md:block">
-      <span class="opacity-60">#</span>{index + 1}
-    </div>
-
     {#if item.type === 'descriptive'}
       <!-- Descriptive: full-width rich editor -->
-      <div class="pr-8">
+      <div>
         <RichEditorField
           name="{name}.{index}.description"
           label={m.description()}
@@ -438,9 +594,109 @@
           minHeight="min-h-20 max-h-60 overflow-y-auto bg-input/10 dark:bg-input/30"
           onChange={md => updateItem(index, { description: md })} />
       </div>
+    {:else if item.type === 'charge'}
+      <!-- Charge: backend-computed. Only description is editable; unit_price and
+           vat_code are shown read-only. Quantity is preserved on the line data
+           but hidden from the UI. -->
+      <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="sm:col-span-2 lg:col-span-3">
+          <TextField
+            name="{name}.{index}.description"
+            label={m.description()}
+            value={item.description ?? ''}
+            error={getFieldError(index, 'description')}
+            errorPosition="floating-bottom"
+            disabled={isDisabled}
+            width="w-full"
+            oninput={e => updateItem(index, { description: e.currentTarget.value })} />
+        </div>
+
+        <div class="flex flex-col justify-end">
+          <span class="block text-sm leading-6 font-medium">{m.unit_price()}</span>
+          <div class="flex h-9 items-center text-sm text-muted-foreground tabular-nums">
+            {#if item.unit_price !== undefined}{renderPrice(item.unit_price, currency)}{:else}-{/if}
+          </div>
+        </div>
+
+        <div class="flex flex-col justify-end">
+          <span class="block text-sm leading-6 font-medium">{m.vat_code()}</span>
+          <div class="flex h-9 items-center text-sm text-muted-foreground">
+            {item.vat_code_snapshot?.code ?? item.vat_code_snapshot?.description ?? '-'}
+          </div>
+        </div>
+      </div>
+    {:else if itemIsLocked(item)}
+      <!-- Locked item (e.g. linked to a transport document line). Only the
+           description is editable; code, quantity, unit_price, discount and VAT
+           code are shown read-only. The code falls back to "—" when the line
+           carries no item snapshot (some prefilled lines). The row cannot be
+           removed (handled by `removeButton`). -->
+      <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="sm:col-span-2 lg:col-span-3">
+          <TextField
+            name="{name}.{index}.description"
+            label={m.description()}
+            value={item.description ?? ''}
+            error={getFieldError(index, 'description')}
+            errorPosition="floating-bottom"
+            disabled={isDisabled}
+            width="w-full"
+            oninput={e => updateItem(index, { description: e.currentTarget.value })} />
+        </div>
+
+        <div class="flex flex-col justify-end">
+          <span class="block text-sm leading-6 font-medium">{m.code()}</span>
+          <div class="flex h-9 items-center">
+            {#if item.item_snapshot?.code}
+              <Tooltip.Root>
+                <Tooltip.Trigger class="max-w-64 cursor-default truncate text-sm text-muted-foreground">
+                  {item.item_snapshot.code}
+                </Tooltip.Trigger>
+                <Tooltip.Content>{item.item_snapshot.code}</Tooltip.Content>
+              </Tooltip.Root>
+            {:else}
+              <span class="text-muted-foreground">-</span>
+            {/if}
+          </div>
+        </div>
+
+        <div class="flex flex-col justify-end">
+          <span class="block text-sm leading-6 font-medium">{m.quantity()}</span>
+          <div class="flex h-9 items-center text-sm text-muted-foreground tabular-nums">
+            {#if item.quantity !== undefined}{item.quantity} {item.uom ?? ''}{:else}-{/if}
+          </div>
+        </div>
+
+        <div class="flex flex-col justify-end">
+          <span class="block text-sm leading-6 font-medium">{m.unit_price()}</span>
+          <div class="flex h-9 items-center text-sm text-muted-foreground tabular-nums">
+            {#if item.unit_price !== undefined}{renderPrice(item.unit_price, currency)}{:else}-{/if}
+          </div>
+        </div>
+
+        <div class="flex flex-col justify-end">
+          <span class="block text-sm leading-6 font-medium">
+            {item.useDiscountAmount ? m.discount_amount() : m.discount_percent()}
+          </span>
+          <div class="flex h-9 items-center text-sm text-muted-foreground tabular-nums">
+            {#if item.useDiscountAmount && item.discount_amount}
+              {renderPrice(item.discount_amount, currency)}
+            {:else}
+              {item.discount_percent ?? 0}%
+            {/if}
+          </div>
+        </div>
+
+        <div class="flex flex-col justify-end">
+          <span class="block text-sm leading-6 font-medium">{m.vat_code()}</span>
+          <div class="flex h-9 items-center text-sm text-muted-foreground">
+            {item.vat_code_snapshot?.code ?? item.vat_code_snapshot?.description ?? '-'}
+          </div>
+        </div>
+      </div>
     {:else}
       <!-- Item type: multi-row grid layout -->
-      <div class="grid grid-cols-1 gap-x-4 gap-y-3 pr-8 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
         <!-- Row 1: Item Selector, Code, Quantity -->
         <ItemSelector
           name="{name}.{index}.item_id"
@@ -615,7 +871,7 @@
   {/snippet}
 
   {#snippet addButton({ addItem, disabled: addDisabled, options: opts })}
-    {#if !opts.dragAndDropActive}
+    {#if !opts.dragAndDropActive && !lockStructure}
       <div class="mt-1 gap-2 md:flex">
         <Button variant="outline" size="sm" disabled={addDisabled} onclick={() => addItem({ type: 'item' })}>
           <Plus class="mr-1 size-4" />
@@ -627,6 +883,21 @@
           {m.add_description_line()}
         </Button>
       </div>
+    {/if}
+  {/snippet}
+
+  {#snippet removeButton({ removeItem, index, disabled: removeDisabled })}
+    {@const current = items[index]}
+    {#if current?.type !== 'charge' && !itemIsLocked(current ?? {})}
+      <ActionButton
+        variant="ghost"
+        size="icon"
+        class="absolute top-2 right-2 z-10 h-8 w-8 text-muted-foreground hover:text-destructive"
+        tooltip={m.remove_table_resource_line()}
+        disabled={removeDisabled}
+        onclick={removeItem}>
+        <X class="size-4" />
+      </ActionButton>
     {/if}
   {/snippet}
 </EditableListField>
