@@ -68,8 +68,9 @@ export default defineConfig({
   build: {
     sourcemap: false,
     rollupOptions: {
-      // Limit parallel processing to reduce memory peak during build
-      maxParallelFileOps: 5,
+      // Limit parallel processing to reduce memory peak during build.
+      // Lowered 5 -> 2 to keep the Forge build under the VPS's 4GB ceiling.
+      maxParallelFileOps: 2,
     },
   },
 
