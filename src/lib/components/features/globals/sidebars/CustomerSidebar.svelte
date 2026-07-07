@@ -66,6 +66,12 @@
         pageId: 'customer-commercial-terms',
         params: { uuid: customer.id },
       },
+      {
+        type: 'link',
+        label: m.intent_declarations(),
+        pageId: 'customer-intent-declarations',
+        params: { uuid: customer.id },
+      },
     ]
 
     return { name: m.customer(), items }

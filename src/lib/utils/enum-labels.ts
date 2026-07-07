@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { StatusVariant } from '$lib/components/core/ResourceTable/renderers/StatusBadge.types'
+import type { StatusVariant as TableStatusVariant } from '$lib/components/core/ResourceTable/types'
 import * as m from '$lib/paraglide/messages.js'
 import type {
   AbcClass,
@@ -14,6 +15,10 @@ import type {
   DimensionUnit,
   EmployeeCountRange,
   Incoterm,
+  IntentDeclaration,
+  IntentDeclarationAmountType,
+  IntentDeclarationStatus,
+  IntentDeclarationUsageReason,
   InvoiceableDocumentType,
   InvoiceDocumentType,
   InvoicePaymentStatus,
@@ -795,6 +800,71 @@ export const paymentMethodLabels: EnumLabelMap<PaymentMethod> = {
 
 export function getPaymentMethodLabel(method: PaymentMethod): string {
   return paymentMethodLabels[method]?.() ?? method
+}
+
+// ---------------------------------------------------------------------------
+// Intent Declarations (dichiarazioni d'intento)
+// ---------------------------------------------------------------------------
+
+// Intent Declaration Status (computed lifecycle status)
+export const intentDeclarationStatusLabels: EnumLabelMap<IntentDeclarationStatus> = {
+  draft: m.enum_intent_declaration_status_draft,
+  active: m.enum_intent_declaration_status_active,
+  exhausted: m.enum_intent_declaration_status_exhausted,
+  revoked: m.enum_intent_declaration_status_revoked,
+  invalidated: m.enum_intent_declaration_status_invalidated,
+  expired: m.enum_intent_declaration_status_expired,
+}
+
+export function getIntentDeclarationStatusLabel(status: IntentDeclarationStatus): string {
+  return intentDeclarationStatusLabels[status]?.() ?? status
+}
+
+// Kept within the ResourceTable StatusVariant subset so the same getter feeds
+// both the table `status` renderer and the sidebar StatusBadge.
+export const intentDeclarationStatusVariantConfig: Record<IntentDeclarationStatus, TableStatusVariant> = {
+  draft: 'neutral',
+  active: 'active',
+  exhausted: 'paused',
+  revoked: 'blocked',
+  invalidated: 'blocked',
+  expired: 'paused',
+}
+
+export function getIntentDeclarationStatusVariant(status: IntentDeclarationStatus): TableStatusVariant {
+  return intentDeclarationStatusVariantConfig[status] ?? 'neutral'
+}
+
+// Intent Declaration Amount Type (campo-1 / campo-2)
+export const intentDeclarationAmountTypeConfig: Record<IntentDeclarationAmountType, EnumDisplayConfig> = {
+  single_operation: { label: m.enum_intent_declaration_amount_type_single_operation, variant: 'secondary' },
+  up_to_amount: { label: m.enum_intent_declaration_amount_type_up_to_amount, variant: 'outline' },
+}
+
+export function getIntentDeclarationAmountTypeLabel(type: IntentDeclarationAmountType): string {
+  return intentDeclarationAmountTypeConfig[type]?.label() ?? type
+}
+
+export function getIntentDeclarationAmountTypeVariant(type: IntentDeclarationAmountType): BadgeVariant {
+  return intentDeclarationAmountTypeConfig[type]?.variant ?? 'outline'
+}
+
+// Intent Declaration Usage Reason (ledger movement)
+export const intentDeclarationUsageReasonConfig: Record<IntentDeclarationUsageReason, EnumDisplayConfig> = {
+  consumed: { label: m.enum_intent_declaration_usage_reason_consumed, variant: 'default' },
+  reversed_reopen: { label: m.enum_intent_declaration_usage_reason_reversed_reopen, variant: 'secondary' },
+  reversed_error: { label: m.enum_intent_declaration_usage_reason_reversed_error, variant: 'secondary' },
+  reversed_archived: { label: m.enum_intent_declaration_usage_reason_reversed_archived, variant: 'secondary' },
+  resync_delta: { label: m.enum_intent_declaration_usage_reason_resync_delta, variant: 'outline' },
+  credit_note_restore: { label: m.enum_intent_declaration_usage_reason_credit_note_restore, variant: 'outline' },
+}
+
+export function getIntentDeclarationUsageReasonLabel(reason: IntentDeclarationUsageReason): string {
+  return intentDeclarationUsageReasonConfig[reason]?.label() ?? reason
+}
+
+export function getIntentDeclarationUsageReasonVariant(reason: IntentDeclarationUsageReason): BadgeVariant {
+  return intentDeclarationUsageReasonConfig[reason]?.variant ?? 'outline'
 }
 
 export type SalesDocumentKind = 'quotation' | 'sales_order' | 'warehouse_order' | 'transport_document'
