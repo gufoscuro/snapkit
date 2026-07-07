@@ -10,7 +10,6 @@
   import { StatCard } from '$lib/components/core/StatCard'
   import { Resource } from '$lib/hooks/use-resource.svelte'
   import * as m from '$lib/paraglide/messages.js'
-  import { renderPrice } from '$lib/utils/prices'
   import { createRoute } from '$lib/utils/route-builder'
   import type { SnippetProps } from '$utils/runtime'
   import FileTextIcon from '@lucide/svelte/icons/file-text'
@@ -22,7 +21,6 @@
   const resource = new Resource(() => fetchCountKpi(legalEntity?.id, 'to-invoice', mockToInvoice))
   const kpi = $derived(resource.data?.value)
   const isZero = $derived(kpi?.count === 0)
-  const amount = $derived(kpi?.amount ? renderPrice(kpi.amount.total, kpi.currency) : undefined)
 </script>
 
 <StatCard
@@ -32,7 +30,7 @@
   onRetry={resource.reload}
   value={kpi ? String(kpi.count) : undefined}
   tone={isZero ? 'positive' : 'default'}
-  footerTitle={isZero ? m.dashboard_all_clear() : amount}
+  footerTitle={isZero ? m.dashboard_all_clear() : undefined}
   footerSubtext={isZero ? m.dashboard_to_invoice_zero() : m.dashboard_to_invoice_subtext()}
   href={createRoute({ $id: 'to-invoice' })}
   demo={resource.data?.demo}>

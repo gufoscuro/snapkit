@@ -13,6 +13,7 @@
   "dashboard_to_ship_title": "Da spedire",
   "dashboard_to_ship_subtext": "Ordini da spedire questa settimana",
   "dashboard_to_ship_zero": "Nessun ordine in attesa di spedizione",
+  "dashboard_to_ship_overdue": "{count} ordini in ritardo",
   "dashboard_to_invoice_title": "Da fatturare",
   "dashboard_to_invoice_subtext": "Documenti da fatturare questa settimana",
   "dashboard_to_invoice_zero": "Nessun documento in attesa di fattura",

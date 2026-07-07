@@ -6,16 +6,17 @@ import { withMockFallback, type Sourced } from './with-mock-fallback'
 export type CountKpiSlug = 'to-ship' | 'to-invoice' | 'to-collect'
 
 /** Shared fetcher for the operational count KPIs (to-ship / to-invoice /
- * to-collect). Falls back to the given mock until the endpoint ships. */
-export function fetchCountKpi(
+ * to-collect). Generic over the response shape so to-ship can carry its extra
+ * behind-schedule fields. Falls back to the given mock until the endpoint ships. */
+export function fetchCountKpi<T extends CountKpiResponse>(
   leId: string | undefined,
   slug: CountKpiSlug,
-  mock: CountKpiResponse,
+  mock: T,
   period: DashboardPeriodParam = 'current_week'
-): Promise<Sourced<CountKpiResponse>> {
+): Promise<Sourced<T>> {
   return withMockFallback(
     () =>
-      apiRequest<DataWrapper<CountKpiResponse>>({
+      apiRequest<DataWrapper<T>>({
         url: `/legal-entities/${leId}/dashboard/kpis/${slug}`,
         queryParams: { period },
       }).then((r) => r.data),

@@ -37,6 +37,12 @@ export interface StatCardProps {
   footerTitle?: string
   /** Muted footer line below `footerTitle`. */
   footerSubtext?: string
+  /**
+   * Custom footer content for the loaded state, replacing `footerTitle` /
+   * `footerSubtext`. Interactive elements inside must be `relative z-10` to sit
+   * above the card's stretched link (see `href`).
+   */
+  footer?: Snippet
   /** `positive` tints the card for a "nothing to do / all done" success. */
   tone?: 'default' | 'positive'
   /** Makes the whole card a link (disabled in loading/error states). */

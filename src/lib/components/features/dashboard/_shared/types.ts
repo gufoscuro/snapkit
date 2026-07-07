@@ -59,6 +59,21 @@ export interface CountKpiResponse {
   amount: Money | null
 }
 
+/**
+ * `GET …/dashboard/kpis/to-ship` — extends the count shape with the subset of
+ * orders already past their delivery date.
+ */
+export interface ToShipKpiResponse extends CountKpiResponse {
+  /** How many of the orders are past their delivery date. */
+  behind_schedule_count: number
+  /**
+   * Reference date that separates "behind schedule" from on-time (typically
+   * today), `YYYY-MM-DD`. The frontend deep-links the delivery schedule with
+   * `?delivery_date_to={behind_schedule_date}` to show only overdue rows.
+   */
+  behind_schedule_date: string
+}
+
 export interface MonthlyRevenuePoint {
   /** `YYYY-MM`. */
   month: string

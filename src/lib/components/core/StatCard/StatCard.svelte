@@ -32,6 +32,7 @@
     trend,
     footerTitle,
     footerSubtext,
+    footer,
     tone = 'default',
     href,
     demo = false,
@@ -122,6 +123,8 @@
           {m.retry()}
         </Button>
       {/if}
+    {:else if footer}
+      {@render footer()}
     {:else}
       {#if footerTitle}
         <div

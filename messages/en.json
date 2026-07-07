@@ -13,6 +13,7 @@
   "dashboard_to_ship_title": "To ship",
   "dashboard_to_ship_subtext": "Orders to ship this week",
   "dashboard_to_ship_zero": "No orders awaiting shipment",
+  "dashboard_to_ship_overdue": "{count} orders overdue",
   "dashboard_to_invoice_title": "To invoice",
   "dashboard_to_invoice_subtext": "Documents to invoice this week",
   "dashboard_to_invoice_zero": "No documents awaiting invoicing",
