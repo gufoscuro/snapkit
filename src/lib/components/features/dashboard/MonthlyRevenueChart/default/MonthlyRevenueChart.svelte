@@ -9,17 +9,24 @@
   @api GET /api/legal-entities/{legalEntity}/dashboard/charts/monthly-revenue (proposed) -> MonthlyRevenueResponse
 -->
 <script lang="ts">
-  import { BarChart } from 'layerchart'
+  // TODO(build-oom): layerchart is the sole gateway that pulls the whole d3
+  // constellation (24 d3-* pkgs, ~7MB) into the Rollup graph, tipping the Forge
+  // VPS build over its RAM ceiling (exit 137 / Killed). Temporarily stubbed to
+  // unblock deploys — the chart body + these imports are the only importers of
+  // layerchart in the whole app, so commenting them tree-shakes it back out.
+  // Re-enable after swap / CI-offload lands, or replace with a d3-free SVG bar
+  // chart. See project_build_memory.md (2026-07-07).
+  // import { BarChart } from 'layerchart'
+  // import * as Chart from '$lib/components/ui/chart'
   import * as Card from '$lib/components/ui/card'
-  import * as Chart from '$lib/components/ui/chart'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import { Skeleton } from '$lib/components/ui/skeleton'
-  import { IsMobile } from '$lib/hooks/is-mobile.svelte'
+  // import { IsMobile } from '$lib/hooks/is-mobile.svelte'
   import { Resource } from '$lib/hooks/use-resource.svelte'
   import type { DataWrapper } from '$lib/types/api-types'
   import * as m from '$lib/paraglide/messages.js'
-  import { renderPrice } from '$lib/utils/prices'
+  // import { renderPrice } from '$lib/utils/prices'
   import { apiRequest } from '$lib/utils/request'
   import type { SnippetProps } from '$utils/runtime'
   import AlertCircleIcon from '@lucide/svelte/icons/circle-alert'
@@ -45,16 +52,16 @@
 
   const payload = $derived(resource.data?.value)
   const series = $derived(payload?.series ?? [])
-  const currency = $derived(payload?.currency ?? 'EUR')
   const isEmpty = $derived(!!payload && series.length === 0)
 
+  // TODO(build-oom): chart-only bindings, restore together with the BarChart body.
+  // const currency = $derived(payload?.currency ?? 'EUR')
   // On narrow viewports the 12 month labels clash, so show only the last 6.
-  const isMobile = new IsMobile()
-  const displaySeries = $derived(isMobile.current ? series.slice(-6) : series)
-
-  const chartConfig = {
-    total: { label: m.dashboard_chart_series_label(), color: 'var(--primary)' },
-  } satisfies Chart.ChartConfig
+  // const isMobile = new IsMobile()
+  // const displaySeries = $derived(isMobile.current ? series.slice(-6) : series)
+  // const chartConfig = {
+  //   total: { label: m.dashboard_chart_series_label(), color: 'var(--primary)' },
+  // } satisfies Chart.ChartConfig
 </script>
 
 <Card.Root>
@@ -91,34 +98,13 @@
         <p class="text-sm text-muted-foreground">{m.dashboard_chart_empty()}</p>
       </div>
     {:else}
-      <Chart.Container config={chartConfig} class="aspect-auto h-70 w-full">
-        <BarChart
-          data={displaySeries}
-          x="label"
-          series={[
-            { key: 'total', label: m.dashboard_chart_series_label(), color: 'var(--color-total)' },
-          ]}
-          axis="x"
-          grid={false}
-          props={{
-            bars: { stroke: 'none', rounded: 'top', radius: 4, initialHeight: 0 },
-            highlight: { area: { fill: 'none' } },
-            xAxis: { format: (v: string) => v },
-          }}>
-          {#snippet tooltip()}
-            <Chart.Tooltip labelKey="label" nameKey="total" indicator="dot" formatter={priceRow} />
-          {/snippet}
-        </BarChart>
-      </Chart.Container>
-
-      {#if payload?.partial_from}
-        <p class="mt-3 text-xs text-muted-foreground">{m.dashboard_chart_partial_note()}</p>
-      {/if}
+      <!-- TODO(build-oom): chart temporarily disabled to keep layerchart out of the
+           build graph. Placeholder only; see script header. -->
+      <div
+        class="flex h-70 flex-col items-center justify-center gap-2 rounded-md border border-dashed text-center">
+        <ChartColumnIcon class="size-6 text-muted-foreground/60" />
+        <p class="text-sm text-muted-foreground">Grafico temporaneamente non disponibile</p>
+      </div>
     {/if}
   </Card.Content>
 </Card.Root>
-
-{#snippet priceRow({ value }: { value: unknown })}
-  <span class="text-muted-foreground">{m.dashboard_chart_series_label()}</span>
-  <span class="ml-auto font-medium tabular-nums">{renderPrice(Number(value), currency)}</span>
-{/snippet}
