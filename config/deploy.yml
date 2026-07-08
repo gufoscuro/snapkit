@@ -51,4 +51,4 @@ env:
     NODE_ENV: production
     BODY_SIZE_LIMIT: 15M
   secret:
-    - API_GATEWAY_URL
+    - PUBLIC_API_GATEWAY

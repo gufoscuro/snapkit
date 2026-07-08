@@ -146,7 +146,7 @@ In the GitHub repo: **Settings → Secrets and variables → Actions → New rep
 |---|---|
 | `SSH_PRIVATE_KEY` | Full contents of `~/.ssh/snapkit-ci` (the **private** key, including the `-----BEGIN/END-----` lines) |
 | `DEPLOY_HOST` | VPS hostname or public IP |
-| `API_GATEWAY_URL` | The runtime backend API URL |
+| `PUBLIC_API_GATEWAY` | The runtime backend API base URL (read via `$env/dynamic/public`, no trailing `/api`) |
 
 `GITHUB_TOKEN` is provisioned automatically by Actions — no manual setup.
 
@@ -185,7 +185,7 @@ gem install kamal -v "~> 2.0"
 # Create the local secrets file (gitignored)
 cp .kamal/secrets.example .kamal/secrets
 # Edit .kamal/secrets — populate KAMAL_REGISTRY_PASSWORD (a GHCR PAT with read+write packages)
-# and API_GATEWAY_URL
+# and PUBLIC_API_GATEWAY
 
 # Build and push the image (Kamal can do this, but easier to use the workflow)
 # Trigger workflow_dispatch on .github/workflows/ship.yml from the GitHub UI,
@@ -273,7 +273,7 @@ If the cutover (Phase 8) fails:
 2. **Confirm the legacy daemon is still running**: Forge dashboard → Daemons → SnapKit daemon should show "Running". If it was stopped, restart it.
 3. **Verify with the health monitor**: 200s should resume.
 4. **Stop the Kamal container** (it stays around but unused): `ssh <vps> 'docker stop $(docker ps -q --filter ancestor=ghcr.io/moddopro/app)'`.
-5. **Investigate**: check `kamal app logs`, container env vars, `/healthz` response. Most common cause: missing `API_GATEWAY_URL` env var.
+5. **Investigate**: check `kamal app logs`, container env vars, `/healthz` response. Most common cause: missing `PUBLIC_API_GATEWAY` env var.
 6. **Retry Phase 7-8** once the issue is fixed.
 
 ---

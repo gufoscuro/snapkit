@@ -67,7 +67,7 @@ Configured under **Settings → Secrets and variables → Actions** during the i
 |---|---|
 | `SSH_PRIVATE_KEY` | Private key the runner uses to SSH into the VPS |
 | `DEPLOY_HOST` | VPS hostname or IP |
-| `API_GATEWAY_URL` | Backend API gateway URL (runtime env var) |
+| `PUBLIC_API_GATEWAY` | Backend API gateway base URL (runtime env var; read via `$env/dynamic/public`, no trailing `/api`) |
 
 `GITHUB_TOKEN` is automatic. Setting up these secrets is covered in [`VPS_DEPLOYMENT_SETUP.md`](VPS_DEPLOYMENT_SETUP.md).
 

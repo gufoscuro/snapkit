@@ -3,6 +3,9 @@ FROM node:20-slim AS build
 WORKDIR /usr/src/app
 
 COPY package.json package-lock.json ./
+# Workspace manifests must be present before `npm ci` (npm resolves the
+# @diaphora/chat workspace from the lockfile). Copy them ahead of the sources.
+COPY packages/chat/package.json ./packages/chat/
 RUN npm ci
 
 COPY . .

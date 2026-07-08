@@ -73,6 +73,6 @@ jobs:
       - name: Deploy with Kamal
         env:
           KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-          API_GATEWAY_URL: ${{ secrets.API_GATEWAY_URL }}
+          PUBLIC_API_GATEWAY: ${{ secrets.PUBLIC_API_GATEWAY }}
           VERSION: ${{ steps.meta.outputs.version }}
         run: kamal deploy --version "$VERSION"
