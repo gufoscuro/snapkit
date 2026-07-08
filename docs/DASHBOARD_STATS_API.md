@@ -21,7 +21,7 @@ exactly these shapes — swaps the mocks for live data with **no frontend change
 | **Currency** | ISO-4217 code as a sibling field (`"currency": "EUR"`), present whenever `format` is `currency`. |
 | **No display strings** | The backend sends **data, never labels**. All human-facing text (titles, series names, footnotes, trend copy) is owned by the frontend config + i18n. Do **not** localize or send captions. |
 | **Formatting** | The frontend formats every number (symbol, locale separators, percent) based on the `format` field. Backend just says *what kind* of number it is. |
-| **Period** | KPIs accept a `period` query param (`current_week` \| `current_month`), with optional `from`/`to` overrides. The response echoes the **resolved** window under `period`. |
+| **Period** | KPIs accept a `period` query param (`current_week` \| `current_month`), with optional `from`/`to` overrides. |
 | **Errors** | Standard HTTP. Until an endpoint exists the frontend treats **404** as "not shipped yet" and shows mock data flagged `demo`; any other status surfaces a real error. Once live, return `200` with the contract shape. |
 | **Validation** | The frontend validates every payload against the schema and will **hard-error** on shape drift (missing required key, wrong type). Extra keys are ignored. |
 
@@ -45,7 +45,6 @@ Returned by `GET …/stats/kpis/{slug}`.
 | `trend` | object | — | Optional change-vs-previous indicator (see below). Omit if not applicable. |
 | `filters` | `Record<string, string \| number>` | — | Query params for this figure's deep-link. The frontend spreads them **verbatim** onto the destination URL — you own filter compatibility; the frontend needs no knowledge of filter names. |
 | `additional_kpis` | `Array<…>` | — | Secondary figures nested under the headline (see below). Rendered **in order**; labelled by config. |
-| `period` | `{ from, to }` | — | Resolved window the figures cover, inclusive `YYYY-MM-DD`. |
 
 **`additional_kpis[]`** — each item is the KPI base shape (no further nesting):
 
@@ -107,8 +106,7 @@ Revenue for the current month vs the previous one.
   "value": 48250.75,
   "format": "currency",
   "currency": "EUR",
-  "trend": { "direction": "up", "value": 0.125, "format": "percent", "positive_is_good": true },
-  "period": { "from": "2026-07-01", "to": "2026-07-31" }
+  "trend": { "direction": "up", "value": 0.125, "format": "percent", "positive_is_good": true }
 }
 ```
 
@@ -133,8 +131,7 @@ Orders to ship this week, with an overdue sub-count that deep-links the delivery
   "filters": { "delivery_date_from": "2026-07-06", "delivery_date_to": "2026-07-12" },
   "additional_kpis": [
     { "value": 3, "format": "number", "filters": { "delivery_date_to": "2026-07-07" } }
-  ],
-  "period": { "from": "2026-07-06", "to": "2026-07-12" }
+  ]
 }
 ```
 
@@ -153,8 +150,7 @@ Documents to invoice this week. Plain count; zero is a positive "all clear" stat
 ```json
 {
   "value": 5,
-  "format": "number",
-  "period": { "from": "2026-07-06", "to": "2026-07-12" }
+  "format": "number"
 }
 ```
 
@@ -168,8 +164,7 @@ Invoice due-dates to collect this week. Same shape as to-invoice.
 ```json
 {
   "value": 8,
-  "format": "number",
-  "period": { "from": "2026-07-06", "to": "2026-07-12" }
+  "format": "number"
 }
 ```
 
@@ -260,4 +255,4 @@ The corresponding config (for reference — frontend-owned) is just:
 - [ ] Bare objects (no `{ data }` wrapper), `snake_case`, major-unit numbers, no display strings
 - [ ] `filters` spread verbatim as deep-link query params (you own compatibility)
 - [ ] `additional_kpis` in stable order, zero items included
-- [ ] KPIs honor `period` (`current_week`/`current_month` + optional `from`/`to`) and echo resolved `period`
+- [ ] KPIs honor `period` (`current_week`/`current_month` + optional `from`/`to`)

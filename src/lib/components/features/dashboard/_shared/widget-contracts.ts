@@ -81,8 +81,6 @@ export const KpiPayloadSchema = Type.Object(
     ...kpiBaseProps,
     /** Secondary figures, rendered in order and labelled by config. */
     additional_kpis: Type.Optional(Type.Array(AdditionalKpiSchema)),
-    /** Resolved period the figures cover, inclusive `YYYY-MM-DD`. */
-    period: Type.Optional(Type.Object({ from: Type.String(), to: Type.String() })),
   },
   { $id: 'KpiPayload' },
 )

@@ -12,24 +12,20 @@ export const KPI_MOCKS: Record<string, KpiPayload> = {
     format: 'currency',
     currency: 'EUR',
     trend: { direction: 'up', value: 0.125, format: 'percent', positive_is_good: true },
-    period: { from: '2026-07-01', to: '2026-07-31' },
   },
   'to-ship': {
     value: 12,
     format: 'number',
     filters: { delivery_date_from: '2026-07-06', delivery_date_to: '2026-07-12' },
     additional_kpis: [{ value: 3, format: 'number', filters: { delivery_date_to: '2026-07-07' } }],
-    period: { from: '2026-07-06', to: '2026-07-12' },
   },
   'to-invoice': {
     value: 5,
     format: 'number',
-    period: { from: '2026-07-06', to: '2026-07-12' },
   },
   'to-collect': {
     value: 8,
     format: 'number',
-    period: { from: '2026-07-06', to: '2026-07-12' },
   },
 }
 
