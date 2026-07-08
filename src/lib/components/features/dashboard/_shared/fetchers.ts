@@ -1,25 +1,54 @@
-import type { DataWrapper } from '$lib/types/api-types'
 import { apiRequest } from '$lib/utils/request'
-import type { CountKpiResponse, DashboardPeriodParam } from './types'
+import { CHART_MOCKS, KPI_MOCKS } from './mocks'
+import {
+  assertChartPayload,
+  assertKpiPayload,
+  type ChartPayload,
+  type KpiPayload,
+  type WidgetConfig,
+} from './widget-contracts'
 import { withMockFallback, type Sourced } from './with-mock-fallback'
 
-export type CountKpiSlug = 'to-ship' | 'to-invoice' | 'to-collect'
-
-/** Shared fetcher for the operational count KPIs (to-ship / to-invoice /
- * to-collect). Generic over the response shape so to-ship can carry its extra
- * behind-schedule fields. Falls back to the given mock until the endpoint ships. */
-export function fetchCountKpi<T extends CountKpiResponse>(
+/**
+ * Generic fetcher for a config-driven KPI widget. Expands the config's endpoint
+ * *slug* to the stats namespace, validates the response against the frozen
+ * `KpiPayload` contract, and — while the endpoint is still absent — falls back to
+ * a colocated mock (see `KPI_MOCKS`). Endpoints without a mock surface a real
+ * error on 404 instead of masking it.
+ *
+ * Stat endpoints are single resources, so the response is the bare payload — no
+ * `{ data }` list envelope.
+ */
+export function fetchKpiWidget(
   leId: string | undefined,
-  slug: CountKpiSlug,
-  mock: T,
-  period: DashboardPeriodParam = 'current_week'
-): Promise<Sourced<T>> {
-  return withMockFallback(
-    () =>
-      apiRequest<DataWrapper<T>>({
-        url: `/legal-entities/${leId}/dashboard/kpis/${slug}`,
-        queryParams: { period },
-      }).then((r) => r.data),
-    mock
-  )
+  config: WidgetConfig
+): Promise<Sourced<KpiPayload>> {
+  const real = () =>
+    apiRequest<KpiPayload>({
+      url: `/legal-entities/${leId}/stats/kpis/${config.source.endpoint}`,
+      queryParams: config.source.params,
+    }).then(assertKpiPayload)
+
+  const mock = KPI_MOCKS[config.source.endpoint]
+  if (!mock) return real().then((value) => ({ value, demo: false }))
+  return withMockFallback(real, mock)
+}
+
+/**
+ * Generic fetcher for a config-driven chart widget. Mirrors {@link fetchKpiWidget}
+ * against the `stats/charts` namespace and the frozen `ChartPayload` contract.
+ */
+export function fetchChartWidget(
+  leId: string | undefined,
+  config: WidgetConfig
+): Promise<Sourced<ChartPayload>> {
+  const real = () =>
+    apiRequest<ChartPayload>({
+      url: `/legal-entities/${leId}/stats/charts/${config.source.endpoint}`,
+      queryParams: config.source.params,
+    }).then(assertChartPayload)
+
+  const mock = CHART_MOCKS[config.source.endpoint]
+  if (!mock) return real().then((value) => ({ value, demo: false }))
+  return withMockFallback(real, mock)
 }

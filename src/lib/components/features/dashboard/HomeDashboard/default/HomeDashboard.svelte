@@ -1,20 +1,25 @@
 <!--
   @component HomeDashboard
-  @description The "given" home dashboard: a responsive grid of self-enclosed
+  @description The "given" home dashboard: a responsive grid of config-driven
   KPI widgets (revenue, to-ship, to-invoice, to-collect) above a full-width
-  monthly-revenue bar chart. Each widget fetches its own data independently, so
-  this container only lays them out and forwards SnippetProps. A future
-  per-tenant custom dashboard can swap this for a slot-based configurable grid.
+  monthly-revenue bar chart. Each KPI is a generic `KpiWidget` cabled by a
+  `WidgetConfig` (see `_shared/example-configs`); this container only lays them
+  out and forwards SnippetProps. The configs currently live in code — the end
+  state is the same objects persisted in the page config's `widgets` array.
   @keywords dashboard, home, homepage, grid, kpi, overview, panoramica
 -->
 <script lang="ts">
   import * as m from '$lib/paraglide/messages.js'
   import type { SnippetProps } from '$utils/runtime'
-  import MonthlyRevenueChart from '../../MonthlyRevenueChart/default/MonthlyRevenueChart.svelte'
-  import RevenueKpi from '../../RevenueKpi/default/RevenueKpi.svelte'
-  import ToCollectKpi from '../../ToCollectKpi/default/ToCollectKpi.svelte'
-  import ToInvoiceKpi from '../../ToInvoiceKpi/default/ToInvoiceKpi.svelte'
-  import ToShipKpi from '../../ToShipKpi/default/ToShipKpi.svelte'
+  import {
+    monthlyRevenueWidgetConfig,
+    revenueWidgetConfig,
+    toCollectWidgetConfig,
+    toInvoiceWidgetConfig,
+    toShipWidgetConfig,
+  } from '../../_shared/example-configs'
+  import ChartWidget from '../../ChartWidget/default/ChartWidget.svelte'
+  import KpiWidget from '../../KpiWidget/default/KpiWidget.svelte'
 
   const snippetProps: SnippetProps = $props()
 </script>
@@ -26,11 +31,11 @@
   </div>
 
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    <RevenueKpi {...snippetProps} />
-    <ToShipKpi {...snippetProps} />
-    <ToInvoiceKpi {...snippetProps} />
-    <ToCollectKpi {...snippetProps} />
+    <KpiWidget config={revenueWidgetConfig} {...snippetProps} />
+    <KpiWidget config={toShipWidgetConfig} {...snippetProps} />
+    <KpiWidget config={toInvoiceWidgetConfig} {...snippetProps} />
+    <KpiWidget config={toCollectWidgetConfig} {...snippetProps} />
   </div>
 
-  <MonthlyRevenueChart {...snippetProps} />
+  <ChartWidget config={monthlyRevenueWidgetConfig} {...snippetProps} />
 </div>

@@ -23,6 +23,7 @@
   "dashboard_chart_title": "Andamento vendite",
   "dashboard_chart_subtitle": "Venduto degli ultimi 12 mesi",
   "dashboard_chart_series_label": "Venduto",
+  "dashboard_chart_series_fallback": "Serie {n}",
   "dashboard_chart_empty": "Nessun dato di vendita nel periodo",
   "dashboard_chart_partial_note": "* Il mese corrente è ancora in corso",
   "to_ship": "Da spedire",

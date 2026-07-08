@@ -23,6 +23,7 @@
   "dashboard_chart_title": "Sales trend",
   "dashboard_chart_subtitle": "Revenue over the last 12 months",
   "dashboard_chart_series_label": "Revenue",
+  "dashboard_chart_series_fallback": "Series {n}",
   "dashboard_chart_empty": "No sales data for this period",
   "dashboard_chart_partial_note": "* The current month is still in progress",
   "to_ship": "To ship",
