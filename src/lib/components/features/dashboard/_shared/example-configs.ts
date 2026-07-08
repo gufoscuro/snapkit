@@ -31,16 +31,12 @@ export const toShipWidgetConfig: WidgetConfig = {
     zeroLabel: { key: 'dashboard_all_clear' },
     zeroSubtext: { key: 'dashboard_to_ship_zero' },
   },
-  secondary: [
+  additionalKpis: [
     {
-      metricKey: 'behind_schedule_count',
       label: { key: 'dashboard_to_ship_overdue' },
       emphasis: 'warning',
       hideWhenZero: true,
-      action: {
-        pageId: 'to-ship',
-        query: { delivery_date_to: { $fromMeta: 'behind_schedule_date' } },
-      },
+      action: { pageId: 'to-ship' },
     },
   ],
 }

@@ -2,9 +2,10 @@
   @component KpiWidget
   @description Generic, config-driven KPI card. Given a `WidgetConfig`, it fetches
   its own stat endpoint (slug → stats namespace), maps the frozen `KpiPayload`
-  onto the presentational StatCard, and wires primary + secondary deep-links
-  declaratively. One renderer displays any KPI — new KPIs are added by authoring
-  a config object, not a component. Falls back to a mock until the endpoint ships.
+  onto the presentational StatCard, and wires the primary + additional-KPI
+  deep-links declaratively (query = each figure's own `filters`). One renderer
+  displays any KPI — new KPIs are added by authoring a config object, not a
+  component. Falls back to a mock until the endpoint ships.
   @keywords dashboard, kpi, widget, generic, config-driven, stat
   @api GET /api/legal-entities/{legalEntity}/stats/kpis/{slug} (proposed) -> KpiPayload
 -->
@@ -19,9 +20,9 @@
   import { formatTrend, formatValue } from '../../_shared/format'
   import { getWidgetIcon } from '../../_shared/widget-icons'
   import {
-    resolveActionQuery,
+    filtersToQuery,
     resolveLabel,
-    type SecondaryMetricConfig,
+    type AdditionalKpiConfig,
     type Trend,
     type WidgetConfig,
   } from '../../_shared/widget-contracts'
@@ -51,14 +52,19 @@
 
   const href = $derived.by(() => {
     if (!config.action) return undefined
-    return createRoute({ $id: config.action.pageId, query: resolveActionQuery(config.action, kpi) })
+    return createRoute({ $id: config.action.pageId, query: filtersToQuery(kpi?.filters) })
   })
 
-  // Secondary metrics resolved against the payload; zero-valued ones can opt out.
-  const secondaries = $derived(
-    (config.secondary ?? [])
-      .map((cfg) => ({ cfg, n: kpi?.metrics?.[cfg.metricKey] ?? 0 }))
-      .filter(({ cfg, n }) => !(cfg.hideWhenZero && n === 0))
+  // Pair each payload additional-KPI with its config presentation, by position.
+  // Rows without a config entry can't be labelled, so they're skipped; zero-valued
+  // rows can opt out via `hideWhenZero`.
+  const additionalRows = $derived(
+    (kpi?.additional_kpis ?? [])
+      .map((item, i) => ({ item, cfg: config.additionalKpis?.[i] }))
+      .filter(
+        (row): row is { item: (typeof row)['item']; cfg: AdditionalKpiConfig } =>
+          !!row.cfg && !(row.cfg.hideWhenZero && row.item.value === 0)
+      )
   )
 
   function trendSentiment(t: Trend): StatCardSentiment {
@@ -67,19 +73,10 @@
     return goodOutcome ? 'positive' : 'negative'
   }
 
-  function emphasisClass(emphasis: SecondaryMetricConfig['emphasis']): string {
+  function emphasisClass(emphasis: AdditionalKpiConfig['emphasis']): string {
     if (emphasis === 'danger') return 'text-red-600 dark:text-red-400'
     if (emphasis === 'warning') return 'text-amber-600 dark:text-amber-400'
     return 'font-medium'
-  }
-
-  function secondaryHref(cfg: SecondaryMetricConfig): string | undefined {
-    if (!cfg.action) return undefined
-    return createRoute({ $id: cfg.action.pageId, query: resolveActionQuery(cfg.action, kpi) })
-  }
-
-  function secondaryLabel(cfg: SecondaryMetricConfig, n: number): string {
-    return resolveLabel(cfg.label, { value: n, count: n })
   }
 </script>
 
@@ -103,20 +100,21 @@
       {/if}
       {#if zeroSubtext}<div class="text-muted-foreground">{zeroSubtext}</div>{/if}
     {:else}
-      {#each secondaries as { cfg, n } (cfg.metricKey)}
-        {#if secondaryHref(cfg)}
+      {#each additionalRows as { item, cfg }, i (i)}
+        {@const label = resolveLabel(cfg.label, { value: item.value, count: item.value })}
+        {#if cfg.action}
           <a
-            href={secondaryHref(cfg)}
+            href={createRoute({ $id: cfg.action.pageId, query: filtersToQuery(item.filters) })}
             class={'relative z-10 inline-flex w-fit items-center gap-1.5 font-medium hover:underline ' +
               emphasisClass(cfg.emphasis)}>
             {#if cfg.emphasis === 'warning' || cfg.emphasis === 'danger'}
               <TriangleAlertIcon class="size-4" />
             {/if}
-            {secondaryLabel(cfg, n)}
+            {label}
           </a>
         {:else}
           <div class={'flex items-center gap-1.5 font-medium ' + emphasisClass(cfg.emphasis)}>
-            {secondaryLabel(cfg, n)}
+            {label}
           </div>
         {/if}
       {/each}

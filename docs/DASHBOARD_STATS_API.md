@@ -43,9 +43,25 @@ Returned by `GET …/stats/kpis/{slug}`.
 | `format` | `"currency"` \| `"number"` \| `"percent"` | ✔ | How the frontend renders `value`. `percent` = ratio (`0.125` → `12,5%`). |
 | `currency` | string (ISO-4217) | — | Required when `format` is `currency`. |
 | `trend` | object | — | Optional change-vs-previous indicator (see below). Omit if not applicable. |
-| `metrics` | `Record<string, number>` | — | Named secondary numbers a widget may surface (e.g. `behind_schedule_count`). Keys are agreed with the widget config. |
-| `meta` | `Record<string, string \| number>` | — | Non-display values used to build deep-links (e.g. `behind_schedule_date`). |
+| `filters` | `Record<string, string \| number>` | — | Query params for this figure's deep-link. The frontend spreads them **verbatim** onto the destination URL — you own filter compatibility; the frontend needs no knowledge of filter names. |
+| `additional_kpis` | `Array<…>` | — | Secondary figures nested under the headline (see below). Rendered **in order**; labelled by config. |
 | `period` | `{ from, to }` | — | Resolved window the figures cover, inclusive `YYYY-MM-DD`. |
+
+**`additional_kpis[]`** — each item is the KPI base shape (no further nesting):
+
+| Field | Type | Req | Meaning |
+| --- | --- | --- | --- |
+| `value` | number | ✔ | The secondary figure. |
+| `format` | `"currency"` \| `"number"` \| `"percent"` | ✔ | How to render it. |
+| `currency` | string | — | When `format` is `currency`. |
+| `trend` | object | — | Optional, same as above. |
+| `filters` | `Record<string, string \| number>` | — | Query params for **this** figure's own deep-link. |
+
+> The frontend renders `additional_kpis` by **cycling** the array — it never reads a
+> named key. The human label + emphasis + link target come from the widget config,
+> matched **by position**. So keep the array **order stable**, and include an item
+> even when its `value` is `0` (config decides whether to hide it) — otherwise the
+> positions shift and labels mismatch.
 
 **`trend` object**
 
@@ -70,6 +86,7 @@ Returned by `GET …/stats/charts/{slug}`.
 | `currency` | string (ISO-4217) | — | Required when `format` is `currency`. |
 | `x_key` | string | ✔ | Which key in each point holds the x value. |
 | `x_type` | `"time"` \| `"category"` | ✔ | Axis kind. Use `category` when x is a pre-bucketed label. |
+| `label_format` | `"month"` \| `"date"` | — | When set, the x value is a **raw date** the frontend localizes — so you don't format labels. `month` → send `YYYY-MM` (renders "lug 2026"); `date` → send `YYYY-MM-DD` (renders "15 lug 2026"). Omit to print x labels verbatim. |
 
 ---
 
@@ -103,24 +120,28 @@ Orders to ship this week, with an overdue sub-count that deep-links the delivery
 
 - **Query:** `period=current_week` (default).
 - **`value`:** total orders to ship (a count → `format: "number"`).
-- **`metrics.behind_schedule_count`:** how many are past their delivery date.
-- **`meta.behind_schedule_date`:** the cutoff date the frontend passes as
-  `?delivery_date_to=…` to filter the delivery-schedule table to overdue rows.
-- **Zero case:** `value: 0` renders a green "Tutto in ordine" state — just return `0`.
+- **`filters`:** the query for the card's own link (this week's window).
+- **`additional_kpis[0]`:** the overdue sub-count. Its `filters` drive the overdue
+  link (e.g. `delivery_date_to` = today). Always include it, even when `value` is
+  `0` — the config hides the zero row while positions stay aligned.
+- **Zero case:** headline `value: 0` renders a green "Tutto in ordine" state.
 
 ```json
 {
   "value": 12,
   "format": "number",
-  "metrics": { "behind_schedule_count": 3 },
-  "meta": { "behind_schedule_date": "2026-07-07" },
+  "filters": { "delivery_date_from": "2026-07-06", "delivery_date_to": "2026-07-12" },
+  "additional_kpis": [
+    { "value": 3, "format": "number", "filters": { "delivery_date_to": "2026-07-07" } }
+  ],
   "period": { "from": "2026-07-06", "to": "2026-07-12" }
 }
 ```
 
-Frontend renders: headline `12`, plus an amber, clickable "⚠ 3 ordini in ritardo"
-that links to the delivery schedule filtered to `delivery_date_to=2026-07-07`.
-When `behind_schedule_count` is `0` the overdue row is hidden.
+Frontend renders: headline `12` (card links to the delivery schedule filtered to
+this week), plus an amber, clickable "⚠ 3 ordini in ritardo" that links to the
+schedule filtered to `delivery_date_to=2026-07-07`. When the overdue `value` is
+`0` that row is hidden.
 
 ### 4.3 To-invoice KPI — `GET …/stats/kpis/to-invoice`
 
@@ -157,8 +178,9 @@ green "all clear". Card links to the payments page.
 
 > **Note (to-invoice / to-collect):** the original design also carried a monetary
 > `amount` per pending item; the current homepage does **not** display it, so it is
-> **not** part of the contract. If you want it later, add it under `metrics`
-> (e.g. `metrics.amount_total`) and we surface it via config — no schema change.
+> **not** part of the contract. If you want it later, add it as an
+> `additional_kpis` entry (`{ value, format: "currency", currency }`) and we surface
+> it via config — no schema change.
 
 ### 4.5 Monthly revenue chart — `GET …/stats/charts/monthly-revenue`
 
@@ -166,11 +188,11 @@ Revenue by month over a trailing window (bar chart).
 
 - **Query:** `months=12` (how many trailing months, current month included).
 - **`series`:** a single series with `key: "total"` (label comes from config → "Venduto").
-- **`points`:** one row per month; `x_key` is `"label"`, so each row carries a
-  short **pre-bucketed** x label plus the `total`.
+- **`points`:** one row per month; `x_key` is `"label"`, holding a **raw** `YYYY-MM`.
+- **`label_format: "month"`:** tells the frontend to localize the raw month
+  (`2026-07` → "lug 2026") — you don't format labels.
 - **Partial month:** the current month is still open. The frontend shows a fixed
-  "mese corrente in corso" caption (config-driven); you don't need to flag it. If
-  you prefer to signal it in data, we can add `meta.partial_from` later.
+  "mese corrente in corso" caption (config-driven); you don't need to flag it.
 
 ```json
 {
@@ -178,57 +200,64 @@ Revenue by month over a trailing window (bar chart).
   "currency": "EUR",
   "x_key": "label",
   "x_type": "category",
+  "label_format": "month",
   "series": [{ "key": "total" }],
   "points": [
-    { "label": "ago '25", "total": 98230.00 },
-    { "label": "set '25", "total": 121400.00 },
-    { "label": "ott '25", "total": 134900.00 },
-    { "label": "nov '25", "total": 142300.00 },
-    { "label": "dic '25", "total": 168500.00 },
-    { "label": "gen '26", "total": 96700.00 },
-    { "label": "feb '26", "total": 112300.00 },
-    { "label": "mar '26", "total": 129800.00 },
-    { "label": "apr '26", "total": 138650.00 },
-    { "label": "mag '26", "total": 151200.00 },
-    { "label": "giu '26", "total": 147900.00 },
-    { "label": "lug '26", "total": 156709.00 }
+    { "label": "2025-08", "total": 98230.00 },
+    { "label": "2025-09", "total": 121400.00 },
+    { "label": "2025-10", "total": 134900.00 },
+    { "label": "2025-11", "total": 142300.00 },
+    { "label": "2025-12", "total": 168500.00 },
+    { "label": "2026-01", "total": 96700.00 },
+    { "label": "2026-02", "total": 112300.00 },
+    { "label": "2026-03", "total": 129800.00 },
+    { "label": "2026-04", "total": 138650.00 },
+    { "label": "2026-05", "total": 151200.00 },
+    { "label": "2026-06", "total": 147900.00 },
+    { "label": "2026-07", "total": 156709.00 }
   ]
 }
 ```
 
-The `"label"` values are short x-axis strings. They can be plain month buckets
-(`"2026-07"`) if you'd rather not format — but note the frontend prints `x` labels
-verbatim, so a display-friendly bucket is nicer. (If you send raw `YYYY-MM` and want
-localized month names, tell us and we'll format frontend-side with `x_type: "time"`.)
-
 ---
 
-## 5. Key coupling: `metrics` / `meta` names ↔ widget config
+## 5. What backend and frontend must keep aligned
 
-The one place backend and frontend must **agree on string names** is the `metrics`
-and `meta` bags. The widget config references them by key:
+The `filters` + `additional_kpis` design removes the old string-key coupling (the
+frontend no longer reads named payload keys). Two soft contracts remain:
+
+1. **`additional_kpis` order ↔ config order.** The frontend labels secondary
+   figures **by position**, so the array order is contractual. Keep it stable and
+   include zero-value items (config hides them) so positions never shift.
+
+2. **`filters` keys must be valid query params of the destination view.** The
+   frontend spreads them verbatim, so e.g. `delivery_date_to` must be a filter the
+   delivery-schedule table actually accepts. The frontend stays agnostic; the
+   backend owns producing compatible filters.
+
+The corresponding config (for reference — frontend-owned) is just:
 
 ```jsonc
-// to-ship widget config (frontend)
-"secondary": [{
-  "metricKey": "behind_schedule_count",                 // ← reads payload.metrics.behind_schedule_count
-  "action": { "query": { "delivery_date_to": { "$fromMeta": "behind_schedule_date" } } }  // ← reads payload.meta.behind_schedule_date
+// to-ship widget config
+"action": { "pageId": "to-ship" },          // card link; query = payload.filters
+"additionalKpis": [{                          // matched by position to additional_kpis[0]
+  "label": { "key": "dashboard_to_ship_overdue" },
+  "emphasis": "warning",
+  "hideWhenZero": true,
+  "action": { "pageId": "to-ship" }          // link; query = additional_kpis[0].filters
 }]
 ```
-
-So for to-ship, the names `behind_schedule_count` (in `metrics`) and
-`behind_schedule_date` (in `meta`) are **contractual** — renaming either breaks the
-overdue link until the config is updated. Everything else in the payload is
-positional/typed and safe.
 
 ---
 
 ## 6. Summary checklist
 
-- [ ] `GET …/stats/kpis/revenue` — currency + trend
-- [ ] `GET …/stats/kpis/to-ship` — count + `metrics.behind_schedule_count` + `meta.behind_schedule_date`
+- [ ] `GET …/stats/kpis/revenue` — currency + trend + `filters`
+- [ ] `GET …/stats/kpis/to-ship` — count + `filters` + `additional_kpis[]` (overdue)
 - [ ] `GET …/stats/kpis/to-invoice` — count
 - [ ] `GET …/stats/kpis/to-collect` — count
-- [ ] `GET …/stats/charts/monthly-revenue?months=12` — single-series bar
+- [ ] `GET …/stats/charts/monthly-revenue?months=12` — single-series bar, raw `YYYY-MM` + `label_format: "month"`
 - [ ] Bare objects (no `{ data }` wrapper), `snake_case`, major-unit numbers, no display strings
+- [ ] `filters` spread verbatim as deep-link query params (you own compatibility)
+- [ ] `additional_kpis` in stable order, zero items included
 - [ ] KPIs honor `period` (`current_week`/`current_month` + optional `from`/`to`) and echo resolved `period`

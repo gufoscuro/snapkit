@@ -25,7 +25,7 @@
   import RotateCwIcon from '@lucide/svelte/icons/rotate-cw'
   import { BarChart, LineChart } from 'layerchart'
   import { fetchChartWidget } from '../../_shared/fetchers'
-  import { formatValue } from '../../_shared/format'
+  import { formatChartLabel, formatValue } from '../../_shared/format'
   import { getWidgetIcon } from '../../_shared/widget-icons'
   import { resolveLabel, type WidgetConfig } from '../../_shared/widget-contracts'
 
@@ -65,8 +65,14 @@
   const primaryLabel = $derived(seriesInfo[0]?.label ?? '')
 
   // On narrow viewports the labels clash, so show only the last 6 points.
+  // When `label_format` is set, the x value is a raw date the frontend localizes.
   const isMobile = new IsMobile()
-  const displayPoints = $derived(isMobile.current ? points.slice(-6) : points)
+  const displayPoints = $derived.by(() => {
+    const slice = isMobile.current ? points.slice(-6) : points
+    const lf = payload?.label_format
+    if (!lf) return slice
+    return slice.map((p) => ({ ...p, [xKey]: formatChartLabel(String(p[xKey]), lf) }))
+  })
 
   // Chart.Container config: ChartStyle turns this into `--color-<key>` CSS vars.
   const chartConfig = $derived(

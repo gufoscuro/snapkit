@@ -48,23 +48,39 @@ export const TrendSchema = Type.Object({
 export type Trend = Static<typeof TrendSchema>
 
 /**
- * The KPI envelope. Pure data — no display strings.
- *  - `value`     : the headline figure (raw).
- *  - `metrics`   : named secondary numbers a widget may surface (e.g.
- *                  `{ behind_schedule_count: 3 }`). The *label* is supplied by
- *                  config (i18n / raw), never by the payload.
- *  - `meta`      : non-display values used to build deep-links (e.g.
- *                  `{ behind_schedule_date: '2026-07-07' }`).
+ * A set of filters the backend deems compatible with a destination view. The
+ * frontend spreads these verbatim as query params to build a deep-link — so it
+ * never needs to know individual filter names (the backend owns compatibility).
  */
+export const FiltersSchema = Type.Record(Type.String(), Type.Union([Type.String(), Type.Number()]))
+export type Filters = Static<typeof FiltersSchema>
+
+/** Fields shared by the headline KPI and each of its `additional_kpis`. */
+const kpiBaseProps = {
+  value: Type.Number(),
+  format: ValueFormatSchema,
+  /** ISO-4217 code; present when `format === 'currency'`. */
+  currency: Type.Optional(Type.String()),
+  trend: Type.Optional(TrendSchema),
+  /** Query params for this figure's deep-link (see {@link FiltersSchema}). */
+  filters: Type.Optional(FiltersSchema),
+}
+
+/**
+ * A secondary figure nested under a KPI (e.g. "3 orders overdue"). Same shape as
+ * the headline, minus its own nesting — so the frontend renders it by *cycling*,
+ * without needing to know any specific key. Its label/emphasis come from config,
+ * matched by position (see `WidgetConfig.additionalKpis`).
+ */
+export const AdditionalKpiSchema = Type.Object(kpiBaseProps, { $id: 'AdditionalKpi' })
+export type AdditionalKpi = Static<typeof AdditionalKpiSchema>
+
+/** The KPI envelope. Pure data — no display strings. */
 export const KpiPayloadSchema = Type.Object(
   {
-    value: Type.Number(),
-    format: ValueFormatSchema,
-    /** ISO-4217 code; present when `format === 'currency'`. */
-    currency: Type.Optional(Type.String()),
-    trend: Type.Optional(TrendSchema),
-    metrics: Type.Optional(Type.Record(Type.String(), Type.Number())),
-    meta: Type.Optional(Type.Record(Type.String(), Type.Union([Type.String(), Type.Number()]))),
+    ...kpiBaseProps,
+    /** Secondary figures, rendered in order and labelled by config. */
+    additional_kpis: Type.Optional(Type.Array(AdditionalKpiSchema)),
     /** Resolved period the figures cover, inclusive `YYYY-MM-DD`. */
     period: Type.Optional(Type.Object({ from: Type.String(), to: Type.String() })),
   },
@@ -91,6 +107,12 @@ export const ChartPayloadSchema = Type.Object(
     /** Which key in each point holds the x value. */
     x_key: Type.String(),
     x_type: Type.Union([Type.Literal('time'), Type.Literal('category')]),
+    /**
+     * When set and the x value is a date string, the frontend parses it and
+     * renders it localized — so the backend ships raw dates, not formatted
+     * labels. `month` expects `YYYY-MM` → "lug 2026"; `date` expects `YYYY-MM-DD`.
+     */
+    label_format: Type.Optional(Type.Union([Type.Literal('month'), Type.Literal('date')])),
   },
   { $id: 'ChartPayload' },
 )
@@ -112,35 +134,33 @@ export const LabelSourceSchema = Type.Union([
 ])
 export type LabelSource = Static<typeof LabelSourceSchema>
 
-/** A deep-link query value: a static string, or one pulled from `payload.meta`. */
-export const QueryValueSchema = Type.Union([
-  Type.String(),
-  Type.Object({ $fromMeta: Type.String() }),
-])
-export type QueryValue = Static<typeof QueryValueSchema>
-
-/** A navigation target resolved through `createRoute({ $id: pageId, query })`. */
+/**
+ * A navigation target. The destination page is `pageId`; the query is built
+ * from the payload's `filters` (not declared here), so the config stays agnostic
+ * to filter names.
+ */
 export const WidgetActionSchema = Type.Object({
   pageId: Type.String(),
-  query: Type.Optional(Type.Record(Type.String(), QueryValueSchema)),
 })
 export type WidgetAction = Static<typeof WidgetActionSchema>
 
-/** A clickable secondary metric on a KPI card (e.g. "3 ordini in ritardo"). */
-export const SecondaryMetricConfigSchema = Type.Object({
-  /** Reads `payload.metrics[metricKey]`. */
-  metricKey: Type.String(),
-  /** Label, interpolated with `{ value }` = the metric's number. */
+/**
+ * Presentation for one entry of `payload.additional_kpis`, matched **by position**.
+ * The payload supplies the number + filters; config supplies the human label and
+ * how it links/looks.
+ */
+export const AdditionalKpiConfigSchema = Type.Object({
+  /** Label, interpolated with `{ value }` / `{ count }` = the figure's number. */
   label: LabelSourceSchema,
   emphasis: Type.Optional(
     Type.Union([Type.Literal('default'), Type.Literal('warning'), Type.Literal('danger')]),
   ),
-  /** When set, only this metric is a link (not the whole card). */
+  /** When set, this figure is a link (query = the figure's own `filters`). */
   action: Type.Optional(WidgetActionSchema),
-  /** Hide the row entirely when the metric is 0. Defaults false. */
+  /** Hide the row entirely when the figure is 0. Defaults false. */
   hideWhenZero: Type.Optional(Type.Boolean()),
 })
-export type SecondaryMetricConfig = Static<typeof SecondaryMetricConfigSchema>
+export type AdditionalKpiConfig = Static<typeof AdditionalKpiConfigSchema>
 
 /**
  * The full widget cabling. Persisted in the page config as the `props` of a
@@ -197,10 +217,10 @@ export const WidgetConfigSchema = Type.Object(
         ),
       }),
     ),
-    /** Primary click target for the whole card. */
+    /** Primary click target for the whole card (query = payload `filters`). */
     action: Type.Optional(WidgetActionSchema),
-    /** Secondary clickable metrics (KPI only). */
-    secondary: Type.Optional(Type.Array(SecondaryMetricConfigSchema)),
+    /** Presentation for `payload.additional_kpis`, matched by position (KPI only). */
+    additionalKpis: Type.Optional(Type.Array(AdditionalKpiConfigSchema)),
     /** For `type: 'custom'` — falls back to rendering this component by key. */
     componentKey: Type.Optional(Type.String()),
     /** Grid placement hint; the dashboard grid reads `colSpan`. */
@@ -243,22 +263,14 @@ export function resolveLabel(source: LabelSource, params?: Record<string, unknow
 }
 
 /**
- * Build a `createRoute` query object from a {@link WidgetAction}, pulling
- * `$fromMeta` values out of the payload's `meta` bag. Missing meta keys are
- * skipped (never emit `undefined`).
+ * Coerce a payload's `filters` into a `createRoute` query object (string values).
+ * These become the destination link's query params verbatim — the frontend never
+ * needs to know the individual filter names.
  */
-export function resolveActionQuery(
-  action: WidgetAction,
-  payload: { meta?: Record<string, string | number> } | null | undefined,
-): Record<string, string> {
+export function filtersToQuery(filters: Filters | undefined): Record<string, string> {
   const out: Record<string, string> = {}
-  for (const [k, v] of Object.entries(action.query ?? {})) {
-    if (typeof v === 'string') {
-      out[k] = v
-    } else {
-      const mv = payload?.meta?.[v.$fromMeta]
-      if (mv !== undefined && mv !== null) out[k] = String(mv)
-    }
+  for (const [k, v] of Object.entries(filters ?? {})) {
+    if (v !== undefined && v !== null) out[k] = String(v)
   }
   return out
 }
