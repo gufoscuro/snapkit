@@ -17,7 +17,7 @@
   import GenericFilters from '$components/features/common/GenericFilters/default/GenericFilters.svelte'
   import Button from '$components/ui/button/button.svelte'
   import { usePageChat } from '$lib/chat/hooks/usePageChat'
-  import { invoicesFilterChatRegistration } from '$lib/chat/page-tools/invoices-filter'
+  import { makeFilterChatRegistration } from '$lib/chat/page-tools/filter-registration'
   import * as m from '$lib/paraglide/messages'
   import type { CustomerSummary, InvoicePaymentStatus, InvoiceState } from '$lib/types/api-types'
   import { invoicePaymentStatusLabels, invoiceStateLabels } from '$lib/utils/enum-labels'
@@ -32,8 +32,6 @@
   import type { SnippetProps } from '$utils/runtime'
 
   const props: SnippetProps = $props()
-
-  usePageChat(invoicesFilterChatRegistration)
 
   const legalEntityId = $derived(props.legalEntity?.id)
 
@@ -83,6 +81,15 @@
       dayBoundary: 'endOf',
     },
   }
+
+  usePageChat(
+    makeFilterChatRegistration({
+      id: 'invoices-filter',
+      toolName: 'filter_invoices',
+      resourceLabel: 'invoices',
+      config,
+    }),
+  )
 </script>
 
 <GenericFilters {...props} {config}>

@@ -1138,5 +1138,14 @@
   "enum_intent_declaration_usage_reason_reversed_error": "Reversed (error)",
   "enum_intent_declaration_usage_reason_reversed_archived": "Reversed (archived)",
   "enum_intent_declaration_usage_reason_resync_delta": "Resync adjustment",
-  "enum_intent_declaration_usage_reason_credit_note_restore": "Credit note restore"
+  "enum_intent_declaration_usage_reason_credit_note_restore": "Credit note restore",
+  "commercial_status": "Commercial status",
+  "conversion_status": "Conversion status",
+  "transport_document_status": "Transport document status",
+  "enum_conversion_status_none": "None",
+  "enum_conversion_status_partial": "Partial",
+  "enum_conversion_status_full": "Full",
+  "enum_warehouse_order_transport_document_status_none": "None",
+  "enum_warehouse_order_transport_document_status_partial": "Partial",
+  "enum_warehouse_order_transport_document_status_full": "Full"
 }

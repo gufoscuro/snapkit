@@ -1140,5 +1140,14 @@
   "enum_intent_declaration_usage_reason_reversed_error": "Storno (errore)",
   "enum_intent_declaration_usage_reason_reversed_archived": "Storno (archiviazione)",
   "enum_intent_declaration_usage_reason_resync_delta": "Rettifica risincronizzazione",
-  "enum_intent_declaration_usage_reason_credit_note_restore": "Ripristino nota di credito"
+  "enum_intent_declaration_usage_reason_credit_note_restore": "Ripristino nota di credito",
+  "commercial_status": "Stato commerciale",
+  "conversion_status": "Stato conversione",
+  "transport_document_status": "Stato DDT",
+  "enum_conversion_status_none": "Nessuna",
+  "enum_conversion_status_partial": "Parziale",
+  "enum_conversion_status_full": "Completa",
+  "enum_warehouse_order_transport_document_status_none": "Nessuno",
+  "enum_warehouse_order_transport_document_status_partial": "Parziale",
+  "enum_warehouse_order_transport_document_status_full": "Completo"
 }
