@@ -8,6 +8,7 @@ import type {
   AtecoCode,
   BinLocationType,
   CompanySize,
+  ConversionStatus,
   Currency,
   Customer,
   CustomerAddress,
@@ -201,6 +202,20 @@ export function toSelectItems<T extends string>(map: EnumLabelMap<T>): { value: 
   return Object.entries<() => string>(map).map(([value, labelFn]) => ({
     value: value as T,
     label: labelFn(),
+  }))
+}
+
+/**
+ * Converts an `EnumDisplayConfig` map (label + badge variant) to `{ value, label }`
+ * items — the shape consumed by filter `options`. Mirrors `toSelectItems` but for
+ * the many `*Config` maps in this file that carry a variant alongside the label.
+ */
+export function configToSelectItems<T extends string>(
+  config: Record<T, EnumDisplayConfig>,
+): { value: T; label: string }[] {
+  return (Object.entries(config) as [T, EnumDisplayConfig][]).map(([value, cfg]) => ({
+    value,
+    label: cfg.label(),
   }))
 }
 
@@ -509,6 +524,13 @@ export function getQuotationTagLabel(tag: QuotationTag): string {
   return quotationTagConfig[tag]?.label() ?? tag
 }
 
+// Conversion Status (quotation → sales-order conversion progress)
+export const conversionStatusLabels: EnumLabelMap<ConversionStatus> = {
+  none: m.enum_conversion_status_none,
+  partial: m.enum_conversion_status_partial,
+  full: m.enum_conversion_status_full,
+}
+
 // Sales Order State (for SalesOrder entity from /sales-orders API)
 export const salesOrderStateConfig: Record<SalesOrderStatus, EnumDisplayConfig> = {
   open: { label: m.enum_sales_order_status_open, variant: 'default' },
@@ -586,6 +608,15 @@ export const warehouseOrderPickingStatusConfig: Record<WarehouseOrderPickingStat
 
 export function getWarehouseOrderPickingStatusLabel(status: WarehouseOrderPickingStatus): string {
   return warehouseOrderPickingStatusConfig[status]?.label() ?? status
+}
+
+// Warehouse Order → Transport Document generation progress (listing filter only;
+// not a field on the WarehouseOrder entity). Values mirror the none/partial/full
+// progression used elsewhere.
+export const warehouseOrderTransportDocumentStatusLabels: EnumLabelMap<'none' | 'partial' | 'full'> = {
+  none: m.enum_warehouse_order_transport_document_status_none,
+  partial: m.enum_warehouse_order_transport_document_status_partial,
+  full: m.enum_warehouse_order_transport_document_status_full,
 }
 
 // Transport Document State (for TransportDocument entity from /transport-documents API)
