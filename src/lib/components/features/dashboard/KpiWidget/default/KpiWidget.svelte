@@ -40,7 +40,6 @@
   )
 
   const isZero = $derived(kpi?.value === 0)
-  const zeroPositive = $derived(!!config.display?.zeroIsPositive && isZero)
 
   const value = $derived(kpi ? formatValue(kpi.value, kpi.format, kpi.currency) : undefined)
 
@@ -65,6 +64,12 @@
         (row): row is { item: (typeof row)['item']; cfg: AdditionalKpiConfig } =>
           !!row.cfg && !(row.cfg.hideWhenZero && row.item.value === 0)
       )
+  )
+
+  // "All clear" only when the headline is 0 AND there's no secondary row to show —
+  // e.g. 0 to ship but 1 overdue is NOT all clear, so the overdue row must surface.
+  const zeroPositive = $derived(
+    !!config.display?.zeroIsPositive && isZero && additionalRows.length === 0
   )
 
   function trendSentiment(t: Trend): StatCardSentiment {
