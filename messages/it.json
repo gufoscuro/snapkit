@@ -7,6 +7,7 @@
   "dashboard_all_clear": "Tutto in regola",
   "dashboard_revenue_title": "Venduto",
   "dashboard_revenue_subtext": "Questo mese vs il mese scorso",
+  "dashboard_revenue_this_month": "Questo mese",
   "dashboard_revenue_trend_up": "In crescita questo mese",
   "dashboard_revenue_trend_down": "In calo questo mese",
   "dashboard_revenue_trend_flat": "Stabile questo mese",

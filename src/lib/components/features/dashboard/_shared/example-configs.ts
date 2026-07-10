@@ -15,7 +15,10 @@ export const revenueWidgetConfig: WidgetConfig = {
   icon: 'Euro',
   source: { endpoint: 'revenue', params: { period: 'current_month' } },
   action: { pageId: 'sales-orders' },
-  display: { subtext: { key: 'dashboard_revenue_subtext' } },
+  display: {
+    subtext: { key: 'dashboard_revenue_subtext' },
+    noTrendSubtext: { key: 'dashboard_revenue_this_month' },
+  },
 }
 
 export const toShipWidgetConfig: WidgetConfig = {

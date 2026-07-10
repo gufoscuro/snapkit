@@ -34,9 +34,16 @@
 
   const title = $derived(resolveLabel(config.title))
   const IconComp = $derived(getWidgetIcon(config.icon))
-  const subtext = $derived(config.display?.subtext ? resolveLabel(config.display.subtext) : undefined)
+  const baseSubtext = $derived(config.display?.subtext ? resolveLabel(config.display.subtext) : undefined)
+  // Swap to the no-trend variant when the payload carries no comparison (e.g. no
+  // prior period): "this month" instead of "this month vs last".
+  const subtext = $derived(
+    kpi && !kpi.trend && config.display?.noTrendSubtext
+      ? resolveLabel(config.display.noTrendSubtext)
+      : baseSubtext
+  )
   const zeroSubtext = $derived(
-    config.display?.zeroSubtext ? resolveLabel(config.display.zeroSubtext) : subtext
+    config.display?.zeroSubtext ? resolveLabel(config.display.zeroSubtext) : baseSubtext
   )
 
   const isZero = $derived(kpi?.value === 0)

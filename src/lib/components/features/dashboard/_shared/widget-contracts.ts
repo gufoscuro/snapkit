@@ -189,6 +189,8 @@ export const WidgetConfigSchema = Type.Object(
         ),
         /** Muted footer line under the value (KPI). */
         subtext: Type.Optional(LabelSourceSchema),
+        /** Replaces `subtext` when the payload has no `trend` (e.g. no prior period to compare). */
+        noTrendSubtext: Type.Optional(LabelSourceSchema),
         /** When the headline value is 0, tint the card as a success ("nothing to do"). */
         zeroIsPositive: Type.Optional(Type.Boolean()),
         /** Bold footer line shown in the zero-positive state (e.g. "All clear"). */
