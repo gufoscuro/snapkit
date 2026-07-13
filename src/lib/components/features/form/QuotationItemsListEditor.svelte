@@ -453,6 +453,19 @@
   }
 </script>
 
+<!-- Compact-row label for item lines: the (editable) description wins over the
+     catalog name, and the catalog code is surfaced as a leading chip. -->
+{#snippet itemLabel(item: InternalLineItem)}
+  {#if item.item_snapshot?.code}
+    <span class="shrink-0 rounded bg-background px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+      {item.item_snapshot.code}
+    </span>
+  {/if}
+  <span class="min-w-0 flex-1 truncate text-sm">
+    {item.description || item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+  </span>
+{/snippet}
+
 <EditableListField
   bind:this={editableListFieldRef}
   {name}
@@ -512,9 +525,7 @@
           </span>
         </div>
       {:else}
-        <span class="min-w-0 flex-1 truncate text-sm">
-          {item.item_snapshot?.name || item.description || item.item_snapshot?.code || m.item()}
-        </span>
+        {@render itemLabel(item)}
         <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
           <span class="w-20 text-right whitespace-nowrap">
             {#if item.quantity}{item.quantity} {item.uom}{/if}
@@ -556,9 +567,7 @@
           </span>
         </div>
       {:else}
-        <span class="min-w-0 flex-1 truncate text-sm">
-          {item.item_snapshot?.name || item.description || item.item_snapshot?.code || m.item()}
-        </span>
+        {@render itemLabel(item)}
         <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
           <span class="w-20 text-right whitespace-nowrap">
             {#if item.quantity}{item.quantity} {item.uom}{/if}
