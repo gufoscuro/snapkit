@@ -8,8 +8,8 @@
   @uses formatPriceDisplay, getCurrencySymbol, formatNumber
 -->
 <script lang="ts">
-  import type { VatSummaryEntry } from '$lib/types/api-types'
   import * as m from '$lib/paraglide/messages'
+  import type { VatSummaryEntry } from '$lib/types/api-types'
   import { formatNumber } from '$lib/utils/numbers'
   import { formatPriceDisplay, getCurrencySymbol } from '$lib/utils/prices'
   import { fade } from 'svelte/transition'

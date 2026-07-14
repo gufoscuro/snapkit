@@ -14,6 +14,7 @@
 </script>
 
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import ActionButton from '$components/core/ActionButton.svelte'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
@@ -66,7 +67,6 @@
   import { DEFAULT_CURRENCY_CODE } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
-  import { goto } from '$app/navigation'
   import { QuotationDetailsContract } from './QuotationDetails.contract.js'
 
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
@@ -462,8 +462,8 @@
 
           {#snippet content()}
             {@const currencyCode = formAPI.values.currency}
-            <div class="flex flex-col items-end gap-6 pr-14">
-              <VatSummaryTable rows={record?.vat_summary} {currencyCode} class="w-full max-w-md" />
+            <div class="flex flex-col items-end gap-6">
+              <VatSummaryTable rows={record?.vat_summary} {currencyCode} class="w-full" />
 
               <StackedAmountValues
                 title={m.total()}

@@ -17,7 +17,6 @@
   import { goto } from '$app/navigation'
   import ActionButton from '$components/core/ActionButton.svelte'
   import { ImportMenu, ImportRecordPreview } from '$components/core/common/import-menu'
-  import { createImportedSnapshot } from '$components/core/form/imported-snapshot.svelte'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
   import BottomBar from '$components/core/form/BottomBar.svelte'
@@ -26,6 +25,7 @@
   import { FormFieldClass } from '$components/core/form/form.js'
   import FormErrorMessage from '$components/core/form/FormErrorMessage.svelte'
   import FormUtil from '$components/core/form/FormUtil.svelte'
+  import { createImportedSnapshot } from '$components/core/form/imported-snapshot.svelte'
   import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
@@ -62,9 +62,6 @@
   } from '$lib/utils/enum-labels'
   import type { BasicOption } from '$lib/utils/generics'
   import { generateId } from '$lib/utils/id'
-  import { api, apiDownload, apiRequest } from '$lib/utils/request'
-  import { createRoute } from '$lib/utils/route-builder'
-  import { extractSnapshotString, type SnapshotShape } from '$lib/utils/snapshots'
   import {
     compositionFromSnapshot,
     compositionRules,
@@ -72,6 +69,9 @@
     toCompositionPayload,
     type PaymentCompositionSnapshotRow,
   } from '$lib/utils/payment-composition'
+  import { api, apiDownload, apiRequest } from '$lib/utils/request'
+  import { createRoute } from '$lib/utils/route-builder'
+  import { extractSnapshotString, type SnapshotShape } from '$lib/utils/snapshots'
   import { DEFAULT_CURRENCY_CODE, floatToPriceString } from '$utils/prices.js'
   import type { SnippetProps } from '$utils/runtime'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
@@ -770,8 +770,8 @@
 
           {#snippet content()}
             {@const currencyCode = formAPI.values.currency}
-            <div class="flex flex-col items-end gap-6 pr-12">
-              <VatSummaryTable rows={record?.vat_summary} {currencyCode} class="w-full max-w-md" />
+            <div class="flex flex-col items-end gap-6">
+              <VatSummaryTable rows={record?.vat_summary} {currencyCode} class="w-full" />
 
               <StackedAmountValues
                 title={m.total()}

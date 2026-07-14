@@ -1240,8 +1240,8 @@
             {/snippet}
 
             {#snippet content()}
-              <div class="flex flex-col items-end gap-6 pr-12">
-                <VatSummaryTable rows={displayVatSummary} currencyCode={displayCurrency} class="w-full max-w-md" />
+              <div class="flex flex-col items-end gap-6">
+                <VatSummaryTable rows={displayVatSummary} currencyCode={displayCurrency} class="w-full" />
 
                 <StackedAmountValues
                   title={m.total()}
