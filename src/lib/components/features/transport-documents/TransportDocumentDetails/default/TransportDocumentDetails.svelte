@@ -14,7 +14,9 @@
 </script>
 
 <script lang="ts">
-  import { goto } from '$app/navigation'
+  import { browser } from '$app/environment'
+  import { goto, replaceState } from '$app/navigation'
+  import { page } from '$app/state'
   import ActionButton from '$components/core/ActionButton.svelte'
   import { ImportMenu, ImportRecordPreview } from '$components/core/common/import-menu'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
@@ -52,6 +54,7 @@
   import * as m from '$lib/paraglide/messages'
   import type { CustomerCommercialTerms, TransportDocument } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
+  import { todayLocalISO } from '$lib/utils/date'
   import {
     incotermLabels,
     salesTransactionTypeLabels,
@@ -112,6 +115,32 @@
   let itemsEditorRef: TransportDocumentItemsListEditor | undefined = $state()
   const customerSnapshotImport = createImportedSnapshot()
   const shipToSnapshotImport = createImportedSnapshot()
+
+  // Captured from the `withContext` snippet so the URL-driven auto-import effect
+  // below can reach the form API (updateField / values) outside the snippet.
+  let capturedFormApi = $state<{ updateField: FormFieldUpdater; values: Record<string, unknown> } | null>(null)
+
+  // Auto-import a sales order into a blank DDT when arriving with `?sales_order_id=…`
+  // (entry point from DeliveryScheduleTable's "create DDT" action). Runs at most once
+  // per mount, create mode only, then strips the param so a reload doesn't re-import.
+  // Reuses the existing manual SO-import handler — it only reads each item's `id`.
+  let autoImportTriggered = $state(false)
+  $effect(() => {
+    if (autoImportTriggered) return
+    if (!browser || !capturedFormApi || !itemsEditorRef || !legalEntityId) return
+    if (uuid) return // edit mode — skip
+    const sourceId = page.url.searchParams.get('sales_order_id')
+    if (!sourceId) return
+    autoImportTriggered = true
+    handleImportSalesOrders(capturedFormApi as never, [{ id: sourceId } as SalesOrderForImport])
+
+    const url = page.url
+    const params = new URLSearchParams(url.searchParams)
+    params.delete('sales_order_id')
+    const next = params.toString()
+    // eslint-disable-next-line svelte/no-navigation-without-resolve
+    replaceState(next ? `${url.pathname}?${next}` : url.pathname, page.state)
+  })
 
   type SalesOrderForImport = {
     id: string
@@ -525,13 +554,12 @@
 
   const initialValues = $derived.by(() => ({
     document_number: '',
-    document_date: new Date().toISOString(),
+    document_date: todayLocalISO(),
     sales_transaction_type: undefined,
     customer_id: '',
     ship_to_address_id: '',
     warehouse_id: '',
     carrier_id: '',
-    transport_reason: '',
     transport_method: null,
     shipping_date: '',
     shipping_time: '',
@@ -599,6 +627,11 @@
       onFailure={handleFailure}
       class="relative flex flex-col gap-6 pb-breadcrumbs">
       {#snippet withContext(formAPI)}
+        {((capturedFormApi = formAPI as unknown as {
+          updateField: FormFieldUpdater
+          values: Record<string, unknown>
+        }),
+        '')}
         <FormErrorMessage columnsLayout />
 
         <!-- Import records: two parallel menus (SO and WO sources) -->
@@ -745,19 +778,22 @@
           {/snippet}
 
           {#snippet content()}
-            <CarrierSelector name="carrier_id" attr={carrierAttr} class={FormFieldClass.MaxWidth} />
-
             <SelectField
               name="transport_method"
               label={m.transport_method()}
               items={transportMethodItems}
+              onChange={value => {
+                if (value !== 'carrier') formAPI.updateField('carrier_id', '')
+              }}
               class={FormFieldClass.MinWidth} />
+
+            {#if formAPI.values.transport_method === 'carrier'}
+              <CarrierSelector name="carrier_id" attr={carrierAttr} class={FormFieldClass.MaxWidth} />
+            {/if}
 
             <DateField name="shipping_date" label={m.shipping_date()} class={FormFieldClass.MaxWidth} />
 
             <TextField name="shipping_time" label={m.shipping_time()} class={FormFieldClass.MaxWidth} />
-
-            <TextField name="transport_reason" label={m.transport_reason()} class={FormFieldClass.MaxWidth} />
 
             <SelectField name="incoterm" label={m.incoterm()} items={incotermItems} class={FormFieldClass.MinWidth} />
 

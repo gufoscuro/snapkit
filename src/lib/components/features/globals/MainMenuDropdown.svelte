@@ -8,6 +8,8 @@
   import { getI18nLabel } from '$utils/i18n'
   import { createRoute } from '$utils/route-builder'
   import LayoutGridIcon from '@lucide/svelte/icons/layout-grid'
+  // Tabler icon (used where Lucide has no close equivalent, e.g. receivables)
+  import IconMoneybagMoveBack from '@tabler/icons-svelte/icons/moneybag-move-back'
   import type { Component } from 'svelte'
   // Same icon set as LeftSidebarMenu — kept in sync intentionally
   import BarChartIcon from '@lucide/svelte/icons/bar-chart'
@@ -16,6 +18,7 @@
   import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
   import ContactIcon from '@lucide/svelte/icons/contact'
   import CreditCardIcon from '@lucide/svelte/icons/credit-card'
+  import FileClockIcon from '@lucide/svelte/icons/file-clock'
   import FileTextIcon from '@lucide/svelte/icons/file-text'
   import FolderIcon from '@lucide/svelte/icons/folder'
   import GlobeIcon from '@lucide/svelte/icons/globe'
@@ -52,6 +55,7 @@
     Truck: TruckIcon,
     Receipt: ReceiptIcon,
     CreditCard: CreditCardIcon,
+    FileClock: FileClockIcon,
     BarChart: BarChartIcon,
     Calendar: CalendarIcon,
     Folder: FolderIcon,
@@ -62,6 +66,9 @@
     Globe: GlobeIcon,
     Layers: LayersIcon,
     PackageOpen: PackageOpen,
+    // Tabler icons carry a slightly different component signature than Lucide's;
+    // the cast keeps the map uniformly typed (renders fine at runtime).
+    MoneybagMoveBack: IconMoneybagMoveBack as unknown as Component,
   }
 
   function getIcon(name?: string): Component | null {

@@ -22,6 +22,42 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Extracts the best human-readable, already-localized message out of an error.
+ *
+ * The backend localizes error/validation messages server-side (resolved from the
+ * `Accept-Language` header we already send), so `error.data.message` is safe to
+ * surface directly to the user.
+ *
+ * - **422**: Laravel returns `{ message, errors: { field: [msg] } }`. The top-level
+ *   `message` is generic ("The given data was invalid"), so the concatenated field
+ *   messages are preferred when present.
+ * - **Other ApiError**: uses `data.message`, falling back to `error.message` (unless
+ *   it's the placeholder `'Request failed'`).
+ * - **Non-API errors**: uses `error.message` when available.
+ *
+ * Returns `undefined` when nothing meaningful can be extracted, so callers can fall
+ * back to a generic message of their own.
+ */
+export function extractApiErrorMessage(err: unknown): string | undefined {
+  if (err instanceof ApiError) {
+    const data = err.data as { message?: string; errors?: Record<string, unknown> } | null
+
+    if (err.status === 422 && data?.errors && typeof data.errors === 'object') {
+      const fieldMessages = Object.values(data.errors)
+        .flat()
+        .filter((msg): msg is string => typeof msg === 'string')
+      if (fieldMessages.length > 0) return fieldMessages.join('\n')
+    }
+
+    if (data?.message) return data.message
+    return err.message && err.message !== 'Request failed' ? err.message : undefined
+  }
+
+  if (err instanceof Error && err.message) return err.message
+  return undefined
+}
+
 export type ExtendedFetchOptions = RequestInit & {
   url: string
   data?: any
@@ -176,14 +212,36 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
 }
 
 /**
+ * Extract the filename from a `Content-Disposition` response header. Handles
+ * both the RFC 5987 `filename*=UTF-8''...` form (percent-decoded) and the plain
+ * `filename="..."` form. Returns `undefined` when no filename is present.
+ */
+function filenameFromContentDisposition(header: string | null): string | undefined {
+  if (!header) return undefined
+  const utf8Match = header.match(/filename\*=(?:UTF-8'')?([^;]+)/i)
+  if (utf8Match) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim().replace(/^["']|["']$/g, ''))
+    } catch {
+      // fall through to the plain filename below
+    }
+  }
+  const plainMatch = header.match(/filename="?([^";]+)"?/i)
+  return plainMatch ? plainMatch[1].trim() : undefined
+}
+
+/**
  * Client-side API request that downloads a binary response (e.g. PDF) and
  * triggers a browser file-save dialog.
  *
  * Unlike apiRequest, this reads the response as a Blob instead of JSON.
+ *
+ * When `filename` is omitted, the name advertised by the backend via the
+ * `Content-Disposition` header is used, falling back to `'download'`.
  */
 export async function apiDownload(options: {
   url: string
-  filename: string
+  filename?: string
   redirectOnUnauthorized?: boolean
 }): Promise<void> {
   const { url, filename, redirectOnUnauthorized = true } = options
@@ -205,11 +263,14 @@ export async function apiDownload(options: {
     throw new ApiError('Download failed', result.status, null, result)
   }
 
+  const resolvedFilename =
+    filename || filenameFromContentDisposition(result.headers.get('Content-Disposition')) || 'download'
+
   const blob = await result.blob()
   const blobUrl = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = blobUrl
-  a.download = filename
+  a.download = resolvedFilename
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

@@ -2,6 +2,7 @@ import { paraglideVitePlugin } from '@inlang/paraglide-js'
 import { sveltekit } from '@sveltejs/kit/vite'
 import tailwindcss from '@tailwindcss/vite'
 import { playwright } from '@vitest/browser-playwright'
+import { searchForWorkspaceRoot } from 'vite'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -67,13 +68,17 @@ export default defineConfig({
   build: {
     sourcemap: false,
     rollupOptions: {
-      // Limit parallel processing to reduce memory peak during build
-      maxParallelFileOps: 5,
+      // Limit parallel processing to reduce memory peak during build.
+      // Lowered 5 -> 2 to keep the Forge build under the VPS's 4GB ceiling.
+      maxParallelFileOps: 2,
     },
   },
 
   server: {
     allowedHosts: ['moddo.moddo.local', 'unknown.moddo.local'],
+    fs: {
+      allow: [searchForWorkspaceRoot(process.cwd())],
+    },
     watch: {
       ignored: ['**/data/**'],
     },

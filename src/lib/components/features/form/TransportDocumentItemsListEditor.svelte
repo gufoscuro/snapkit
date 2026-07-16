@@ -64,7 +64,7 @@
   import type { Item, UnitOfMeasure } from '$lib/types/api-types'
   import { toSelectItems, unitOfMeasureLabels } from '$lib/utils/enum-labels'
   import { generateId } from '$lib/utils/id'
-  import { DEFAULT_CURRENCY_CODE } from '$utils/prices'
+  import { DEFAULT_CURRENCY_CODE, renderPrice } from '$utils/prices'
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down'
   import GripVertical from '@lucide/svelte/icons/grip-vertical'
   import Pencil from '@lucide/svelte/icons/pencil'
@@ -312,6 +312,19 @@
   }
 </script>
 
+<!-- Compact-row label for item lines: the (editable) description wins over the
+     catalog name, and the catalog code is surfaced as a leading chip. -->
+{#snippet itemLabel(item: InternalLineItem)}
+  {#if item.item_snapshot?.code}
+    <span class="shrink-0 rounded bg-background px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+      {item.item_snapshot.code}
+    </span>
+  {/if}
+  <span class="min-w-0 flex-1 truncate text-sm">
+    {item.description || item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+  </span>
+{/snippet}
+
 <EditableListField
   bind:this={editorRef}
   {name}
@@ -352,36 +365,52 @@
       <GripVertical class="size-4 text-muted-foreground" />
       <span class="font-semibold text-primary"><span class="opacity-60">#</span>{index + 1}</span>
       {#if item.type === 'descriptive'}
-        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
-      {:else}
-        <span class="truncate text-sm">
-          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {item.description || m.description()}
         </span>
-        {#if item.quantity}
-          <span class="text-xs text-muted-foreground">x{item.quantity}</span>
-        {/if}
+      {:else}
+        {@render itemLabel(item)}
+        <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
+          <span class="w-20 text-right whitespace-nowrap">
+            {#if item.quantity}{item.quantity} {item.uom}{/if}
+          </span>
+          <span class="hidden w-24 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.unit_price && item.unit_price > 0}{renderPrice(item.unit_price, currency)}{/if}
+          </span>
+          <span class="hidden w-32 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.net_value && item.net_value > 0}Tot. {renderPrice(item.net_value, currency)}{/if}
+          </span>
+        </div>
       {/if}
     </div>
   {/snippet}
 
   {#snippet collapsedItem({ item, index, groupColorClass })}
-    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 px-3 py-2 hover:bg-muted">
+    <div class="flex w-full items-center gap-3 rounded border bg-muted/50 py-2 pr-12 pl-3 hover:bg-muted">
       <span class="font-semibold {groupColorClass ?? 'text-primary'}"
         ><span class="opacity-60">#</span>{index + 1}</span>
       {#if item.type === 'descriptive'}
-        <span class="truncate text-sm text-muted-foreground">{item.description || m.description()}</span>
-      {:else}
-        <span class="truncate text-sm">
-          {item.item_snapshot?.name || item.item_snapshot?.code || m.item()}
+        <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {item.description || m.description()}
         </span>
-        {#if item.quantity}
-          <span class="text-xs text-muted-foreground">x{item.quantity}</span>
+      {:else}
+        {@render itemLabel(item)}
+        {#if isLinkedItem(item)}
+          <Badge variant="outline" class="shrink-0 text-[10px] font-normal">
+            {item.sales_order_item_id ? m.import_source_sales_order() : m.import_source_warehouse_order()}
+          </Badge>
         {/if}
-      {/if}
-      {#if isLinkedItem(item)}
-        <Badge variant="outline" class="text-[10px] font-normal">
-          {item.sales_order_item_id ? m.import_source_sales_order() : m.import_source_warehouse_order()}
-        </Badge>
+        <div class="flex shrink-0 items-center gap-3 text-xs tabular-nums">
+          <span class="w-20 text-right whitespace-nowrap">
+            {#if item.quantity}{item.quantity} {item.uom}{/if}
+          </span>
+          <span class="hidden w-24 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.unit_price && item.unit_price > 0}{renderPrice(item.unit_price, currency)}{/if}
+          </span>
+          <span class="hidden w-32 text-right whitespace-nowrap text-muted-foreground sm:inline-block">
+            {#if item.net_value && item.net_value > 0}Tot. {renderPrice(item.net_value, currency)}{/if}
+          </span>
+        </div>
       {/if}
     </div>
   {/snippet}

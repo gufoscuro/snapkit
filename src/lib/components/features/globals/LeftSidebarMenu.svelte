@@ -8,6 +8,8 @@
   import { createRoute } from '$utils/route-builder'
   import type { SnippetProps } from '$utils/runtime'
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right'
+  // Tabler icon (used where Lucide has no close equivalent, e.g. receivables)
+  import IconMoneybagMoveBack from '@tabler/icons-svelte/icons/moneybag-move-back'
   import type { Component } from 'svelte'
   // Supported menu icons — import individually to avoid bundling the entire lucide library
   import BarChartIcon from '@lucide/svelte/icons/bar-chart'
@@ -16,6 +18,7 @@
   import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
   import ContactIcon from '@lucide/svelte/icons/contact'
   import CreditCardIcon from '@lucide/svelte/icons/credit-card'
+  import FileClockIcon from '@lucide/svelte/icons/file-clock'
   import FileTextIcon from '@lucide/svelte/icons/file-text'
   import FolderIcon from '@lucide/svelte/icons/folder'
   import GlobeIcon from '@lucide/svelte/icons/globe'
@@ -47,6 +50,7 @@
     Truck: TruckIcon,
     Receipt: ReceiptIcon,
     CreditCard: CreditCardIcon,
+    FileClock: FileClockIcon,
     BarChart: BarChartIcon,
     Calendar: CalendarIcon,
     Folder: FolderIcon,
@@ -57,6 +61,9 @@
     Globe: GlobeIcon,
     Layers: LayersIcon,
     PackageOpen: PackageOpen,
+    // Tabler icons carry a slightly different component signature than Lucide's;
+    // the cast keeps the map uniformly typed (renders fine at runtime).
+    MoneybagMoveBack: IconMoneybagMoveBack as unknown as Component,
   }
 
   const STORAGE_KEY = 'left-sidebar-menu-open'
@@ -134,7 +141,9 @@
 {#each segments as segment, i (segment.kind === 'simple' ? `s:${segment.label}` : `i:${i}`)}
   {#if segment.kind === 'simple'}
     <Sidebar.Group data-sveltekit-preload-data="off">
-      <Sidebar.GroupLabel>{getI18nLabel(segment.label)}</Sidebar.GroupLabel>
+      {#if segment.label}
+        <Sidebar.GroupLabel>{getI18nLabel(segment.label)}</Sidebar.GroupLabel>
+      {/if}
       <Sidebar.Menu>
         {#each segment.children as subItem (subItem.label)}
           <Sidebar.MenuItem>

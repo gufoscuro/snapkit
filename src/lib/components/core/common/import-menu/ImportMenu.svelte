@@ -11,6 +11,7 @@
   import IconDatabaseImport from '@tabler/icons-svelte/icons/database-import'
   import type { Snippet } from 'svelte'
   import { SvelteSet } from 'svelte/reactivity'
+  import { toast } from 'svelte-sonner'
 
   interface Props {
     /** Async function to fetch the items to import. Receives optional search query. */
@@ -29,12 +30,27 @@
      * soon as the selection becomes empty.
      */
     compatKey?: (item: T) => string
+    /**
+     * Optional form-anchored lock predicate. When it returns `true` for an item,
+     * that item is rendered disabled and cannot be added — independently of the
+     * `compatKey` first-selection anchor. Already-selected items are never locked
+     * (so the user can always deselect). Use this to gate rows against state that
+     * lives outside the picker (e.g. the document form's current payment
+     * composition signature), which must reflect later edits, not just the first pick.
+     */
+    lockWhen?: (item: T) => boolean
     /** Optional label for the trigger button */
     label?: string
     /** Whether the component renders as a sub-menu inside another dropdown */
     submenu?: boolean
     /** Disable the trigger button */
     disabled?: boolean
+    /**
+     * Single-selection mode. When true, picking an item immediately calls
+     * `onimport([item])` and closes the menu — no checkboxes, no footer button.
+     * `compatKey` is ignored in this mode (no anchor to lock against).
+     */
+    singleSelect?: boolean
   }
 
   const {
@@ -43,9 +59,11 @@
     onimport,
     previewSnippet,
     compatKey,
+    lockWhen,
     label = m.common_import(),
     submenu = false,
     disabled = false,
+    singleSelect = false,
   }: Props = $props()
 
   function getItemByValue(value: string): T | undefined {
@@ -76,8 +94,11 @@
   })
 
   function isLocked(item: T, value: string): boolean {
-    if (compatAnchor === undefined || !compatKey) return false
+    // Already-selected items are never locked, so the user can always deselect.
     if (selectedValues.has(value)) return false
+    // Form-anchored lock (independent of the first-selection compat anchor).
+    if (lockWhen?.(item)) return true
+    if (compatAnchor === undefined || !compatKey) return false
     return compatKey(item) !== compatAnchor
   }
 
@@ -85,6 +106,12 @@
     loading = true
     try {
       items = await fetchFunction(search || undefined)
+    } catch {
+      // A failed fetch in the picker is recoverable — degrade to an empty list and
+      // surface a toast instead of letting the rejection bubble to the global error
+      // overlay. A stable toast id collapses repeated failures (e.g. retried searches).
+      items = []
+      toast.error(m.import_load_error(), { id: 'import-menu-load-error' })
     } finally {
       loading = false
     }
@@ -111,6 +138,12 @@
   function toggle(value: string) {
     const item = getItemByValue(value)
     if (item && isLocked(item, value)) return
+    if (singleSelect) {
+      if (!item) return
+      onimport([item])
+      closeMenu()
+      return
+    }
     if (selectedValues.has(value)) {
       selectedValues.delete(value)
     } else {
@@ -169,9 +202,11 @@
                   <Command.Item
                     class={cn('text-xs', locked && 'cursor-not-allowed opacity-50')}
                     onSelect={() => toggle(opt.value)}>
-                    <div class="mr-2 size-3.5 shrink-0 rounded border hover:border-foreground/60">
-                      <Check class={cn('size-3', !selectedValues.has(opt.value) && 'text-transparent')} />
-                    </div>
+                    {#if !singleSelect}
+                      <div class="mr-2 size-3.5 shrink-0 rounded border hover:border-foreground/60">
+                        <Check class={cn('size-3', !selectedValues.has(opt.value) && 'text-transparent')} />
+                      </div>
+                    {/if}
                     {opt.label}
                   </Command.Item>
                 </HoverCard.Trigger>
@@ -194,16 +229,18 @@
       {/if}
     </Command.List>
   </Command.Root>
-  <div class="border-t p-1">
-    <Button
-      variant="default"
-      size="sm"
-      class="w-full text-xs"
-      disabled={selectedValues.size === 0}
-      onclick={handleImport}>
-      {m.common_import()} ({selectedValues.size})
-    </Button>
-  </div>
+  {#if !singleSelect}
+    <div class="border-t p-1">
+      <Button
+        variant="default"
+        size="sm"
+        class="w-full text-xs"
+        disabled={selectedValues.size === 0}
+        onclick={handleImport}>
+        {m.common_import()} ({selectedValues.size})
+      </Button>
+    </div>
+  {/if}
 {/snippet}
 
 {#if submenu}

@@ -1,10 +1,11 @@
 <!--
   @component CustomersFilters
-  @description A search filter component that provides filter state to sibling components.
-  Positioned on the right side with a search input field.
-  Provides filter state consumable by SalesOrdersTable or SupplyOrdersTable.
-  @keywords filter, search, orders, common
-  @uses Input
+  @description Filter component for the customers listing. Exposes search plus
+  commercial-status (single-select) and tags (multi-select: suspended / ceased)
+  filters via FilterDropdown. Includes a primary "Nuovo cliente" CTA on the right.
+  Provides filter state consumable by CustomersTable.
+  @keywords filter, search, customers, common
+  @uses GenericFilters
   @provides filters
 -->
 
@@ -15,14 +16,40 @@
 <script lang="ts">
   import GenericFilters from '$components/features/common/GenericFilters/default/GenericFilters.svelte'
   import Button from '$components/ui/button/button.svelte'
+  import { usePageChat } from '$lib/chat/hooks/usePageChat'
+  import { makeFilterChatRegistration } from '$lib/chat/page-tools/filter-registration'
   import * as m from '$lib/paraglide/messages'
+  import { configToSelectItems, customerCommercialStatusConfig, customerTagConfig } from '$lib/utils/enum-labels'
+  import type { FilterConfig } from '$lib/utils/filters'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
 
   const props: SnippetProps = $props()
+
+  const config: FilterConfig = {
+    commercial_status: {
+      type: 'enum',
+      label: m.commercial_status(),
+      options: configToSelectItems(customerCommercialStatusConfig),
+    },
+    tags: {
+      type: 'tags',
+      label: m.status(),
+      options: configToSelectItems(customerTagConfig),
+    },
+  }
+
+  usePageChat(
+    makeFilterChatRegistration({
+      id: 'customers-filter',
+      toolName: 'filter_customers',
+      resourceLabel: 'customers',
+      config,
+    }),
+  )
 </script>
 
-<GenericFilters {...props}>
+<GenericFilters {...props} {config}>
   <Button variant="default" href={createRoute({ $id: 'customer-details' })}>
     {m.add_new_customer()}
   </Button>

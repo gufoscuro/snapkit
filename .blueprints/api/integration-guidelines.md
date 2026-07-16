@@ -99,6 +99,53 @@ const orders = await salesApi.get<OrderSummary[]>('/order');
 const order = await salesApi.get<OrderSummary>('/order/123');
 ```
 
+### Downloading Files (binary responses)
+
+Use `apiDownload` from `$lib/utils/request.ts` for endpoints that return a binary
+payload (PDF, XML, …) instead of JSON. It reads the response as a `Blob` and
+triggers the browser save dialog. Never hand-roll this with raw `fetch` — the
+utility already carries the base headers (locale + XSRF) and the 401 redirect.
+
+```typescript
+import { apiDownload } from '$lib/utils/request';
+
+// filename omitted → uses the name advertised by the backend via the
+// `Content-Disposition` header, falling back to `'download'`.
+await apiDownload({ url: `/legal-entities/${legalEntityId}/invoices/${id}/pdf` });
+
+// pass `filename` explicitly only to override the backend-provided name.
+await apiDownload({ url: `/.../invoices/${id}/xml`, filename: `${documentNumber}.xml` });
+```
+
+**`filename` resolution order:** explicit `filename` → `Content-Disposition`
+header → `'download'`. For the backend name to be readable cross-origin, the API
+gateway must expose the header via `Access-Control-Expose-Headers: Content-Disposition`;
+otherwise the download falls back to `'download'`.
+
+**In the UI**, wrap the call in `DownloadActionButton`
+(`$components/core/DownloadActionButton.svelte`) — it owns the busy/spinner state
+and the error toast, so the `onDownload` callback only needs to invoke
+`apiDownload`. The button renders a generic download icon, so use it when the
+record exposes a **single** downloadable file.
+
+When the same record can be exported in **more than one format** (XML, PDF, …),
+prefer `DownloadActionMenu` (`$components/core/DownloadActionMenu.svelte`) over
+stacking several `DownloadActionButton`. It renders one trigger button with a
+dropdown of formats, owns a single busy state (the trigger spins while any item
+downloads), and shows the error toast — each item only supplies `{ id, label,
+icon?, onDownload }`. The per-format `icon` is optional.
+
+```svelte
+<DownloadActionMenu
+  tooltip={m.download_document()}
+  items={[
+    { id: 'xml', label: m.invoice_xml_download(), icon: FileCodeIcon,
+      onDownload: () => apiDownload({ url: `/.../invoices/${id}/xml` }) },
+    { id: 'pdf', label: m.invoice_pdf_download(), icon: FileTextIcon,
+      onDownload: () => apiDownload({ url: `/.../invoices/${id}/pdf` }) },
+  ]} />
+```
+
 ### Error Handling
 
 Always handle loading and error states when fetching data:

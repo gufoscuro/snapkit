@@ -92,7 +92,7 @@
 <svelte:window
   use:shortcut={{
     ctrl: true,
-    key: 'm',
+    key: 'j',
     callback: handleShortcut,
   }} />
 

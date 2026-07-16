@@ -579,13 +579,18 @@ export type LegalEntityEmail = {
 }
 
 /**
+ * Amount base a due-date percentage is applied to (`PaymentAmountType` enum).
+ */
+export type PaymentAmountType = 'imponibile' | 'iva' | 'totale_documento'
+
+/**
  * Payment term due date from Moddo API
  */
 export type PaymentTermDueDate = {
   days: number
   percentage: number
-  payment_method: string
-  amount_type: string
+  payment_method: PaymentMethod
+  amount_type: PaymentAmountType
 }
 
 /**
@@ -606,6 +611,7 @@ export type PaymentTerm = {
   description: string
   terms: PaymentTermTerms
   is_active: boolean
+  is_archivable?: boolean
 }
 
 export interface DataWrapper<T> {
@@ -687,6 +693,9 @@ export type Permission =
   | 'edit-transport-documents'
   | 'delete-transport-documents'
   | 'view-invoices'
+  | 'create-invoices'
+  | 'edit-invoices'
+  | 'delete-invoices'
 
 export type CustomerType = 'company' | 'individual' | 'public_entity' | 'consortium' | 'association'
 export type CustomerCommercialStatus = 'active' | 'prospect'
@@ -768,6 +777,90 @@ export type CustomerContact = {
   mobile_phone: string
   email: string
   version: number
+}
+
+/**
+ * Intent Declaration (dichiarazione d'intento) — a customer sub-resource.
+ * `amount_type` campo-1 (`single_operation`) exhausts on any usage; campo-2
+ * (`up_to_amount`) only at full plafond capacity.
+ */
+export type IntentDeclarationAmountType = 'single_operation' | 'up_to_amount'
+
+/**
+ * Computed status — derived from flags + used/declared amounts + reference year.
+ * Priority: invalidated > revoked > expired > exhausted.
+ */
+export type IntentDeclarationStatus =
+  | 'draft'
+  | 'active'
+  | 'exhausted'
+  | 'revoked'
+  | 'invalidated'
+  | 'expired'
+
+/** Ledger movement reason on `intent_declaration_usages` (append-only). */
+export type IntentDeclarationUsageReason =
+  | 'consumed'
+  | 'reversed_reopen'
+  | 'reversed_error'
+  | 'reversed_archived'
+  | 'resync_delta'
+  | 'credit_note_restore'
+
+/**
+ * Intent Declaration from Moddo API
+ * GET /api/legal-entities/{legalEntity}/customers/{customer}/intent-declarations
+ */
+export type IntentDeclaration = {
+  id: string
+  customer_id: string
+  protocol_number: string
+  protocol_progressive: string
+  /** Composed display protocol (`protocol_number-protocol_progressive`). */
+  protocol: string
+  receipt_date: string
+  reference_year: number
+  amount_type: IntentDeclarationAmountType
+  declared_amount: number
+  used_amount: number
+  residual_amount: number
+  /** Customs declaration (dogana) — registrable but never allocatable. */
+  is_customs: boolean
+  status: IntentDeclarationStatus
+  verified_at: string | null
+  verified_by: string | null
+  revoked_at: string | null
+  invalidated_at: string | null
+  note: string
+  version: number
+  /** Eager-loaded only on the cross-customer legal-entity list. */
+  customer?: {
+    id: string
+    name: string
+    vat_number: string
+  }
+}
+
+/**
+ * A single consumption/reversal row of an intent declaration's plafond.
+ * Exactly one of `transport_document` / `invoice` is set (DB XOR).
+ * GET /api/legal-entities/{legalEntity}/customers/{customer}/intent-declarations/{intentDeclaration}/usages
+ */
+export type IntentDeclarationUsage = {
+  id: string
+  intent_declaration_id: string
+  amount: number
+  reason: IntentDeclarationUsageReason
+  occurred_on: string
+  created_at: string
+  transport_document?: {
+    id: string
+    document_number: string
+  }
+  invoice?: {
+    id: string
+    document_number: string
+  }
 }
 
 /**
@@ -1054,10 +1147,6 @@ export type Document = {
 // Customer Commercial Terms Types
 // ============================================================================
 
-export type BillingType = 'by_order' | 'by_delivery' | 'monthly_summary' | 'pro_forma'
-
-export type BillingFrequency = 'per_event' | 'weekly' | 'biweekly' | 'monthly'
-
 /**
  * Customer commercial terms from Moddo API
  * GET /api/legal-entities/{legalEntity}/customers/{customer}/commercial-terms
@@ -1078,10 +1167,31 @@ export type VatCode = {
   is_default: boolean
 }
 
-export type CustomerCommercialTerms = {
-  id: string
+/**
+ * Type of a payment composition slice (`PaymentSliceType` enum).
+ * - `acconto` — advance
+ * - `stato_avanzamento_lavori` — progress billing (SAL)
+ * - `saldo` — final balance
+ */
+export type PaymentSliceType = 'acconto' | 'stato_avanzamento_lavori' | 'saldo'
+
+/**
+ * A single slice of a payment composition (Acconto / SAL / Saldo), each with its
+ * own percentage and payment term. Shared shape across customer/supplier commercial
+ * terms and document payment compositions (quotation / sales order / transport document).
+ * `id` is present on responses, omitted on create.
+ */
+export type PaymentComposition = {
+  id?: string
+  position: number
+  percentage: number
+  type: PaymentSliceType
   payment_term_id: string
   payment_term?: PaymentTerm
+}
+
+export type CustomerCommercialTerms = {
+  id: string
   vat_code_id: string
   vat_code?: VatCode
   iban: string
@@ -1092,8 +1202,7 @@ export type CustomerCommercialTerms = {
   incoterm_place: string
   free_shipping_threshold: number
   minimum_order_value: number
-  billing_type: BillingType
-  billing_frequency: BillingFrequency | null
+  composition?: PaymentComposition[]
   version: number
 }
 
@@ -1103,8 +1212,6 @@ export type CustomerCommercialTerms = {
  */
 export type SupplierCommercialTerms = {
   id: string
-  payment_term_id: string
-  payment_term?: PaymentTerm
   vat_code_id: string
   vat_code?: VatCode
   iban: string
@@ -1115,8 +1222,7 @@ export type SupplierCommercialTerms = {
   incoterm_place: string
   free_shipping_threshold: number
   minimum_order_value: number
-  billing_type: BillingType
-  billing_frequency: BillingFrequency | null
+  composition?: PaymentComposition[]
   version: number
 }
 
@@ -1180,6 +1286,23 @@ export type QuotationItem = {
 }
 
 /**
+ * One VAT-rate bucket of a document's tax breakdown ("riepilogo IVA").
+ * Backend-computed, read-only. Shared by quotations, sales orders and invoices.
+ */
+export type VatSummaryEntry = {
+  /** VAT code (e.g. "IVA22-VB"). */
+  code: string
+  /** Human-readable VAT code description. */
+  description: string
+  /** VAT rate as a percentage (e.g. 22 for 22%). */
+  rate: number
+  /** Taxable amount (net) for this bucket. */
+  net: number
+  /** Tax amount for this bucket. */
+  tax: number
+}
+
+/**
  * Quotation from Moddo API GET /api/legal-entities/{legalEntity}/quotations
  */
 export type Quotation = {
@@ -1199,8 +1322,10 @@ export type Quotation = {
   currency: Currency
   valid_from: string
   valid_to: string
-  payment_term_id: string
-  payment_term_snapshot: Record<string, unknown>[]
+  /** Read-only snapshot of the payment composition (prefill source for the editor). */
+  payment_composition_snapshot: Record<string, unknown>[]
+  /** Backend-computed `(type|payment_term_id)` signature; recomputed FE-side for import compatibility. */
+  composition_signature: string
   incoterm: Incoterm
   incoterm_location: string
   sales_rep_id: string
@@ -1216,6 +1341,7 @@ export type Quotation = {
   version: number
   created_by: string
   items?: QuotationItem[]
+  vat_summary?: VatSummaryEntry[]
   available_transitions?: string[]
 }
 
@@ -1223,7 +1349,7 @@ export type Quotation = {
 // Sales Orders API Types
 // ============================================================================
 
-export type SalesOrderTag = 'sent' | 'advance_pending' | 'requires_direct_invoicing'
+export type SalesOrderTag = 'sent' | 'payment_pending' | 'requires_direct_invoicing'
 
 export type SalesOrderStatus = 'open' | 'approved' | 'rejected'
 
@@ -1269,8 +1395,10 @@ export type SalesOrder = {
   legal_entity_bank_id: string
   legal_entity_bank_snapshot: Record<string, unknown>[]
   currency: Currency
-  payment_term_id: string
-  payment_term_snapshot: Record<string, unknown>[]
+  /** Read-only snapshot of the payment composition (prefill source for the editor). */
+  payment_composition_snapshot: Record<string, unknown>[]
+  /** Backend-computed `(type|payment_term_id)` signature; recomputed FE-side for import compatibility. */
+  composition_signature: string
   incoterm: Incoterm
   incoterm_location: string
   customer_purchase_order: string
@@ -1286,10 +1414,36 @@ export type SalesOrder = {
   gross_value: number
   notes_internal: string
   notes_external: string
+  custom_fields?: Record<string, unknown>
   version: number
   created_by: string
   items?: SalesOrderItem[]
+  vat_summary?: VatSummaryEntry[]
   available_transitions?: string[]
+}
+
+/**
+ * A single sales-order line awaiting delivery, from the cross-order
+ * `GET /delivery-schedule` view. One row per outstanding sales-order item.
+ */
+export type DeliveryScheduleLine = {
+  sales_order_id: string
+  sales_order_number: string
+  sales_order_date: string
+  customer_id: string
+  customer_name: string
+  customer_purchase_order: string
+  customer_purchase_order_date: string
+  sales_order_item_id: string
+  item_code: string
+  description: string
+  uom: UnitOfMeasure | null
+  requested_delivery_date: string
+  confirmed_delivery_date: string
+  quantity_ordered: number
+  quantity_shipped: number
+  quantity_remaining: number
+  payment_pending: boolean
 }
 
 // ============================================================================
@@ -1368,7 +1522,7 @@ export type TransportDocumentType =
   | 'repair'
   | 'sampling'
 
-export type TransportMethod = 'sender' | 'recipient'
+export type TransportMethod = 'sender' | 'recipient' | 'carrier'
 
 export type TransportDocumentInvoicingStatus = 'none' | 'partial' | 'full'
 
@@ -1433,6 +1587,345 @@ export type TransportDocument = {
   items?: TransportDocumentItem[]
   available_transitions?: string[]
   is_archivable?: boolean
+}
+
+// ============================================================================
+// Invoiceable Documents API Types
+// ============================================================================
+
+export type InvoiceableDocumentType =
+  | 'order_acconto'
+  | 'order_sal'
+  | 'order_saldo_from_transport'
+  | 'order_saldo_direct'
+
+export type InvoiceableDocumentSourceType = 'sales_order' | 'transport_document'
+
+/**
+ * A document that can be invoiced, returned by
+ * GET /api/legal-entities/{legalEntity}/invoiceable-documents
+ */
+export type InvoiceableDocument = {
+  type: InvoiceableDocumentType
+  priority: number
+  source: {
+    type: InvoiceableDocumentSourceType
+    id: string
+    document_number: string
+    document_date: string
+  }
+  customer_id: string
+  customer_snapshot: Record<string, unknown>[]
+  sales_transaction_type: SalesTransactionType
+  transport_reason: string
+  currency: Currency
+  reference_date: string
+  invoiceable_lines_count: number
+  amount: {
+    net: number
+    tax: number
+    total: number
+  }
+  fulfillment_status: SalesOrderFulfillmentStatus | null
+  invoicing_status: TransportDocumentInvoicingStatus | null
+  /** Type of the composition slice this row represents (one invoiceable row per unpaid slice). */
+  slice_type: PaymentSliceType | null
+  /** Position of the composition slice this row represents — passed to the prefill as `slice_position`. */
+  slice_position: number
+  /**
+   * Cumulative-invoice compatibility key (exposed on every row). For a DDT it is the
+   * Saldo-slice payment term agreed across its source SOs — `null` when they disagree
+   * (the DDT would 422 at prefill) or there is no Saldo slice.
+   */
+  payment_term_id: string | null
+  /** Suggested FatturaPA document type (the other cumulative-invoice compatibility axis). */
+  document_type: InvoiceDocumentType | null
+}
+
+// ============================================================================
+// Invoices API Types
+// ============================================================================
+
+/** FatturaPA TipoDocumento codes accepted by POST /invoices */
+export type InvoiceDocumentType = 'TD01' | 'TD02' | 'TD04' | 'TD05' | 'TD24' | 'TD25'
+
+/**
+ * Acube/SDI-driven lifecycle. `draft` is the entry state for any new invoice;
+ * `submitted` is the first issued state (handed to SDI) and, like the later
+ * issued states, is collectable — payments can be recorded from here on.
+ */
+export type InvoiceState = 'draft' | 'submitted' | 'sent' | 'delivered' | 'accepted' | 'rejected' | 'archived' | 'error'
+
+export type InvoiceItemType = 'item' | 'descriptive' | 'charge'
+
+/** Transitions accepted by POST /invoices/{id}/transition */
+export type InvoiceTransition = 'submit' | 'resubmit' | 'archive'
+
+/**
+ * FatturaPA ModalitaPagamento codes — stable enum defined by SDI.
+ * See `paymentMethodLabels` in `enum-labels.ts` for the human-readable mapping.
+ */
+export type PaymentMethod =
+  | 'MP01'
+  | 'MP02'
+  | 'MP03'
+  | 'MP04'
+  | 'MP05'
+  | 'MP06'
+  | 'MP07'
+  | 'MP08'
+  | 'MP09'
+  | 'MP10'
+  | 'MP11'
+  | 'MP12'
+  | 'MP13'
+  | 'MP14'
+  | 'MP15'
+  | 'MP16'
+  | 'MP17'
+  | 'MP18'
+  | 'MP19'
+  | 'MP20'
+  | 'MP21'
+  | 'MP22'
+  | 'MP23'
+
+/**
+ * Payment status of a single scadenza (or the invoice as a whole). Derived
+ * server-side from recorded payments vs the row's `amount`. `null` at the
+ * invoice level means the invoice has no payment schedule (e.g. TD04 credit
+ * notes or pre-feature invoices) — render no badge in that case.
+ */
+export type InvoicePaymentStatus = 'unpaid' | 'partially_paid' | 'paid'
+
+/**
+ * A single recorded payment against an invoice scadenza (`invoice_due_date`).
+ * Created via `POST /invoice-due-dates/{invoiceDueDate}/payments`. `amount` is
+ * serialized as a string (decimal) by the API.
+ */
+export type InvoicePayment = {
+  id: string
+  invoice_due_date_id: string
+  payment_date: string
+  amount: string
+  payment_method: PaymentMethod
+  /**
+   * Parent scadenza summary, eager-loaded ONLY on the per-invoice payment
+   * history (`GET /invoices/{invoice}/payments`). Omitted when a payment is
+   * nested inside its own due-date row (the parent already carries these).
+   */
+  invoice_due_date?: {
+    id: string
+    position: number
+    due_date: string
+    amount: string
+  }
+}
+
+/**
+ * Single due-date (scadenza) row attached to an invoice. Once the invoice is
+ * submitted the schedule is frozen; recorded payments accrue into `paid_amount`
+ * and shrink `residual_amount`, driving `payment_status`.
+ */
+export type InvoiceDueDate = {
+  id: string
+  position: number
+  due_date: string
+  amount: string | number
+  payment_method: PaymentMethod
+  /** Sum of recorded payments on this scadenza (decimal string). */
+  paid_amount: string
+  /** `amount − paid_amount`; the max acceptable next payment. Never negative. */
+  residual_amount: number
+  payment_status: InvoicePaymentStatus
+  /**
+   * Payments recorded against this scadenza. Present on the invoice detail
+   * (`GET /invoices/{invoice}`) and the per-invoice history; omitted on the
+   * lean cross-invoice `GET /invoice-due-dates` list rows.
+   */
+  payments?: InvoicePayment[]
+  /**
+   * Parent-invoice summary, eager-loaded ONLY on the cross-invoice
+   * `GET /invoice-due-dates` list. Omitted when a due date is nested inside an
+   * invoice's own `due_dates` (the invoice already carries these fields).
+   */
+  invoice?: {
+    id: string
+    document_number: string
+    document_date: string
+    document_type: InvoiceDocumentType
+    state: InvoiceState
+    customer_name: string
+  }
+}
+
+/**
+ * Reduced due-date shape carried by the prefill response — no `id` /
+ * `invoice_id` since the invoice has not been saved yet.
+ */
+export type InvoicePrefillDueDate = {
+  position: number
+  due_date: string
+  amount: number
+  payment_method: PaymentMethod
+}
+
+export type InvoiceItem = {
+  id: string
+  position: number
+  type: InvoiceItemType
+  item_id: string
+  item_snapshot: Record<string, unknown>[]
+  description: string
+  quantity: number
+  unit_of_measure: UnitOfMeasure
+  unit_price: number
+  discount_percentage: number
+  net_value: number
+  vat_code_id: string
+  vat_code_snapshot: Record<string, unknown>[]
+  tax_amount: number
+  sales_order_item_id: string
+  transport_document_item_id: string
+}
+
+/**
+ * Invoice from Moddo API POST /api/legal-entities/{legalEntity}/invoices.
+ * Created in `draft` state; lifecycle progresses server-side via Acube/SDI.
+ * `document_number` is auto-generated (`FT-YYYY-NNNNN`); totals are computed
+ * server-side from item-level `net_value` / `tax_amount`.
+ */
+export type Invoice = {
+  id: string
+  document_number: string
+  document_date: string
+  document_type: InvoiceDocumentType
+  customer_id: string
+  customer_snapshot: Record<string, unknown>[]
+  sales_order_id: string
+  legal_entity_snapshot: Record<string, unknown>[]
+  /**
+   * Lean slice pointer echoed from the prefill — identifies which order slice this
+   * invoice realizes (for the payment gate). `null`/manual for a standalone invoice.
+   */
+  payment_slice_type: PaymentSliceType | null
+  /** `null` for Saldo invoices (DDT / direct), which can span multiple invoices. */
+  payment_slice_position: number | null
+  /**
+   * Standalone payment term (decoupled from the slice pointer) that drives
+   * server-side due-date regeneration when `due_dates` is sent empty.
+   */
+  payment_term_id: string
+  legal_entity_bank_id: string
+  legal_entity_bank_snapshot: Record<string, unknown>[]
+  currency: Currency
+  total_net: number
+  total_tax: number
+  total_amount: number
+  state: InvoiceState
+  /**
+   * Tri-state payment status derived from the scadenze. `null` when the invoice
+   * has no schedule (TD04 credit notes, pre-feature invoices) — don't render a
+   * badge for `null`.
+   */
+  payment_status: InvoicePaymentStatus | null
+  acube_invoice_uuid: string
+  notes_external: string
+  notes_internal: string
+  pdf_path: string
+  version: number
+  created_by: string
+  created_at: string
+  updated_at: string
+  items?: InvoiceItem[]
+  vat_summary?: VatSummaryEntry[]
+  due_dates?: InvoiceDueDate[]
+  available_transitions?: InvoiceTransition[]
+}
+
+/**
+ * Input shape for an invoice line item — matches the body accepted by
+ * `POST /invoices` and the items array returned by `GET /invoices/prefill`.
+ * Distinct from `InvoiceItem` (the saved-row representation) because prefill
+ * lines have no `id`, `position`, snapshots or computed totals yet.
+ */
+export type InvoiceItemInput = {
+  type: 'item' | 'charge' | 'descriptive'
+  item_id?: string
+  /** Article catalog code, shipped flat by the prefill (used to render locked lines). */
+  code?: string
+  description: string
+  quantity?: number
+  unit_of_measure?: UnitOfMeasure
+  unit_price?: number
+  /** Line discount; the prefill may send `null` (no discount). */
+  discount_percentage?: number | null
+  vat_code_id?: string
+  sales_order_item_id?: string
+  transport_document_item_id?: string
+  /**
+   * Per-line source citation used to build the "Rif. Vs ordine / Rif. Ns DDT"
+   * descriptive headers. `date` may be `null` (no date available).
+   */
+  source_reference?: {
+    order?: { sales_order_id?: string; number: string; date: string | null } | null
+    transport_document?: { transport_document_id?: string; number: string; date: string | null } | null
+  } | null
+}
+
+/**
+ * Pre-filled invoice draft returned by
+ * `GET /invoices/prefill?source_type=<InvoiceableDocumentType>&source_id=<uuid>`.
+ *
+ * The backend hydrates header fields, lines and totals from the source document
+ * (order advance / transport document / direct order) so the FE can pre-populate
+ * an invoice create form with one round-trip.
+ */
+export type InvoicePrefill = {
+  document_date: string
+  document_type: InvoiceDocumentType
+  customer_id: string
+  /** Full customer record — `null` when the customer cannot be resolved. */
+  customer: Customer | null
+  sales_order_id: string
+  /**
+   * Lean slice pointer echoed by the prefill — type of the source-order slice this
+   * invoice realizes. `null` for a standalone/manual prefill.
+   */
+  payment_slice_type: PaymentSliceType | null
+  /** Position of the source-order slice this invoice realizes. `null` for Saldo. */
+  payment_slice_position: number | null
+  /** Standalone payment term suggested by the prefill (drives server-side due-date generation). */
+  payment_term_id: string
+  legal_entity_bank_id: string
+  /** Full legal-entity bank — `null` when unset on the source. */
+  legal_entity_bank: LegalEntityBank | null
+  currency: Currency
+  notes_external: string
+  notes_internal: string
+  items: InvoiceItemInput[]
+  /**
+   * Source documents the prefilled lines were composed from, with the human-readable
+   * `number`/`date` used to render the per-group reference descriptive header. Each
+   * `line_positions` entry is a 1-based index into `items` (position 1 = first item).
+   */
+  source_references?: {
+    orders: { sales_order_id: string; number: string; date: string; line_positions: number[] }[]
+    transport_documents: {
+      transport_document_id: string
+      number: string
+      date: string
+      line_positions: number[]
+    }[]
+  }
+  totals: {
+    net: number
+    tax: number
+    total: number
+  }
+  /** Server-computed VAT breakdown ("riepilogo IVA"), one row per rate bucket. */
+  vat_summary?: VatSummaryEntry[]
+  due_dates: InvoicePrefillDueDate[]
 }
 
 /**

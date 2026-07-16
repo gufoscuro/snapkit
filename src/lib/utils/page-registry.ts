@@ -12,6 +12,7 @@ export interface PageConfig {
   layout: SnippetDefinition
   snippets: Record<string, SnippetDefinition>
   subpages?: PageConfig[]
+  description?: string
 }
 
 export interface SnippetDefinition {

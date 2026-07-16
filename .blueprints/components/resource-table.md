@@ -453,6 +453,23 @@ Complete control over cell rendering.
 
 ---
 
+### Refreshing a table after an out-of-table mutation
+
+`ResourceTable` exposes its refetch **only** through the `ActionHelpers` handed to an action's `onClick(row, helpers)` — there is no public/bindable `refresh()`. So:
+
+- **Inside an action** (delete a row, toggle a flag, one-click mutate): call `helpers.refresh()` — or optimistic `helpers.removeRow(id)` / `helpers.updateRow(id, patch)` — directly.
+- **From a dialog mounted as a sibling of the table** (a form the action merely *opens*): the dialog can't see `helpers`. Capture it — the action stashes `helpers.refresh` into a `$state` var, opens the dialog, and the dialog's `onSaved` calls the stashed closure.
+
+```svelte
+let refreshTable = $state<(() => Promise<void>) | null>(null)
+const recordAction = {
+  onClick: (row, helpers) => { selected = row; refreshTable = helpers.refresh; open = true },
+}
+// <RecordDialog bind:open dueDate={selected} onSaved={() => refreshTable?.()} />
+```
+
+Real use: `PaymentsTable` + `RecordPaymentDialog` (see [../domain-logic/actionables.md](../domain-logic/actionables.md) -> *Refreshing the table after an out-of-table dialog save*).
+
 ## Utilities
 
 ### createApiFetcher<T>(url: string)
@@ -1110,6 +1127,38 @@ createArchiveAction({
   // ...
 })
 ```
+
+### Read-only aggregate list (baked query param, links to source entity)
+
+Some listing views are **read-only cross-entity aggregates** with no detail page or archive of their own — each row links to the detail of the entity it derives from. Examples: the delivery schedule (`DeliveryScheduleTable`, rows link to `sales-order-details`) and the payments/due-dates list (`PaymentsTable`, rows link to `invoice-details`). Two deviations from the standard recipe:
+
+1. **No `actions` column, no `createArchiveAction`.** The link renderer's `urlBuilder` points at the *source* entity (`row.sales_order_id`, `row.invoice_id`), not a row of this endpoint.
+
+2. **Bake a static query param when the view is intrinsically scoped.** When the whole view means "only the outstanding subset" (or a fixed state), don't expose it as a filter — inline a fetcher that adds the constant param, instead of `createApiFetcher`:
+
+```typescript
+import { apiRequest } from '$lib/utils/request'
+import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$lib/utils/filters'
+
+const apiUrl = $derived(legalEntity?.id ? `/legal-entities/${legalEntity.id}/delivery-schedule` : null)
+
+// `outstanding=true` is what the "to ship" view *is*, so it's baked in — not a user filter.
+const fetchLines = $derived(
+  apiUrl
+    ? (page: number, filters?: FilterQuery): Promise<PaginatedResponse<DeliveryScheduleLine>> =>
+        apiRequest<PaginatedResponse<DeliveryScheduleLine>>({
+          url: apiUrl,
+          queryParams: {
+            page,
+            outstanding: true,
+            ...createQueryRequestObject({ search: filters?.search, query: filters?.query }),
+          },
+        })
+    : null,
+)
+```
+
+**Why:** `createApiFetcher` only forwards `page` + `search`/`query`; there's no hook for a constant param. The inline fetcher keeps the same `(page, filters) => Promise<PaginatedResponse<T>>` shape ResourceTable expects while pinning the view's scope. The paired filters component (`DeliveryScheduleFilters` / `PaymentsFilters`) only exposes the *variable* filters (customer, date range) — see [table-filters.md](./table-filters.md); it renders `<GenericFilters {config} />` with **no CTA child** since these views have nothing to create.
 
 ### Checklist
 

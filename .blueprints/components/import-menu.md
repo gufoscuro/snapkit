@@ -12,9 +12,10 @@ Use `ImportMenu` when you need to:
 - Render either as a **standalone button** or as a **sub-menu** inside another dropdown
 
 Examples in the codebase:
-- `SalesOrderItemsListEditor` uses it to import line items from approved quotations
+- `SalesOrderDetails` imports line items from approved quotations (`compatKey` + `lockWhen` for payment composition)
+- `WarehouseOrderDetails` imports from sales orders; `TransportDocumentDetails` imports from SOs and WOs (`compatKeyOf`)
 
-For single-select scenarios, use `FormGenericSingleSelector` instead.
+For single-select scenarios, use `FormGenericSingleSelector` instead (or `singleSelect`).
 
 ## Architecture
 
@@ -59,9 +60,12 @@ interface Props<T> {
   optionMappingFunction: (item: T) => BasicOption
   onimport: (items: T[]) => void
   previewSnippet?: Snippet<[T]>
+  compatKey?: (item: T) => string
+  lockWhen?: (item: T) => boolean
   label?: string
   submenu?: boolean
   disabled?: boolean
+  singleSelect?: boolean
 }
 ```
 
@@ -71,9 +75,12 @@ interface Props<T> {
 | `optionMappingFunction` | `(item: T) => BasicOption` | — | **Required.** Maps each `T` to `{ label, value }` for display + selection key |
 | `onimport` | `(items: T[]) => void` | — | **Required.** Called with the selected raw `T[]` when user clicks Import |
 | `previewSnippet` | `Snippet<[T]>` | — | Optional hover preview rendered in a HoverCard (400ms delay). Receives the raw `T` |
+| `compatKey` | `(item: T) => string` | — | **Record-anchored lock.** The first selected item becomes the anchor; rows whose `compatKey` differs are disabled. Already-selected items stay enabled (deselectable). Clears when selection empties. Ignored in `singleSelect`. See [Compatibility locking](#compatibility-locking) |
+| `lockWhen` | `(item: T) => boolean` | — | **Form-anchored lock.** Returns `true` to disable a row independently of `compatKey` (e.g. against the parent form's current state, which must reflect later edits). OR-combined with `compatKey`; selected items are never locked |
 | `label` | `string` | `m.common_import()` | Trigger button label |
 | `submenu` | `boolean` | `false` | When `true`, renders as a `DropdownMenu.Sub` (for nesting inside another menu) |
 | `disabled` | `boolean` | `false` | Disable the trigger |
+| `singleSelect` | `boolean` | `false` | Pick-one mode: clicking an item immediately calls `onimport([item])` and closes; no checkboxes/footer. `compatKey` ignored |
 
 ## The Generic Pattern
 
@@ -84,6 +91,30 @@ The component uses Svelte 5 generics (`<script lang="ts" generics="T">`) followi
 - **`onimport`** receives the original `T[]` (not the mapped options) — so the consumer has the full entity to do whatever it needs
 
 This keeps the component fully decoupled from any specific entity shape.
+
+## Compatibility locking
+
+Multi-import flows often require all picked records to be mutually compatible (same customer,
+incoterm, payment composition, …). Incompatible rows render **visible but not selectable**
+(`opacity-50 cursor-not-allowed`, clicks rejected) rather than being hidden — so the user can
+see *why* a sibling is excluded. Two predicates drive this:
+
+- **`compatKey` — record-anchored.** The anchor is the `compatKey` of the **first selected**
+  record; any row with a different key is locked. Use for *intra-session* consistency (after
+  the first pick, the rest are constrained to it). Encode the compatibility-relevant fields
+  into one string, e.g. `` `${customer_id}|${ship_to_address_id}|${incoterm}` ``.
+
+- **`lockWhen` — form-anchored.** Locks rows based on state **outside** the picker (typically
+  the parent document form), so it reflects edits made after import and constraints carried
+  across separate import sessions. Guard it so it's inactive until that state is "pinned"
+  (otherwise a fresh form locks everything).
+
+They are **OR-combined**, and already-selected items are never locked (so deselect always
+works). When both a value-derived constraint *and* an edit-reflecting constraint are needed
+(e.g. payment composition), use **both** — `compatKey` alone misses post-import edits, and
+`lockWhen` alone can't gate within a single pre-import selection. See
+[`payment-composition.md`](./payment-composition.md) → *Import compatibility* for the worked
+example.
 
 ## Usage Examples
 
@@ -211,4 +242,5 @@ The component uses these existing i18n keys:
 ## Related
 
 - [`quotation-items-list-editor.md`](./quotation-items-list-editor.md) — The main consumer of ImportMenu via `SalesOrderItemsListEditor`
+- [`payment-composition.md`](./payment-composition.md) — Two-layer `compatKey` + `lockWhen` compatibility for payment composition
 - [`table-filters.md`](./table-filters.md) — Similar pattern for filter dropdowns (`FilterTags` uses the same Command + checkbox layout)

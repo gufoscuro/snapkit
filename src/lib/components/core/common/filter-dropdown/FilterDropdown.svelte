@@ -4,6 +4,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
   import * as m from '$lib/paraglide/messages'
   import {
+    type AmountFilterValue,
     countActiveFilters,
     deserializeFilters,
     type FilterConfig,
@@ -14,6 +15,8 @@
   import type { DateValue } from '@internationalized/date'
   import ListFilterIcon from '@lucide/svelte/icons/list-filter'
   import { untrack } from 'svelte'
+  import FilterAmount from './FilterAmount.svelte'
+  import FilterCustomer from './FilterCustomer.svelte'
   import FilterDate from './FilterDate.svelte'
   import FilterEnum from './FilterEnum.svelte'
   import FilterStandalone from './FilterStandalone.svelte'
@@ -31,6 +34,12 @@
     untrack(() => deserializeFilters(config, query ?? {})),
   )
 
+  // Track the last `query` shape we emitted to the parent, so we can tell
+  // a "self-induced" prop change (parent echoing our update back) from an
+  // *external* one (URL back/forward, parent reset) — only the latter should
+  // overwrite our internal state.
+  let lastEmittedQueryKey = untrack(() => JSON.stringify(query ?? {}))
+
   const groupedFilters = $derived.by(() => {
     return Object.fromEntries(Object.entries(config).filter(([, e]) => !e.standalone))
   })
@@ -41,7 +50,10 @@
 
   const activeGroupedCount = $derived(countActiveFilters(groupedFilters, internalState))
 
-  function updateFilter(key: string, value: string | string[] | DateValue | undefined) {
+  function updateFilter(
+    key: string,
+    value: string | string[] | DateValue | AmountFilterValue | undefined,
+  ) {
     internalState = { ...internalState, [key]: value }
   }
 
@@ -49,10 +61,33 @@
     internalState = {}
   }
 
+  // Re-sync internalState when `query` changes from outside (e.g. URL nav).
+  $effect(() => {
+    const incomingKey = JSON.stringify(query ?? {})
+    if (incomingKey === lastEmittedQueryKey) return
+    lastEmittedQueryKey = incomingKey
+
+    // Compare *canonically*, not by raw string. The URL may hold a non-canonical
+    // form of a value we serialize differently — e.g. a date-only
+    // `delivery_date_to=2026-07-07` vs the end-of-day ISO we emit. Resyncing +
+    // re-emitting on such a "difference" creates an infinite loop when the
+    // rewritten URL can't be read back identically (replaceState round-trip).
+    // If the incoming query means the same as our current state, do nothing.
+    const incomingState = deserializeFilters(config, query ?? {})
+    const sameAsCurrent =
+      JSON.stringify(serializeFilters(config, incomingState)) ===
+      JSON.stringify(serializeFilters(config, internalState))
+    if (sameAsCurrent) return
+
+    internalState = incomingState
+  })
+
   $effect(() => {
     const serialized = serializeFilters(config, internalState)
     const hasAny = Object.keys(serialized).length > 0
-    untrack(() => onchange(hasAny ? serialized : undefined))
+    const nextQuery = hasAny ? serialized : undefined
+    lastEmittedQueryKey = JSON.stringify(nextQuery ?? {})
+    untrack(() => onchange(nextQuery))
   })
 </script>
 
@@ -89,6 +124,16 @@
             <FilterDate
               {entry}
               value={internalState[key] as DateValue | undefined}
+              onchange={v => updateFilter(key, v)} />
+          {:else if entry.type === 'customer'}
+            <FilterCustomer
+              {entry}
+              value={internalState[key] as string | undefined}
+              onchange={v => updateFilter(key, v)} />
+          {:else if entry.type === 'amount'}
+            <FilterAmount
+              {entry}
+              value={internalState[key] as AmountFilterValue | undefined}
               onchange={v => updateFilter(key, v)} />
           {/if}
         {/each}
