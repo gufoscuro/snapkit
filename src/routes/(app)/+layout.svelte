@@ -62,12 +62,10 @@
   }
 
   function applyTransition(navigation: OnNavigate) {
-    const fromPathname = navigation.from?.url.pathname
-    const toPathname = navigation.to?.url.pathname
+    // const fromPathname = navigation.from?.url.pathname
+    // const toPathname = navigation.to?.url.pathname
 
-    if (toPathname?.includes('/admin')) return setTransitionProperty('slide-in-y')
-    else if (fromPathname?.includes('/admin')) return setTransitionProperty('normal')
-    // else if (fromPathname?.includes('upsert') && navigation.to?.url.pathname.includes('upsert'))
+    // if (fromPathname?.includes('upsert') && navigation.to?.url.pathname.includes('upsert'))
     //   return setTransitionProperty('normal')
     // else if (fromPathname?.includes('upsert')) return setTransitionProperty('slide-out')
     // else if (toPathname?.includes('upsert')) return setTransitionProperty('slide-in')
