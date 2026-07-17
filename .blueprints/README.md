@@ -31,6 +31,8 @@ snapkit-content/
 │   ├── quotations.md     # Quotation form/state/validation frontend quirks (import source)
 │   ├── sales-orders.md   # Sales order frontend quirks, incl. quotation-import flow
 │   └── actionables.md    # "Da spedire" / "Da incassare" list-view quirks (payment recording & status, baked filters)
+├── chat/                 # In-app AI assistant
+│   └── admin-assistant.md # Admin editor chat: dock, claimed prompt, tool plan
 ├── testing/              # Testing strategy and patterns
 │   └── strategy.md       # Test projects, mocking, what/how to test
 ├── api/                  # API integration guidelines
@@ -75,6 +77,10 @@ This is a per-feature pattern: one file per view/feature that accumulates non-ob
 - **quotations.md**: the import *source*. Editability gating by `open` state, create-vs-edit validation, sales-transaction-type filtering, customer-driven defaults, composition remount, snapshot dual-shape (array/object), actions/badges, page-state lifecycle.
 - **sales-orders.md**: shares most of quotations' surface (cross-referenced, not duplicated); the sales-order-specific focus is the **quotation-import flow** (eligibility, composition-signature compatibility locking, header-from-first-record, importable-quantity clamping), fulfillment badge, and confirmation date.
 - **actionables.md**: the aggregate list views surfaced label-less at the top of the sidebar — **Da spedire** (`DeliveryScheduleTable`, `GET /delivery-schedule`) and **Da incassare** (`PaymentsTable`, `GET /invoice-due-dates`). Covers collection progress / payment status / recording (manual payment tracking, superseding the old issued-as-paid proxy), the forward-only + credit-note-excluded + zero-due-dates-valid shapes, EUR-default amount, the nested `invoice` object on due-date rows (with guarded accessors), and the delivery schedule's `outstanding`-baked/line-granular/`payment_pending` quirks. Points at the moddo-api `deferred` business-doc for the backend rationale.
+
+### Chat
+
+- **admin-assistant.md**: The assistant docked in the admin legal entity editor. Covers the shipped shell (dock coordination via `chatUi.claimDock`, the `admin-assistant` server context claimed with `usePageChat({ serverContextId })`, and the summary-not-dump ambient context), the tool design rules (never take `tenant`/`legal_entity` as params — they invite cross-tenant writes; address nodes by the editor's own `Path`; write through `liveConfig`), the phased plan (dive-deep reads → writes over the existing full-config PUT → backend hardening → production auth), the gaps in the `moddo-legal-entity-config` MCP surface (menus have zero tooling), and the known risks (no undo, last-write-wins, half-built tree sections)
 
 ### Testing
 
@@ -194,5 +200,12 @@ When updating guidelines:
 - "How to bake a static query param into a ResourceTable fetcher?" → `components/resource-table.md`
 - "How to refresh a ResourceTable after an out-of-table dialog saves?" → `components/resource-table.md`
 - "Why do form fields overflow a narrow dialog / how to fix field width in a modal?" → `components/forms.md`
+- "How does the admin chat / assistant work?" → `chat/admin-assistant.md`
+- "How do I add a tool to the admin assistant?" → `chat/admin-assistant.md`
+- "How to dock the chat into a page instead of floating?" → `chat/admin-assistant.md`
+- "What is serverContextId / how do I give the chat its own prompt (skill)?" → `chat/admin-assistant.md`
+- "Why doesn't the chat send the whole legal entity config?" → `chat/admin-assistant.md`
+- "Why is the chat dev-only / how to enable it in production?" → `chat/admin-assistant.md`
+- "What do we need from the backend for the admin chat?" → `docs/ADMIN_CHAT_API.md`
 - "How to render a sidebar group without a label?" → `routing/menu-system.md`
 - "Where do the actionables (Da spedire / Da incassare / Da fatturare) live in the menu?" → `routing/menu-system.md`
