@@ -10,7 +10,13 @@ export const mockLegalEntityConfig: LegalEntityConfigResponse = {
         vat_number: { visible: true, required: false },
       },
       custom_fields: [
-        { key: 'loyalty_tier', label: 'Loyalty Tier', type: 'select', required: false, options: ['bronze', 'silver', 'gold'] },
+        {
+          key: 'loyalty_tier',
+          label: 'Loyalty Tier',
+          type: 'select',
+          required: false,
+          options: ['bronze', 'silver', 'gold'],
+        },
       ],
     },
     suppliers: {
@@ -27,7 +33,7 @@ export const mockLegalEntityConfig: LegalEntityConfigResponse = {
         $id: 'dashboard-home',
         title: 'Dashboard',
         route: '/',
-        layout: { componentKey: 'DefaultLayout', props: {} },
+        layout: { componentKey: 'layouts.LeftSidebar', props: {} },
         snippets: {},
       },
     ],
@@ -35,9 +41,7 @@ export const mockLegalEntityConfig: LegalEntityConfigResponse = {
       main: {
         id: 'main',
         name: 'Main Menu',
-        items: [
-          { type: 'link', label: 'Dashboard', pageId: 'dashboard-home', icon: 'home' },
-        ],
+        items: [{ type: 'link', label: 'Dashboard', pageId: 'dashboard-home', icon: 'home' }],
       },
     },
   },
