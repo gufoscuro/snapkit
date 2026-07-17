@@ -6,6 +6,10 @@ interface GlobalsCache {
   user: UserResource | null
   legalEntity: LegalEntity | null
   entityConfig: LegalEntityConfigResponse | null
+  /** Whether the user is acting inside a tenant other than their own. */
+  shadowing: boolean
+  /** Tenant uuid owning the current origin, or null when unresolved. */
+  originTenantId: string | null
 }
 
 let globalsCache: GlobalsCache | null = null

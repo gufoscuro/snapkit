@@ -4,7 +4,10 @@
 	@keywords sidebar
 -->
 <script lang="ts">
+  import { page } from '$app/state'
+  import ShadowModeIndicator from '$components/features/tenant/ShadowModeIndicator.svelte'
   import * as Sidebar from '$lib/components/ui/sidebar'
+  import { getCurrentVanity } from '$lib/utils/tenant'
   import type { Snippet } from 'svelte'
 
   type Props = {
@@ -15,12 +18,27 @@
   }
 
   const { header, content, footer, collapsible = 'icon' }: Props = $props()
+
+  // Read straight from the layout data rather than take props: this wrapper is
+  // instantiated from the page registry, whose snippet props have no notion of
+  // tenancy, and shadowing must be visible on every page — including ones whose
+  // config predates this.
+  const shadowing = $derived(page.data.shadowing === true)
+  const homeTenant = $derived(page.data.user?.tenant)
+  const currentVanity = $derived(getCurrentVanity())
 </script>
 
 <Sidebar.Root {collapsible} class="sidebar-wrapper">
-  {#if header}
+  {#if header || shadowing}
     <Sidebar.Header class="justify-center space-y-3 py-3">
-      {@render header()}
+      {#if shadowing && homeTenant && currentVanity}
+        <ShadowModeIndicator
+          homeTenantName={homeTenant.name}
+          homeVanity={homeTenant.vanity}
+          actingAsVanity={currentVanity}
+          class="group-data-[collapsible=icon]:hidden" />
+      {/if}
+      {@render header?.()}
     </Sidebar.Header>
   {/if}
 

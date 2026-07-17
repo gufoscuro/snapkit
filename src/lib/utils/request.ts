@@ -5,6 +5,7 @@ import { resolve } from '$app/paths'
 import { env } from '$env/dynamic/public'
 import { getLocale } from '$lib/paraglide/runtime.js'
 import { parseJSON, stringifyJSON } from './json'
+import { getTenantCookie } from './tenant'
 
 const API_GATEWAY = env.PUBLIC_API_GATEWAY
 
@@ -119,15 +120,23 @@ function getXsrfToken(): string | null {
 }
 
 /**
- * Build the headers shared by every outgoing request: current UI locale and
- * (when available) the XSRF token. Caller-provided headers override these,
- * so a request can opt out of either by passing the same key explicitly.
+ * Build the headers shared by every outgoing request: current UI locale, the
+ * tenant, and (when available) the XSRF token. Caller-provided headers override
+ * these, so a request can opt out of any of them by passing the same key.
+ *
+ * `X-Tenant` names the tenant the caller acts inside. It's sent uniformly, with no
+ * "impersonation mode" branch: the value comes from the current origin's cookie,
+ * so a regular user sends their own tenant (it matches, the API answers) and a
+ * superadmin on another vanity sends that one (the API gates it). Absent cookie →
+ * header omitted → the API falls back to resolving the tenant from the session.
  */
 function buildBaseHeaders(): Record<string, string> {
   const xsrfToken = getXsrfToken()
+  const tenantId = getTenantCookie()
 
   return {
     'Accept-Language': getLocale(),
+    ...(tenantId ? { 'X-Tenant': tenantId } : {}),
     ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
   }
 }
@@ -152,17 +161,23 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
     url += `?${searchParams.toString()}`
   }
 
+  // The same URL yields different data per tenant — the tenant travels in a header,
+  // not the path — so it belongs in the cache key. Cross-origin reloads make this
+  // largely defensive today, but keying on the URL alone would silently serve one
+  // tenant's answer to another the moment that stops being true.
+  const cacheKey = `${getTenantCookie() ?? '-'}|${url}`
+
   const isGet = !rest.method || rest.method.toUpperCase() === 'GET'
 
   if (isGet) {
     if (invalidateCache) {
-      apiCache.delete(url)
+      apiCache.delete(cacheKey)
     } else {
-      const cached = apiCache.get(url)
+      const cached = apiCache.get(cacheKey)
       if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
         return cached.data as T
       }
-      if (cached) apiCache.delete(url)
+      if (cached) apiCache.delete(cacheKey)
     }
   } else {
     invalidateAllCache()
@@ -205,7 +220,7 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
       const oldest = apiCache.keys().next().value as string
       apiCache.delete(oldest)
     }
-    apiCache.set(url, { data, timestamp: Date.now() })
+    apiCache.set(cacheKey, { data, timestamp: Date.now() })
   }
 
   return data as T

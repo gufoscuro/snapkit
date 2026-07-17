@@ -1,7 +1,9 @@
 <script lang="ts">
   import ActionButton from '$components/core/ActionButton.svelte'
+  import LegalEntitySelector from '$components/features/form/LegalEntitySelector.svelte'
+  import ShadowModeIndicator from '$components/features/tenant/ShadowModeIndicator.svelte'
+  import TenantLegalEntitySelector from '$components/features/tenant/TenantLegalEntitySelector.svelte'
   import Logo from '$components/icons/Logo.svelte'
-  import LegalEntitySelector from '$lib/components/features/form/LegalEntitySelector.svelte'
   import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js'
   import { confirmArchive } from '$lib/components/ui/confirm-archive-dialog'
   import * as Tooltip from '$lib/components/ui/tooltip'
@@ -9,13 +11,17 @@
   import type { LegalEntity } from '$lib/types/api-types'
   import { pushScaffoldConfig } from '$lib/utils/admin-config'
   import { switchLegalEntity } from '$lib/utils/legal-entity'
+  import { getCurrentVanity } from '$lib/utils/tenant'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import Database from '@tabler/icons-svelte/icons/database'
   import { setContext } from 'svelte'
   import type { LayoutProps } from '../$types'
 
   let { data, children }: LayoutProps = $props()
-  let { entityConfig, legalEntity, user } = $derived(data)
+  let { entityConfig, legalEntity, user, shadowing, originTenantId } = $derived(data)
+
+  const isSuperadmin = $derived(user?.is_superadmin ?? false)
+  const currentVanity = $derived(getCurrentVanity())
 
   async function onLegalEntityChoose(entity: LegalEntity) {
     await switchLegalEntity(entity.id)
@@ -42,8 +48,9 @@
   // Admin section is a static layout that doesn't go through the dynamic page registry,
   // so pageDetails/routeDetails aren't populated from the load. We satisfy the SnippetProps
   // shape with a cast — admin snippets don't read these fields.
-  setContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY, () =>
-    ({ entityConfig, legalEntity, user }) as ReturnType<SnippetPropsGetter>,
+  setContext<SnippetPropsGetter>(
+    SNIPPET_PROPS_CONTEXT_KEY,
+    () => ({ entityConfig, legalEntity, user }) as ReturnType<SnippetPropsGetter>,
   )
 </script>
 
@@ -69,6 +76,13 @@
             </Breadcrumb.Item>
           </Breadcrumb.List>
         </Breadcrumb.Root>
+
+        {#if shadowing && user?.tenant && currentVanity}
+          <ShadowModeIndicator
+            homeTenantName={user.tenant.name}
+            homeVanity={user.tenant.vanity}
+            actingAsVanity={currentVanity} />
+        {/if}
       </div>
 
       <div class="flex items-center gap-2">
@@ -76,11 +90,19 @@
           <Database />
         </ActionButton>
 
-        <LegalEntitySelector
-          attr={legalEntity || undefined}
-          showLabel={false}
-          width="w-64"
-          onChoose={onLegalEntityChoose} />
+        {#if isSuperadmin}
+          <TenantLegalEntitySelector
+            selected={legalEntity}
+            {originTenantId}
+            class="w-64"
+            onChooseLocal={onLegalEntityChoose} />
+        {:else}
+          <LegalEntitySelector
+            attr={legalEntity || undefined}
+            showLabel={false}
+            width="w-64"
+            onChoose={onLegalEntityChoose} />
+        {/if}
       </div>
     </header>
 

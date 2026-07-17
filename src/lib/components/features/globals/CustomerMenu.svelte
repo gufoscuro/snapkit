@@ -9,6 +9,7 @@
   import { useSidebar } from '$lib/components/ui/sidebar/index.js'
   import * as m from '$lib/paraglide/messages'
   import { getLocale, locales, setLocale } from '$lib/paraglide/runtime'
+  import { clearTenantCookie } from '$lib/utils/tenant'
   import { apiRequest } from '$utils/request'
   import type { SnippetProps } from '$utils/runtime'
   import { getUserInitials } from '$utils/strings'
@@ -45,6 +46,11 @@
       url: '/logout',
       method: 'POST',
     })
+
+    // Drop the origin's tenant so the next session on this host resolves its own
+    // rather than inheriting whoever was here before. Host-only, so this only ever
+    // clears the tenant of the origin we're on — the point of scoping it that way.
+    clearTenantCookie()
 
     goto(resolve('/login'))
   }
