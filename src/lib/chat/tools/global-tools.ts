@@ -1,4 +1,5 @@
 import { builtinHandlers, builtinTools, type ToolDefinition, type ToolHandler } from '@diaphora/chat'
+import { askSalesDataExpertHandler, askSalesDataExpertTool } from './ask-sales-data-expert'
 import { navigateToPageHandler, navigateToPageTool } from './navigate-to-page'
 import { searchCustomersHandler, searchCustomersTool } from './search-customers'
 import { setThemeHandler, setThemeTool } from './set-theme'
@@ -16,6 +17,9 @@ export const globalTools: ToolDefinition[] = [
   searchCustomersTool,
   setThemeTool,
   showToastTool,
+  // Delegation lives in the global layer: one expert compresses an entire domain into a
+  // single always-available tool, instead of 30 granular ones bloating every conversation.
+  askSalesDataExpertTool,
 ]
 
 export const globalHandlers: Record<string, ToolHandler> = {
@@ -24,4 +28,5 @@ export const globalHandlers: Record<string, ToolHandler> = {
   search_customers: searchCustomersHandler,
   set_theme: setThemeHandler,
   show_toast: showToastHandler,
+  ask_sales_data_expert: askSalesDataExpertHandler,
 }
