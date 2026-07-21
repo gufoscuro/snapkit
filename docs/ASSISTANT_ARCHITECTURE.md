@@ -165,7 +165,33 @@ can forge any tool call without going through the model. Therefore:
   The entity comes from the URL/session. A hallucinated entity name must not
   be able to become a query against the wrong tenant.
 
-### 2.8 Sync at the model level, async at the transport level
+### 2.8 Experts retrieve and interpret — they never compute
+
+An expert may query, page, join, filter and interpret. It must **never do
+arithmetic**. Every total, average, ranking or percentage in an answer has to
+come from a tool that computed it in the database.
+
+This is not a style preference, it is measured. The Phase 0 pilot, asked for
+total overdue receivables, retrieved all 49 relevant rows in one page, applied
+the right filter and the right measure — and then added them up itself,
+answering **406.876,20 €** against a true **541.059,20 €**. A 25% error,
+delivered to the user as fact, with no caveat raised. Nothing about the
+retrieval was wrong; the model simply cannot sum dozens of floats, and is
+equally confident whether or not it just did.
+
+That failure shape is the dangerous one: "approximately right" is
+indistinguishable from "right" to a reader, so it does not surface as a bug —
+it surfaces as a number someone acts on. Adding an SQL-backed aggregation
+primitive made the same question exact, and also **34% cheaper and 41% faster**,
+because paging rows into context in order to add them up was always the
+expensive path.
+
+The corollary for tool design: give experts general aggregation primitives
+(resource + filter + group-by + measure), **not** per-question report endpoints.
+The agent must keep deciding *what* to aggregate — that judgement is why it is
+an agent — while the counting happens where counting is exact.
+
+### 2.9 Sync at the model level, async at the transport level
 
 From the model's perspective delegation is always synchronous: tool call →
 tool result. The sync/async question is about the **plumbing** underneath. A
@@ -248,6 +274,17 @@ event: result     data: { …the result envelope below… }
   "usage": { "turns": 5, "input_tokens": 18234, "output_tokens": 912 }
 }
 ```
+
+> **The envelope may not be provider-enforced.** Ideally it is a structured-output
+> schema the provider guarantees. Gemini does not allow this: it rejects tool
+> calling combined with a JSON response mime type (`INVALID_ARGUMENT — Function
+> calling with a response mime type: 'application/json' is unsupported`), and an
+> expert has tools by definition. On Gemini the envelope is therefore a **prompt
+> contract**, which is a contract the model can break — so it must be parsed and
+> validated server-side, and a malformed envelope must be returned as
+> `status: "failed"`, never passed through half-filled. Providers that support
+> both (OpenAI) allow the strict version; today only `GEMINI_API_KEY` is
+> configured. Verified in Phase 0 — see the pilot document.
 
 Design intents behind the envelope:
 
@@ -386,7 +423,7 @@ params, so navigation composes with filtering in one step.)
 
 | Phase | Scope | Backend work |
 | --- | --- | --- |
-| 0 | **Pilot experiment** (§6.1): one quickly-buildable expert behind a minimal §3.2 (polling transport is fine, envelope is mandatory), dev-only, evaluated against questions with known answers | Minimal expert runtime + the pilot expert |
+| 0 | **Pilot experiment** (§6.1) — **BUILT, see §6.2**: one quickly-buildable expert behind a minimal §3.2 (polling transport is fine, envelope is mandatory), dev-only, evaluated against questions with known answers | Minimal expert runtime + the pilot expert |
 | 1 | Global retrieval tools (`search_docs`, `get_doc`) over existing docs surface — independent of Phase 0, can run in parallel | None (endpoints exist) |
 | 2 | Harden delegation: SSE progress, `usage` reporting, caps and tracing reviewed; promote the pilot to production quality | Incremental on Phase 0 |
 | 3 | Second expert (`acube` is the likely candidate) if Phase 0 validated the model | One expert |
@@ -404,11 +441,11 @@ The best candidate is a read-only expert over the **active sales cycle**
 (customers, quotations, sales orders, invoices, due dates, payments). Chosen
 over the alternatives because:
 
-- **Fastest to build.** Its internal tools are thin wrappers over GET
-  endpoints that already exist (`/customers`, `/quotations`, `/sales-orders`,
-  `/invoices`, `/invoice-due-dates`, `/invoiceable-documents`). Zero new
-  domain endpoints, zero third-party credentials or sandboxes (unlike an
-  A-Cube pilot).
+- **Fastest to build.** Its internal tools query models that already exist
+  (`Quotation`, `SalesOrder`, `Invoice`, `InvoiceDueDate`, `InvoicePayment`,
+  `ProductFamily`) through the app's own scopes — in-process, no HTTP hop, no
+  new domain endpoints. It also follows a pattern the codebase already has
+  (`LegalEntityConfigAgent`), so the diff reads as idiomatic rather than novel.
 - **Genuinely needs an agent.** The interesting questions require paging,
   joining and aggregating across resources — exactly what listing filters
   can't do and what would blow the conversation's context if done by the
@@ -416,34 +453,89 @@ over the alternatives because:
 - **Verifiable.** Every answer can be checked against the UI or the existing
   Stats KPIs — an experiment needs ground truth, and this domain has it.
 
-Example tasks — all impossible with a single filtered listing call:
+> **Correction, from reading the API.** An earlier draft of this section listed
+> example tasks that turned out to be *one filtered call away*: Moddo's listing
+> endpoints already expose computed-status filters (`conversion_status`,
+> `fulfillment_status`, `payment_status`), so "quotations never converted to
+> orders" and "delivered orders awaiting invoicing" do **not** justify an
+> agent. This raises the bar for the pilot rather than lowering it, and is
+> itself evidence that the ladder in §2.2 is calibrated correctly: in Moddo,
+> most questions genuinely are level 2.
 
-| Task | Why it's non-trivial |
-| --- | --- |
-| "Which customers have overdue unpaid due dates, and for how much?" | join `invoice-due-dates` × `payments`, aggregate per customer |
-| "Which quotations were sent over 30 days ago and never became orders?" | quotation lifecycle × cross-check against sales orders |
-| "Top 5 customers by open order value this quarter" | page all open sales orders, aggregate, rank |
-| "What has customer X bought in the last 12 months, by product family?" | order lines × items × product families |
-| "Which delivered orders are still waiting to be invoiced?" | `invoiceable-documents` + interpretation of lifecycle states |
+What survives that bar — and therefore what the pilot must be judged on — is
+aggregation and ranking, cross-resource joins (order lines × items × product
+families), derived filter values, multi-hop lifecycle chains, and above all
+**interpretive questions** ("which customers should I worry about?") that have
+no literal field behind them. The first four could in principle be answered by
+writing more endpoints; the last one is what decides whether an *agent* was the
+right shape at all.
 
 The expert's system prompt should lean on the business docs the API already
 exposes (entity lifecycle states, computed statuses — see the `moddo-api`
 business docs surface), so it interprets states correctly instead of guessing.
 
-**Success criteria to define before building** (suggested): a benchmark of
-~10 such questions with hand-verified answers; the pilot passes if answers
-are correct **with provenance** (`data`/`sources` populated, no unbacked
-numbers), latency is tolerable with a progress-less transport, and the caps
-demonstrably stop a runaway loop. Fail or pass, the experiment prices the
-whole strategy for the cost of one small expert.
+**The evaluation set is
+[`SALES_DATA_EXPERT_BENCHMARK.md`](./SALES_DATA_EXPERT_BENCHMARK.md)**, written
+before the expert exists so it can't be shaped around what the agent turns out
+to do well. It defines the fixture, the ground-truth method, and the pass
+criteria — including two control questions: one that must *not* be delegated,
+and one that is unanswerable and must be refused. Fail or pass, the experiment
+prices the whole strategy for the cost of one small expert.
+
+### 6.2 Phase 0 status — built and run
+
+The pilot exists. It was built on branch `spike/sales-data-agent` in the API
+repo as a **demonstrator, not a merge candidate**: its purpose is to let the
+strategy be judged against real transcripts rather than a design document.
+
+- **How to run it, and what to ask:**
+  [`SALES_DATA_EXPERT_PILOT.md`](./SALES_DATA_EXPERT_PILOT.md)
+- **How it scored, and what broke:**
+  [`SALES_DATA_EXPERT_BENCHMARK.md`](./SALES_DATA_EXPERT_BENCHMARK.md) §5
+
+What the experiment settled, in short:
+
+| Claim under test | Outcome |
+| --- | --- |
+| The backend can host an expert cheaply | **Yes, cheaper than assumed** — `laravel/ai` and a working agent already exist (§7); the expert is one class plus its tools |
+| Tool descriptions route delegation correctly | **Yes** — "show me Brambilla's invoices" was *not* delegated, it navigated (§5's counter-example, unprompted) |
+| The orchestrator can combine experts | **Yes** — a compound question issued two delegations in one turn, then composed |
+| An expert knows the edge of its competence | **Yes** — the unanswerable control ("which customers churned?") was refused, nothing invented |
+| Answers are trustworthy | **Only after §2.8** — before the aggregation primitive, a 25% error was reported as fact |
+
+The last row is the reason to run experiments rather than reason about them:
+that failure was invisible from the design, and would have discredited the
+architecture for a reason that had nothing to do with the architecture.
+
+Deliberately **not** carried into the pilot, and still owed before any non-dev
+exposure: the 202/SSE transport (the pilot is a synchronous POST — §3.2 allows
+the transport to evolve, the envelope is the stable part) and per-permission
+scoping inside expert tools (§7).
 
 ## 7. Known risks / open points
 
 - **Runaway cost.** An expert loop is spend without a user watching each step.
   Hard caps (§3.4) are a requirement, not an option, from Phase 0.
-- **Second LLM integration point.** The backend gains an agent runtime — a
-  bigger commitment than the passthrough. This is the main structural ask of
-  this document; the phasing exists to de-risk it.
+- **~~Second LLM integration point.~~ Largely already paid for.** This was
+  drafted as the main structural ask — "the backend gains an agent runtime".
+  Reading `moddopro/api` shows it mostly has one: `laravel/ai` is a dependency,
+  `app/Ai/Agents/LegalEntityConfigAgent.php` is a working agent (instructions +
+  tool set, `#[MaxSteps(10)]` — the §3.4 cap already enforced), its tools follow
+  a `description()`/`handle()`/`schema()` contract equivalent to what an expert
+  needs, `ChatLegalEntityConfigController` is the invocation pattern, and
+  `::fake()` makes agents testable without spend. A second expert is closer to
+  "one agent class plus a few tools" than to a new platform. The genuinely new
+  parts are the **result envelope** (the existing agent returns prose) and
+  **per-user authorization inside expert tools** (see below).
+- **In-process experts don't inherit authorization for free.** §2.7's guarantee
+  ("the expert can never read data its caller couldn't") arrives automatically
+  when delegation is an HTTP call carrying the user's token. An expert running
+  **in-process** in Laravel — which is how `LegalEntityConfigAgent` works, and
+  the cheapest way to build the pilot — must apply the caller's scoping inside
+  each tool explicitly. The permission vocabulary exists (`permission:view-invoices`
+  gates the KPI routes), but wiring it into expert tools is deliberate work,
+  not a side effect. Getting this wrong is a data leak, so it belongs in the
+  pilot's review even though the pilot is dev-only.
 - **Provenance discipline.** The envelope allows `answer`-only responses;
   expert prompts must require `data`/`sources` for factual claims, or the
   two-hop chain will invent numbers convincingly.
