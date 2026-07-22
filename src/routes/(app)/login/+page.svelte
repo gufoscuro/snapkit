@@ -6,6 +6,7 @@
   import { Input } from '$lib/components/ui/input'
   import { Label } from '$lib/components/ui/label'
   import { ApiError, apiRequest, initSanctum } from '$utils/request'
+  import { resetClientSession } from '$utils/session'
 
   let email = $state('')
   let password = $state('')
@@ -27,6 +28,13 @@
           password,
         },
       })
+
+      // A previous session may still be cached in memory (logout, or an expired
+      // session that only redirected here), which would make the app render the
+      // old user until a full page reload.
+      resetClientSession()
+
+      goto(resolve('/'))
     } catch (exception) {
       if (exception instanceof ApiError) {
         if (exception.status === 422) {
@@ -37,7 +45,6 @@
       error = 'An error occurred. Please try again.'
     } finally {
       loading = false
-      goto(resolve('/'))
     }
   }
 </script>

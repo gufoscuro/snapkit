@@ -13,6 +13,17 @@ export function getLegalEntityCookie(): string | undefined {
 }
 
 /**
+ * Removes the legal-entity cookie.
+ *
+ * Used when the session ends: the cookie is what keys the globals cache, so
+ * leaving it behind would let a freshly logged-in user inherit the previous
+ * user's legal entity.
+ */
+export function clearLegalEntityCookie(): void {
+  document.cookie = `${LEGAL_ENTITY_COOKIE_NAME}=; path=/; SameSite=Lax; max-age=0`
+}
+
+/**
  * Writes the legal-entity ID cookie and optionally invalidates all load functions
  * so the app re-fetches data scoped to the new entity.
  */

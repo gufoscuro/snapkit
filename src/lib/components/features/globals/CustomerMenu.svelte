@@ -11,6 +11,7 @@
   import { getLocale, locales, setLocale } from '$lib/paraglide/runtime'
   import { apiRequest } from '$utils/request'
   import type { SnippetProps } from '$utils/runtime'
+  import { resetClientSession } from '$utils/session'
   import { getUserInitials } from '$utils/strings'
   import CheckIcon from '@lucide/svelte/icons/check'
   import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down'
@@ -41,12 +42,17 @@
   }
 
   async function logoutApplication() {
-    await apiRequest({
-      url: '/logout',
-      method: 'POST',
-    })
-
-    goto(resolve('/login'))
+    try {
+      await apiRequest({
+        url: '/logout',
+        method: 'POST',
+      })
+    } finally {
+      // Runs even if the call fails: the local session must not survive the
+      // user's intent to leave, and the redirect has to happen regardless.
+      resetClientSession()
+      goto(resolve('/login'))
+    }
   }
 </script>
 
