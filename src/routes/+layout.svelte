@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { afterNavigate, replaceState } from '$app/navigation'
+  import { page } from '$app/state'
   import favicon from '$lib/assets/favicon.svg'
+  import { LEGAL_ENTITY_HANDOFF_PARAM, TENANT_HANDOFF_PARAM } from '$lib/fixtures/constants'
   import * as m from '$lib/paraglide/messages'
   import '@fontsource-variable/geist'
   import Bug from '@lucide/svelte/icons/bug'
@@ -11,6 +14,26 @@
 
   let { children }: LayoutProps = $props()
   let uncaughtError = $state<Error | null>(null)
+
+  // The load has already consumed these into cookies by the time we get here, so
+  // drop them: what's left in the address bar is then the clean, shareable URL whose
+  // meaning comes from the origin alone. Cosmetic — `replaceState` also keeps the
+  // spent params out of the history.
+  //
+  // In `afterNavigate`, not `onMount`: the handoff arrives as a full-page load to the
+  // destination origin, and `replaceState` throws if it runs before the router is
+  // initialized. `afterNavigate` fires once that's ready. The shallow update doesn't
+  // itself navigate, so this can't loop; the guard makes every other navigation a
+  // no-op.
+  afterNavigate(() => {
+    const url = new URL(page.url)
+    if (!url.searchParams.has(TENANT_HANDOFF_PARAM) && !url.searchParams.has(LEGAL_ENTITY_HANDOFF_PARAM)) return
+    url.searchParams.delete(TENANT_HANDOFF_PARAM)
+    url.searchParams.delete(LEGAL_ENTITY_HANDOFF_PARAM)
+    // Not a route to resolve — it's the URL we're already on, minus two spent params.
+    // eslint-disable-next-line svelte/no-navigation-without-resolve
+    replaceState(url, page.state)
+  })
 
   onMount(() => {
     function handleError(event: ErrorEvent) {

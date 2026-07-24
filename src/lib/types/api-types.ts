@@ -1006,6 +1006,20 @@ export type LegalEntity = {
 }
 
 /**
+ * Tenant resource from GET /api/tenants (paginated).
+ *
+ * Superadmin-only: the payload carries every tenant's legal entities, including
+ * their bank details (IBANs) — never surface it in a non-superadmin path.
+ */
+export type Tenant = {
+  id: string
+  name: string
+  /** Slug owning the tenant's origin (`acme` → `acme.moddo.pro`). */
+  vanity: string
+  legal_entities?: LegalEntity[]
+}
+
+/**
  * User resource from GET /api/user endpoint
  */
 export type UserResource = {
