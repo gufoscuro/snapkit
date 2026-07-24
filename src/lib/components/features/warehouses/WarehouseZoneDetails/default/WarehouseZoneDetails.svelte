@@ -17,6 +17,7 @@
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
+  import GroupTitle from '$components/features/globals/GroupTitle.svelte'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity, WarehouseZone } from '$lib/types/api-types'
@@ -87,13 +88,20 @@
       onSubmit={handleSubmit}
       onSuccess={handleSuccess}
       onFailure={handleFailure}
-      class="flex flex-col gap-4">
+      class="relative flex flex-col gap-6 pb-breadcrumbs">
       {#snippet withContext()}
-        <FormErrorMessage />
+        <FormErrorMessage columnsLayout />
 
-        <TextField name="code" label={m.code()} class={FormFieldClass.MaxWidth} focus={!record} />
-        <TextField name="description" label={m.description()} class={FormFieldClass.MaxWidth} />
-        <SelectField name="zone_type" label={m.zone_type()} items={zoneTypeItems} class={FormFieldClass.MinWidth} />
+        <GroupTitle heading={m.general_information()}>
+          {#snippet description()}
+            {m.general_information_description()}
+          {/snippet}
+          {#snippet content()}
+            <TextField name="code" label={m.code()} class={FormFieldClass.MaxWidth} focus={!record} />
+            <TextField name="description" label={m.description()} class={FormFieldClass.MaxWidth} />
+            <SelectField name="zone_type" label={m.zone_type()} items={zoneTypeItems} class={FormFieldClass.MinWidth} />
+          {/snippet}
+        </GroupTitle>
 
         <BottomBar>
           <BusyButton type="submit">{m.save_changes()}</BusyButton>

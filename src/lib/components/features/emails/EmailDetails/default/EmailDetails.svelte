@@ -16,6 +16,8 @@
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
+  import GroupTitle from '$components/features/globals/GroupTitle.svelte'
+  import Separator from '$components/ui/separator/separator.svelte'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity, LegalEntityEmail } from '$lib/types/api-types'
@@ -82,14 +84,31 @@
       onSubmit={handleSubmit}
       onSuccess={handleSuccess}
       onFailure={handleFailure}
-      class="flex flex-col gap-4">
+      class="relative flex flex-col gap-6 pb-breadcrumbs">
       {#snippet withContext()}
-        <FormErrorMessage />
+        <FormErrorMessage columnsLayout />
 
-        <TextField name="label" label={m.email_label()} class={FormFieldClass.MaxWidth} focus={!record} />
-        <TextField name="email" label={m.email()} class={FormFieldClass.MaxWidth} />
-        <TextField name="display_name" label={m.email_display_name()} class={FormFieldClass.MaxWidth} />
-        <TextField name="reply_to" label={m.email_reply_to()} class={FormFieldClass.MaxWidth} />
+        <GroupTitle heading={m.general_information()}>
+          {#snippet description()}
+            {m.general_information_description()}
+          {/snippet}
+          {#snippet content()}
+            <TextField name="label" label={m.email_label()} class={FormFieldClass.MaxWidth} focus={!record} />
+          {/snippet}
+        </GroupTitle>
+
+        <Separator />
+
+        <GroupTitle heading={m.email_sender()}>
+          {#snippet description()}
+            {m.email_sender_description()}
+          {/snippet}
+          {#snippet content()}
+            <TextField name="email" label={m.email()} class={FormFieldClass.MaxWidth} />
+            <TextField name="display_name" label={m.email_display_name()} class={FormFieldClass.MaxWidth} />
+            <TextField name="reply_to" label={m.email_reply_to()} class={FormFieldClass.MaxWidth} />
+          {/snippet}
+        </GroupTitle>
 
         <BottomBar>
           <BusyButton type="submit">{m.save_changes()}</BusyButton>

@@ -1155,6 +1155,7 @@
   "enum_warehouse_order_transport_document_status_none": "Nessuno",
   "enum_warehouse_order_transport_document_status_partial": "Parziale",
   "enum_warehouse_order_transport_document_status_full": "Completo",
+  "branding": "Branding",
   "branding_section_title": "Documenti e branding",
   "branding_section_description": "Logo e colore primario applicati all'intestazione di tutti i PDF generati (preventivo, ordine, ordine di magazzino, DDT, fattura).",
   "branding_logo": "Logo",
@@ -1176,5 +1177,17 @@
   "branding_save_error": "Impossibile salvare le modifiche",
   "branding_conflict_error": "Il branding è stato modificato altrove. Ho ricaricato l'ultima versione, riprova.",
   "branding_load_error": "Impossibile caricare il branding",
-  "branding_readonly_hint": "Non hai i permessi per modificare il branding."
+  "branding_readonly_hint": "Non hai i permessi per modificare il branding.",
+  "status_description": "Disponibilità e visibilità",
+  "address_description": "Dettagli della sede",
+  "bank_coordinates": "Coordinate bancarie",
+  "bank_coordinates_description": "Identificativi di conto e istradamento",
+  "email_sender": "Mittente",
+  "email_sender_description": "Come appaiono le email in uscita ai destinatari",
+  "payment_schedule": "Scadenzario",
+  "payment_schedule_description": "Data di riferimento e scadenze",
+  "inventory_management": "Gestione inventario",
+  "inventory_management_description": "Valorizzazione e gestione delle giacenze",
+  "bin_capacity": "Capacità",
+  "bin_capacity_description": "Limiti massimi di peso e volume"
 }

@@ -18,6 +18,8 @@
   import TextField from '$components/core/form/TextField.svelte'
   import TextareaField from '$components/core/form/TextareaField.svelte'
   import { v } from '$components/core/form/validation'
+  import GroupTitle from '$components/features/globals/GroupTitle.svelte'
+  import Separator from '$components/ui/separator/separator.svelte'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity, ProductFamily } from '$lib/types/api-types'
@@ -71,7 +73,7 @@
     })
     .build()
 
-  const validate = $derived(!!record ? validateUpdate : validateCreate)
+  const validate = $derived(record ? validateUpdate : validateCreate)
 </script>
 
 <RequestPlaceholder {promise}>
@@ -82,14 +84,31 @@
       onSubmit={handleSubmit}
       onSuccess={handleSuccess}
       onFailure={handleFailure}
-      class="flex flex-col gap-4">
+      class="relative flex flex-col gap-6 pb-breadcrumbs">
       {#snippet withContext()}
-        <FormErrorMessage />
+        <FormErrorMessage columnsLayout />
 
-        <TextField name="code" label={m.code()} class={FormFieldClass.MaxWidth} focus={!record} />
-        <TextField name="name" label={m.name()} class={FormFieldClass.MaxWidth} />
-        <TextareaField name="description" label={m.description()} class={FormFieldClass.MaxWidth} rows={3} />
-        <SwitchField name="is_active" label={m.active()} />
+        <GroupTitle heading={m.general_information()}>
+          {#snippet description()}
+            {m.general_information_description()}
+          {/snippet}
+          {#snippet content()}
+            <TextField name="code" label={m.code()} class={FormFieldClass.MaxWidth} focus={!record} />
+            <TextField name="name" label={m.name()} class={FormFieldClass.MaxWidth} />
+            <TextareaField name="description" label={m.description()} class={FormFieldClass.MaxWidth} rows={3} />
+          {/snippet}
+        </GroupTitle>
+
+        <Separator />
+
+        <GroupTitle heading={m.status()}>
+          {#snippet description()}
+            {m.status_description()}
+          {/snippet}
+          {#snippet content()}
+            <SwitchField name="is_active" label={m.active()} />
+          {/snippet}
+        </GroupTitle>
 
         <BottomBar>
           <BusyButton type="submit">{m.save_changes()}</BusyButton>

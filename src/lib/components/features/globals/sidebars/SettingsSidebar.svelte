@@ -16,7 +16,7 @@
   const props: SnippetProps = $props()
 
   const items: BasicMenuItem[] = [
-    { label: m.overview(), href: '/settings' },
+    { label: m.branding(), href: '/settings' },
     { label: m.product_line(), href: '/settings/product-lines' },
     { label: m.product_family(), href: '/settings/product-families' },
     { label: m.commodity_code(), href: '/settings/commodity-codes' },

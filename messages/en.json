@@ -1153,6 +1153,7 @@
   "enum_warehouse_order_transport_document_status_none": "None",
   "enum_warehouse_order_transport_document_status_partial": "Partial",
   "enum_warehouse_order_transport_document_status_full": "Full",
+  "branding": "Branding",
   "branding_section_title": "Documents & branding",
   "branding_section_description": "Logo and primary color applied to the header of every generated PDF (quotation, sales order, warehouse order, transport document, invoice).",
   "branding_logo": "Logo",
@@ -1174,5 +1175,17 @@
   "branding_save_error": "Couldn't save the changes",
   "branding_conflict_error": "The branding was changed elsewhere. Reloaded the latest version — please try again.",
   "branding_load_error": "Couldn't load branding",
-  "branding_readonly_hint": "You don't have permission to edit branding."
+  "branding_readonly_hint": "You don't have permission to edit branding.",
+  "status_description": "Availability and visibility",
+  "address_description": "Location details",
+  "bank_coordinates": "Bank coordinates",
+  "bank_coordinates_description": "Account and routing identifiers",
+  "email_sender": "Sender",
+  "email_sender_description": "How outgoing emails appear to recipients",
+  "payment_schedule": "Payment schedule",
+  "payment_schedule_description": "Reference date and due dates",
+  "inventory_management": "Inventory management",
+  "inventory_management_description": "Valuation and stock handling",
+  "bin_capacity": "Capacity",
+  "bin_capacity_description": "Maximum weight and volume limits"
 }
