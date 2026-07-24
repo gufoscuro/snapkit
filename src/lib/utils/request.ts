@@ -293,6 +293,38 @@ export async function apiDownload(options: {
 }
 
 /**
+ * Client-side authenticated GET that returns the raw response body as a Blob
+ * (e.g. an image served behind Sanctum). Sends the same locale/tenant/XSRF
+ * headers as every other request — a plain `<img src>` would omit `X-Tenant`,
+ * which matters when a superadmin is acting inside another tenant's origin.
+ *
+ * Returns `null` on 404 so callers can treat "no asset yet" as a normal state
+ * rather than an error. Other non-OK statuses throw an `ApiError`.
+ */
+export async function apiFetchBlob(options: { url: string; redirectOnUnauthorized?: boolean }): Promise<Blob | null> {
+  const { url, redirectOnUnauthorized = true } = options
+  const fullUrl = `${API_GATEWAY}/api${url}`
+
+  const headers: HeadersInit = {
+    Accept: 'image/*, application/octet-stream',
+    ...buildBaseHeaders(),
+  }
+
+  const result = await fetch(fullUrl, { method: 'GET', headers, credentials: 'include' })
+
+  if (result.status === 404) return null
+
+  if (result.status === 401) {
+    if (redirectOnUnauthorized) goto(resolve('/login'))
+    throw new ApiError('Unauthorized', result.status, null, result)
+  }
+
+  if (!result.ok) throw new ApiError('Request failed', result.status, null, result)
+
+  return await result.blob()
+}
+
+/**
  * Client-side API request for multipart/form-data uploads (e.g. file uploads).
  * Unlike apiRequest, this does NOT set Content-Type so the browser can set it
  * automatically with the correct multipart boundary.

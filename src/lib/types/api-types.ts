@@ -636,6 +636,7 @@ export type Permission =
   | 'delete-teams'
   | 'manage-roles'
   | 'view-legal-entities'
+  | 'edit-legal-entities'
   | 'view-customers'
   | 'create-customers'
   | 'edit-customers'
@@ -790,13 +791,7 @@ export type IntentDeclarationAmountType = 'single_operation' | 'up_to_amount'
  * Computed status — derived from flags + used/declared amounts + reference year.
  * Priority: invalidated > revoked > expired > exhausted.
  */
-export type IntentDeclarationStatus =
-  | 'draft'
-  | 'active'
-  | 'exhausted'
-  | 'revoked'
-  | 'invalidated'
-  | 'expired'
+export type IntentDeclarationStatus = 'draft' | 'active' | 'exhausted' | 'revoked' | 'invalidated' | 'expired'
 
 /** Ledger movement reason on `intent_declaration_usages` (append-only). */
 export type IntentDeclarationUsageReason =
@@ -1003,6 +998,31 @@ export type LegalEntity = {
   addresses?: LegalEntityAddress[]
   banks?: LegalEntityBank[]
   emails?: LegalEntityEmail[]
+}
+
+/**
+ * Branding for a legal entity — logo + primary color applied to every generated
+ * PDF header. From GET/PUT/POST `/api/legal-entities/{legalEntity}/branding`.
+ *
+ * `primary_color` is the color explicitly set on this entity (`#rrggbb`, always
+ * lowercase, `null` when unset). `effective_primary_color` is the resolved color
+ * the backend actually uses — the entity color when set, otherwise the platform
+ * default (`#2563eb`) — handy for previews. `version` drives optimistic locking:
+ * echo it back on PUT (the GET returns `1` even when no branding row exists yet,
+ * so it is always safe to send), and a mismatch yields a 409.
+ */
+export type LegalEntityBranding = {
+  id: string
+  logo_url?: string
+  primary_color: string | null
+  effective_primary_color: string
+  version: string
+}
+
+/** Request body for PUT `/api/legal-entities/{legalEntity}/branding`. */
+export type UpdateLegalEntityBrandingBody = {
+  primary_color?: string | null
+  version: number
 }
 
 /**
