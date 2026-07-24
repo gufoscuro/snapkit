@@ -4,6 +4,7 @@
 	@keywords sidebar, legal entity, switcher
 -->
 <script lang="ts">
+  import { page } from '$app/state'
   import Logo from '$components/icons/Logo.svelte'
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js'
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
@@ -17,6 +18,10 @@
   const { user, legalEntity }: SnippetProps = $props()
   const entities = $derived(user?.tenant?.legal_entities || [])
   const sidebar = useSidebar()
+
+  // Alert-amber logo instead of brand-blue while shadowing another tenant — the same
+  // quiet signal the admin header uses, so it stays visible across the main app too.
+  const shadowing = $derived(page.data.shadowing === true)
 
   // Local override: ID selected by the user during this session
   // null = follow the authoritative legalEntity from the layout
@@ -57,7 +62,7 @@
             size="lg"
             class="pl-0 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
             <div class="flex size-8 shrink-0 items-center justify-center">
-              <Logo class="size-5 shrink-0 text-brand" />
+              <Logo class="size-5 shrink-0 {shadowing ? 'text-amber-500' : 'text-brand'}" />
             </div>
             <div class="grid flex-1 text-start text-sm leading-tight">
               <span class="truncate font-medium">

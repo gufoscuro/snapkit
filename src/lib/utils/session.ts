@@ -4,6 +4,7 @@ import { tenantConfigStore } from '$lib/stores/tenant-config'
 import { clearLegalEntityCookie } from './legal-entity'
 import { invalidateAllCache } from './request'
 import { clearUserKey } from './storage'
+import { clearTenantCookie } from './tenant'
 
 /**
  * Drops every piece of client-side state tied to the authenticated user.
@@ -25,5 +26,10 @@ export function resetClientSession(): void {
   tenantConfigStore.invalidate()
   clearUserKey()
 
-  if (browser) clearLegalEntityCookie()
+  if (browser) {
+    clearLegalEntityCookie()
+    // Host-only like the legal-entity cookie: drop the origin's tenant so the next
+    // session on this host resolves its own rather than inheriting the previous one.
+    clearTenantCookie()
+  }
 }

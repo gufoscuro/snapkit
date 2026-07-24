@@ -16,6 +16,7 @@
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
   import ProvinceSelector from '$components/features/form/ProvinceSelector.svelte'
+  import GroupTitle from '$components/features/globals/GroupTitle.svelte'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity, WarehouseAddress } from '$lib/types/api-types'
   import { api } from '$lib/utils/request'
@@ -87,16 +88,23 @@
     {validate}
     onSubmit={handleSubmit}
     onSuccess={handleSuccess}
-    class="flex flex-col gap-4">
+    class="relative flex flex-col gap-6 pb-breadcrumbs">
     {#snippet withContext()}
-      <FormErrorMessage />
+      <FormErrorMessage columnsLayout />
 
-      <TextField name="address_line_1" label={m.address_line_1()} class={FormFieldClass.MaxWidth} focus={!address} />
-      <TextField name="address_line_2" label={m.address_line_2()} class={FormFieldClass.MaxWidth} />
-      <TextField name="city" label={m.city()} class={FormFieldClass.MaxWidth} />
-      <ProvinceSelector name="province" label={m.province()} class={FormFieldClass.MaxWidth} />
-      <TextField name="postal_code" label={m.postal_code()} class={FormFieldClass.MaxWidth} />
-      <CountryField name="country_code" label={m.country_code()} class={FormFieldClass.MinWidth} />
+      <GroupTitle heading={m.address()}>
+        {#snippet description()}
+          {m.address_description()}
+        {/snippet}
+        {#snippet content()}
+          <TextField name="address_line_1" label={m.address_line_1()} class={FormFieldClass.MaxWidth} focus={!address} />
+          <TextField name="address_line_2" label={m.address_line_2()} class={FormFieldClass.MaxWidth} />
+          <TextField name="city" label={m.city()} class={FormFieldClass.MaxWidth} />
+          <ProvinceSelector name="province" label={m.province()} class={FormFieldClass.MaxWidth} />
+          <TextField name="postal_code" label={m.postal_code()} class={FormFieldClass.MaxWidth} />
+          <CountryField name="country_code" label={m.country_code()} class={FormFieldClass.MinWidth} />
+        {/snippet}
+      </GroupTitle>
 
       <BottomBar>
         <BusyButton type="submit">{m.save_changes()}</BusyButton>

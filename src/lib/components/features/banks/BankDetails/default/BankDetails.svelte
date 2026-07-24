@@ -17,6 +17,8 @@
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
   import ProvinceSelector from '$components/features/form/ProvinceSelector.svelte'
+  import GroupTitle from '$components/features/globals/GroupTitle.svelte'
+  import Separator from '$components/ui/separator/separator.svelte'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity, LegalEntityBank } from '$lib/types/api-types'
@@ -113,34 +115,61 @@
       onSubmit={handleSubmit}
       onSuccess={handleSuccess}
       onFailure={handleFailure}
-      class="flex flex-col gap-4">
+      class="relative flex flex-col gap-6 pb-breadcrumbs">
       {#snippet withContext()}
-        <FormErrorMessage />
+        <FormErrorMessage columnsLayout />
 
-        <TextField name="code" label={m.code()} class={FormFieldClass.MaxWidth} focus={!record} />
-        <TextField name="name" label={m.name()} class={FormFieldClass.MaxWidth} />
-        <TextField name="branch" label={m.bank_branch()} class={FormFieldClass.MaxWidth} />
-        <TextField name="iban" label={m.bank_iban()} class={FormFieldClass.MaxWidth} />
-        <TextField name="bic_swift" label={m.bank_bic_swift()} class={FormFieldClass.MaxWidth} />
+        <GroupTitle heading={m.general_information()}>
+          {#snippet description()}
+            {m.general_information_description()}
+          {/snippet}
+          {#snippet content()}
+            <TextField name="code" label={m.code()} class={FormFieldClass.MaxWidth} focus={!record} />
+            <TextField name="name" label={m.name()} class={FormFieldClass.MaxWidth} />
+            <TextField name="branch" label={m.bank_branch()} class={FormFieldClass.MaxWidth} />
+          {/snippet}
+        </GroupTitle>
 
-        <div class="max-w-2xl gap-4 md:flex">
-          <TextField name="abi" label={m.bank_abi()} width="w-auto" />
-          <TextField name="cab" label={m.bank_cab()} width="w-auto" />
-          <TextField name="cin" label={m.bank_cin()} width="w-auto" />
-        </div>
+        <Separator />
 
-        <TextField name="account_number" label={m.bank_account_number()} class={FormFieldClass.MaxWidth} />
-        <TextField name="address" label={m.bank_address()} class={FormFieldClass.MaxWidth} />
+        <GroupTitle heading={m.bank_coordinates()}>
+          {#snippet description()}
+            {m.bank_coordinates_description()}
+          {/snippet}
+          {#snippet content()}
+            <TextField name="iban" label={m.bank_iban()} class={FormFieldClass.MaxWidth} />
+            <TextField name="bic_swift" label={m.bank_bic_swift()} class={FormFieldClass.MaxWidth} />
 
-        <div class="max-w-xl gap-4 md:flex">
-          <TextField name="city" label={m.bank_city()} width="w-auto" />
-          <ProvinceSelector name="province" label={m.bank_province()} width="w-auto" />
-        </div>
+            <div class="max-w-2xl gap-4 md:flex">
+              <TextField name="abi" label={m.bank_abi()} width="w-auto" />
+              <TextField name="cab" label={m.bank_cab()} width="w-auto" />
+              <TextField name="cin" label={m.bank_cin()} width="w-auto" />
+            </div>
 
-        <div class="max-w-xl gap-4 md:flex">
-          <TextField name="postal_code" label={m.bank_postal_code()} width="w-auto" />
-          <TextField name="country_code" label={m.bank_country_code()} width="w-auto" />
-        </div>
+            <TextField name="account_number" label={m.bank_account_number()} class={FormFieldClass.MaxWidth} />
+          {/snippet}
+        </GroupTitle>
+
+        <Separator />
+
+        <GroupTitle heading={m.address()}>
+          {#snippet description()}
+            {m.address_description()}
+          {/snippet}
+          {#snippet content()}
+            <TextField name="address" label={m.bank_address()} class={FormFieldClass.MaxWidth} />
+
+            <div class="max-w-xl gap-4 md:flex">
+              <TextField name="city" label={m.bank_city()} width="w-auto" />
+              <ProvinceSelector name="province" label={m.bank_province()} width="w-auto" />
+            </div>
+
+            <div class="max-w-xl gap-4 md:flex">
+              <TextField name="postal_code" label={m.bank_postal_code()} width="w-auto" />
+              <TextField name="country_code" label={m.bank_country_code()} width="w-auto" />
+            </div>
+          {/snippet}
+        </GroupTitle>
 
         <BottomBar>
           <BusyButton type="submit">{m.save_changes()}</BusyButton>

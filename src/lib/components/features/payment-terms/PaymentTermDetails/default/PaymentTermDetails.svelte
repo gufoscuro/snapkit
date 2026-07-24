@@ -19,6 +19,8 @@
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
   import PaymentTermDueDatesEditor, { termsRequired } from '$components/features/form/PaymentTermDueDatesEditor.svelte'
+  import GroupTitle from '$components/features/globals/GroupTitle.svelte'
+  import Separator from '$components/ui/separator/separator.svelte'
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity, PaymentTerm, PaymentTermTerms } from '$lib/types/api-types'
@@ -90,19 +92,42 @@
       onSubmit={handleSubmit}
       onSuccess={handleSuccess}
       onFailure={handleFailure}
-      class="flex flex-col gap-4">
+      class="relative flex flex-col gap-6 pb-breadcrumbs">
       {#snippet withContext()}
-        <FormErrorMessage />
+        <FormErrorMessage columnsLayout />
 
-        <TextField name="code" label={m.code()} class={FormFieldClass.MaxWidth} focus={!record} />
-        <TextField name="name" label={m.name()} class={FormFieldClass.MaxWidth} />
-        <TextField name="description" label={m.description()} class={FormFieldClass.MaxWidth} />
-        <SwitchField name="is_active" label={m.active()} />
+        <GroupTitle heading={m.general_information()}>
+          {#snippet description()}
+            {m.general_information_description()}
+          {/snippet}
+          {#snippet content()}
+            <TextField name="code" label={m.code()} class={FormFieldClass.MaxWidth} focus={!record} />
+            <TextField name="name" label={m.name()} class={FormFieldClass.MaxWidth} />
+            <TextField name="description" label={m.description()} class={FormFieldClass.MaxWidth} />
+          {/snippet}
+        </GroupTitle>
 
-        <PaymentTermDueDatesEditor
-          name="terms"
-          value={initialValues.terms}
-          required />
+        <Separator />
+
+        <GroupTitle heading={m.status()}>
+          {#snippet description()}
+            {m.status_description()}
+          {/snippet}
+          {#snippet content()}
+            <SwitchField name="is_active" label={m.active()} />
+          {/snippet}
+        </GroupTitle>
+
+        <Separator />
+
+        <GroupTitle heading={m.payment_schedule()}>
+          {#snippet description()}
+            {m.payment_schedule_description()}
+          {/snippet}
+          {#snippet content()}
+            <PaymentTermDueDatesEditor name="terms" value={initialValues.terms} required />
+          {/snippet}
+        </GroupTitle>
 
         <BottomBar>
           <BusyButton type="submit">{m.save_changes()}</BusyButton>

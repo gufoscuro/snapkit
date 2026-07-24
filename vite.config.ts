@@ -75,7 +75,7 @@ export default defineConfig({
   },
 
   server: {
-    allowedHosts: ['moddo.moddo.local', 'unknown.moddo.local'],
+    allowedHosts: ['moddo.moddo.local', 'acme.moddo.local', 'unknown.moddo.local'],
     fs: {
       allow: [searchForWorkspaceRoot(process.cwd())],
     },
