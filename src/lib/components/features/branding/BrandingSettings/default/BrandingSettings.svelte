@@ -28,7 +28,6 @@
   import { prepareLogoUpload, type LogoPrepError } from '$lib/utils/logo-image'
   import { ApiError, api, apiFetchBlob } from '$lib/utils/request'
   import Check from '@lucide/svelte/icons/check'
-  import ImageIcon from '@lucide/svelte/icons/image'
   import Trash2 from '@lucide/svelte/icons/trash-2'
   import { onDestroy } from 'svelte'
   import { toast } from 'svelte-sonner'
@@ -238,12 +237,6 @@
                   maxFiles={1}
                   maxFileSize={MAX_SOURCE_BYTES}
                   disabled={busy}>
-                  <FileDropZone.Trigger>
-                    <Button variant="outline" size="sm" disabled={busy}>
-                      <ImageIcon class="size-4" />
-                      {m.branding_logo_replace()}
-                    </Button>
-                  </FileDropZone.Trigger>
                 </FileDropZone.Root>
                 <Button variant="outline" size="sm" onclick={removeLogo} disabled={busy}>
                   {#if removingLogo}
