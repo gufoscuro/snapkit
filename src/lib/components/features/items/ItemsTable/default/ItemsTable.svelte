@@ -70,6 +70,16 @@
       },
     },
     {
+      accessorKey: 'notes',
+      header: m.notes(),
+      renderer: 'long-text',
+      rendererConfig: {
+        lines: 2,
+      },
+      // Opt-in: available in the column customizer, off until the user enables it
+      defaultVisible: false,
+    },
+    {
       header: '',
       renderer: 'actions',
       rendererConfig: {

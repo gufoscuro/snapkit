@@ -3,7 +3,7 @@
 </script>
 
 <div
-  class="max-w-lg overflow-hidden wrap-break-word"
+  class="max-w-lg overflow-hidden wrap-break-word text-muted-foreground"
   style:display="-webkit-box"
   style:-webkit-box-orient="vertical"
   style:-webkit-line-clamp={lines}

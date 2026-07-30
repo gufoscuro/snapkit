@@ -26,14 +26,14 @@ export function isCustomizable<T>(col: ColumnConfig<T>): boolean {
  * Apply saved preferences to a columns array.
  * - Fixed columns (empty header) retain their relative position (leading/trailing).
  * - Customizable columns are reordered per preferences, hidden ones are filtered out.
- * - New columns (not in preferences) are appended at the end, visible by default.
+ * - New columns (not in preferences) are appended at the end, unless opt-in (`defaultVisible: false`).
  * - Stale preference IDs (removed columns) are silently ignored.
  */
 export function applyPreferences<T>(
 	columns: ColumnConfig<T>[],
 	preferences: ColumnPreference[] | null
 ): ColumnConfig<T>[] {
-	if (!preferences) return columns
+	if (!preferences) return columns.filter((col) => col.defaultVisible !== false)
 
 	const indexed = columns.map((col, i) => ({ col, originalIndex: i }))
 	const fixed = indexed.filter(({ col }) => !isCustomizable(col))
@@ -56,10 +56,10 @@ export function applyPreferences<T>(
 		if (entry) seen.add(pref.id)
 	}
 
-	// Append new columns not present in saved preferences
+	// Append new columns not present in saved preferences (opt-in columns stay hidden)
 	for (const entry of customizable) {
 		const id = getColumnId(entry.col, entry.originalIndex)
-		if (!seen.has(id)) {
+		if (!seen.has(id) && entry.col.defaultVisible !== false) {
 			reordered.push(entry)
 		}
 	}
@@ -82,7 +82,7 @@ export function applyPreferences<T>(
 /**
  * Merge saved preferences with current column definitions for the customizer dialog.
  * Returns an ordered list of customizable columns with their visibility state.
- * Drops stale IDs, appends new columns at the end (visible by default).
+ * Drops stale IDs, appends new columns at the end (visible unless `defaultVisible: false`).
  */
 export function mergePreferences<T>(
 	columns: ColumnConfig<T>[],
@@ -93,7 +93,7 @@ export function mergePreferences<T>(
 		.filter(({ col }) => isCustomizable(col))
 
 	const colMap = new Map(
-		customizable.map((entry) => [getColumnId(entry.col, entry.originalIndex), entry.col.header])
+		customizable.map((entry) => [getColumnId(entry.col, entry.originalIndex), entry.col])
 	)
 
 	const result: (ColumnPreference & { header: string })[] = []
@@ -102,19 +102,19 @@ export function mergePreferences<T>(
 	// Saved preferences in order (drop stale IDs)
 	if (saved) {
 		for (const pref of saved) {
-			const header = colMap.get(pref.id)
-			if (header !== undefined) {
-				result.push({ id: pref.id, visible: pref.visible, header })
+			const col = colMap.get(pref.id)
+			if (col !== undefined) {
+				result.push({ id: pref.id, visible: pref.visible, header: col.header })
 				seen.add(pref.id)
 			}
 		}
 	}
 
-	// New columns not in saved preferences
+	// New columns not in saved preferences — opt-in columns start toggled off
 	for (const entry of customizable) {
 		const id = getColumnId(entry.col, entry.originalIndex)
 		if (!seen.has(id)) {
-			result.push({ id, visible: true, header: entry.col.header })
+			result.push({ id, visible: entry.col.defaultVisible !== false, header: entry.col.header })
 		}
 	}
 

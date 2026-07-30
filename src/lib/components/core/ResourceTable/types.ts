@@ -88,6 +88,14 @@ export type ColumnConfig<T> = {
   hidden?: boolean | ((row: T) => boolean)
 
   /**
+   * Whether the column is visible by default (before the user saves any preference).
+   * Set to `false` for opt-in columns: they appear in the column customizer but are
+   * toggled off until the user enables them. Requires `columnsStorageId` on the table.
+   * Default: `true`
+   */
+  defaultVisible?: boolean
+
+  /**
    * Additional metadata for styling/behavior
    */
   meta?: {
@@ -128,6 +136,7 @@ export type RendererConfig<T> =
   | StatusConfig<T>
   | StateIndicatorConfig<T>
   | DateConfig<T>
+  | LongTextConfig<T>
   | CurrencyConfig<T>
   | ActionsConfig<T>
   | ComponentConfig<T>
@@ -285,6 +294,22 @@ export type DateConfig<T> = {
    * Locale for formatting (default: user locale)
    */
   locale?: string
+}
+
+/**
+ * Long text renderer configuration
+ */
+export type LongTextConfig<T> = {
+  /**
+   * Custom accessor for value extraction
+   * Default: uses accessorKey
+   */
+  valueAccessor?: (row: T) => any
+
+  /**
+   * Number of lines before truncation (default: 3)
+   */
+  lines?: number
 }
 
 /**
