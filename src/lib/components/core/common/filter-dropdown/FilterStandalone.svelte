@@ -24,13 +24,30 @@
   const { filterKey, entry, state, onchange }: Props = $props()
 
   const active = $derived(isFilterActive(state, filterKey))
+
+  // For an enum with known options, the trigger reads "Label: Selected" rather
+  // than a bare "Label" plus a dot — on a filter that scopes what the whole page
+  // is showing, the value matters more than the fact that something is set.
+  // Falls back to `defaultValue` so a filter the consumer defaults to still
+  // announces what you're looking at while formally unset. Only static options
+  // can be resolved here; async ones keep the plain label.
+  const selectedLabel = $derived.by(() => {
+    if (entry.type !== 'enum' || !entry.options) return undefined
+    const value = (state[filterKey] as string | undefined) ?? entry.defaultValue
+    return entry.options.find(option => option.value === value)?.label
+  })
 </script>
 
 <DropdownMenu.Root>
   <DropdownMenu.Trigger>
     {#snippet child({ props })}
       <Button {...props} variant="outline" class="gap-2">
-        {entry.label}
+        {#if selectedLabel}
+          <span class="text-muted-foreground">{entry.label}:</span>
+          <span>{selectedLabel}</span>
+        {:else}
+          {entry.label}
+        {/if}
         {#if active}
           <CircleIcon class="size-2 fill-current" />
         {/if}

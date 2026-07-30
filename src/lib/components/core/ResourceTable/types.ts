@@ -56,6 +56,28 @@ export type ResourceTableProps<T extends Record<string, any>> = {
    * Preferences are persisted per-user in localStorage under this key.
    */
   columnsStorageId?: string
+
+  /**
+   * Groups rows belonging to the same parent record (order, invoice, source document)
+   * under a full-width header row. Returns the parent's stable identifier.
+   *
+   * Grouping is purely presentational: rows stay the unit of pagination and of row-level
+   * actions. Rows are reordered so same-key rows are contiguous, with groups following the
+   * order of their first occurrence — the API's ordering (e.g. most urgent first) survives,
+   * so no server-side sorting is required.
+   *
+   * Because pagination stays row-level, a group shows only the rows loaded so far and can
+   * grow on "load more". Do NOT render a row count in `groupHeader` unless it is qualified
+   * as partial — it would read as a total the table cannot know.
+   */
+  groupBy?: (row: T) => string
+
+  /**
+   * Content of the group header row. Receives every loaded row of the group (never empty)
+   * plus the action helpers, so parent-level actions can live here instead of being
+   * duplicated on each child row. Requires `groupBy`.
+   */
+  groupHeader?: Snippet<[T[], ActionHelpers<T>]>
 }
 
 /**
@@ -222,9 +244,15 @@ export type BadgeConfig<T> = {
 }
 
 /**
- * Status badge variant — maps to a specific icon + color
+ * Status badge variant — maps to a specific icon + color.
+ *
+ * Re-exported from the badge's own types so the two can't drift: this list used
+ * to omit `loading` and `alert`, which StatusBadge has always rendered, and a
+ * `variantMapper` returning either one failed to match `StatusConfig` and fell
+ * through to the state-indicator branch of the union with a confusing error.
  */
-export type StatusVariant = 'active' | 'in-progress' | 'paused' | 'blocked' | 'neutral'
+export type { StatusVariant } from './renderers/StatusBadge.types'
+import type { StatusVariant } from './renderers/StatusBadge.types'
 
 /**
  * Status badge renderer configuration

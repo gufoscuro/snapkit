@@ -1,12 +1,13 @@
 <!--
   @component DeliveryScheduleTable
   @description Displays a paginated table of sales-order lines awaiting shipment
-  (the delivery schedule). Shows the source sales order (linked to its details),
-  customer, item, requested/confirmed delivery dates, ordered/remaining quantities
-  and a payment-pending indicator. Defaults to outstanding lines only. Consumes
-  filter state from page context.
-  @keywords delivery, schedule, shipment, to-ship, outstanding, sales-orders, table, list
-  @uses ResourceTable
+  (the delivery schedule), grouped by source sales order: the order (linked to its
+  delivery recap), customer and the "create DDT" action sit in the group header,
+  while each row shows item, requested/confirmed delivery dates, ordered/remaining
+  quantities and a payment-pending indicator. Defaults to outstanding lines only.
+  Consumes filter state from page context.
+  @keywords delivery, schedule, shipment, to-ship, outstanding, sales-orders, table, list, group
+  @uses ResourceTable, TableGroupHeader
   @api GET /api/legal-entities/{legalEntity}/delivery-schedule -> DeliveryScheduleLine[]
   @route sales-order-delivery-schedule
 -->
@@ -17,9 +18,10 @@
 
 <script lang="ts">
   import { goto } from '$app/navigation'
+  import ActionButton from '$lib/components/core/ActionButton.svelte'
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
-  import RecordCustomerCell from '$lib/components/features/common/RecordCustomerCell.svelte'
+  import TableGroupHeader from '$lib/components/features/common/TableGroupHeader.svelte'
   import DeliveryDateCell from '$lib/components/features/delivery-schedule/DeliveryDateCell.svelte'
   import QuantityProgressCell from '$lib/components/features/delivery-schedule/QuantityProgressCell.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
@@ -37,23 +39,23 @@
   const filtersHandle = useConsumes(DeliveryScheduleTableContract, 'filters')
   const filters = $derived(filtersHandle.get() as FilterQuery | undefined)
 
+  // Rows are order lines, so a handful of orders can expand into a long flat list.
+  // Grouping by order restores the unit the user came from (the dashboard counts
+  // orders), while keeping lines addressable individually.
+  const groupKey = (row: DeliveryScheduleLine) => row.sales_order_id
+
+  // Creating a DDT consumes the whole source order, so the action belongs to the
+  // group, not to each line — on a flat list it was repeated identically per row.
+  function createTransportDocument(salesOrderId: string) {
+    const url = createRoute({
+      $id: 'transport-document-details',
+      query: { sales_order_id: salesOrderId },
+    })
+    // eslint-disable-next-line svelte/no-navigation-without-resolve
+    goto(url)
+  }
+
   const columns: ColumnConfig<DeliveryScheduleLine>[] = [
-    {
-      // Order number (linked) + customer stacked into one identity column. The link
-      // jumps to that order's delivery recap (delivered vs remaining), not the
-      // generic order overview.
-      accessorKey: 'sales_order_number',
-      header: m.sales_order(),
-      renderer: 'component',
-      rendererConfig: {
-        component: RecordCustomerCell,
-        propsMapper: (row: DeliveryScheduleLine) => ({
-          code: row.sales_order_number,
-          customerName: row.customer_name,
-          href: createRoute({ $id: 'sales-order-delivery-schedule', params: { uuid: row.sales_order_id } }),
-        }),
-      },
-    },
     {
       accessorKey: 'item_code',
       header: m.item_code(),
@@ -103,30 +105,6 @@
         labelMapper: (pending: boolean) => (pending ? m.payment_pending() : m.payment_settled()),
       },
     },
-    {
-      header: '',
-      renderer: 'actions',
-      rendererConfig: {
-        actions: [
-          {
-            icon: IconTruckDelivery,
-            variant: 'ghost',
-            label: m.create_transport_document_from_order(),
-            onClick: (row: DeliveryScheduleLine) => {
-              // Jump to a blank DDT with the source order in the URL; the DDT page
-              // auto-imports it (mirrors the invoiceable-documents → invoice flow).
-              const url = createRoute({
-                $id: 'transport-document-details',
-                query: { sales_order_id: row.sales_order_id },
-              })
-              // eslint-disable-next-line svelte/no-navigation-without-resolve
-              goto(url)
-            },
-          },
-        ],
-      },
-      meta: { cellClassName: 'p-0 h-10 w-12' },
-    },
   ]
 
   const apiUrl = $derived(legalEntity?.id ? `/legal-entities/${legalEntity.id}/delivery-schedule` : null)
@@ -140,6 +118,9 @@
             url: apiUrl,
             queryParams: {
               page,
+              // Grouping is client-side over the loaded rows, so a larger page means
+              // fewer groups arriving half-loaded on first paint.
+              per_page: 50,
               outstanding: true,
               ...createQueryRequestObject({ search: activeFilters?.search, query: activeFilters?.query }),
             },
@@ -148,6 +129,31 @@
   )
 </script>
 
+{#snippet groupHeader(rows: DeliveryScheduleLine[])}
+  {@const order = rows[0]}
+  <TableGroupHeader
+    code={order.sales_order_number}
+    customerName={order.customer_name}
+    href={createRoute({ $id: 'sales-order-delivery-schedule', params: { uuid: order.sales_order_id } })}>
+    {#snippet actions()}
+      <ActionButton
+        tooltip={m.create_transport_document_from_order()}
+        variant="ghost"
+        size="sm"
+        class="h-8 w-8 p-0"
+        onclick={() => createTransportDocument(order.sales_order_id)}>
+        <IconTruckDelivery class="h-4 w-4" />
+      </ActionButton>
+    {/snippet}
+  </TableGroupHeader>
+{/snippet}
+
 {#if legalEntity && fetchLines}
-  <ResourceTable {columns} fetchFunction={fetchLines} {filters} columnsStorageId="delivery-schedule-table" />
+  <ResourceTable
+    {columns}
+    fetchFunction={fetchLines}
+    {filters}
+    groupBy={groupKey}
+    {groupHeader}
+    columnsStorageId="delivery-schedule-table" />
 {/if}

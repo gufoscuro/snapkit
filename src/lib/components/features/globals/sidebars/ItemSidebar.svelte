@@ -43,6 +43,12 @@
       },
       {
         type: 'link',
+        label: m.price_history(),
+        pageId: 'item-price-history',
+        params: { uuid: item.id },
+      },
+      {
+        type: 'link',
         label: m.documents(),
         pageId: 'item-documents',
         params: { uuid: item.id },

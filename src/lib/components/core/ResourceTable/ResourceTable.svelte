@@ -18,6 +18,8 @@
     loadMoreLabel,
     stickyHeader = true,
     columnsStorageId,
+    groupBy,
+    groupHeader,
   }: ResourceTableProps<T> = $props()
 
   // --- State Management ---
@@ -115,6 +117,10 @@
   })
 </script>
 
+{#snippet groupHeaderRow(groupRows: T[])}
+  {@render groupHeader?.(groupRows, actionHelpers)}
+{/snippet}
+
 <DataTable
   {data}
   columns={resolvedColumns}
@@ -125,6 +131,8 @@
   {emptyState}
   {loadMoreLabel}
   {stickyHeader}
+  getGroupKey={groupBy}
+  groupHeader={groupBy ? groupHeaderRow : undefined}
   class={className} />
 
 {#if columnsStorageId}

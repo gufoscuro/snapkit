@@ -40,6 +40,14 @@ export type EnumFilterConfig = BaseFilterConfig & {
 	type: 'enum'
 	options?: FilterOption[]
 	fetchFunction?: () => Promise<FilterOption[]>
+	/**
+	 * Value the consumer falls back to when this filter is unset. Purely
+	 * cosmetic: it is never serialized into the query, it only lets a
+	 * `standalone` trigger read "Source: Sales orders" instead of a bare
+	 * "Source" while the page is in fact showing sales orders. Set it only when
+	 * the consumer really does default to that value.
+	 */
+	defaultValue?: string
 }
 
 export type TagsFilterConfig = BaseFilterConfig & {

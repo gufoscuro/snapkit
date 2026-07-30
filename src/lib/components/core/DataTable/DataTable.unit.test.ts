@@ -154,4 +154,64 @@ describe('DataTable', () => {
       expect(screen.getByRole('button', { name: /carica altri/i })).toBeInTheDocument()
     })
   })
+
+  describe('grouping', () => {
+    type GroupedRow = { id: string; group: string; name: string }
+
+    const groupedColumns = [{ accessorKey: 'name', header: 'Name' }] as ColumnDef<unknown, unknown>[]
+
+    // Mimics an API ordering by urgency rather than by parent: group A is interleaved
+    // with group B, which is exactly the case client-side grouping has to survive.
+    const scatteredData: GroupedRow[] = [
+      { id: '1', group: 'A', name: 'Alice' },
+      { id: '2', group: 'B', name: 'Bob' },
+      { id: '3', group: 'A', name: 'Charlie' },
+    ]
+
+    const groupKey = (row: unknown) => (row as GroupedRow).group
+
+    function renderGrouped() {
+      render(DataTable, {
+        props: { data: scatteredData, columns: groupedColumns, getGroupKey: groupKey },
+      })
+      // Drop the column header row; keep group header rows and data rows in DOM order.
+      return screen.getAllByRole('row').slice(1)
+    }
+
+    it('makes same-key rows contiguous', () => {
+      const rows = renderGrouped()
+      const names = rows.map(row => row.textContent?.trim()).filter(text => text)
+      expect(names).toEqual(['Alice', 'Charlie', 'Bob'])
+    })
+
+    it('orders groups by first occurrence, preserving the API ordering', () => {
+      render(DataTable, {
+        props: {
+          // B now appears first, so it must lead even though A has more rows.
+          data: [scatteredData[1], scatteredData[0], scatteredData[2]],
+          columns: groupedColumns,
+          getGroupKey: groupKey,
+        },
+      })
+      const names = screen
+        .getAllByRole('row')
+        .slice(1)
+        .map(row => row.textContent?.trim())
+        .filter(text => text)
+      expect(names).toEqual(['Bob', 'Alice', 'Charlie'])
+    })
+
+    it('inserts one header row per group', () => {
+      // 2 groups → 2 header rows + 3 data rows
+      expect(renderGrouped()).toHaveLength(5)
+    })
+
+    it('leaves row order untouched when no group key is provided', () => {
+      render(DataTable, {
+        props: { data: scatteredData, columns: groupedColumns },
+      })
+      const rows = screen.getAllByRole('row').slice(1)
+      expect(rows.map(row => row.textContent?.trim())).toEqual(['Alice', 'Bob', 'Charlie'])
+    })
+  })
 })

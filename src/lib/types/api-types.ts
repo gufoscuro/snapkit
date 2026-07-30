@@ -1982,3 +1982,100 @@ export type CalculatePriceResult = {
     offer_internal_id?: string
   }
 }
+
+// ============================================================================
+// Item Price History (item document lines)
+// ============================================================================
+
+/**
+ * Fields shared by every price-history row, whatever the source document kind.
+ * One row is one document *line*, not one document: an item can appear on two
+ * lines of the same order or invoice.
+ *
+ * `unit_price` is the pre-discount figure (the "prezzo di listino"),
+ * `effective_unit_price` is `net_value / quantity` — what we actually sold at.
+ * Always show the latter as "the price": on a discounted line `unit_price`
+ * overstates it.
+ */
+export type ItemDocumentLineBase = {
+  document_id: string
+  document_number: string
+  /** Plain calendar day (`YYYY-MM-DD`) — parse with `calendarDayParts`, never `new Date()`. */
+  document_date: string
+  currency: Currency
+  customer_id: string
+  /** Nullable in practice despite the OpenAPI spec marking it required. */
+  customer_name: string | null
+  line_id: string
+  /** Editable per line, so it can drift away from the article name. */
+  description: string
+  quantity: number
+  uom: UnitOfMeasure
+  unit_price: number
+  /** `numeric(5,2)` server-side: 16.667 comes back as 16.67. */
+  discount_percent: number | null
+  discount_amount: number | null
+  net_value: number
+  /** `null` on zero- or null-quantity lines (it is `net_value / quantity`). */
+  effective_unit_price: number | null
+}
+
+/** A sales-order line. Defaults to approved orders only, matching "Venduto". */
+export type ItemSalesOrderLine = ItemDocumentLineBase & {
+  state: SalesOrderStatus
+  sales_transaction_type: SalesTransactionType
+  is_historical: boolean
+}
+
+/**
+ * An invoice line. Returns everything except drafts — `rejected` included, since
+ * a scarto means never officially issued but the commercial fact stands.
+ * `discount_amount` is always `null` here (invoice_items has no such column);
+ * it exists so callers don't have to branch on the source.
+ */
+export type ItemInvoiceLine = ItemDocumentLineBase & {
+  state: InvoiceState
+  document_type: InvoiceDocumentType
+  payment_status: InvoicePaymentStatus | null
+}
+
+export type ItemDocumentLine = ItemSalesOrderLine | ItemInvoiceLine
+
+/**
+ * Aggregates over the whole *filtered* set, not the current page — a per-page
+ * `min_price` would mean "cheapest on page 3", which answers nothing.
+ */
+export type ItemPriceHistorySummary = {
+  line_count: number
+  total_quantity: number
+  min_price: number
+  max_price: number
+  /**
+   * `sum(net_value) / sum(quantity)`, quantity-weighted on purpose: an
+   * unweighted mean gives a 1-piece sale the same vote as a 100-piece one.
+   */
+  weighted_average_price: number
+  last_price: number
+  last_date: string
+}
+
+/**
+ * The aggregate half of a price-history response. Kept separate from the
+ * paginated half so this file stays import-free — the full response type
+ * (`ItemPriceHistoryResponse`) composes it with `PaginatedResponse` over in
+ * the ItemPriceHistory component folder.
+ *
+ * `summary` is `null` when the filtered set spans more than one unit of measure
+ * or more than one currency — a min/max across PZ and BOX is a category error,
+ * not a statistic. `mixed_uom` / `mixed_currency` say which, so the UI can offer
+ * the filter that makes the numbers meaningful again.
+ *
+ * NOTE: these three fields are absent from the OpenAPI response schema as of
+ * 2026-07-30 and are typed here by hand from the backend contract. Drop this
+ * note once the spec catches up.
+ */
+export type ItemPriceHistoryAggregates = {
+  summary: ItemPriceHistorySummary | null
+  mixed_uom: boolean
+  mixed_currency: boolean
+}

@@ -1,8 +1,9 @@
 <!--
   @component DataTable
   @description Generic data table component with TanStack Table, supporting load more,
-  custom cell renderers via snippets/components, skeleton loading, and i18n empty states.
-  @keywords table, data, grid, list, pagination, load-more, tanstack
+  custom cell renderers via snippets/components, skeleton loading, i18n empty states and
+  optional row grouping under full-width group header rows.
+  @keywords table, data, grid, list, pagination, load-more, tanstack, group, grouping
   @uses Table, Button, Skeleton, TanStack Table
 -->
 <script lang="ts" generics="T">
@@ -34,6 +35,16 @@
     loadMoreLabel?: string
     /** Whether the header should stick to top when scrolling (default: true) */
     stickyHeader?: boolean
+    /**
+     * Groups consecutive rows sharing this key under a full-width header row.
+     * Rows are reordered so that same-key rows become contiguous: groups follow the
+     * order of their FIRST occurrence in `data`, and rows keep their original order
+     * within a group. This preserves whatever ordering the API applied (e.g. by due
+     * date) while making the grouping readable, without requiring server-side sorting.
+     */
+    getGroupKey?: (row: T) => string
+    /** Content of the full-width group header row. Receives every loaded row of the group. */
+    groupHeader?: Snippet<[T[]]>
     /** Additional CSS classes for the container */
     class?: string
   }
@@ -48,18 +59,40 @@
     emptyState,
     loadMoreLabel,
     stickyHeader = true,
+    getGroupKey,
+    groupHeader,
     class: className,
   }: DataTableProps = $props()
 
+  // Map insertion order == first-occurrence order, so groups keep the API's ordering.
+  const groups = $derived.by(() => {
+    if (!getGroupKey) return null
+    // Plain Map, not SvelteMap: it is rebuilt from scratch on every `data` change and
+    // never mutated afterwards, so reactivity already comes from this $derived.
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const map = new Map<string, T[]>()
+    for (const row of data) {
+      const key = getGroupKey(row)
+      const existing = map.get(key)
+      if (existing) existing.push(row)
+      else map.set(key, [row])
+    }
+    return map
+  })
+
+  const orderedData = $derived(groups ? [...groups.values()].flat() : data)
+
   const table = createSvelteTable({
     get data() {
-      return data
+      return orderedData
     },
     get columns() {
       return columns
     },
     getCoreRowModel: getCoreRowModel(),
   })
+
+  const rows = $derived(table.getRowModel().rows)
 </script>
 
 {#if loading}
@@ -84,7 +117,17 @@
           {/each}
         </Table.Header>
         <Table.Body>
-          {#each table.getRowModel().rows as row (row.id)}
+          {#each rows as row, index (row.id)}
+            {#if getGroupKey && groups}
+              {@const groupKey = getGroupKey(row.original)}
+              {#if index === 0 || getGroupKey(rows[index - 1].original) !== groupKey}
+                <Table.Row class="hover:bg-transparent">
+                  <Table.Cell colspan={columns.length} class="bg-muted/50 py-2">
+                    {@render groupHeader?.(groups.get(groupKey) ?? [])}
+                  </Table.Cell>
+                </Table.Row>
+              {/if}
+            {/if}
             <Table.Row>
               {#each row.getVisibleCells() as cell (cell.id)}
                 <Table.Cell class={cell.column.columnDef.meta?.cellClassName || ''}>

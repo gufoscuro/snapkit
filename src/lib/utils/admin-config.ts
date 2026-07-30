@@ -223,8 +223,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'customer-documents',
                   title: 'customers_documents',
-                  description:
-                    'List of all documents (quotations, orders, invoices, etc.) related to a single customer',
+                  description: 'Files of any kind attached to a single customer',
                   route: '/contacts/customers/upsert/:uuid/documents',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -476,7 +475,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                 {
                   $id: 'supplier-documents',
                   title: 'documents',
-                  description: 'List of all documents (orders, invoices, etc.) related to a single supplier',
+                  description: 'Files of any kind attached to a single supplier',
                   route: '/contacts/suppliers/upsert/:uuid/documents',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
@@ -563,9 +562,34 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               },
               subpages: [
                 {
+                  $id: 'item-price-history',
+                  title: 'price_history',
+                  description:
+                    'At what price a single item was actually sold, across sales orders and invoices, with aggregate statistics',
+                  route: '/items/upsert/:uuid/price-history',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.ItemSidebar',
+                      enabled: true,
+                    },
+                    filters: {
+                      componentKey: 'common.filters.ItemPriceHistoryFilters',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'items.itempricehistory.default.ItemPriceHistory',
+                      enabled: true,
+                    },
+                  },
+                },
+                {
                   $id: 'item-documents',
                   title: 'documents',
-                  description: 'List of all documents (quotations, orders, invoices, etc.) where a single item appears',
+                  description: 'Files of any kind attached to a single item',
                   route: '/items/upsert/:uuid/documents',
                   layout: {
                     componentKey: 'layouts.LeftSidebar',
