@@ -289,7 +289,7 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                     {
                       $id: 'customer-intent-declaration-details',
                       title: 'customer_intent_declaration_details',
-                      description: "A form to view and edit the details of a single intent declaration",
+                      description: 'A form to view and edit the details of a single intent declaration',
                       route: '/contacts/customers/upsert/:uuid/intent-declarations/upsert{/:did}',
                       layout: {
                         componentKey: 'layouts.LeftSidebar',
@@ -653,6 +653,28 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   enabled: true,
                 },
               },
+              subpages: [
+                {
+                  $id: 'quotation-documents',
+                  title: 'documents',
+                  description: 'Files of any kind attached to a single quotation',
+                  route: '/sales/quotations/upsert/:uuid/documents',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.QuotationSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'quotations.quotationdocumentstable.default.QuotationDocumentsTable',
+                      enabled: true,
+                    },
+                  },
+                },
+              ],
             },
           ],
         },
@@ -717,6 +739,26 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                     content: {
                       componentKey:
                         'sales-orders.salesorderdeliveryscheduletable.default.SalesOrderDeliveryScheduleTable',
+                      enabled: true,
+                    },
+                  },
+                },
+                {
+                  $id: 'sales-order-documents',
+                  title: 'documents',
+                  description: 'Files of any kind attached to a single sales order',
+                  route: '/sales/sales-orders/upsert/:uuid/documents',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.SalesOrderSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'sales-orders.salesorderdocumentstable.default.SalesOrderDocumentsTable',
                       enabled: true,
                     },
                   },

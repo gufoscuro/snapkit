@@ -40,13 +40,12 @@
         pageId: 'quotation-details',
         params: { uuid: quotation.id },
       },
-      // TODO: uncomment when quotation documents API endpoint is available
-      // {
-      //   type: 'link',
-      //   label: m.documents(),
-      //   pageId: 'quotation-documents',
-      //   params: { uuid: quotation.id },
-      // },
+      {
+        type: 'link',
+        label: m.documents(),
+        pageId: 'quotation-documents',
+        params: { uuid: quotation.id },
+      },
     ]
 
     return { name: m.quotation(), items }
