@@ -1086,9 +1086,24 @@ export async function refreshAdminConfig() {
 /**
  * PUTs the scaffold dashboard config to the API for the given legal entity,
  * then refreshes all admin data.
+ *
+ * Only the `dashboard` part is scaffolded: `resources` (field visibility and
+ * custom fields) and `policies` are read back from the current config and
+ * carried over, so re-scaffolding the dashboard never wipes them. If no config
+ * exists yet, the scaffold defaults (empty objects) are used.
  */
 export async function pushScaffoldConfig(legalEntityId: string) {
   const config = scaffoldDashboardStructure()
+
+  const current = await apiRequest<LegalEntityConfigResponse>({
+    url: `/legal-entities/${legalEntityId}/config`,
+    invalidateCache: true,
+  }).catch(() => null)
+
+  if (current) {
+    config.resources = current.resources ?? config.resources
+    config.policies = current.policies ?? config.policies
+  }
 
   await apiRequest({
     url: `/legal-entities/${legalEntityId}/config`,
