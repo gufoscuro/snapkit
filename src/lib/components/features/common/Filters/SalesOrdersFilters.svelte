@@ -1,10 +1,10 @@
 <!--
   @component SalesOrdersFilters
   @description Filter component for the sales-orders listing. Exposes search plus
-  state (multi-select), fulfillment-status, customer and incoterm filters via
-  FilterDropdown. Includes a primary "Nuovo ordine" CTA on the right.
+  state (multi-select), fulfillment-status, customer, incoterm and a document-date
+  range via FilterDropdown. Includes a primary "Nuovo ordine" CTA on the right.
   Provides filter state consumable by SalesOrdersTable.
-  @keywords filter, search, sales-orders, common
+  @keywords filter, search, sales-orders, date-range, common
   @uses GenericFilters
   @provides filters
 -->
@@ -70,6 +70,16 @@
       type: 'enum',
       label: m.incoterm(),
       options: toSelectItems(incotermLabels),
+    },
+    document_date_from: {
+      type: 'date',
+      label: m.date_from(),
+      dayBoundary: 'startOf',
+    },
+    document_date_to: {
+      type: 'date',
+      label: m.date_to(),
+      dayBoundary: 'endOf',
     },
   }
 
