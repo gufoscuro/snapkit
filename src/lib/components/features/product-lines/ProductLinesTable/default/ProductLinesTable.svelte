@@ -23,6 +23,7 @@
   import { createApiFetcher } from '$lib/utils/table-fetchers'
   import type { SnippetProps } from '$utils/runtime'
   import { ProductLinesTableContract } from './ProductLinesTable.contract.js'
+  import { useTableExport } from '$lib/utils/table-export.svelte'
 
   let { legalEntity }: SnippetProps = $props()
 
@@ -80,6 +81,9 @@
   const fetchProductLines = $derived(
     productLinesApiUrl ? createApiFetcher<ProductLine>(productLinesApiUrl) : null
   )
+
+  // Publishes the CSV export to the sibling filters component (page-state channel).
+  useTableExport(ProductLinesTableContract, () => fetchProductLines)
 </script>
 
 {#if legalEntity && fetchProductLines}

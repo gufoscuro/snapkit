@@ -47,6 +47,19 @@ export function getSnippetBindings(): ResolvedBindings {
 }
 
 /**
+ * Whether the current page wired a given logical name.
+ *
+ * `useProvides` / `useConsumes` throw on an unwired name — correct for the
+ * state a component can't work without, but too strict for optional channels
+ * (an export handler, say) that only some pages set up. Check first and skip
+ * the feature when the page didn't ask for it.
+ */
+export function hasBinding(direction: 'provides' | 'consumes', logicalName: string): boolean {
+  const bindings = getContext<ResolvedBindings | undefined>(BINDINGS_KEY)
+  return !!bindings?.[direction][logicalName]
+}
+
+/**
  * Create a typed state handle for a "provides" binding.
  * Use this when your component writes state.
  */

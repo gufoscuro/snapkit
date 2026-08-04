@@ -1,4 +1,5 @@
 import type { ComponentContract } from '$lib/contexts/page-state'
+import { TableExportSchema } from '$lib/utils/table-export.svelte'
 import { Type } from '@sinclair/typebox'
 
 /**
@@ -13,12 +14,15 @@ export const FilterStateSchema = Type.Object({
 /**
  * Contract for OrdersSearchFilter component.
  * - Provides: filter state (search and query fields)
- * - Consumes: nothing
+ * - Consumes: the sibling table's CSV export handler (optional — the export
+ *   button only appears on pages whose table publishes one)
  */
 export const GenericFiltersContract = {
   $id: 'GenericFilters',
   provides: {
     filters: FilterStateSchema,
   },
-  consumes: {},
+  consumes: {
+    exportHandler: TableExportSchema,
+  },
 } as const satisfies ComponentContract

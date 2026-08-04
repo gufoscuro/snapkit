@@ -482,9 +482,20 @@ Creates a generic fetch function compatible with ResourceTable.
 - Filtering (via `FilterQuery`)
 - Error handling
 
-**Returns:** `(page: number, filters?: FilterQuery) => Promise<PaginatedResponse<T>>`
+**Returns:** an `ExportableFetcher<T>` — callable as
+`(page: number, filters?: FilterQuery) => Promise<PaginatedResponse<T>>`, plus an
+`exportCsv(filters)` method.
 
 The response includes `data`, `links` (with `next`/`prev` for load-more detection), and `meta` (with `current_page`, `last_page`, `total`, etc.).
+
+**Options:**
+
+- `perPage` — override the API page size (useful for grouped tables)
+- `params` — query params baked into every request, for views that are a fixed
+  slice of an endpoint (e.g. `outstanding: true`). Applied after the user's
+  filters and included in the export.
+- `exportable: false` — for endpoints without `format=csv` support
+- `invalidateCache` — force a fresh GET
 
 **Usage:**
 
@@ -496,6 +507,13 @@ const fetchSuppliers = createApiFetcher<SupplierSummary>('supply/supplier')
   fetchFunction={fetchSuppliers}
 />
 ```
+
+The CSV export rides on the fetcher rather than on `ResourceTable` because this
+is the only place that knows both the endpoint and how filters are serialized.
+Pair it with `useTableExport` so the sibling filters component can offer the
+button — see `.blueprints/components/table-filters.md` § CSV Export. **Custom
+hand-rolled fetchers lose the export**; prefer `params`/`perPage` over writing
+one.
 
 **Location:** `src/lib/utils/table-fetchers.ts`
 

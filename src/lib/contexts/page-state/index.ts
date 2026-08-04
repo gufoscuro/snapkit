@@ -6,8 +6,9 @@ export {
   resolveBindings,
   setSnippetBindings,
   getSnippetBindings,
+  hasBinding,
   useProvides,
-  useConsumes
+  useConsumes,
 } from './bindings.svelte.js'
 
 // Types
@@ -17,5 +18,5 @@ export type {
   ResolvedBindings,
   StateHandle,
   InferContractProvides,
-  InferContractConsumes
+  InferContractConsumes,
 } from './types.js'

@@ -6,9 +6,12 @@
   and seeds initial state from the URL on mount — so reloading the page or sharing the link
   restores the same view.
   Provides filter state consumable by SalesOrdersTable or SupplyOrdersTable.
-  @keywords filter, search, orders, common, url-state
-  @uses Input
+  Shows a "download CSV" button when the sibling table publishes an export handler,
+  exporting the whole filtered set (columns are chosen by the backend).
+  @keywords filter, search, orders, common, url-state, export, csv
+  @uses Input, ActionButton
   @provides filters
+  @consumes exportHandler
 -->
 <script lang="ts" module>
   export { GenericFiltersContract as contract } from './GenericFilters.contract.js'
@@ -19,9 +22,10 @@
   import { page } from '$app/state'
   import { usePageChat } from '$lib/chat/hooks/usePageChat'
   import { makeListingChatRegistration } from '$lib/chat/page-tools/listing-chat'
+  import ActionButton from '$components/core/ActionButton.svelte'
   import { FilterDropdown } from '$components/core/common/filter-dropdown'
   import { Input } from '$lib/components/ui/input'
-  import { useProvides } from '$lib/contexts/page-state'
+  import { hasBinding, useConsumes, useProvides } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import {
     type FilterConfig,
@@ -29,9 +33,13 @@
     type QueryObject,
     readFiltersFromUrl,
   } from '$lib/utils/filters'
+  import { ApiError } from '$lib/utils/request'
+  import type { TableExportHandler } from '$lib/utils/table-export.svelte'
   import type { SnippetProps } from '$utils/runtime.js'
+  import Download from '@lucide/svelte/icons/download'
   import Search from '@lucide/svelte/icons/search'
   import { untrack, type Snippet } from 'svelte'
+  import { toast } from 'svelte-sonner'
   import { GenericFiltersContract } from './GenericFilters.contract.js'
 
   const {
@@ -41,6 +49,14 @@
   }: SnippetProps & { children?: Snippet; hideSearch?: boolean; config?: FilterConfig } = $props()
 
   const filtersHandle = useProvides(GenericFiltersContract, 'filters')
+
+  // Optional channel: only listing pages whose table publishes an export
+  // handler get the button. Everywhere else this stays undefined.
+  const exportHandle = hasBinding('consumes', 'exportHandler')
+    ? useConsumes(GenericFiltersContract, 'exportHandler')
+    : undefined
+  const exportHandler = $derived(exportHandle?.get() as TableExportHandler | undefined)
+  let exporting = $state(false)
 
   // Effective config for the URL helpers — empty when the caller hasn't passed one.
   const effectiveConfig = $derived(config ?? ({} as FilterConfig))
@@ -116,6 +132,29 @@
     writeUrl()
   }
 
+  async function handleExport() {
+    if (!exportHandler || exporting) return
+
+    exporting = true
+    try {
+      // The live values, not the debounced ones committed to page state: the
+      // export must match what the user sees, even mid-typing.
+      await exportHandler({ search: searchValue || undefined, query: currentQuery })
+      toast.success(m.export_csv_success())
+    } catch (err) {
+      // The backend refuses a set over its row cap with a 422. The cap isn't
+      // published, so we tell the user to narrow the filters rather than
+      // relaying a number we can't predict.
+      if (err instanceof ApiError && err.status === 422) {
+        toast.error(m.export_csv_too_large())
+      } else {
+        toast.error(m.export_csv_error())
+      }
+    } finally {
+      exporting = false
+    }
+  }
+
   // Initial commit on mount + cleanup on unmount.
   $effect(() => {
     untrack(commitState)
@@ -142,6 +181,19 @@
 <div class="flex w-full items-center justify-end gap-2">
   {#if config}
     <FilterDropdown {config} query={currentQuery} onchange={handleQueryChange} />
+  {/if}
+
+  {#if exportHandler}
+    <ActionButton
+      variant="outline"
+      size="icon"
+      busy={exporting}
+      busyLabel=""
+      tooltip={m.export_csv_tooltip()}
+      tooltipSide="top"
+      onclick={handleExport}>
+      <Download class="size-4" />
+    </ActionButton>
   {/if}
 
   {#if !hideSearch}

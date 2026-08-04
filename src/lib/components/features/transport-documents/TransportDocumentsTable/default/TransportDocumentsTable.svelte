@@ -30,6 +30,7 @@
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
   import { TransportDocumentsTableContract } from './TransportDocumentsTable.contract.js'
+  import { useTableExport } from '$lib/utils/table-export.svelte'
 
   let { legalEntity }: SnippetProps = $props()
 
@@ -127,6 +128,9 @@
   const fetchTransportDocuments = $derived(
     transportDocumentApiUrl ? createApiFetcher<TransportDocument>(transportDocumentApiUrl) : null,
   )
+
+  // Publishes the CSV export to the sibling filters component (page-state channel).
+  useTableExport(TransportDocumentsTableContract, () => fetchTransportDocuments)
 </script>
 
 {#if legalEntity && fetchTransportDocuments}

@@ -32,6 +32,7 @@
   import type { SnippetProps } from '$utils/runtime'
   import FilePlusIcon from '@lucide/svelte/icons/file-plus'
   import { InvoiceableDocumentsTableContract } from './InvoiceableDocumentsTable.contract.js'
+  import { useTableExport } from '$lib/utils/table-export.svelte'
 
   let { legalEntity }: SnippetProps = $props()
 
@@ -126,6 +127,9 @@
 
   const apiUrl = $derived(legalEntity?.id ? `/legal-entities/${legalEntity.id}/invoiceable-documents` : null)
   const fetchInvoiceableDocuments = $derived(apiUrl ? createApiFetcher<InvoiceableDocument>(apiUrl) : null)
+
+  // Publishes the CSV export to the sibling filters component (page-state channel).
+  useTableExport(InvoiceableDocumentsTableContract, () => fetchInvoiceableDocuments)
 </script>
 
 {#if legalEntity && fetchInvoiceableDocuments}

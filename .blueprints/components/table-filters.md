@@ -230,6 +230,61 @@ apiRequest() serialization
 - **Tags**: array joined by comma → `createQueryRequestObject` splits back into `string[]` → `apiRequest` serializes as repeated key (`key=a&key=b`)
 - **Date**: `DateValue` → ISO string with time boundary (`startOf` = 00:00:00, `endOf` = 23:59:59)
 
+## CSV Export
+
+Every listing endpoint accepts `format=csv`, which returns the **whole filtered
+set** — not the current page — as an Excel-IT CSV attachment. Columns are chosen
+by the backend (every scalar of the resource plus its nested objects one level
+deep, key path as header) and are **not** client-selectable: the export does not
+follow the column-customizer preferences. A set over the backend's row cap is
+refused with a 422.
+
+### How the button appears
+
+The export travels on a **second page-state channel, in the opposite direction
+to `filters`**:
+
+```
+GenericFilters ──provides: filters──────▶ page state ──consumes──▶ Table
+GenericFilters ◀──consumes: exportHandler── page state ◀──provides── Table
+```
+
+The capability is attached to the fetcher, not passed as a prop —
+`createApiFetcher` is the only place that knows both the endpoint URL and how
+filters are serialized, so an export can never drift from what the table shows:
+
+```svelte
+const fetchCustomers = $derived(url ? createApiFetcher<Customer>(url) : null)
+
+// Publishes fetcher.exportCsv into page state; no-ops for a fetcher that
+// doesn't support export, and the button simply never renders.
+useTableExport(CustomersTableContract, () => fetchCustomers)
+```
+
+`GenericFilters` renders the download button only when a handler is present, and
+calls it with its **live** search/query values (not the debounced ones committed
+to page state), so a mid-typing export still matches the screen.
+
+### Wiring checklist for a new listing
+
+1. Fetch via `createApiFetcher` — opt out with `{ exportable: false }` for
+   endpoints without `format=csv`. Fixed slices (`outstanding: true`) go in
+   `options.params`, which the export includes too.
+2. Add `exportHandler: TableExportSchema` to the table contract's `provides`.
+3. Call `useTableExport(<Contract>, () => <fetcher>)` in the table component.
+4. Config-driven pages need nothing else — bindings resolve from the contract.
+   Static routes calling `setSnippetBindings` manually (`src/routes/(app)/settings/*`)
+   must add `exportHandler: 'exportHandler'` to **both** maps, otherwise the
+   button silently never appears.
+
+Errors surface as toasts: a 422 becomes "narrow the filters", anything else the
+generic failure message. The cap itself isn't published by the backend, so never
+quote a number.
+
+**Where:** `src/lib/utils/table-export.svelte.ts` (channel + `useTableExport`),
+`src/lib/utils/table-fetchers.ts` (`ExportableFetcher`), `apiDownload` in
+`src/lib/utils/request.ts` (blob download, bypasses the GET cache).
+
 ## Component Reference
 
 ### FilterDropdown

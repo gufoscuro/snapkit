@@ -29,6 +29,7 @@
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
   import { QuotationsTableContract } from './QuotationsTable.contract.js'
+  import { useTableExport } from '$lib/utils/table-export.svelte'
 
   let { legalEntity }: SnippetProps = $props()
 
@@ -120,6 +121,9 @@
 
   const quotationApiUrl = $derived(legalEntity?.id ? `/legal-entities/${legalEntity.id}/quotations` : null)
   const fetchQuotations = $derived(quotationApiUrl ? createApiFetcher<Quotation>(quotationApiUrl) : null)
+
+  // Publishes the CSV export to the sibling filters component (page-state channel).
+  useTableExport(QuotationsTableContract, () => fetchQuotations)
 </script>
 
 {#if legalEntity && fetchQuotations}

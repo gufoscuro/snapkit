@@ -27,12 +27,13 @@
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
   import type { DeliveryScheduleLine } from '$lib/types/api-types'
-  import { createQueryRequestObject, type FilterQuery, type PaginatedResponse } from '$lib/utils/filters'
-  import { apiRequest } from '$lib/utils/request'
+  import type { FilterQuery } from '$lib/utils/filters'
+  import { createApiFetcher } from '$lib/utils/table-fetchers'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
   import IconTruckDelivery from '@tabler/icons-svelte/icons/truck-delivery'
   import { DeliveryScheduleTableContract } from './DeliveryScheduleTable.contract.js'
+  import { useTableExport } from '$lib/utils/table-export.svelte'
 
   let { legalEntity }: SnippetProps = $props()
 
@@ -111,22 +112,14 @@
 
   // The "to ship" view is intrinsically the outstanding schedule, so `outstanding=true`
   // is baked into the fetch rather than exposed as a filter.
+  // Grouping is client-side over the loaded rows, so a larger page means fewer
+  // groups arriving half-loaded on first paint.
   const fetchLines = $derived(
-    apiUrl
-      ? (page: number, activeFilters?: FilterQuery): Promise<PaginatedResponse<DeliveryScheduleLine>> =>
-          apiRequest<PaginatedResponse<DeliveryScheduleLine>>({
-            url: apiUrl,
-            queryParams: {
-              page,
-              // Grouping is client-side over the loaded rows, so a larger page means
-              // fewer groups arriving half-loaded on first paint.
-              per_page: 50,
-              outstanding: true,
-              ...createQueryRequestObject({ search: activeFilters?.search, query: activeFilters?.query }),
-            },
-          })
-      : null,
+    apiUrl ? createApiFetcher<DeliveryScheduleLine>(apiUrl, { perPage: 50, params: { outstanding: true } }) : null,
   )
+
+  // Publishes the CSV export to the sibling filters component (page-state channel).
+  useTableExport(DeliveryScheduleTableContract, () => fetchLines)
 </script>
 
 {#snippet groupHeader(rows: DeliveryScheduleLine[])}

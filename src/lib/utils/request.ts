@@ -246,24 +246,47 @@ function filenameFromContentDisposition(header: string | null): string | undefin
 }
 
 /**
- * Client-side API request that downloads a binary response (e.g. PDF) and
- * triggers a browser file-save dialog.
+ * Client-side API request that downloads a non-JSON response (e.g. a PDF, or a
+ * CSV export) and triggers a browser file-save dialog.
  *
- * Unlike apiRequest, this reads the response as a Blob instead of JSON.
+ * Unlike apiRequest, this reads the response as a Blob instead of JSON — which
+ * also means it never touches the GET cache, so an export always reflects the
+ * current server state.
  *
  * When `filename` is omitted, the name advertised by the backend via the
  * `Content-Disposition` header is used, falling back to `'download'`.
+ *
+ * Errors carry the parsed response body: the backend answers a failed download
+ * with a regular localized JSON error (e.g. 422 when a CSV export exceeds the
+ * row cap), so callers can surface it via `extractApiErrorMessage`.
  */
 export async function apiDownload(options: {
   url: string
   filename?: string
+  queryParams?: Record<string, string | number | boolean>
+  /** Overrides the `Accept` header. Defaults to the PDF/binary set. */
+  accept?: string
   redirectOnUnauthorized?: boolean
 }): Promise<void> {
-  const { url, filename, redirectOnUnauthorized = true } = options
-  const fullUrl = `${API_GATEWAY}/api${url}`
+  const {
+    url,
+    filename,
+    queryParams,
+    accept = 'application/pdf, application/octet-stream',
+    redirectOnUnauthorized = true,
+  } = options
+  let fullUrl = `${API_GATEWAY}/api${url}`
+
+  if (queryParams) {
+    const searchParams = new URLSearchParams()
+    for (const [key, value] of Object.entries(queryParams)) {
+      searchParams.append(key, String(value))
+    }
+    fullUrl += `?${searchParams.toString()}`
+  }
 
   const headers: HeadersInit = {
-    Accept: 'application/pdf, application/octet-stream',
+    Accept: accept,
     ...buildBaseHeaders(),
   }
 
@@ -275,9 +298,18 @@ export async function apiDownload(options: {
   }
 
   if (!result.ok) {
-    throw new ApiError('Download failed', result.status, null, result)
+    // A failed download responds with JSON, not the file — read it so the
+    // localized backend message survives into the thrown error.
+    const text = await result.text().catch(() => '')
+    const data: any = text ? parseJSON(text) || text : null
+    throw new ApiError(data?.message || 'Download failed', result.status, data, result)
   }
 
+  // `Content-Disposition` is not CORS-safelisted: the API lives on another
+  // origin, so the header only reaches us if it's listed in the response's
+  // `Access-Control-Expose-Headers`. The extension-less `'download'` fallback is
+  // deliberate — a file the OS can't open is the signal that the header didn't
+  // make it through, rather than a plausible name hiding the misconfiguration.
   const resolvedFilename =
     filename || filenameFromContentDisposition(result.headers.get('Content-Disposition')) || 'download'
 

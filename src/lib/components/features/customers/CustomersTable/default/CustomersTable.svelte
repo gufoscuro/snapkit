@@ -28,6 +28,7 @@
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
   import { CustomersTableContract } from './CustomersTable.contract.js'
+  import { useTableExport } from '$lib/utils/table-export.svelte'
 
   let { legalEntity }: SnippetProps = $props()
 
@@ -104,6 +105,9 @@
   // when legalEntity is a new object reference but the ID hasn't changed (e.g., during navigation).
   const customerApiUrl = $derived(legalEntity?.id ? `/legal-entities/${legalEntity.id}/customers` : null)
   const fetchCustomers = $derived(customerApiUrl ? createApiFetcher<Customer>(customerApiUrl) : null)
+
+  // Publishes the CSV export to the sibling filters component (page-state channel).
+  useTableExport(CustomersTableContract, () => fetchCustomers)
 </script>
 
 {#if legalEntity && fetchCustomers}

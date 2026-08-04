@@ -24,6 +24,7 @@
   import { getWarehouseTypeLabel, getValuationMethodLabel } from '$lib/utils/enum-labels'
   import type { SnippetProps } from '$utils/runtime'
   import { WarehousesTableContract } from './WarehousesTable.contract.js'
+  import { useTableExport } from '$lib/utils/table-export.svelte'
 
   let { legalEntity }: SnippetProps = $props()
 
@@ -83,6 +84,9 @@
   const fetchWarehouses = $derived(
     warehousesApiUrl ? createApiFetcher<LegalEntityWarehouse>(warehousesApiUrl) : null,
   )
+
+  // Publishes the CSV export to the sibling filters component (page-state channel).
+  useTableExport(WarehousesTableContract, () => fetchWarehouses)
 </script>
 
 {#if legalEntity && fetchWarehouses}

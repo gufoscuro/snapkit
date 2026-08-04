@@ -12,10 +12,11 @@
   const getSnippetProps = getContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY)
   const snippetProps = $derived(getSnippetProps())
 
-  // Set up default bindings: GenericFilters provides 'filters', CommodityCodesTable consumes 'filters'
+  // Default bindings: GenericFilters provides 'filters' and consumes the CSV
+  // export handler CommodityCodesTable publishes.
   setSnippetBindings({
-    provides: { filters: 'filters' },
-    consumes: { filters: 'filters' },
+    provides: { filters: 'filters', exportHandler: 'exportHandler' },
+    consumes: { filters: 'filters', exportHandler: 'exportHandler' },
   })
 </script>
 

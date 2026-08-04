@@ -23,6 +23,7 @@
   import { createApiFetcher } from '$lib/utils/table-fetchers'
   import type { SnippetProps } from '$utils/runtime'
   import { BanksTableContract } from './BanksTable.contract.js'
+  import { useTableExport } from '$lib/utils/table-export.svelte'
 
   let { legalEntity }: SnippetProps = $props()
 
@@ -76,6 +77,9 @@
   const fetchBanks = $derived(
     banksApiUrl ? createApiFetcher<LegalEntityBank>(banksApiUrl) : null
   )
+
+  // Publishes the CSV export to the sibling filters component (page-state channel).
+  useTableExport(BanksTableContract, () => fetchBanks)
 </script>
 
 {#if legalEntity && fetchBanks}

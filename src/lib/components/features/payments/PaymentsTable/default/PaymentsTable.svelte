@@ -38,6 +38,7 @@
   import IconCash from '@tabler/icons-svelte/icons/cash'
   import IconCircleCheck from '@tabler/icons-svelte/icons/circle-check'
   import { PaymentsTableContract } from './PaymentsTable.contract.js'
+  import { useTableExport } from '$lib/utils/table-export.svelte'
 
   let { legalEntity }: SnippetProps = $props()
 
@@ -166,6 +167,9 @@
 
   const apiUrl = $derived(legalEntity?.id ? `/legal-entities/${legalEntity.id}/invoice-due-dates` : null)
   const fetchDueDates = $derived(apiUrl ? createApiFetcher<InvoiceDueDate>(apiUrl) : null)
+
+  // Publishes the CSV export to the sibling filters component (page-state channel).
+  useTableExport(PaymentsTableContract, () => fetchDueDates)
 </script>
 
 {#if legalEntity && fetchDueDates}
