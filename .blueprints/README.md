@@ -53,7 +53,7 @@ snapkit-content/
 - **state-sharing.md**: Architecture for sharing state between sibling components using contracts and bindings. Covers PageState, useProvides/useConsumes hooks, and database-driven configuration
 - **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, and scaffolding examples
 - **detail-record-form.md**: Step-by-step guide for creating create/update detail form components using `useDetailRecord`. Covers the full workflow: entity type discovery, contract, `useDetailRecord` setup, validation schemas, resource config, page state sharing, and the component checklist
-- **resource-table.md**: Generic ResourceTable component for data tables. Covers declarative column configuration, 11 built-in renderers, utilities (createApiFetcher, createArchiveAction), table variants, and best practices
+- **resource-table.md**: Generic ResourceTable component for data tables. Covers declarative column configuration, 11 built-in renderers, utilities (createApiFetcher, createArchiveAction), column customization (`columnsStorageId` per-user persistence, reorder/hide, opt-in columns via `defaultVisible: false`), table variants, and best practices
 - **editable-table-field.md**: EditableTableField pattern for editing arrays as table rows. Covers auto-empty-row management, row snippet API, form context isolation, styling constants, and existing editors
 - **editable-list-field.md**: EditableListField pattern for editing arrays as vertical cards. Alternative to EditableTableField for items with many fields. Covers explicit add/remove, multi-type lists with custom add buttons, responsive card layout, rich text in cards, and styling constants
 - **table-filters.md**: Structured filter system for listing pages. Covers FilterConfig definition (enum, tags, date types), FilterDropdown component, standalone vs grouped modes, data flow through the contract system, serialization, and step-by-step guide for adding filters to any listing page
@@ -74,7 +74,7 @@ This is a per-feature pattern: one file per view/feature that accumulates non-ob
 - **invoices.md**: editability gating by state, cumulative-invoice merging, URL-driven prefill flow, payment-term/due-date schedule sync, line-item locking, SDI validation UX, status badges, filter quirks, chat-filter-tool gotchas, payment recording & schedule freeze, and the payments subpage.
 - **quotations.md**: the import *source*. Editability gating by `open` state, create-vs-edit validation, sales-transaction-type filtering, customer-driven defaults, composition remount, snapshot dual-shape (array/object), actions/badges, page-state lifecycle.
 - **sales-orders.md**: shares most of quotations' surface (cross-referenced, not duplicated); the sales-order-specific focus is the **quotation-import flow** (eligibility, composition-signature compatibility locking, header-from-first-record, importable-quantity clamping), fulfillment badge, and confirmation date.
-- **actionables.md**: the aggregate list views surfaced label-less at the top of the sidebar — **Da spedire** (`DeliveryScheduleTable`, `GET /delivery-schedule`) and **Da incassare** (`PaymentsTable`, `GET /invoice-due-dates`). Covers collection progress / payment status / recording (manual payment tracking, superseding the old issued-as-paid proxy), the forward-only + credit-note-excluded + zero-due-dates-valid shapes, EUR-default amount, the nested `invoice` object on due-date rows (with guarded accessors), and the delivery schedule's `outstanding`-baked/line-granular/`payment_pending` quirks. Points at the moddo-api `deferred` business-doc for the backend rationale.
+- **actionables.md**: the aggregate list views surfaced label-less at the top of the sidebar — **Da spedire** (`DeliveryScheduleTable`, `GET /delivery-schedule`) and **Da incassare** (`PaymentsTable`, `GET /invoice-due-dates`). Covers collection progress / payment status / recording (manual payment tracking, superseding the old issued-as-paid proxy), the forward-only + credit-note-excluded + zero-due-dates-valid shapes, EUR-default amount, the nested `invoice` object on due-date rows (with guarded accessors), and the delivery schedule's `outstanding`-baked/line-granular/`payment_pending` quirks plus the opt-in customer-PO (ODA) column. Points at the moddo-api `deferred` business-doc for the backend rationale.
 
 ### Testing
 
@@ -190,6 +190,15 @@ When updating guidelines:
 - "When is the invoice schedule frozen / why can't I edit due dates or the payment term?" → `domain-logic/invoices.md`
 - "How does the invoice payments subpage (grouped by scadenza) work?" → `domain-logic/invoices.md`
 - "What is the invoice payment_status badge (unpaid / partially_paid / paid)?" → `domain-logic/invoices.md`
+- "How to add a column that is hidden by default / opt-in?" → `components/resource-table.md`
+- "What does defaultVisible do on a table column?" → `components/resource-table.md`
+- "How to let users reorder or hide table columns?" → `components/resource-table.md`
+- "What is columnsStorageId / where are column preferences saved?" → `components/resource-table.md`
+- "Why doesn't my hidden-by-default column stay hidden?" → `components/resource-table.md`
+- "Why is a newly added column appended at the end for existing users?" → `components/resource-table.md`
+- "Why can't the actions / state indicator column be reordered?" → `components/resource-table.md`
+- "Why is the customer PO (ODA) column hidden by default?" → `domain-logic/actionables.md`
+- "Which endpoints expose customer_purchase_order?" → `domain-logic/actionables.md`
 - "How to build a read-only aggregate list that links to the source entity?" → `components/resource-table.md`
 - "How to bake a static query param into a ResourceTable fetcher?" → `components/resource-table.md`
 - "How to refresh a ResourceTable after an out-of-table dialog saves?" → `components/resource-table.md`

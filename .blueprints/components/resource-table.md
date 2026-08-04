@@ -150,6 +150,8 @@ Pass `{filters}` directly — ResourceTable will react to filter changes:
 <ResourceTable {columns} fetchFunction={fetchItems} {filters} class="mt-4" />
 ```
 
+Add `columnsStorageId="your-table"` to let users reorder/hide columns — see [Column Customization](#column-customization-reorder-hide-opt-in-columns).
+
 > **Why not `filtersContract` on ResourceTable?** `ResourceTable` is a generic core component — it should not depend on the page state context system. The table feature component (which IS wrapped by `SnippetBindingsProvider`) reads filters and passes them as a plain reactive prop.
 
 ---
@@ -566,6 +568,69 @@ type ArchiveActionConfig<T> = {
 ```
 
 **Location:** `src/lib/utils/table-actions.ts`
+
+---
+
+## Column Customization (reorder, hide, opt-in columns)
+
+Users can reorder and show/hide columns per table, and the choice is persisted. This is **opt-in per table**: it exists only when the table passes `columnsStorageId`.
+
+```svelte
+<ResourceTable {columns} fetchFunction={fetchItems} {filters} columnsStorageId="items-table" />
+```
+
+**Why a storage ID instead of a boolean:** preferences are saved per-user in `localStorage` under `columns:<storageId>` (via `StorageUtil.getByUser`/`setByUser`, so two users on the same browser don't share layouts). The ID **is** the persistence key — renaming it silently discards every user's saved layout, so treat it as stable. Convention in use: kebab-case, `<resource>-table` (`items-table`, `invoices-table`, `sales-order-table`). A table rendered in several flavours can scope it dynamically — `ItemPriceHistory` uses `` `item-price-history-${source}` `` so each source keeps its own layout.
+
+### What the user can customize
+
+Only columns with a **non-empty `header`** (`isCustomizable` in `utils/column-preferences.ts`). Columns declared with `header: ''` — state indicator, tag badges, actions — are fixed: they keep their leading/trailing position and never appear in the dialog.
+
+**Why:** those columns are structural, not informational. Hiding the actions column or dragging the state indicator into the middle would break the table rather than customize it.
+
+The gear icon that opens the dialog is injected by `ResourceTable` into the header of the **last resolved column** (`ColumnSettingsHeader`). Tables that enable customization should therefore end with a header-less trailing column (typically `actions`), otherwise the icon lands next to a real header label.
+
+### Column identity
+
+`getColumnId` derives the persisted ID from `accessorKey`, falling back to `__<renderer>_<index>` when there is none.
+
+**Rule:** give every customizable column a real `accessorKey`. The index-based fallback breaks as soon as the column array is reordered — saved preferences would then point at a different column.
+
+### Opt-in columns (`defaultVisible: false`)
+
+A column that exists in the customizer but starts toggled **off**:
+
+```typescript
+{
+  accessorKey: 'customer_purchase_order',
+  header: m.customer_purchase_order(),
+  renderer: 'text',
+  // Opt-in: available in the column customizer, off until the user enables it
+  defaultVisible: false,
+}
+```
+
+**Why:** it's the escape valve for fields that a minority of users needs. Adding them as normal columns widens the table for everybody; leaving them out means those users have no way to get them. In use today: `notes` on `ItemsTable`, `customer_purchase_order` (ODA/PO) on `SalesOrdersTable` and `DeliveryScheduleTable`, and several on `ItemPriceHistory`.
+
+`applyPreferences` honours it on **both** branches, which is what makes it work for existing users too:
+
+| User state | Normal column | Opt-in column |
+|---|---|---|
+| No saved preferences | visible, in declared order | filtered out |
+| Has saved preferences, column is new | appended at the end, visible | not appended — stays off |
+| Has saved preferences, column is listed | as saved | as saved |
+
+**Why the "append at the end" rule:** a user who customized the table months ago must not lose the column you ship today, but must not have their layout reshuffled either. So position in the `columns` array only decides the **default** order — for anyone with saved preferences, a newly added column lands last regardless of where you declared it.
+
+Stale preference IDs (columns you removed) are dropped silently by both `applyPreferences` and `mergePreferences`, so deleting a column needs no migration.
+
+### Gotchas
+
+- **`defaultVisible: false` without `columnsStorageId` does nothing.** `ResourceTable` skips `applyPreferences` entirely when there's no storage ID, so the column renders as if it were visible — and with no customizer, the user has no way to turn it off. Opt-in columns require customization to be enabled on that table.
+- **The last visible column can't be hidden.** The dialog disables the switch when only one column is left (`visibleCount <= 1`), to avoid an empty table with no way back.
+- **Reset** (`removeByUser` + `onApply(null)`) restores the declared defaults — which means opt-in columns go back to hidden.
+- i18n keys involved: `customize_columns`, `reset_defaults`.
+
+**Files:** `ResourceTable.svelte` (wiring + gear injection), `ColumnCustomizer.svelte` (dialog, DnD via `svelte-dnd-action`), `ColumnSettingsHeader.svelte` (gear button), `utils/column-preferences.ts` (`getColumnId`, `isCustomizable`, `applyPreferences`, `mergePreferences` + unit tests).
 
 ---
 
@@ -1185,6 +1250,7 @@ const fetchLines = $derived(
 - [ ] Contract file created with `$id`, `provides`, and `consumes`
 - [ ] Component exports contract from `<script module>`
 - [ ] Column config uses appropriate renderers
+- [ ] `columnsStorageId` set (stable kebab-case key) — required for column customization and for any `defaultVisible: false` column
 - [ ] API URL built reactively with null guards
 - [ ] Archive action configured with i18n messages
 - [ ] Barrel export (`index.ts`) created
