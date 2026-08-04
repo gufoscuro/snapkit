@@ -586,7 +586,6 @@
     .schema<Partial<TransportDocument>>({
       sales_transaction_type: [v.required({ field: m.sales_transaction_type() })],
       customer_id: [v.required({ field: m.customer() })],
-      incoterm: [v.required({ field: m.incoterm() })],
       shipping_date: [v.required({ field: m.shipping_date() })],
     })
     .build()
@@ -795,7 +794,14 @@
 
             <TextField name="shipping_time" label={m.shipping_time()} class={FormFieldClass.MaxWidth} />
 
-            <SelectField name="incoterm" label={m.incoterm()} items={incotermItems} class={FormFieldClass.MinWidth} />
+            <div class={FormFieldClass.MaxWidth}>
+              <SelectField
+                name="incoterm"
+                label={m.incoterm()}
+                items={incotermItems}
+                width={FormFieldClass.MinWidth}
+                allowClear />
+            </div>
 
             <TextField name="incoterm_location" label={m.incoterm_location()} class={FormFieldClass.MaxWidth} />
           {/snippet}

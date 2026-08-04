@@ -237,7 +237,6 @@
       currency: [v.required({ field: m.currency_label() })],
       valid_from: [v.required({ field: m.valid_from() })],
       valid_to: [v.required({ field: m.valid_to() })],
-      incoterm: [v.required({ field: m.incoterm() })],
       composition: [compositionRules()],
     })
     .build()
@@ -418,7 +417,14 @@
                 required />
             {/key}
 
-            <SelectField name="incoterm" label={m.incoterm()} items={incotermItems} class={FormFieldClass.MinWidth} />
+            <div class={FormFieldClass.MaxWidth}>
+              <SelectField
+                name="incoterm"
+                label={m.incoterm()}
+                items={incotermItems}
+                width={FormFieldClass.MinWidth}
+                allowClear />
+            </div>
 
             <TextField name="incoterm_location" label={m.incoterm_location()} class={FormFieldClass.MaxWidth} />
 

@@ -703,7 +703,14 @@
                 required />
             {/key}
 
-            <SelectField name="incoterm" label={m.incoterm()} items={incotermItems} class={FormFieldClass.MinWidth} />
+            <div class={FormFieldClass.MaxWidth}>
+              <SelectField
+                name="incoterm"
+                label={m.incoterm()}
+                items={incotermItems}
+                width={FormFieldClass.MinWidth}
+                allowClear />
+            </div>
 
             <TextField name="incoterm_location" label={m.incoterm_location()} class={FormFieldClass.MaxWidth} />
 

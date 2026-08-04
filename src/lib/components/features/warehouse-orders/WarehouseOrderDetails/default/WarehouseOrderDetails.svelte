@@ -63,8 +63,8 @@
   import { extractSnapshotString, type SnapshotShape } from '$lib/utils/snapshots'
   import type { SnippetProps } from '$utils/runtime'
   import IconDeviceFloppy from '@tabler/icons-svelte/icons/device-floppy'
-  import { SvelteSet } from 'svelte/reactivity'
   import { toast } from 'svelte-sonner'
+  import { SvelteSet } from 'svelte/reactivity'
   import { WarehouseOrderDetailsContract } from './WarehouseOrderDetails.contract.js'
 
   let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
@@ -185,7 +185,9 @@
     const data = response.data ?? []
     if (!formFilters?.sales_transaction_type) return data
     // Endpoint doesn't filter by sales_transaction_type — apply client-side.
-    return data.filter(o => !o.sales_transaction_type || o.sales_transaction_type === formFilters.sales_transaction_type)
+    return data.filter(
+      o => !o.sales_transaction_type || o.sales_transaction_type === formFilters.sales_transaction_type,
+    )
   }
 
   function mapSalesOrderToOption(o: SalesOrderForImport): BasicOption {
@@ -201,12 +203,7 @@
    * Matches the backend rules enforced when creating a warehouse order from sales orders.
    */
   function salesOrderCompatKey(o: SalesOrderForImport): string {
-    return [
-      o.customer_id,
-      o.ship_to_address_id ?? '',
-      o.incoterm ?? '',
-      o.sales_transaction_type ?? '',
-    ].join('|')
+    return [o.customer_id, o.ship_to_address_id ?? '', o.incoterm ?? '', o.sales_transaction_type ?? ''].join('|')
   }
 
   /**
@@ -374,9 +371,7 @@
 
   // *Attr derived: read from `record.*_snapshot` in edit mode, fall back to the
   // `*SnapshotImport` state populated by the import flow in create mode.
-  const customerAttr = $derived(
-    customerSnapshotImport.resolve(record?.customer_snapshot as SnapshotShape | undefined),
-  )
+  const customerAttr = $derived(customerSnapshotImport.resolve(record?.customer_snapshot as SnapshotShape | undefined))
 
   const shipToAddressAttr = $derived(
     shipToSnapshotImport.resolve(record?.ship_to_snapshot as SnapshotShape | undefined),
@@ -534,7 +529,14 @@
               items={shippingMethodItems}
               class={FormFieldClass.MinWidth} />
 
-            <SelectField name="incoterm" label={m.incoterm()} items={incotermItems} class={FormFieldClass.MinWidth} />
+            <div class={FormFieldClass.MaxWidth}>
+              <SelectField
+                name="incoterm"
+                label={m.incoterm()}
+                items={incotermItems}
+                width={FormFieldClass.MinWidth}
+                allowClear />
+            </div>
 
             <TextField name="incoterm_location" label={m.incoterm_location()} class={FormFieldClass.MaxWidth} />
           {/snippet}
