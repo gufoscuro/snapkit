@@ -3,6 +3,7 @@
   @description Displays a paginated table of sales orders with load more functionality.
   Shows document number (linked to details), customer, status, document date,
   requested delivery date, currency, net value, fulfillment status and tags.
+  Customer PO (ODA) is available as an opt-in column.
   Consumes filter state from page context to filter displayed data.
   @keywords sales-orders, table, list, pagination, load-more, filters, sales
   @uses ResourceTable
@@ -76,6 +77,13 @@
           return '-'
         },
       },
+    },
+    {
+      accessorKey: 'customer_purchase_order',
+      header: m.customer_purchase_order(),
+      renderer: 'text',
+      // Opt-in: available in the column customizer, off until the user enables it
+      defaultVisible: false,
     },
     {
       accessorKey: 'document_date',

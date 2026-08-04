@@ -4,7 +4,8 @@
   (the delivery schedule), grouped by source sales order: the order (linked to its
   delivery recap), customer and the "create DDT" action sit in the group header,
   while each row shows item, requested/confirmed delivery dates, ordered/remaining
-  quantities and a payment-pending indicator. Defaults to outstanding lines only.
+  quantities and a payment-pending indicator. Customer PO (ODA) is available as an
+  opt-in column. Defaults to outstanding lines only.
   Consumes filter state from page context.
   @keywords delivery, schedule, shipment, to-ship, outstanding, sales-orders, table, list, group
   @uses ResourceTable, TableGroupHeader
@@ -66,6 +67,14 @@
       accessorKey: 'description',
       header: m.description(),
       renderer: 'long-text',
+    },
+    {
+      // Order-level reference, so it repeats across the lines of a group — opt-in
+      // keeps the default view clean for who doesn't work by customer PO.
+      accessorKey: 'customer_purchase_order',
+      header: m.customer_purchase_order(),
+      renderer: 'text',
+      defaultVisible: false,
     },
     {
       // Ordered / shipped / remaining condensed into one cell (uom folded in) to
