@@ -10,6 +10,63 @@ directly, without the article existing in the item registry.
 
 ---
 
+## 0. Context for whoever implements this
+
+This document was written **from the frontend side** (SnapKit) and is meant to be handed to the
+backend as an implementation brief. It states what the frontend needs and why; endpoint shapes are
+proposals, not decrees — §10 lists what is genuinely still open.
+
+**Origin.** Requirement from the sales side: *"on quotes, users want to fill in code and description
+directly on a line without having to create the item in the articles registry first, otherwise the
+anagrafica gets polluted with codes that will never be used if the quote doesn't convert."*
+
+**Scope boundary.** Only quotations. See §7 and §9 for why nothing else is affected.
+
+### Services touched
+
+| Concern | Namespace |
+| --- | --- |
+| Quotations, quotation lines, transitions | `sales-api` |
+| Items registry, item categories/status | `product-api` |
+| Stat endpoint for the classification backlog (§6) | wherever the existing `…/stats/kpis/*` live |
+
+⚠️ **The promotion operation spans two of these** — it creates an *item* and mutates a *quotation*
+in the same breath, and §5 requires that to be atomic. If these are separate services with separate
+databases, a single database transaction is not available and this needs an explicit answer
+(orchestration in one service, saga with compensation, or accepting a narrower guarantee). **This is
+the biggest unknown in the document — please resolve it first**, since it may change the endpoint
+shape in §5.
+
+### API conventions assumed
+
+Taken from the existing API and from `DASHBOARD_STATS_API.md` (a frontend-repo document — the parts
+that matter are inlined here, so it is not a prerequisite):
+
+- payload keys are **`snake_case`**;
+- **listing** endpoints return a `{ "data": [...] }` envelope with pagination metadata; **single
+  resources** return the bare object, no envelope;
+- money is a **raw number in the currency's major unit** (euros, not cents); no formatted strings;
+- mutations on versioned resources use **optimistic locking** via `version`.
+
+### Related tickets
+
+- **MOD-108 / MOD-109** — *cross-document line search*: the feature that lets a user search line
+  items across quotations, orders, DDTs and invoices. Referenced in §8, which specifies how it must
+  treat lines with no linked article. If that work has not started yet, §8 is a constraint on its
+  design rather than a change to existing code.
+
+### Deliverables beyond the code
+
+- **The OpenAPI spec must be updated** as part of this work. The frontend discovers endpoints and
+  generates its TypeScript types from it — an implemented-but-undocumented endpoint is not usable on
+  our side.
+- ⚠️ **Pre-existing discrepancy to settle while you are in here:** the spec currently declares
+  `QuotationItem.item_snapshot` as an **array** (`Record<string, unknown>[]`), but the frontend reads
+  it as a **single object** (`item_snapshot.code`). The examples in this document assume an object.
+  Please confirm the real shape and fix whichever side is wrong.
+
+---
+
 ## 1. Decisions taken (read this first)
 
 | # | Decision | Rationale |
@@ -394,13 +451,16 @@ Listed so nothing gets built speculatively:
    Not decided on our side. Our working assumption is *whoever can approve can promote*; if that is
    wrong, we need a distinct error so the UI can offer link-or-delete only.
 2. **Candidate lookup** — dedicated endpoint or reuse of the item search? (§5)
-3. **Endpoint placement** — the promotion endpoint is proposed under the quotation
+3. **Atomicity across services (§0)** — can item creation and quotation mutation share a
+   transaction? If not, what guarantee do we get instead, and what does the frontend see when the
+   second half fails? **Highest-priority question in this document.**
+4. **Endpoint placement** — the promotion endpoint is proposed under the quotation
    (`…/quotations/{id}/items/promote`) because it mutates the document too. If you prefer it under
    `items`, fine, as long as it stays a single transaction that also relinks the lines.
-4. **Duplicate ephemeral codes within one quotation** — allowed (two lines, same hand-typed code)?
+5. **Duplicate ephemeral codes within one quotation** — allowed (two lines, same hand-typed code)?
    And if so, does promoting both create one article or two? Our preference: detect it in the
    promotion dialog and default to one article linked to both lines.
-5. **Promotion with no hand-typed code, under manual numbering** — does the article get created
+6. **Promotion with no hand-typed code, under manual numbering** — does the article get created
    anyway, or is a code required at that point? (§5) Decides whether the dialog needs a code input.
 
 ---
@@ -424,3 +484,28 @@ For coordination — no backend action required.
 - Items registry: `needs_classification` filter, plus a warning banner with the backlog count.
 - Dashboard: an "articoli da classificare" KPI card wired to the stat endpoint in §6 — no new
   widget code needed, it reuses the existing config-driven KPI widget.
+
+---
+
+## 12. Backend checklist
+
+Answer first (§10): **atomicity across `sales-api` / `product-api`** — it may change item 4.
+
+- [ ] `ephemeral` added to the quotation line type enum, with the §4 validation rules
+- [ ] `item_id` nullable on quotation lines, **only** for `type: 'ephemeral'`
+- [ ] `approve` transition rejects quotations with ephemeral lines, using the structured 422 in §3
+- [ ] Promotion endpoint (§5): batch, create-or-link, atomic, relinks lines, bumps `version` once
+- [ ] Code handling on promotion (§5): verbatim reuse, exact/fuzzy match behaviour, absent-code path
+- [ ] Candidate lookup — dedicated endpoint, or confirmation that item search suffices (§5)
+- [ ] `unclassified` added to `ItemCategory`; `draft` added to `ItemStatus` (§6)
+- [ ] `draft` articles remain included in `mode=sellable` (§6 — the trap)
+- [ ] `needs_classification` flag on articles + filter on the items listing + promotion source recorded
+- [ ] `…/stats/kpis/items-to-classify` following the existing KPI contract (§6)
+- [ ] `incomplete` added to `QuotationTag`, derived from the presence of ephemeral lines (§3)
+- [ ] Duplicate / revise / supersede / reopen behave as in §3
+- [ ] Quotation totals and the VAT recap include ephemeral lines
+- [ ] Customer-facing PDF renders ephemeral lines identically to `item` lines (§7)
+- [ ] Stock, price lists, item price history and margin reporting exclude them as specified (§7)
+- [ ] Line search indexes snapshot text and exposes the linked/unlinked facet (§8)
+- [ ] **OpenAPI spec updated** for every change above (§0)
+- [ ] `QuotationItem.item_snapshot` array-vs-object discrepancy resolved (§0)
