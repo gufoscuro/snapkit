@@ -171,6 +171,7 @@
       state: 'approved',
       fulfillment_status: 'none,in_progress',
       per_page: '200',
+      view: 'picker',
     }
     if (search) queryParams.search = search
     if (formFilters?.customer_id) queryParams.customer_id = formFilters.customer_id

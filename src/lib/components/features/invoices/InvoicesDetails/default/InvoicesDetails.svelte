@@ -626,7 +626,7 @@
    */
   async function fetchImportableInvoiceableDocuments(search?: string): Promise<InvoiceableDocument[]> {
     if (!legalEntityId) return []
-    const queryParams: Record<string, string> = { per_page: '200' }
+    const queryParams: Record<string, string> = { per_page: '200', view: 'picker' }
     if (search) queryParams.search = search
     if (IMPORT_DATE_RANGE_ENABLED && importDateFrom) queryParams.date_from = importDateFrom
     if (IMPORT_DATE_RANGE_ENABLED && importDateTo) queryParams.date_to = importDateTo

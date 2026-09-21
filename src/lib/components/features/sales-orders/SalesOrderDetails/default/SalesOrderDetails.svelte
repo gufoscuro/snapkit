@@ -196,6 +196,8 @@
       // The endpoint is paginated; without this we'd risk missing compatible
       // records past the default page cap.
       per_page: '200',
+      // Lets the backend return a slimmed-down payload tailored to the import picker.
+      view: 'picker',
     }
     if (search) queryParams.search = search
     if (formFilters?.customer_id) queryParams.customer_id = formFilters.customer_id

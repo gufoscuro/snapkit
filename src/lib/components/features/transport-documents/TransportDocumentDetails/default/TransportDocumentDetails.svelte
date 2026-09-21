@@ -238,6 +238,7 @@
       state: 'approved',
       fulfillment_status: 'none,in_progress,picked,partially_shipped',
       per_page: '200',
+      view: 'picker',
     }
     if (search) queryParams.search = search
     if (formFilters?.customer_id) queryParams.customer_id = formFilters.customer_id
@@ -268,6 +269,7 @@
     const queryParams: Record<string, string> = {
       transport_document_status: 'none,partial',
       per_page: '200',
+      view: 'picker',
     }
     if (search) queryParams.search = search
     if (formFilters?.customer_id) queryParams.customer_id = formFilters.customer_id
