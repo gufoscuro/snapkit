@@ -74,6 +74,12 @@
   let defaultAttr = $state<VatCodeSummary | undefined>(undefined)
   const resolvedAttr = $derived(attr ?? defaultAttr)
 
+  // Preselect the catalog's default VAT code on an empty field. The pick is
+  // announced through `onChoose`, exactly like a user's: writing it only to the
+  // form field made the dropdown *look* filled while the owner's own state stayed
+  // empty. Inside a list editor (`name="items.0.vat_code_id"`) that meant a row
+  // that showed a VAT code but didn't carry one — and since incomplete rows are
+  // dropped on commit, the whole line silently vanished from the payload.
   onMount(async () => {
     if (attr) return
     const currentValue = form?.values[name]
@@ -84,6 +90,7 @@
     if (defaultItem) {
       defaultAttr = defaultItem
       form?.updateField(name, defaultItem.id as never)
+      onChoose(defaultItem)
     }
   })
 
