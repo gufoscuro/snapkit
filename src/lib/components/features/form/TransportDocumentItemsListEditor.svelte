@@ -248,6 +248,10 @@
     selectedItem: Item,
     updateItem: (index: number, updates: Partial<InternalLineItem>) => void,
   ) {
+    // Same reasoning as the quotation/invoice editor: the selector must not show a
+    // default VAT the row doesn't actually carry, or the line saves without one.
+    const needsDefaultVat = defaultVatCode && !items[index]?.vat_code_id
+
     updateItem(index, {
       item_id: selectedItem.id,
       item_snapshot: selectedItem as unknown as Record<string, unknown>,
@@ -255,6 +259,13 @@
       uom: (selectedItem.primary_uom as UnitOfMeasure | undefined) || UnitOfMeasures.Default,
       quantity: 1,
       itemAttr: selectedItem,
+      ...(needsDefaultVat
+        ? {
+            vat_code_id: defaultVatCode.id,
+            vat_code_snapshot: defaultVatCode as unknown as Record<string, unknown>,
+            vatCodeAttr: defaultVatCode,
+          }
+        : {}),
     })
   }
 
@@ -433,116 +444,117 @@
       {@const linked = isLinkedItem(item)}
       {@const linkedFromSO = !!item.sales_order_item_id}
       <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-      {#if linked}
-        <div class="sm:col-span-2 lg:col-span-2">
-          <span class="block text-sm leading-6 font-medium">{m.item()}</span>
-          <div class="flex h-9 items-center gap-2 text-sm">
-            <span class="max-w-64 truncate text-muted-foreground">
-              {item.item_snapshot?.name ?? item.item_snapshot?.code ?? '-'}
-            </span>
-            <Tooltip.Root>
-              <Tooltip.Trigger>
-                <Badge variant="outline" class="text-[10px] font-normal">
-                  {linkedFromSO ? m.import_source_sales_order() : m.import_source_warehouse_order()}
-                </Badge>
-              </Tooltip.Trigger>
-              <Tooltip.Content>
-                {linkedFromSO ? m.linked_to_sales_order_item() : m.linked_to_warehouse_order_item()}
-              </Tooltip.Content>
-            </Tooltip.Root>
+        {#if linked}
+          <div class="sm:col-span-2 lg:col-span-2">
+            <span class="block text-sm leading-6 font-medium">{m.item()}</span>
+            <div class="flex h-9 items-center gap-2 text-sm">
+              <span class="max-w-64 truncate text-muted-foreground">
+                {item.item_snapshot?.name ?? item.item_snapshot?.code ?? '-'}
+              </span>
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <Badge variant="outline" class="text-[10px] font-normal">
+                    {linkedFromSO ? m.import_source_sales_order() : m.import_source_warehouse_order()}
+                  </Badge>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  {linkedFromSO ? m.linked_to_sales_order_item() : m.linked_to_warehouse_order_item()}
+                </Tooltip.Content>
+              </Tooltip.Root>
+            </div>
           </div>
-        </div>
-      {:else}
-        <div class="sm:col-span-2 lg:col-span-2">
-          <ItemSelector
-            name="{name}.{index}.item_id"
-            label={m.item()}
-            mode="sellable"
-            attr={item.itemAttr}
-            width="w-full"
-            contentWidth={FormFieldClass.SelectorContentDefaultWidth}
-            readonly={isDisabled}
-            onChoose={selectedItem => handleItemSelect(index, selectedItem, updateItem)}
-            onClear={() => handleItemClear(index, updateItem)}
-            allowOpenRecord />
-        </div>
-      {/if}
+        {:else}
+          <div class="sm:col-span-2 lg:col-span-2">
+            <ItemSelector
+              name="{name}.{index}.item_id"
+              label={m.item()}
+              mode="sellable"
+              attr={item.itemAttr}
+              width="w-full"
+              contentWidth={FormFieldClass.SelectorContentDefaultWidth}
+              readonly={isDisabled}
+              onChoose={selectedItem => handleItemSelect(index, selectedItem, updateItem)}
+              onClear={() => handleItemClear(index, updateItem)}
+              allowOpenRecord />
+          </div>
+        {/if}
 
-      <QuantityField
-        name="{name}.{index}.quantity"
-        label={m.quantity()}
-        value={item.quantity ?? 0}
-        uom={item.uom}
-        error={getFieldError(index, 'quantity')}
-        errorPosition="floating-bottom"
-        disabled={(!linked && !item.item_id) || isDisabled}
-        width="w-full"
-        onChange={qty => updateItem(index, { quantity: qty })} />
-
-      <div class="sm:col-span-2 lg:col-span-3">
-        <TextField
-          name="{name}.{index}.description"
-          label={m.description()}
-          value={item.description ?? ''}
-          error={getFieldError(index, 'description')}
+        <QuantityField
+          name="{name}.{index}.quantity"
+          label={m.quantity()}
+          value={item.quantity ?? 0}
+          uom={item.uom}
+          error={getFieldError(index, 'quantity')}
           errorPosition="floating-bottom"
-          disabled={linked || !item.item_id || isDisabled}
+          disabled={(!linked && !item.item_id) || isDisabled}
           width="w-full"
-          oninput={e => updateItem(index, { description: e.currentTarget.value })} />
-      </div>
+          onChange={qty => updateItem(index, { quantity: qty })} />
 
-      <SelectField
-        name="{name}.{index}.uom"
-        label={m.uom()}
-        items={uomItems}
-        value={item.uom}
-        error={getFieldError(index, 'uom')}
-        errorPosition="floating-bottom"
-        disabled
-        width="w-full"
-        onChange={uom => updateItem(index, { uom: uom ?? undefined })} />
+        <div class="sm:col-span-2 lg:col-span-3">
+          <TextField
+            name="{name}.{index}.description"
+            label={m.description()}
+            value={item.description ?? ''}
+            error={getFieldError(index, 'description')}
+            errorPosition="floating-bottom"
+            disabled={linked || !item.item_id || isDisabled}
+            width="w-full"
+            oninput={e => updateItem(index, { description: e.currentTarget.value })} />
+        </div>
 
-      <PriceField
-        name="{name}.{index}.unit_price"
-        label={m.unit_price()}
-        value={item.unit_price ?? 0}
-        {currency}
-        error={getFieldError(index, 'unit_price')}
-        errorPosition="floating-bottom"
-        disabled={(!linked && !item.item_id) || isDisabled}
-        width="w-full"
-        onChange={price => updateItem(index, { unit_price: price })} />
+        <SelectField
+          name="{name}.{index}.uom"
+          label={m.uom()}
+          items={uomItems}
+          value={item.uom}
+          error={getFieldError(index, 'uom')}
+          errorPosition="floating-bottom"
+          disabled
+          width="w-full"
+          onChange={uom => updateItem(index, { uom: uom ?? undefined })} />
 
-      <VatCodeSelector
-        name="{name}.{index}.vat_code_id"
-        label={m.vat_code()}
-        attr={item.vatCodeAttr || defaultVatCode}
-        direction="vendita"
-        width="w-full"
-        contentWidth={FormFieldClass.SelectorContentDefaultWidth}
-        readonly={(!linked && !item.item_id) || isDisabled}
-        onChoose={vatCode => handleVatCodeSelect(index, vatCode, updateItem)}
-        onClear={() => updateItem(index, { vat_code_id: '', vat_code_snapshot: undefined, vatCodeAttr: undefined })} />
+        <PriceField
+          name="{name}.{index}.unit_price"
+          label={m.unit_price()}
+          value={item.unit_price ?? 0}
+          {currency}
+          error={getFieldError(index, 'unit_price')}
+          errorPosition="floating-bottom"
+          disabled={(!linked && !item.item_id) || isDisabled}
+          width="w-full"
+          onChange={price => updateItem(index, { unit_price: price })} />
 
-      <NumberField
-        name="{name}.{index}.weight_gross"
-        label={m.weight_gross()}
-        value={item.weight_gross ?? 0}
-        error={getFieldError(index, 'weight_gross')}
-        errorPosition="floating-bottom"
-        disabled={(!linked && !item.item_id) || isDisabled}
-        width="w-full"
-        oninput={e => updateItem(index, { weight_gross: parseFloat(e.currentTarget.value) || 0 })} />
+        <VatCodeSelector
+          name="{name}.{index}.vat_code_id"
+          label={m.vat_code()}
+          attr={item.vatCodeAttr}
+          direction="vendita"
+          width="w-full"
+          contentWidth={FormFieldClass.SelectorContentDefaultWidth}
+          readonly={(!linked && !item.item_id) || isDisabled}
+          onChoose={vatCode => handleVatCodeSelect(index, vatCode, updateItem)}
+          onClear={() =>
+            updateItem(index, { vat_code_id: '', vat_code_snapshot: undefined, vatCodeAttr: undefined })} />
 
-      <NumberField
-        name="{name}.{index}.weight_net"
-        label={m.weight_net()}
-        value={item.weight_net ?? 0}
-        error={getFieldError(index, 'weight_net')}
-        errorPosition="floating-bottom"
-        disabled={(!linked && !item.item_id) || isDisabled}
-        width="w-full"
-        oninput={e => updateItem(index, { weight_net: parseFloat(e.currentTarget.value) || 0 })} />
+        <NumberField
+          name="{name}.{index}.weight_gross"
+          label={m.weight_gross()}
+          value={item.weight_gross ?? 0}
+          error={getFieldError(index, 'weight_gross')}
+          errorPosition="floating-bottom"
+          disabled={(!linked && !item.item_id) || isDisabled}
+          width="w-full"
+          oninput={e => updateItem(index, { weight_gross: parseFloat(e.currentTarget.value) || 0 })} />
+
+        <NumberField
+          name="{name}.{index}.weight_net"
+          label={m.weight_net()}
+          value={item.weight_net ?? 0}
+          error={getFieldError(index, 'weight_net')}
+          errorPosition="floating-bottom"
+          disabled={(!linked && !item.item_id) || isDisabled}
+          width="w-full"
+          oninput={e => updateItem(index, { weight_net: parseFloat(e.currentTarget.value) || 0 })} />
       </div>
     {/if}
   {/snippet}
