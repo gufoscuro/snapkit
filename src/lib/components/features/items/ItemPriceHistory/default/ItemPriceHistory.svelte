@@ -49,6 +49,7 @@
   } from '$lib/utils/enum-labels'
   import type { FilterQuery, PaginatedResponse } from '$lib/utils/filters'
   import { apiRequest } from '$lib/utils/request'
+  import { DEFAULT_PER_PAGE } from '$lib/utils/table-fetchers'
   import { useBreadcrumbTitle } from '$utils/breadcrumb-title.js'
   import { createRoute } from '$utils/route-builder.js'
   import type { SnippetProps } from '$utils/runtime'
@@ -158,6 +159,7 @@
         url,
         queryParams: {
           page,
+          per_page: DEFAULT_PER_PAGE,
           ...(query?.search ? { search: query.search } : {}),
           ...(query?.query ?? {}),
         },

@@ -23,6 +23,7 @@
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import type { PaginatedResponse } from '$lib/utils/filters'
   import { apiRequest } from '$lib/utils/request'
+  import { DEFAULT_PER_PAGE } from '$lib/utils/table-fetchers'
   import type { SnippetProps } from '$utils/runtime'
   import { onDestroy, onMount } from 'svelte'
   import { SalesOrderDeliveryScheduleTableContract } from './SalesOrderDeliveryScheduleTable.contract.js'
@@ -111,7 +112,7 @@
       ? (page: number): Promise<PaginatedResponse<DeliveryScheduleLine>> =>
           apiRequest<PaginatedResponse<DeliveryScheduleLine>>({
             url: `/legal-entities/${legalEntityId}/delivery-schedule`,
-            queryParams: { page, sales_order_id: salesOrderId },
+            queryParams: { page, per_page: DEFAULT_PER_PAGE, sales_order_id: salesOrderId },
           })
       : null,
   )

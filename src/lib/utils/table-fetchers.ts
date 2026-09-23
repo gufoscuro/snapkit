@@ -22,6 +22,14 @@ export function isExportableFetcher<T>(fetcher: TableFetcher<T>): fetcher is Exp
 }
 
 /**
+ * Page size used by every table fetcher unless overridden.
+ *
+ * The backend default (15) makes listings feel truncated and forces repeated
+ * "load more" clicks; 100 rows cover almost every listing in one request.
+ */
+export const DEFAULT_PER_PAGE = 100
+
+/**
  * Creates a generic API fetcher function for ResourceTable
  *
  * Returns a function that fetches data from the specified API endpoint
@@ -32,8 +40,10 @@ export function isExportableFetcher<T>(fetcher: TableFetcher<T>): fetcher is Exp
  * attachment. Columns are chosen by the backend and are not client-selectable.
  *
  * @param url - API endpoint URL (e.g., 'supply/supplier')
- * @param options.perPage - Override the API's default page size. Useful for grouped
- *   tables, where a larger page reduces how often a group arrives partially loaded.
+ * @param options.perPage - Override the frontend default page size
+ *   (`DEFAULT_PER_PAGE`). Useful for grouped tables, where a larger page reduces
+ *   how often a group arrives partially loaded, or for heavy rows that want a
+ *   smaller page.
  * @param options.params - Query params baked into every request, for views that are
  *   a fixed slice of an endpoint (e.g. `outstanding: true`). Applied after the
  *   user's filters, so the slice always holds. Included in the export too.
@@ -57,14 +67,14 @@ export function createApiFetcher<T>(
     exportable?: boolean
   },
 ): ExportableFetcher<T> {
-  const { perPage, params, exportable = true, ...requestOptions } = options ?? {}
+  const { perPage = DEFAULT_PER_PAGE, params, exportable = true, ...requestOptions } = options ?? {}
 
   const fetcher = async (page: number = 1, filters?: FilterQuery): Promise<PaginatedResponse<T>> => {
     return await apiRequest<PaginatedResponse<T>>({
       url,
       queryParams: {
         page,
-        ...(perPage ? { per_page: perPage } : {}),
+        per_page: perPage,
         ...createQueryRequestObject({ search: filters?.search, query: filters?.query }),
         ...(params ?? {}),
       },
