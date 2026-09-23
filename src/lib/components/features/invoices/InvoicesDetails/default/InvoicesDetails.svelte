@@ -39,8 +39,10 @@
   import FormErrorMessage from '$components/core/form/FormErrorMessage.svelte'
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import { createImportedSnapshot } from '$components/core/form/imported-snapshot.svelte'
+  import NumberField from '$components/core/form/NumberField.svelte'
   import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
+  import SwitchField from '$components/core/form/SwitchField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v, type FieldValidator } from '$components/core/form/validation'
   import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
@@ -55,6 +57,7 @@
   import PaymentTermSelector from '$components/features/form/PaymentTermSelector.svelte'
   import type { QuotationLineItem } from '$components/features/form/QuotationItemsEditor.svelte'
   import type { VatCodeSummary } from '$components/features/form/VatCodeSelector.svelte'
+  import VatCodeSelector from '$components/features/form/VatCodeSelector.svelte'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
   import {
     createInvoiceActions,
@@ -71,12 +74,17 @@
   import { useDetailRecord } from '$lib/hooks/use-detail-record.svelte'
   import * as m from '$lib/paraglide/messages'
   import type {
+    CassaContribution,
+    CassaContributionInput,
+    CassaType,
     Currency,
     CustomerCommercialTerms,
     CustomerSummary,
     Invoice,
     InvoiceableDocument,
     InvoiceableDocumentType,
+    InvoiceAmountsPreview,
+    InvoiceAmountsPreviewRequest,
     InvoiceDocumentType,
     InvoiceItem,
     InvoiceItemInput,
@@ -88,14 +96,21 @@
     PaymentSliceType,
     PaymentTerm,
     VatSummaryEntry,
+    Withholding,
+    WithholdingInput,
+    WithholdingReason,
+    WithholdingType,
   } from '$lib/types/api-types'
   import { useBreadcrumbTitle } from '$lib/utils/breadcrumb-title'
   import { todayLocalISO } from '$lib/utils/date'
   import {
+    cassaTypeLabels,
     currencyLabels,
     invoiceDocumentTypeLabels,
     paymentSliceTypeLabels,
     toSelectItems,
+    withholdingReasonLabels,
+    withholdingTypeLabels,
   } from '$lib/utils/enum-labels'
   import type { BasicOption } from '$lib/utils/generics'
   import { generateId } from '$lib/utils/id'
@@ -138,6 +153,7 @@
         return {
           type: 'descriptive' as const,
           description: line.description,
+          subject_to_withholding: line.subject_to_withholding,
           sales_order_item_id: line.sales_order_item_id,
           transport_document_item_id: line.transport_document_item_id,
         }
@@ -149,6 +165,7 @@
           quantity: line.quantity,
           unit_price: line.unit_price,
           vat_code_id: line.vat_code_id,
+          subject_to_withholding: line.subject_to_withholding,
           sales_order_item_id: line.sales_order_item_id,
           transport_document_item_id: line.transport_document_item_id,
         }
@@ -162,6 +179,7 @@
         unit_price: line.unit_price,
         discount_percentage: line.discount_percent ?? 0,
         vat_code_id: line.vat_code_id,
+        subject_to_withholding: line.subject_to_withholding,
         sales_order_item_id: line.sales_order_item_id,
         transport_document_item_id: line.transport_document_item_id,
       }
@@ -180,6 +198,7 @@
         return {
           type: 'descriptive' as const,
           description: line.description,
+          subject_to_withholding: line.subject_to_withholding,
           sales_order_item_id: line.sales_order_item_id || undefined,
           transport_document_item_id: line.transport_document_item_id || undefined,
         }
@@ -195,6 +214,7 @@
           vat_code_id: line.vat_code_id,
           vat_code_snapshot: Array.isArray(line.vat_code_snapshot) ? line.vat_code_snapshot[0] : line.vat_code_snapshot,
           tax_amount: line.tax_amount,
+          subject_to_withholding: line.subject_to_withholding,
           sales_order_item_id: line.sales_order_item_id || undefined,
           transport_document_item_id: line.transport_document_item_id || undefined,
         }
@@ -212,6 +232,7 @@
         vat_code_id: line.vat_code_id,
         vat_code_snapshot: Array.isArray(line.vat_code_snapshot) ? line.vat_code_snapshot[0] : line.vat_code_snapshot,
         tax_amount: line.tax_amount,
+        subject_to_withholding: line.subject_to_withholding,
         sales_order_item_id: line.sales_order_item_id || undefined,
         transport_document_item_id: line.transport_document_item_id || undefined,
       }
@@ -235,6 +256,40 @@
       amount: typeof d.amount === 'string' ? Number.parseFloat(d.amount) : d.amount,
       payment_method: d.payment_method,
     }))
+  }
+
+  /**
+   * Build the `cassa_contributions[]` / `withholdings[]` payload rows from the flat
+   * form fields. Both arrays are **full-state**: the server replaces whatever it
+   * holds with what it is sent, and an omitted array is indistinguishable from an
+   * empty one (both clear it). So we always send them — `[]` when the section is
+   * off, which is how a cassa is removed.
+   *
+   * Only the input keys are sent. The derived amounts would be ignored anyway
+   * (unlisted server-side, not prohibited), but sending them is noise.
+   */
+  function buildCassaPayload(data: Record<string, unknown>): CassaContributionInput[] {
+    if (!data.cassa_enabled || !data.cassa_type || !data.cassa_vat_code_id) return []
+    return [
+      {
+        type: data.cassa_type as CassaType,
+        rate: Number(data.cassa_rate) || 0,
+        taxable_percentage: Number(data.cassa_taxable_percentage ?? 100),
+        vat_code_id: data.cassa_vat_code_id as string,
+        subject_to_withholding: data.cassa_subject_to_withholding !== false,
+      },
+    ]
+  }
+
+  function buildWithholdingPayload(data: Record<string, unknown>): WithholdingInput[] {
+    if (!data.withholding_enabled || !data.withholding_type || !data.withholding_reason) return []
+    return [
+      {
+        type: data.withholding_type as WithholdingType,
+        rate: Number(data.withholding_rate) || 0,
+        reason: data.withholding_reason as WithholdingReason,
+      },
+    ]
   }
 
   /**
@@ -266,6 +321,8 @@
       notes_internal: data.notes_internal,
       notes_external: data.notes_external,
       items: mapItemsToInvoicePayload((data.items as QuotationLineItem[] | undefined) ?? []),
+      cassa_contributions: buildCassaPayload(data),
+      withholdings: buildWithholdingPayload(data),
       // Schedule handling, in precedence order:
       // - frozen (≥1 payment): omit `due_dates` entirely — sending it (even empty)
       //   trips the backend's freeze guard (422). The existing schedule stays as-is.
@@ -277,6 +334,30 @@
         : dueDatesServerManaged
           ? []
           : mapDueDatesToPayload(data.due_dates as InvoiceDueDateInput[] | undefined),
+    }
+  }
+
+  /** Saved cassa row -> flat form fields (inverse of `buildCassaPayload`). */
+  function flattenCassaRow(row: CassaContribution | undefined) {
+    if (!row) return {}
+    return {
+      cassa_enabled: true,
+      cassa_type: row.type,
+      cassa_rate: row.rate,
+      cassa_taxable_percentage: row.taxable_percentage,
+      cassa_vat_code_id: row.vat_code_id,
+      cassa_subject_to_withholding: row.subject_to_withholding !== false,
+    }
+  }
+
+  /** Saved withholding row -> flat form fields (inverse of `buildWithholdingPayload`). */
+  function flattenWithholdingRow(row: Withholding | undefined) {
+    if (!row) return {}
+    return {
+      withholding_enabled: true,
+      withholding_type: row.type,
+      withholding_rate: row.rate,
+      withholding_reason: row.reason,
     }
   }
 
@@ -339,10 +420,102 @@
   // only directly editable while the selected term still matches this baseline —
   // see `paymentTermMismatch`. Cleared by `clearPrefill`.
   let prefillPaymentTermId = $state<string | null>(null)
+  // Pricing signature of the prefilled lines — the baseline the prefilled schedule
+  // was computed against. Cleared by `clearPrefill`.
+  let prefillItemsSignature = $state<string | null>(null)
 
-  const displayTotals = $derived.by<{ net: number; tax: number; total: number } | null>(() => {
-    if (record) return { net: record.total_net, tax: record.total_tax, total: record.total_amount }
-    if (prefillTotals) return prefillTotals
+  /**
+   * Document totals for the read-only totals panel, in precedence order: the live
+   * preview (whenever a cassa / ritenuta is in play — the only source that knows
+   * them before a save), then the saved record, then the prefill. `cassa` raises
+   * the VAT base so it sits between net and tax; `payable` (`total_amount` less
+   * the ritenuta) is what the customer actually transfers.
+   *
+   * The prefill knows nothing about cassa / ritenuta — they are entered on this
+   * form only — so in create mode without a preview both are zero.
+   */
+  // ---- Live amounts preview ----
+  // Cassa and ritenuta move the taxable, the VAT and the payable, and the client
+  // must never compute any of them (rounding lives server-side). `preview-amounts`
+  // runs the same calculation code as the save without persisting, so the panel can
+  // show real figures — and the schedule can be balanced against a real
+  // `total_payable` — before the first write. Debounced; a failure (including a 403
+  // for a user who may edit but not create) just leaves the previous totals up.
+  const PREVIEW_DEBOUNCE_MS = 400
+  let previewTotals = $state<InvoiceAmountsPreview['totals'] | null>(null)
+
+  const previewRequest = $derived.by<InvoiceAmountsPreviewRequest | null>(() => {
+    if (!formApi) return null
+    const values = formApi.values as unknown as Record<string, unknown>
+    const cassa_contributions = buildCassaPayload(values)
+    const withholdings = buildWithholdingPayload(values)
+    // Skip while the saved / prefilled totals are still authoritative: no cassa, no
+    // ritenuta and untouched pricing. Once any of those moves, the stored totals are
+    // stale and only the server can say what the new ones are.
+    if (cassa_contributions.length === 0 && withholdings.length === 0 && !itemsPricingChanged) return null
+    const items = ((values.items as QuotationLineItem[] | undefined) ?? []).map(line => ({
+      type: line.type as 'item' | 'charge' | 'descriptive',
+      quantity: line.quantity,
+      unit_price: line.unit_price,
+      discount_percentage: line.discount_percent ?? 0,
+      vat_code_id: line.vat_code_id,
+      subject_to_withholding: line.subject_to_withholding,
+    }))
+    if (items.length === 0) return null
+    return {
+      document_date: (values.document_date as string) || todayLocalISO(),
+      payment_term_id: (values.payment_term_id as string) || undefined,
+      cassa_contributions,
+      withholdings,
+      items,
+    }
+  })
+
+  $effect(() => {
+    const request = previewRequest
+    if (!request || !legalEntityId) {
+      previewTotals = null
+      return
+    }
+    const timer = setTimeout(async () => {
+      const { data } = await api.safe.post<InvoiceAmountsPreview>(
+        `/legal-entities/${legalEntityId}/invoices/preview-amounts`,
+        { data: request },
+      )
+      if (data) previewTotals = data.totals
+    }, PREVIEW_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  })
+
+  const displayTotals = $derived.by<{
+    net: number
+    cassa: number
+    tax: number
+    total: number
+    withholding: number
+    payable: number
+  } | null>(() => {
+    // `preview-amounts` names the document total `amount` (and also reports the VAT
+    // base as `taxable`, which the panel derives from net + cassa instead).
+    if (previewTotals)
+      return {
+        net: previewTotals.net,
+        cassa: previewTotals.cassa,
+        tax: previewTotals.tax,
+        total: previewTotals.amount,
+        withholding: previewTotals.withholding,
+        payable: previewTotals.payable,
+      }
+    if (record)
+      return {
+        net: record.total_net,
+        cassa: Number(record.total_cassa ?? 0),
+        tax: record.total_tax,
+        total: record.total_amount,
+        withholding: Number(record.total_withholding ?? 0),
+        payable: record.total_payable ?? record.total_amount,
+      }
+    if (prefillTotals) return { ...prefillTotals, cassa: 0, withholding: 0, payable: prefillTotals.total }
     return null
   })
 
@@ -405,6 +578,9 @@
   const documentTypeItems = toSelectItems(invoiceDocumentTypeLabels)
   const currencyItems = toSelectItems(currencyLabels)
   const sliceTypeItems = toSelectItems(paymentSliceTypeLabels)
+  const cassaTypeItems = toSelectItems(cassaTypeLabels)
+  const withholdingTypeItems = toSelectItems(withholdingTypeLabels)
+  const withholdingReasonItems = toSelectItems(withholdingReasonLabels)
 
   type InvoiceFormValues = {
     document_date: string
@@ -423,7 +599,40 @@
     items: QuotationLineItem[]
     // FE-owned payment schedule — synced wholesale to the API on save.
     due_dates: InvoiceDueDateInput[]
+    // Cassa previdenziale / ritenuta d'acconto. The API takes repeatable arrays,
+    // but one row each covers every case we have (and two withholding rows would
+    // just stack rates on the same base), so the form keeps them flat and
+    // `buildCassaPayload` / `buildWithholdingPayload` wrap them at submit time.
+    cassa_enabled: boolean
+    cassa_type: CassaType | ''
+    cassa_rate: number | null
+    cassa_taxable_percentage: number | null
+    cassa_vat_code_id: string
+    cassa_subject_to_withholding: boolean
+    withholding_enabled: boolean
+    withholding_type: WithholdingType | ''
+    withholding_rate: number | null
+    withholding_reason: WithholdingReason | ''
   }
+
+  // Edit mode: the saved invoice mapped onto the form's field names. Kept apart
+  // from the defaults below so the spread stays a partial override.
+  const recordFormValues = $derived.by<Partial<InvoiceFormValues>>(() => {
+    if (!record) return {}
+    return {
+      ...(record as unknown as Partial<InvoiceFormValues>),
+      items: mapItemsToEditorShape(record.items),
+      due_dates: mapDueDatesToPayload(record.due_dates),
+      // Flatten the first (in practice only) saved row of each array back onto
+      // the form fields.
+      ...flattenCassaRow(record.cassa_contributions?.[0]),
+      ...flattenWithholdingRow(record.withholdings?.[0]),
+      // Map the record's flat slice pointer onto the form field names.
+      slice_type: (record.payment_slice_type ?? 'saldo') as PaymentSliceType,
+      slice_position: record.payment_slice_position ?? null,
+      payment_term_id: record.payment_term_id ?? '',
+    }
+  })
 
   const initialValues = $derived.by<InvoiceFormValues>(() => ({
     document_date: todayLocalISO(),
@@ -439,27 +648,72 @@
     notes_external: '',
     items: [],
     due_dates: [],
-    ...(record
-      ? {
-          ...record,
-          items: mapItemsToEditorShape(record.items),
-          due_dates: mapDueDatesToPayload(record.due_dates),
-          // Map the record's flat slice pointer onto the form field names.
-          slice_type: (record.payment_slice_type ?? 'saldo') as PaymentSliceType,
-          slice_position: record.payment_slice_position ?? null,
-          payment_term_id: record.payment_term_id ?? '',
-        }
-      : {}),
+    cassa_enabled: false,
+    cassa_type: '' as const,
+    cassa_rate: null,
+    cassa_taxable_percentage: 100,
+    cassa_vat_code_id: '',
+    // No safe default exists: `true` is right for the INPS rivalsa (TC22) and
+    // wrong for a contributo integrativo (TC01/TC02…), so the field is always shown.
+    cassa_subject_to_withholding: true,
+    withholding_enabled: false,
+    withholding_type: '' as const,
+    withholding_rate: null,
+    withholding_reason: '' as const,
+    ...recordFormValues,
   }))
 
-  // The scheduled due-date amounts must add up to the invoice total. The total is
-  // server-computed (not a form field), so the validator reads it lazily from
-  // `displayTotals` at validation time. Skipped while the payment term diverges
+  // The scheduled due-date amounts must add up to what the customer transfers —
+  // `total_payable`, i.e. the document total less any ritenuta, which is also what
+  // the backend bills a regenerated schedule against. (Without a ritenuta the two
+  // coincide.) The backend stores the rows it is sent *without* balancing them, so
+  // this client-side check is all that stands between a moved total and a silently
+  // stale schedule. The total is server-computed (not a form field), so the
+  // validator reads it lazily from `displayTotals` at validation time. Skipped while the payment term diverges
   // from the baseline — the schedule is then cleared and the backend regenerates
   // it on save, so there's nothing to balance. Applied to both create and update.
-  const dueDatesTotalRule = dueDatesMatchTotal<Partial<InvoiceFormValues>>(() => displayTotals?.total)
+  const dueDatesTotalRule = dueDatesMatchTotal<Partial<InvoiceFormValues>>(() => displayTotals?.payable)
   const validateDueDatesTotal: FieldValidator<Partial<InvoiceFormValues>> = (value, values) =>
     dueDatesServerManaged ? undefined : dueDatesTotalRule(value, values)
+
+  /** Required only while its section is switched on. */
+  function requiredWhen(isEnabled: () => boolean, field: string): FieldValidator<Partial<InvoiceFormValues>> {
+    return (value, values) =>
+      isEnabled() ? v.required<Partial<InvoiceFormValues>>({ field })(value, values) : undefined
+  }
+
+  /**
+   * Percentage input: required while its section is on, `0..100`, at most two
+   * decimals. The two decimals are a fiscal constraint, not a UI preference:
+   * FatturaPA prints `AlCassa` / `AliquotaRitenuta` with exactly two and SDI
+   * re-derives the amount from the printed rate, so a third decimal drifts. The
+   * backend rejects it too — this only saves the round trip.
+   */
+  function percentageWhen(isEnabled: () => boolean, field: string): FieldValidator<Partial<InvoiceFormValues>> {
+    return (value, values) => {
+      if (!isEnabled()) return undefined
+      const missing = v.required<Partial<InvoiceFormValues>>({ field })(value, values)
+      if (missing) return missing
+      const num = Number(value)
+      if (!Number.isFinite(num) || num < 0 || num > 100) return m.validation_percentage_range({ field })
+      if (Math.abs(num * 100 - Math.round(num * 100)) > 1e-6) return m.validation_max_two_decimals({ field })
+      return undefined
+    }
+  }
+
+  const cassaEnabled = () => !!formApi?.values.cassa_enabled
+  const withholdingEnabled = () => !!formApi?.values.withholding_enabled
+
+  // Applied to both create and update: the two blocks are editable in either mode.
+  const cassaWithholdingRules = {
+    cassa_type: [requiredWhen(cassaEnabled, m.cassa_type())],
+    cassa_rate: [percentageWhen(cassaEnabled, m.cassa_rate())],
+    cassa_taxable_percentage: [percentageWhen(cassaEnabled, m.cassa_taxable_percentage())],
+    cassa_vat_code_id: [requiredWhen(cassaEnabled, m.vat_code())],
+    withholding_type: [requiredWhen(withholdingEnabled, m.withholding_type())],
+    withholding_rate: [percentageWhen(withholdingEnabled, m.withholding_rate())],
+    withholding_reason: [requiredWhen(withholdingEnabled, m.withholding_reason())],
+  }
 
   // Payment term is no longer mandatory — an invoice may save without one (the
   // server simply skips due-date generation).
@@ -470,10 +724,13 @@
       customer_id: [v.required({ field: m.customer() })],
       currency: [v.required({ field: m.currency() })],
       due_dates: [validateDueDatesTotal],
+      ...cassaWithholdingRules,
     })
     .build()
 
-  const validateUpdate = v.schema<Partial<InvoiceFormValues>>({ due_dates: [validateDueDatesTotal] }).build()
+  const validateUpdate = v
+    .schema<Partial<InvoiceFormValues>>({ due_dates: [validateDueDatesTotal], ...cassaWithholdingRules })
+    .build()
 
   const validate = $derived(!record ? validateCreate : validateUpdate)
 
@@ -567,6 +824,30 @@
     if (baselinePaymentTermId == null) return false
     const selected = (formApi?.values.payment_term_id as string | undefined) ?? ''
     return selected !== baselinePaymentTermId
+  })
+
+  // The cassa's VAT code selector is **controlled**: it renders whatever `attr`
+  // says, so without one a saved cassa comes back with an empty dropdown even
+  // though `cassa_vat_code_id` holds the right id (the same trap as
+  // `paymentTermAttr`). The saved row ships its own frozen `vat_code_snapshot`,
+  // which is also the right thing to show: the rate the cassa was computed with,
+  // not the code's current one.
+  //
+  // `cassaVatCodeChoice` tracks the user's pick so the display follows a change
+  // instead of snapping back to the saved snapshot.
+  let cassaVatCodeChoice = $state<VatCodeSummary | undefined>(undefined)
+
+  const cassaVatCodeAttr = $derived.by<VatCodeSummary | undefined>(() => {
+    const id = (formApi?.values.cassa_vat_code_id as string) || ''
+    if (!id) return undefined
+    if (cassaVatCodeChoice?.id === id) return cassaVatCodeChoice
+    const row = record?.cassa_contributions?.[0]
+    if (!row || row.vat_code_id !== id) return undefined
+    // The snapshot arrives either bare or wrapped in a one-item array, like every
+    // other snapshot on the invoice.
+    const snapshot = firstSnapshot<Record<string, unknown>>(row.vat_code_snapshot)
+    if (!snapshot) return undefined
+    return { ...(snapshot as unknown as VatCodeSummary), id }
   })
 
   const legalEntityBankAttr = $derived.by<LegalEntityBank | undefined>(() => {
@@ -839,6 +1120,9 @@
 
     const rawItems = prefill.items ?? []
     const editorItems = mapPrefillItemsToEditorShape(rawItems)
+    // Baseline the prefilled schedule was computed against (first source only; a
+    // second one makes the invoice cumulative, which is server-managed anyway).
+    if (fillHeader) prefillItemsSignature = itemsPricingSignature(editorItems)
     if (editorItems.length > 0) {
       // Split the source's lines into consecutive per-reference runs, each led by a
       // reference descriptive header, and append every run with its own `groupId`
@@ -937,11 +1221,106 @@
   // the combined lines + shared term), since per-source previews don't combine.
   const isCumulative = $derived(prefilledSources.length > 1)
 
+  /**
+   * Pricing-relevant projection of the line items — everything that moves the
+   * totals, and nothing else: editing a description or reordering rows leaves the
+   * schedule perfectly valid, so neither should trigger a regeneration.
+   */
+  function itemsPricingSignature(lines: QuotationLineItem[] | undefined): string {
+    return JSON.stringify(
+      (lines ?? [])
+        // Only priced rows move the totals, and only complete ones reach the form
+        // value at all (the editor drops incomplete rows on commit) — comparing
+        // anything else would flag a change that never happened, e.g. the
+        // descriptive reference headers the prefill inserts between groups.
+        .filter(line => line.type !== 'descriptive' && !!line.vat_code_id && (Number(line.quantity) || 0) > 0)
+        .map(line => ({
+          type: line.type,
+          quantity: Number(line.quantity) || 0,
+          unit_price: Number(line.unit_price) || 0,
+          discount_percent: Number(line.discount_percent ?? 0),
+          vat_code_id: line.vat_code_id ?? '',
+          subject_to_withholding: line.subject_to_withholding !== false,
+        })),
+    )
+  }
+
+  /** Normalize a saved row to its input shape so it compares with the form's. */
+  function cassaRowSignature(rows: CassaContribution[] | undefined): string {
+    return JSON.stringify(
+      (rows ?? []).map(r => ({
+        type: r.type,
+        rate: Number(r.rate) || 0,
+        taxable_percentage: Number(r.taxable_percentage ?? 100),
+        vat_code_id: r.vat_code_id,
+        subject_to_withholding: r.subject_to_withholding !== false,
+      })),
+    )
+  }
+
+  function withholdingRowSignature(rows: Withholding[] | undefined): string {
+    return JSON.stringify((rows ?? []).map(r => ({ type: r.type, rate: Number(r.rate) || 0, reason: r.reason })))
+  }
+
+  // The lines the current schedule was sized against: the saved invoice's in edit
+  // mode, the prefilled ones in create mode. `null` on a manual create — there is
+  // no baseline, so nothing can be stale.
+  const scheduleBaselineItemsSignature = $derived<string | null>(
+    record ? itemsPricingSignature(mapItemsToEditorShape(record.items)) : prefillItemsSignature,
+  )
+
+  // True once a price, quantity, discount, VAT code or line count differs from that
+  // baseline — the totals have moved, so the existing scadenze no longer add up.
+  const itemsPricingChanged = $derived.by<boolean>(() => {
+    if (!formApi || scheduleBaselineItemsSignature == null) return false
+    return (
+      itemsPricingSignature(formApi.values.items as QuotationLineItem[] | undefined) !== scheduleBaselineItemsSignature
+    )
+  })
+
+  const hasPaymentTerm = $derived(!!((formApi?.values.payment_term_id as string) || ''))
+
+  // True once the cassa / ritenuta differ from what the loaded invoice carries
+  // (in create mode: from nothing). Both move `total_payable`, which is what the
+  // schedule is billed against, so the existing rows are stale the moment either
+  // changes — and the FE can't resize them itself.
+  const cassaWithholdingChanged = $derived.by<boolean>(() => {
+    if (!formApi) return false
+    const values = formApi.values as unknown as Record<string, unknown>
+    return (
+      JSON.stringify(buildCassaPayload(values)) !== cassaRowSignature(record?.cassa_contributions) ||
+      JSON.stringify(buildWithholdingPayload(values)) !== withholdingRowSignature(record?.withholdings)
+    )
+  })
+
   // The schedule is server-managed (editor hidden, POST empty `due_dates[]`, backend
-  // regenerates) when the term diverges from the baseline OR when the invoice is
+  // regenerates) when the term diverges from the baseline, when the invoice is
   // cumulative — the merged DDTs share one term and the schedule is sized on the
-  // combined total, which only the backend can compute.
-  const dueDatesServerManaged = $derived(paymentTermMismatch || isCumulative)
+  // combined total, which only the backend can compute — or when a cassa, a ritenuta
+  // or a line price moved the payable out from under the current rows.
+  //
+  // A line edit only regenerates when there IS a term to regenerate from: without
+  // one, an empty `due_dates[]` saves the invoice with no scadenze at all, and
+  // hiding the editor would take away the only way to fix them by hand. In that
+  // case the rows stay editable and the running-total indicator flags the gap.
+  const dueDatesServerManaged = $derived(
+    paymentTermMismatch || isCumulative || cassaWithholdingChanged || (itemsPricingChanged && hasPaymentTerm),
+  )
+
+  // Sending an empty `due_dates[]` only regenerates when a payment term is set;
+  // without one the invoice saves with NO schedule at all, which is not neutral:
+  // no `DatiPagamento` in the XML, `payment_status` null, no payment can be
+  // recorded (payments attach to scadenze), and `isFullyPaid()` falls back to
+  // "is it issued?" — so the downstream gates (DDT carry, next slice, saldo)
+  // treat it as settled without a cent collected. Worth a loud warning.
+  const scheduleWillBeEmpty = $derived(
+    dueDatesServerManaged && !scheduleFrozen && !((formApi?.values.payment_term_id as string) || ''),
+  )
+
+  // The backend refuses an update that would move the taxable, VAT or payable of an
+  // invoice with recorded payments (`validation_custom.invoice_totals_frozen_by_payments`,
+  // keyed on `totals`). That key is not a form field, so surface it in the totals panel.
+  const totalsError = $derived((formApi?.errors as Record<string, string | undefined> | undefined)?.totals)
 
   // Forces the items editor to re-hydrate from the (now empty) form values on
   // clear. Bumped by `clearPrefill`; threaded through `refreshKey` below.
@@ -978,6 +1357,7 @@
     legalEntityBankSnapshotImport.reset()
     commercialTermsVatCode = undefined
     prefillTotals = null
+    prefillItemsSignature = null
     prefillVatSummary = []
     prefillDueDates = []
     prefillPaymentTermId = null
@@ -1213,6 +1593,80 @@
           {/snippet}
         </GroupTitle>
 
+        <Separator />
+
+        <!-- Cassa previdenziale / ritenuta d'acconto — both optional and off by
+             default; an invoice that needs neither is unaffected. Amounts are never
+             entered here: the server derives them (see the totals panel below). -->
+        <GroupTitle heading={m.invoice_cassa_withholding_section()}>
+          {#snippet description()}
+            {m.invoice_cassa_withholding_section_description()}
+          {/snippet}
+
+          {#snippet content()}
+            <SwitchField name="cassa_enabled" label={m.invoice_cassa_enable()} />
+
+            {#if formAPI.values.cassa_enabled}
+              <SelectField
+                name="cassa_type"
+                label={m.cassa_type()}
+                items={cassaTypeItems}
+                class={FormFieldClass.MaxWidth} />
+
+              <div class={FormFieldClass.MaxWidth}>
+                <NumberField name="cassa_rate" label={m.cassa_rate()} rightLabel="%" step="0.01" min="0" max="100" />
+              </div>
+
+              <div class={FormFieldClass.MaxWidth}>
+                <NumberField
+                  name="cassa_taxable_percentage"
+                  label={m.cassa_taxable_percentage()}
+                  rightLabel="%"
+                  step="0.01"
+                  min="0"
+                  max="100" />
+              </div>
+
+              <VatCodeSelector
+                name="cassa_vat_code_id"
+                attr={cassaVatCodeAttr}
+                onChoose={item => (cassaVatCodeChoice = item)}
+                direction="vendita"
+                class={FormFieldClass.MaxWidth} />
+
+              <!-- The one field with no safe default: `true` matches the INPS
+                   rivalsa (TC22), but a contributo integrativo (TC01, TC02 and most
+                   professional funds) is not subject to the withholding. -->
+              <div class="flex flex-col gap-1">
+                <SwitchField name="cassa_subject_to_withholding" label={m.cassa_subject_to_withholding()} />
+                <p class="max-w-md text-sm text-muted-foreground">{m.cassa_subject_to_withholding_hint()}</p>
+              </div>
+            {/if}
+
+            <SwitchField name="withholding_enabled" label={m.invoice_withholding_enable()} />
+
+            {#if formAPI.values.withholding_enabled}
+              <div class={FormFieldClass.MaxWidth}>
+                <SelectField name="withholding_type" label={m.withholding_type()} items={withholdingTypeItems} />
+              </div>
+
+              <div class={FormFieldClass.MaxWidth}>
+                <NumberField
+                  name="withholding_rate"
+                  label={m.withholding_rate()}
+                  rightLabel="%"
+                  step="0.01"
+                  min="0"
+                  max="100" />
+              </div>
+
+              <div class={FormFieldClass.MaxWidth}>
+                <SelectField name="withholding_reason" label={m.withholding_reason()} items={withholdingReasonItems} />
+              </div>
+            {/if}
+          {/snippet}
+        </GroupTitle>
+
         {#if isCumulative}
           <Separator />
 
@@ -1241,18 +1695,48 @@
 
             {#snippet content()}
               <div class="flex flex-col items-end gap-6">
+                {#if totalsError}
+                  <!-- Recorded payments freeze the figures the schedule was billed
+                       against; the server names both amounts in the message. -->
+                  <Alert.Root variant="destructive" class="w-full">
+                    <AlertCircleIcon />
+                    <Alert.Description>{totalsError}</Alert.Description>
+                  </Alert.Root>
+                {/if}
+
                 <VatSummaryTable rows={displayVatSummary} currencyCode={displayCurrency} class="w-full" />
 
+                <!-- The cassa and ritenuta rows appear only when there is one, so an
+                     invoice without them shows exactly the three rows it always did. -->
                 <StackedAmountValues
                   title={m.total()}
                   rows={[
                     { label: m.net_total(), value: displayTotals.net, currencyCode: displayCurrency },
+                    {
+                      label: m.cassa_total(),
+                      value: displayTotals.cassa,
+                      currencyCode: displayCurrency,
+                      hidden: displayTotals.cassa === 0,
+                    },
                     { label: m.tax_total(), value: displayTotals.tax, currencyCode: displayCurrency },
                     {
                       type: 'grandtotal',
                       label: m.total(),
                       value: displayTotals.total,
                       currencyCode: displayCurrency,
+                    },
+                    {
+                      label: m.withholding_total(),
+                      value: -displayTotals.withholding,
+                      currencyCode: displayCurrency,
+                      hidden: displayTotals.withholding === 0,
+                    },
+                    {
+                      type: 'grandtotal',
+                      label: m.payable_total(),
+                      value: displayTotals.payable,
+                      currencyCode: displayCurrency,
+                      hidden: displayTotals.withholding === 0,
                     },
                   ]} />
               </div>
@@ -1270,12 +1754,26 @@
 
           {#snippet content()}
             {#if dueDatesServerManaged}
-              <!-- Schedule is server-managed (term changed, or cumulative invoice): not
-                   editable here; the backend regenerates it from the shared term on save. -->
+              <!-- Schedule is server-managed (term changed, cassa/ritenuta changed, or
+                   cumulative invoice): not editable here; the backend regenerates it
+                   from the shared term on save, billed against the payable. -->
               <Alert.Root class="max-w-md lg:max-w-none">
                 <AlertCircleIcon />
-                <Alert.Description>{m.invoice_due_dates_term_changed_notice()}</Alert.Description>
+                <Alert.Description>
+                  {cassaWithholdingChanged || itemsPricingChanged
+                    ? m.invoice_schedule_recalculated_notice()
+                    : m.invoice_due_dates_term_changed_notice()}
+                </Alert.Description>
               </Alert.Root>
+
+              {#if scheduleWillBeEmpty}
+                <!-- No term to regenerate from: the invoice would save with no schedule
+                     at all, which silently unlocks the downstream payment gates. -->
+                <Alert.Root variant="destructive" class="max-w-md lg:max-w-none">
+                  <AlertCircleIcon />
+                  <Alert.Description>{m.invoice_no_due_dates_warning()}</Alert.Description>
+                </Alert.Root>
+              {/if}
             {:else}
               {#if scheduleFrozen}
                 <!-- Schedule frozen by recorded payments: shown read-only. Unfreeze by
@@ -1291,7 +1789,7 @@
                 value={dueDatesEditorValue}
                 currency={displayCurrency}
                 disabled={scheduleFrozen}
-                expectedTotal={displayTotals?.total} />
+                expectedTotal={displayTotals?.payable} />
             {/if}
           {/snippet}
         </GroupTitle>

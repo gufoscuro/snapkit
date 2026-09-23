@@ -15,6 +15,25 @@ export const FormFieldClass = Object.freeze({
 /** Default classes for form field labels */
 export const FormLabelClass = 'leading-6'
 
+/**
+ * Extract the width-ish tokens (`w-`, `max-w-`, `min-w-`, `basis-`, `flex-`,
+ * including responsive variants) from a field's class strings.
+ *
+ * A field with a right label / currency symbol positions it against its wrapper,
+ * so the wrapper has to carry the sizing — otherwise the suffix anchors to the
+ * whole column instead of to the field box. The classes stay on the input as
+ * well: a caller's class may mix sizing with input styling (`TableCell` above is
+ * exactly that), and only the input should be styled.
+ */
+export function fieldBoxSizingClasses(...classNames: (string | undefined)[]): string {
+  return classNames
+    .filter(Boolean)
+    .join(' ')
+    .split(/\s+/)
+    .filter(token => /^(?:[\w@[\]().,-]+:)*(?:w|max-w|min-w|basis|flex)-/.test(token))
+    .join(' ')
+}
+
 /** Classes for EditableTableField component */
 export const EditableTableFieldClass = Object.freeze({
   /** Table body wrapper with group class for last-child targeting */

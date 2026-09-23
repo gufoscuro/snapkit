@@ -49,6 +49,9 @@
     confirmed_delivery_date?: string
     is_editable?: boolean
     // Invoice traceability fields (carried opaquely; no UI)
+    /** Invoice-only: withholding base flag, round-tripped so an update doesn't
+     *  reset a line the backend (or another client) excluded. No per-row UI. */
+    subject_to_withholding?: boolean
     sales_order_item_id?: string
     transport_document_item_id?: string
   }

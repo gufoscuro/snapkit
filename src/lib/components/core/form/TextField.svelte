@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment'
   import { getFormContextOptional } from './form-context'
-  import { FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
+  import { fieldBoxSizingClasses, FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
   import FormFieldMessages from './FormFieldMessages.svelte'
   import FormFieldSkeleton from './FormFieldSkeleton.svelte'
   import { Input } from '$components/ui/input'
@@ -62,10 +62,23 @@
       className,
       width,
       getUserMessagingClasses(error, warning),
-      rightLabel && textAlign === 'left' ? 'pr-4' : '',
-      rightLabel && textAlign === 'right' ? 'pl-4' : '',
-      textAlign === 'right' ? 'text-right' : ''
-    )
+      textAlign === 'right' ? 'text-right' : '',
+    ),
+  )
+
+  // The suffix is positioned against the WRAPPER, so the wrapper needs the sizing
+  // too — otherwise it anchors to the whole column instead of to a narrower field.
+  // Only the width tokens move: `className` may also carry input styling (e.g.
+  // `FormFieldClass.TableCell`), which must stay on the input.
+  const fieldBoxClasses = $derived(fieldBoxSizingClasses(width, className))
+
+  // Reserve room for the suffix on whichever side it sits, instead of a blanket
+  // `pr-4` / `pl-4` that a long value runs into. `ch` tracks the label's own
+  // character count, plus its 0.625rem margin and a small gap.
+  const rightLabelStyle = $derived(
+    rightLabel
+      ? `padding-${textAlign === 'left' ? 'right' : 'left'}: calc(${rightLabel.length}ch + 1.25rem)`
+      : undefined,
   )
 
   const labelAria = $derived({
@@ -106,7 +119,7 @@
     <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
       {#snippet children({ aria })}
-        <div class="relative">
+        <div class="relative {fieldBoxClasses}">
           <Input
             {id}
             {name}
@@ -119,11 +132,11 @@
             {...labelAria}
             {...aria}
             class={classes}
+            style={rightLabelStyle}
             oninput={handleInput}
-            onfocus={onfocus}
+            {onfocus}
             onblur={handleBlur}
-            onkeyup={onkeyup}
-          />
+            {onkeyup} />
 
           {#if right}
             {@render right()}
@@ -132,8 +145,7 @@
               class="pointer-events-none absolute top-0 flex h-full max-w-16 items-center text-sm text-muted-foreground/60 {textAlign ===
               'left'
                 ? 'right-0 mr-2.5'
-                : 'left-0 ml-2.5'}"
-            >
+                : 'left-0 ml-2.5'}">
               {rightLabel}
             </div>
           {/if}

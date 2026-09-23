@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  fieldBoxSizingClasses,
   FormFieldClass,
   FormLabelClass,
   EditableTableFieldClass,
@@ -128,5 +129,36 @@ describe('EntitySelectorDefaults', () => {
     expect(EntitySelectorDefaults.allowNewRecord).toBe(false)
     expect(EntitySelectorDefaults.align).toBe('end')
     expect(EntitySelectorDefaults.width).toBe(FormFieldClass.SelectorDefaultWidth)
+  })
+})
+
+// =============================================================================
+// FIELD BOX SIZING CLASSES
+// =============================================================================
+
+describe('fieldBoxSizingClasses', () => {
+  it('keeps width tokens, including responsive variants', () => {
+    expect(fieldBoxSizingClasses(FormFieldClass.MaxWidth)).toBe('max-w-full md:max-w-md')
+    expect(fieldBoxSizingClasses(FormFieldClass.MinWidth)).toBe('min-w-64 md:min-w-md')
+    expect(fieldBoxSizingClasses('w-full min-w-0')).toBe('w-full min-w-0')
+    expect(fieldBoxSizingClasses('lg:w-[500px]')).toBe('lg:w-[500px]')
+    expect(fieldBoxSizingClasses('flex-1 basis-40')).toBe('flex-1 basis-40')
+  })
+
+  it('drops input styling, so a mixed class keeps its look on the input', () => {
+    // TableCell mixes sizing with borders/height: only `w-full` belongs to the box.
+    expect(fieldBoxSizingClasses(FormFieldClass.TableCell)).toBe('w-full')
+    expect(fieldBoxSizingClasses('h-10 rounded-none border-transparent')).toBe('')
+  })
+
+  it('is not fooled by variants or by tokens that merely start with the letters', () => {
+    expect(fieldBoxSizingClasses('focus-visible:ring-0 focus:border-primary')).toBe('')
+    expect(fieldBoxSizingClasses('whitespace-nowrap wrap-anywhere')).toBe('')
+  })
+
+  it('merges several sources and tolerates undefined / empty input', () => {
+    expect(fieldBoxSizingClasses('min-w-64', undefined, FormFieldClass.TableCell)).toBe('min-w-64 w-full')
+    expect(fieldBoxSizingClasses(undefined, '')).toBe('')
+    expect(fieldBoxSizingClasses()).toBe('')
   })
 })

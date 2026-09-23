@@ -645,6 +645,63 @@ const fetchCustomers = async (searchTerm: string): Promise<Customer[]> => {
 - Use meaningful labels and include relevant metadata for display
 - Consider implementing debouncing for search-heavy selectors
 
+## Controlled Selectors: `attr` Displays, `onChoose` Writes
+
+Every entity selector built on `FormGenericSingleSelector` is **controlled**: the dropdown renders `value={selectedValue ? [selectedValue] : []}`, where `selectedValue` comes from the `attr` prop. It does **not** read the form value to decide what to show.
+
+Two rules follow, and breaking either produces a field that lies about its data — three separate bugs in the invoice form came from exactly this.
+
+### Rule 1 — the owner of the value feeds `attr`, and follows the user's pick
+
+An id in the form is not enough to display anything: pass `attr`, built from whatever snapshot the record ships, and keep a local `$state` for the user's choice so the display follows a change instead of snapping back.
+
+```svelte
+<script lang="ts">
+  // Saved snapshot -> display. `choice` wins while it matches the current id.
+  let choice = $state<VatCodeSummary | undefined>(undefined)
+
+  const attr = $derived.by<VatCodeSummary | undefined>(() => {
+    const id = (formApi?.values.cassa_vat_code_id as string) || ''
+    if (!id) return undefined
+    if (choice?.id === id) return choice
+    const row = record?.cassa_contributions?.[0]
+    if (!row || row.vat_code_id !== id) return undefined
+    return { ...(firstSnapshot<Record<string, unknown>>(row.vat_code_snapshot) as VatCodeSummary), id }
+  })
+</script>
+
+<VatCodeSelector name="cassa_vat_code_id" {attr} onChoose={item => (choice = item)} direction="vendita" />
+```
+
+**Why the local choice:** without it `attr` resolves from the record only, so picking a different option would briefly (or permanently) render the old one — the cached snapshot still points at the previous entity while the form value is already the new one. `PaymentTermSelector` + `handlePaymentTermChoose` in `InvoicesDetails.svelte` is the reference implementation; the cassa VAT selector follows it.
+
+**Symptom when missing:** the field reloads empty although the id is stored and the record saves correctly.
+
+### Rule 2 — a selector that picks a value on its own must announce it through `onChoose`
+
+`VatCodeSelector` preselects the catalog's `is_default` code on an empty field. It writes to `form.updateField(name, id)` **and** calls `onChoose(defaultItem)`:
+
+```typescript
+onMount(async () => {
+  if (attr) return
+  if (form?.values[name]) return
+  const defaultItem = (await fetchFunction({})).find(item => item.is_default)
+  if (defaultItem) {
+    defaultAttr = defaultItem
+    form?.updateField(name, defaultItem.id as never)
+    onChoose(defaultItem) // an automatic pick must land where a manual one lands
+  }
+})
+```
+
+**Why:** `form.updateField(name, …)` only reaches an owner whose state *is* that form field. Inside a list editor the name is a dotted path (`items.0.vat_code_id`) that the editor does not read — its rows are its own state — so the value existed on screen and in a junk form key, and nowhere in the row. Because incomplete rows are dropped on commit ([editable-list-field.md](./editable-list-field.md) → *Filtered output*), the whole line vanished from the payload and the API answered "items is required". Re-picking the same value by hand fixed it, because that path goes through `onChoose`.
+
+**Rule of thumb:** if a component can set a value without the user touching it, that write must go through the same callback as a user action. Anything else is a value only the component knows about.
+
+### Don't paper over it with a display fallback
+
+`attr={item.vatCodeAttr || defaultVatCode}` looks like a convenience and is the same lie: the row shows a code it doesn't carry. Write the default into the data instead — on row creation (`createEmptyItem`), when the default arrives late (the backfill `$effect`), and when an article is picked into a row that has none (`handleItemSelect`).
+
 ## Selector Record Actions (Create / Edit in New Tab)
 
 Entity selectors (single-selection) can expose two complementary record actions surfaced inside the `MultiSelect` dropdown / trigger:

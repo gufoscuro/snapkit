@@ -9,6 +9,7 @@ Main files:
 - `src/lib/components/features/invoices/invoice-actions.ts` — record actions (validate, submit, delete, archive)
 - `src/lib/components/features/form/InvoiceDueDatesEditor.svelte` — due-date schedule sub-editor
 - `src/lib/components/features/form/InvoiceItemsListEditor.svelte` — line items editor
+- `src/lib/components/core/StackedAmountValues.svelte` — the totals panel rows
 - `src/lib/components/features/invoices/InvoiceStateBadge.svelte` + `InvoiceableDocumentStatusBadge.svelte` — status badges
 - `src/lib/components/features/common/Filters/InvoicesFilters.svelte` + `InvoiceableDocumentsFilters.svelte` — listing filters
 - `src/lib/chat/page-tools/invoices-filter.ts` — chat-driven filter tool
@@ -75,11 +76,34 @@ Main files:
 
 ## Payment term & due-date schedule sync
 
-**What:** If the user changes the payment term after prefill (`paymentTermMismatch`) **or** the invoice is cumulative, `dueDatesServerManaged` becomes true: the due-date editor is hidden, `due_dates: []` is posted, and the schedule-total validation is skipped. The backend regenerates the schedule from the merged lines + term. The payment-term selector also lazy-loads the term name from a snapshot (the saved invoice ships only the term ID), syncing on choose.
+**What:** `dueDatesServerManaged` becomes true — the due-date editor is hidden, `due_dates: []` is posted and the schedule-total validation is skipped — when **any** of these holds:
 
-**Why:** The schedule is a derived output of payment term + invoice total. When the term changes or sources are merged, the current schedule is invalid and the client can't recompute the merged result — regenerating server-side is simpler and authoritative.
+1. the user changed the payment term after prefill (`paymentTermMismatch`);
+2. the invoice is cumulative (`isCumulative`);
+3. a cassa or a ritenuta differs from the saved/prefilled one (`cassaWithholdingChanged`);
+4. a line's pricing differs from the saved/prefilled baseline (`itemsPricingChanged`) **and** a payment term is set.
 
-**Where:** `InvoicesDetails.svelte` — `paymentTermMismatch`, `dueDatesServerManaged`, payment-term snapshot fetch; payload `due_dates: []` branch.
+The backend then regenerates the schedule from the term. The payment-term selector also lazy-loads the term name from a snapshot (the saved invoice ships only the term ID), syncing on choose.
+
+**Why:** The schedule is a derived output of payment term + payable. Anything that moves the payable leaves the existing rows stale, and the backend stores `due_dates[]` **verbatim, without balancing them against the totals** (see the moddo-api business-doc), so a stale schedule would be persisted in silence — the client-side check is the only guard.
+
+Cases 3 and 4 were added with the cassa/ritenuta work: before that, editing a price moved the total while the schedule stayed put, and the form blocked the save on a mismatch it refused to fix.
+
+**Why the payment-term condition on case 4 only:** an empty `due_dates[]` regenerates *only* if `payment_term_id` is set; without one the invoice saves with no schedule at all (see *No schedule is not neutral* below), and hiding the editor would remove the only way to enter the rows by hand. So a line edit without a term keeps the editor open and lets the running-total indicator flag the gap.
+
+**What counts as a pricing change:** `itemsPricingSignature` projects each line to quantity, unit price, discount, VAT code and withholding flag, dropping descriptive rows and incomplete ones (the latter never reach the form value anyway — see [editable-list-field.md](../components/editable-list-field.md) → *Filtered output*). Editing a description or reordering rows leaves the schedule valid and deliberately does not trigger a regeneration.
+
+**Where:** `InvoicesDetails.svelte` — `paymentTermMismatch`, `cassaWithholdingChanged`, `itemsPricingChanged`, `itemsPricingSignature`, `dueDatesServerManaged`, payment-term snapshot fetch; payload `due_dates: []` branch.
+
+---
+
+## No schedule is not neutral
+
+**What:** when the schedule is server-managed but no payment term is set (`scheduleWillBeEmpty`), the payments section shows a **destructive** alert, not the usual neutral notice.
+
+**Why:** the invoice would save with zero scadenze, and the consequences are silent rather than visible: no `DatiPagamento` in the XML, `payment_status` `null`, no payment recordable (payments attach to a scadenza), and — the dangerous one — `isFullyPaid()` falls back to "is it in an issued state?" for schedule-less invoices, so the downstream payment gates (DDT carry, next slice, saldo) treat the invoice as **settled without a cent collected**. A schedule lost by accident doesn't block the flow downstream: it unblocks it. Backend rationale in the moddo-api business-doc (*Payment due dates*, *Payment gate*).
+
+**Where:** `InvoicesDetails.svelte` — `scheduleWillBeEmpty`, the destructive `Alert` in the payments section.
 
 ### Payment slice field remap
 
@@ -97,7 +121,9 @@ Main files:
 
 **Why:** the backend freezes the schedule after the first payment — sending `due_dates[]` (even empty, which would otherwise trigger regeneration) or a changed `payment_term_id` on PUT returns 422 (see moddo-api `deferred` -> *"Invoice payments — manual recording only"*). Omitting both fields keeps an edit valid. In practice only a **`rejected`** invoice reaches the editable form while frozen — issued states are already fully read-only via `isReadOnly` (see *Editability is gated by invoice state*). Unfreeze = delete the payments from the payments subpage.
 
-**Where:** `InvoicesDetails.svelte` — `scheduleFrozen`, `buildApiPayload` (`due_dates` / `payment_term_id` omission, frozen wins over the `dueDatesServerManaged` branch), `PaymentTermSelector disabled`, `InvoiceDueDatesEditor disabled` + frozen `Alert`. The distinct `dueDatesServerManaged` branch *regenerates* the schedule; freeze *suppresses* it — see *Payment term & due-date schedule sync* above.
+**The freeze extends to the figures**, not just to the rows: an update that would move the taxable, the VAT or the payable of an invoice with recorded payments is rejected with a 422 on the **`totals`** key (`validation_custom.invoice_totals_frozen_by_payments`) — a line-price edit as much as a new cassa. Since `totals` is not a form field, `FormUtil`'s error mapping would swallow it, so the form reads it off `formApi.errors.totals` and renders it in the totals panel (the message names both amounts). An edit that leaves all three untouched (notes, a reorder) stays allowed, because fixing a rejected invoice for resubmission must remain possible. Unfreezing means deleting the payment, which is permanent.
+
+**Where:** `InvoicesDetails.svelte` — `scheduleFrozen`, `totalsError` + the destructive `Alert` in the totals panel, `buildApiPayload` (`due_dates` / `payment_term_id` omission, frozen wins over the `dueDatesServerManaged` branch), `PaymentTermSelector disabled`, `InvoiceDueDatesEditor disabled` + frozen `Alert`. The distinct `dueDatesServerManaged` branch *regenerates* the schedule; freeze *suppresses* it — see *Payment term & due-date schedule sync* above.
 
 ---
 
@@ -119,7 +145,75 @@ Main files:
 
 **Why:** Upstream-linked lines should change through the document chain, not be overridden here. A new invoice needs at least one line to be valid. The shorter field names are shared with the quotation editor (historical naming).
 
+`items[].subject_to_withholding` is **round-tripped but has no UI**: read in `mapItemsToEditorShape`, sent back in `mapItemsToInvoicePayload`. The server default is `true`, which is right for a professional's typical invoice, and the only case needing `false` is a line excluded from the withholding base (an art. 15 expense refund). Without the round-trip, editing an invoice whose line was excluded elsewhere would silently reset it to `true`. The per-row checkbox is deliberately deferred.
+
 **Where:** `InvoicesDetails.svelte` — `isItemLocked`, items `required` prop, `mapItemsToInvoicePayload` / `mapItemsToEditorShape`.
+
+---
+
+## Cassa previdenziale & ritenuta d'acconto
+
+**What:** a "Cassa e ritenuta" section between the line items and the totals, with two independent switches (`cassa_enabled` / `withholding_enabled`) that are **off by default**. The API takes repeatable arrays (FatturaPA allows several of each), but the form keeps **one row per section** as flat fields (`cassa_type`, `cassa_rate`, `cassa_taxable_percentage`, `cassa_vat_code_id`, `cassa_subject_to_withholding`; `withholding_type`, `withholding_rate`, `withholding_reason`), wrapped into arrays at submit by `buildCassaPayload` / `buildWithholdingPayload`.
+
+**Why one row:** it covers every case we have, and for the withholding more than one row is misleading rather than useful — every `withholdings[]` row is charged on the **same base**, so two 20% rows are one 40% withholding, not two distinct ones. Two cassa rows would be meaningful (two distinct funds); the UI can grow into it without a payload change.
+
+**Why both arrays are always sent, `[]` included:** they are **full-state** server-side, and an omitted array is indistinguishable from an empty one — both clear it. Sending `[]` is therefore how a cassa is removed.
+
+**Why the amounts are never entered or computed here:** only the inputs are read server-side; every amount is derived on each save. (They are *unlisted* rather than `prohibited`, so echoing a row back from a read is ignored and recomputed, never rejected — a fetch-edit-save round trip needs no stripping.)
+
+**Where:** `InvoicesDetails.svelte` — the `invoice_cassa_withholding_section` `GroupTitle`, `buildCassaPayload`, `buildWithholdingPayload`, `flattenCassaRow`, `flattenWithholdingRow`.
+
+### `subject_to_withholding` on the cassa is a visible field, on purpose
+
+**What:** the per-line flag has no UI (see *Line items editor*), but the cassa's does — a switch with an explanatory hint under it.
+
+**Why:** it is the one place where the server default is wrong for a whole category of users. `true` is correct for the INPS rivalsa (TC22 — it is part of the fee and is withheld), and wrong for a *contributo integrativo*: cassa forense (TC01), commercialisti (TC02) and nearly every other professional fund are not subject to the withholding. Left at the default, a lawyer's invoice would apply the ritenuta to the contribution. There is no safe default, so the form always asks.
+
+**Where:** `InvoicesDetails.svelte` — `cassa_subject_to_withholding` switch + `cassa_subject_to_withholding_hint`.
+
+### Rate inputs are capped at two decimals
+
+**What:** `cassa_rate`, `cassa_taxable_percentage` and `withholding_rate` validate as `0..100` with at most two decimals (`percentageWhen`).
+
+**Why:** a fiscal constraint, not a UI preference. FatturaPA prints `AlCassa` / `AliquotaRitenuta` with exactly two decimals and SDI re-derives the amount from the printed rate, so a third decimal drifts. The backend rejects it too — the client rule only saves the round trip.
+
+**Where:** `InvoicesDetails.svelte` — `percentageWhen`, `cassaWithholdingRules` (applied to both create and update).
+
+### The saved VAT code is displayed from the row's own snapshot
+
+**What:** the cassa's `VatCodeSelector` gets `attr={cassaVatCodeAttr}`, built from the saved row's frozen `vat_code_snapshot`, with `cassaVatCodeChoice` tracking the user's pick.
+
+**Why:** the selector is controlled and renders only what `attr` holds, so without it a saved cassa reloaded as an empty dropdown even though `cassa_vat_code_id` was correct (see [patterns.md](../components/patterns.md) → *Controlled selectors*). The snapshot is also the *right* thing to show: the rate the contribution was computed with, not the code's current one. The snapshot arrives bare on the preview and array-wrapped on the saved invoice — read it through `firstSnapshot()`.
+
+**Where:** `InvoicesDetails.svelte` — `cassaVatCodeAttr`, `cassaVatCodeChoice`.
+
+> ⚠️ **Open with backend:** no default exists for the cassa (neither on the legal entity nor on the customer), so a professional retypes it on every invoice. Deliberately deferred backend-side until real invoices show whether the default belongs to the legal entity or the customer, and whether a practice has one fund or two — tracked in the moddo-api `deferred` doc, with "a charge line named *Contributo INPS* used instead of the cassa" as the signal that retyping got annoying enough to work around. A per-legal-entity `localStorage` default was suggested as an interim; not implemented.
+
+---
+
+## Totals come from the server, including before the first save
+
+**What:** the totals panel shows `net → cassa → tax → total → withholding → payable`, with the cassa, withholding and payable rows hidden when zero, so an invoice without either shows exactly the three rows it always did. The figures come from `displayTotals`, in precedence order: the live **preview**, then the saved record, then the prefill.
+
+The preview is `POST /invoices/preview-amounts`, debounced 400 ms, fired whenever a cassa or a ritenuta is in play **or** the line pricing has moved from its baseline. It returns totals, the computed cassa/withholding rows and the schedule the server *would* generate, without persisting anything.
+
+**Why:** the client must never compute these. The cassa raises the VAT base (`total_tax` and `total_amount` absorb it, `total_net` stays the priced lines alone) and rounding lives server-side; the prefill knows nothing about cassa/ritenuta, since they are entered on this form only. Before the preview endpoint existed, the panel showed stale totals during any edit and `total_payable` was unknowable until the first save. It runs the same calculation code as the save, so previewed figures match saved ones exactly.
+
+**Why a failure is silent:** it falls back to the previous totals. A 403 is expected — see the open point below.
+
+**Naming trap:** the preview calls the document total `amount` (and exposes the VAT base as `taxable`), while the invoice resource calls it `total_amount`; `displayTotals` maps one onto the other.
+
+**Where:** `InvoicesDetails.svelte` — `previewRequest`, `previewTotals`, the debounced `$effect`, `displayTotals`, the `StackedAmountValues` rows.
+
+> ⚠️ **Open with backend:** `POST /invoices/preview-amounts` requires `permission:create-invoices`, but editing a draft only requires `permission:edit-invoices`. A user with edit-but-not-create rights gets a 403 and silently keeps the stale totals while still being able to save. Reported; not yet changed.
+
+### `total_amount` vs `total_payable`
+
+**What:** `total_amount` keeps its meaning — `ImportoTotaleDocumento`, i.e. net + cassa + VAT — and is what the listing, the sidebar and the totals panel's grand total show. `total_payable` (`total_amount − total_withholding`) is what the customer actually transfers, and it is what the due-date schedule is measured against (`dueDatesMatchTotal`, `expectedTotal`).
+
+**Why:** a withholding does not reduce the document total, only what is paid. Anywhere a "netto a pagare" is shown, or a schedule is checked, `total_payable` is the right figure; with no ritenuta the two coincide, which is why the change is invisible on existing invoices. `total_cassa` and `total_withholding` are serialized as decimal **strings** (like `due_dates[].amount`) — coerce before arithmetic.
+
+**Where:** `InvoicesDetails.svelte` — `displayTotals`, `dueDatesTotalRule`; `InvoiceSidebar.svelte` and `InvoicesTable.svelte` keep `total_amount`.
 
 ---
 

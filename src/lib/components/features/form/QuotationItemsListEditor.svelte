@@ -369,6 +369,13 @@
     selectedItem: Item,
     updateItem: (index: number, updates: Partial<InternalLineItem>) => void,
   ) {
+    // Apply the customer's default VAT to a row that still has none. The selector
+    // used to *display* `defaultVatCode` as a fallback without writing it, so the
+    // row stayed incomplete — and `commitToForm` drops incomplete rows, which is
+    // why a line that looked fine failed on save with a missing VAT code until the
+    // user re-picked the same value by hand. The row now carries what it shows.
+    const needsDefaultVat = defaultVatCode && !items[index]?.vat_code_id
+
     updateItem(index, {
       item_id: selectedItem.id,
       item_snapshot: selectedItem as unknown as Record<string, unknown>,
@@ -377,6 +384,13 @@
       quantity: 1,
       itemBasePrice: selectedItem.standard_cost ?? undefined,
       itemAttr: selectedItem,
+      ...(needsDefaultVat
+        ? {
+            vat_code_id: defaultVatCode.id,
+            vat_code_snapshot: defaultVatCode as unknown as Record<string, unknown>,
+            vatCodeAttr: defaultVatCode,
+          }
+        : {}),
     })
   }
 
@@ -831,7 +845,7 @@
         <VatCodeSelector
           name="{name}.{index}.vat_code_id"
           label={m.vat_code()}
-          attr={item.vatCodeAttr || defaultVatCode}
+          attr={item.vatCodeAttr}
           direction="vendita"
           width="w-full"
           contentWidth={FormFieldClass.SelectorContentDefaultWidth}

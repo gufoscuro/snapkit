@@ -49,13 +49,13 @@ snapkit-content/
 
 - **development-guidelines.md**: Rules for creating, organizing, and documenting components. Covers file locations, composition patterns, and the decision flow for new components
 - **date-handling.md**: Date serialization rules for forms/payloads. Calendar-day fields (`document_date`, `valid_from/to`, delivery/due dates) must serialize from local components, never `toISOString()` (which day-shifts near midnight in CET/CEST). Specifies the shared `$lib/utils/date.ts` helper (`toLocalISOString`, `todayLocalISO`), its unit tests, and the migration checklist to extract it. **Contains a pending-implementation spec** (the util doesn't exist yet).
-- **patterns.md**: Specific patterns: record actions (RecordActionMenu, flag toggles, confirmAction), selector components, enum translations
+- **patterns.md**: Specific patterns: record actions (RecordActionMenu, flag toggles, confirmAction), selector components, **controlled selectors (`attr` displays, `onChoose` writes — why a selector that preselects on its own must announce it)**, enum translations
 - **state-sharing.md**: Architecture for sharing state between sibling components using contracts and bindings. Covers PageState, useProvides/useConsumes hooks, and database-driven configuration
-- **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, and scaffolding examples
+- **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, scaffolding examples, field width inside narrow dialogs, and **fields with a suffix (`rightLabel` / currency symbol): width on the wrapper, styling on the input (`fieldBoxSizingClasses`), padding reserved from the suffix length**
 - **detail-record-form.md**: Step-by-step guide for creating create/update detail form components using `useDetailRecord`. Covers the full workflow: entity type discovery, contract, `useDetailRecord` setup, validation schemas, resource config, page state sharing, and the component checklist
 - **resource-table.md**: Generic ResourceTable component for data tables. Covers declarative column configuration, 11 built-in renderers, utilities (createApiFetcher, createArchiveAction), column customization (`columnsStorageId` per-user persistence, reorder/hide, opt-in columns via `defaultVisible: false`), table variants, and best practices
 - **editable-table-field.md**: EditableTableField pattern for editing arrays as table rows. Covers auto-empty-row management, row snippet API, form context isolation, styling constants, and existing editors
-- **editable-list-field.md**: EditableListField pattern for editing arrays as vertical cards. Alternative to EditableTableField for items with many fields. Covers explicit add/remove, multi-type lists with custom add buttons, responsive card layout, rich text in cards, and styling constants
+- **editable-list-field.md**: EditableListField pattern for editing arrays as vertical cards. Alternative to EditableTableField for items with many fields. Covers explicit add/remove, multi-type lists with custom add buttons, responsive card layout, rich text in cards, styling constants, and **why an incomplete row disappears from the payload instead of raising a field error (`isCompleteItem` filtering in `commitToForm`)**
 - **table-filters.md**: Structured filter system for listing pages. Covers FilterConfig definition (enum, tags, date types), FilterDropdown component, standalone vs grouped modes, data flow through the contract system, serialization, and step-by-step guide for adding filters to any listing page
 - **quotation-items-list-editor.md**: Production editor for quotation/sales order line items. Covers QuotationLineItem superset type, deliveryDateKey field mapping, addItems() API, notifyFormUpdate pattern for external mutations, validators (quotationItemsRequired/Valid), date timezone handling (toLocalISOString), and the SalesOrderItemsListEditor wrapper that adds quotation import
 - **import-menu.md**: Generic core ImportMenu for bulk-importing records from any async source. Covers the typed generic pattern (fetchFunction + optionMappingFunction + onimport), debounced server-side search, optional HoverCard preview snippet, standalone vs submenu modes, compatibility locking (`compatKey` record-anchored + `lockWhen` form-anchored), and the Escape-key workaround for closing (since shadcn-svelte DropdownMenu doesn't forward open prop)
@@ -71,7 +71,7 @@ snapkit-content/
 
 This is a per-feature pattern: one file per view/feature that accumulates non-obvious **frontend** logic — the *why* behind special cases that look arbitrary in code. Frontend only, no backend business rules. Where behavior is shared across features (e.g. commercial-terms defaults, payment composition, line-item editor internals), the files cross-reference each other and the relevant `components/` blueprint instead of duplicating.
 
-- **invoices.md**: editability gating by state, cumulative-invoice merging, URL-driven prefill flow, payment-term/due-date schedule sync, line-item locking, SDI validation UX, status badges, filter quirks, chat-filter-tool gotchas, payment recording & schedule freeze, and the payments subpage.
+- **invoices.md**: editability gating by state, cumulative-invoice merging, URL-driven prefill flow, payment-term/due-date schedule sync (and every trigger that makes it server-managed), line-item locking, SDI validation UX, status badges, filter quirks, chat-filter-tool gotchas, payment recording & schedule freeze (rows *and* figures), the payments subpage, and **cassa previdenziale / ritenuta d'acconto: the panel, server-computed totals via `preview-amounts`, `total_amount` vs `total_payable`, and why a schedule-less invoice is dangerous rather than neutral**.
 - **quotations.md**: the import *source*. Editability gating by `open` state, create-vs-edit validation, sales-transaction-type filtering, customer-driven defaults, composition remount, snapshot dual-shape (array/object), actions/badges, page-state lifecycle.
 - **sales-orders.md**: shares most of quotations' surface (cross-referenced, not duplicated); the sales-order-specific focus is the **quotation-import flow** (eligibility, composition-signature compatibility locking, header-from-first-record, importable-quantity clamping), fulfillment badge, and confirmation date.
 - **actionables.md**: the aggregate list views surfaced label-less at the top of the sidebar — **Da spedire** (`DeliveryScheduleTable`, `GET /delivery-schedule`) and **Da incassare** (`PaymentsTable`, `GET /invoice-due-dates`). Covers collection progress / payment status / recording (manual payment tracking, superseding the old issued-as-paid proxy), the forward-only + credit-note-excluded + zero-due-dates-valid shapes, EUR-default amount, the nested `invoice` object on due-date rows (with guarded accessors), and the delivery schedule's `outstanding`-baked/line-granular/`payment_pending` quirks plus the opt-in customer-PO (ODA) column. Points at the moddo-api `deferred` business-doc for the backend rationale.
@@ -203,5 +203,26 @@ When updating guidelines:
 - "How to bake a static query param into a ResourceTable fetcher?" → `components/resource-table.md`
 - "How to refresh a ResourceTable after an out-of-table dialog saves?" → `components/resource-table.md`
 - "Why do form fields overflow a narrow dialog / how to fix field width in a modal?" → `components/forms.md`
+- "Why is the % / currency suffix floating to the right of the field?" → `components/forms.md`
+- "Why does the number overlap the unit label in a field?" → `components/forms.md`
+- "Where do width classes go on a field, the input or the wrapper?" → `components/forms.md`
+- "What is fieldBoxSizingClasses?" → `components/forms.md`
+- "Why did my field lose its in-table styling (FormFieldClass.TableCell)?" → `components/forms.md`
+- "Why does a selector show a value but the form saves it empty?" → `components/patterns.md`
+- "Why is my selector empty after a reload although the id is saved?" → `components/patterns.md`
+- "Why does the dropdown reset to the old value when I pick a new one?" → `components/patterns.md`
+- "How does a selector preselect a default without lying about the data?" → `components/patterns.md`
+- "What is the attr prop on an entity selector for?" → `components/patterns.md`
+- "Why is my line item missing from the payload / why does the API say items is required?" → `components/editable-list-field.md`
+- "Why doesn't an incomplete row raise a validation error?" → `components/editable-list-field.md`
+- "What does isCompleteItem actually control?" → `components/editable-list-field.md`
+- "How do I add a cassa previdenziale or a ritenuta d'acconto to an invoice?" → `domain-logic/invoices.md`
+- "Why is subject_to_withholding a visible field on the cassa but not per line?" → `domain-logic/invoices.md`
+- "What is preview-amounts / how does the invoice form know the totals before saving?" → `domain-logic/invoices.md`
+- "What is the difference between total_amount and total_payable?" → `domain-logic/invoices.md`
+- "Why are the invoice due dates regenerated when I change a price?" → `domain-logic/invoices.md`
+- "Why does the invoice warn me when there is no payment term?" → `domain-logic/invoices.md`
+- "Why can't I change the totals of an invoice that has payments?" → `domain-logic/invoices.md`
+- "Why are cassa rates limited to two decimals?" → `domain-logic/invoices.md`
 - "How to render a sidebar group without a label?" → `routing/menu-system.md`
 - "Where do the actionables (Da spedire / Da incassare / Da fatturare) live in the menu?" → `routing/menu-system.md`

@@ -107,8 +107,26 @@ The `addButton` snippet receives:
 3. **Options on add:** `addItem({ type: 'descriptive' })` merges options onto the new empty item — useful for multi-type lists.
 4. **Auto first row:** If `items.length === 0` on mount, one empty row is added automatically.
 5. **Debounced sync:** Updates to the parent form are debounced (300ms).
-6. **Filtered output:** Only `isCompleteItem` items are synced to the form.
+6. **Filtered output:** Only `isCompleteItem` items are synced to the form — see the warning below.
 7. **Context isolation:** Children cannot autowire to the parent form (`clearFormContext`).
+
+## Filtered Output: an Incomplete Row Disappears Silently
+
+`commitToForm()` filters before writing:
+
+```typescript
+const completedItems = items.filter(isCompleteItem).map(stripGroupId)
+form.updateField(name, transformOutput ? transformOutput(completedItems) : completedItems)
+```
+
+An incomplete row is therefore **not** a row with a field error — it is a row that never reaches the payload. This shapes debugging: the symptom lands on the *array* (`"items is required"`, or a total computed on fewer lines), not on the field that is actually missing, and the row keeps looking fine on screen.
+
+Two consequences worth keeping in mind:
+
+1. **Anything a row displays must be in the row's data.** A value written only to the form field (a dotted `items.0.vat_code_id` key) or only to a child component's internal state leaves `isCompleteItem` false. See [patterns.md](./patterns.md) → *Controlled Selectors*.
+2. **Keep `isCompleteItem` aligned with what the API requires.** It is the de-facto client-side contract for a row: if the API requires `vat_code_id`, a row without one must be incomplete, otherwise the row is sent and rejected server-side instead of being held back.
+
+When comparing "what changed" against a baseline (e.g. to decide whether derived server data is stale), project **only the rows that pass the same filter** — otherwise incomplete or presentational rows flag changes that never reached the backend. `itemsPricingSignature` in `InvoicesDetails.svelte` is an example.
 
 ## Creating an Editor Component
 

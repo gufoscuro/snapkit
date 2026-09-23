@@ -290,7 +290,7 @@
           value={item.percentage}
           placeholder="%"
           rightLabel="%"
-          class="{FormFieldClass.TableCell} pr-8"
+          class={FormFieldClass.TableCell}
           showLabel={false}
           showErrorMessage={false}
           width="w-full"
