@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment'
   import { getFormContextOptional } from './form-context'
-  import { FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
+  import { fieldBoxSizingClasses, FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
   import FormFieldMessages from './FormFieldMessages.svelte'
   import FormFieldSkeleton from './FormFieldSkeleton.svelte'
   import { Input } from '$components/ui/input'
@@ -58,14 +58,19 @@
   const isDisabled = $derived(disabled || locked)
 
   const classes = $derived(
-    joinClassnames(getUserMessagingClasses(error, warning), textAlign === 'right' ? 'text-right' : ''),
+    joinClassnames(
+      className,
+      width,
+      getUserMessagingClasses(error, warning),
+      textAlign === 'right' ? 'text-right' : '',
+    ),
   )
 
-  // `width` / `className` size the WRAPPER, not the input: the right label is
-  // positioned against the wrapper, so sizing the input instead left the label
-  // pinned to the column's right edge, detached from a narrower field. The input
-  // is `w-full` by default, so it still fills whatever the wrapper allows.
-  const fieldBoxClasses = $derived(joinClassnames(width, className))
+  // The suffix is positioned against the WRAPPER, so the wrapper needs the sizing
+  // too — otherwise it anchors to the whole column instead of to a narrower field.
+  // Only the width tokens move: `className` may also carry input styling (e.g.
+  // `FormFieldClass.TableCell`), which must stay on the input.
+  const fieldBoxClasses = $derived(fieldBoxSizingClasses(width, className))
 
   // Reserve room for the suffix on whichever side it sits, instead of a blanket
   // `pr-4` / `pl-4` that a long value runs into. `ch` tracks the label's own

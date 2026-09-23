@@ -4,7 +4,7 @@
   import Label from '$components/ui/label/label.svelte'
   import { joinClassnames } from '$utils/classnames'
   import { getUserMessagingClasses } from '$utils/form'
-  import { FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
+  import { fieldBoxSizingClasses, FormLabelClass, InputFieldDefaults, type InputFieldProps } from './form'
   import { getFormContextOptional } from './form-context'
   import FormFieldMessages from './FormFieldMessages.svelte'
   import FormFieldSkeleton from './FormFieldSkeleton.svelte'
@@ -56,13 +56,13 @@
   const locked = $derived(form?.locked ?? false)
   const isDisabled = $derived(disabled || locked)
 
-  const classes = $derived(joinClassnames(getUserMessagingClasses(error, warning), 'text-right'))
+  const classes = $derived(joinClassnames(className, width, getUserMessagingClasses(error, warning), 'text-right'))
 
-  // `width` / `className` size the WRAPPER, not the input: the right label is
-  // positioned against the wrapper, so sizing the input instead left the label
-  // pinned to the column's right edge, detached from a narrower field. The input
-  // is `w-full` by default, so it still fills whatever the wrapper allows.
-  const fieldBoxClasses = $derived(joinClassnames(width, className))
+  // The right label is positioned against the WRAPPER, so the wrapper needs the
+  // sizing too — otherwise the suffix anchors to the whole column instead of to a
+  // narrower field. Only the width tokens move: `className` may also carry input
+  // styling (e.g. `FormFieldClass.TableCell`), which must stay on the input.
+  const fieldBoxClasses = $derived(fieldBoxSizingClasses(width, className))
 
   // Reserve room for the suffix instead of a blanket `pr-4`: with right-aligned
   // numbers a fixed padding lets a long value run into the label. `ch` tracks the
