@@ -821,6 +821,30 @@
     return selected !== baselinePaymentTermId
   })
 
+  // The cassa's VAT code selector is **controlled**: it renders whatever `attr`
+  // says, so without one a saved cassa comes back with an empty dropdown even
+  // though `cassa_vat_code_id` holds the right id (the same trap as
+  // `paymentTermAttr`). The saved row ships its own frozen `vat_code_snapshot`,
+  // which is also the right thing to show: the rate the cassa was computed with,
+  // not the code's current one.
+  //
+  // `cassaVatCodeChoice` tracks the user's pick so the display follows a change
+  // instead of snapping back to the saved snapshot.
+  let cassaVatCodeChoice = $state<VatCodeSummary | undefined>(undefined)
+
+  const cassaVatCodeAttr = $derived.by<VatCodeSummary | undefined>(() => {
+    const id = (formApi?.values.cassa_vat_code_id as string) || ''
+    if (!id) return undefined
+    if (cassaVatCodeChoice?.id === id) return cassaVatCodeChoice
+    const row = record?.cassa_contributions?.[0]
+    if (!row || row.vat_code_id !== id) return undefined
+    // The snapshot arrives either bare or wrapped in a one-item array, like every
+    // other snapshot on the invoice.
+    const snapshot = firstSnapshot<Record<string, unknown>>(row.vat_code_snapshot)
+    if (!snapshot) return undefined
+    return { ...(snapshot as unknown as VatCodeSummary), id }
+  })
+
   const legalEntityBankAttr = $derived.by<LegalEntityBank | undefined>(() => {
     const s = resolveSelectorSnapshot(record?.legal_entity_bank_snapshot, legalEntityBankSnapshotImport.value)
     const id = record?.legal_entity_bank_id || (formApi?.values.legal_entity_bank_id as string | undefined)
@@ -1549,7 +1573,12 @@
                 max="100"
                 class={FormFieldClass.MaxWidth} />
 
-              <VatCodeSelector name="cassa_vat_code_id" direction="vendita" class={FormFieldClass.MaxWidth} />
+              <VatCodeSelector
+                name="cassa_vat_code_id"
+                attr={cassaVatCodeAttr}
+                onChoose={item => (cassaVatCodeChoice = item)}
+                direction="vendita"
+                class={FormFieldClass.MaxWidth} />
 
               <!-- The one field with no safe default: `true` matches the INPS
                    rivalsa (TC22), but a contributo integrativo (TC01, TC02 and most

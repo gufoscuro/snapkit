@@ -1845,8 +1845,12 @@ export type CassaContribution = CassaContributionInput & {
   amount: number
   /** VAT charged on the contribution. */
   tax_amount: number
-  /** VAT code frozen at save time — not the code's current rate. */
-  vat_code_snapshot: Record<string, unknown>
+  /**
+   * VAT code frozen at save time — not the code's current rate. Bare object on
+   * the preview, wrapped in a one-item array on the saved invoice (like every
+   * other snapshot); read it through `firstSnapshot()`.
+   */
+  vat_code_snapshot: Record<string, unknown> | Record<string, unknown>[]
 }
 
 /** A saved `withholdings[]` row: the inputs plus the server-derived amounts. */
