@@ -420,6 +420,9 @@
   // only directly editable while the selected term still matches this baseline —
   // see `paymentTermMismatch`. Cleared by `clearPrefill`.
   let prefillPaymentTermId = $state<string | null>(null)
+  // Pricing signature of the prefilled lines — the baseline the prefilled schedule
+  // was computed against. Cleared by `clearPrefill`.
+  let prefillItemsSignature = $state<string | null>(null)
 
   /**
    * Document totals for the read-only totals panel, in precedence order: the live
@@ -446,8 +449,10 @@
     const values = formApi.values as unknown as Record<string, unknown>
     const cassa_contributions = buildCassaPayload(values)
     const withholdings = buildWithholdingPayload(values)
-    // Without either block the saved / prefilled totals are already correct.
-    if (cassa_contributions.length === 0 && withholdings.length === 0) return null
+    // Skip while the saved / prefilled totals are still authoritative: no cassa, no
+    // ritenuta and untouched pricing. Once any of those moves, the stored totals are
+    // stale and only the server can say what the new ones are.
+    if (cassa_contributions.length === 0 && withholdings.length === 0 && !itemsPricingChanged) return null
     const items = ((values.items as QuotationLineItem[] | undefined) ?? []).map(line => ({
       type: line.type as 'item' | 'charge' | 'descriptive',
       quantity: line.quantity,
@@ -1115,6 +1120,9 @@
 
     const rawItems = prefill.items ?? []
     const editorItems = mapPrefillItemsToEditorShape(rawItems)
+    // Baseline the prefilled schedule was computed against (first source only; a
+    // second one makes the invoice cumulative, which is server-managed anyway).
+    if (fillHeader) prefillItemsSignature = itemsPricingSignature(editorItems)
     if (editorItems.length > 0) {
       // Split the source's lines into consecutive per-reference runs, each led by a
       // reference descriptive header, and append every run with its own `groupId`
@@ -1213,6 +1221,30 @@
   // the combined lines + shared term), since per-source previews don't combine.
   const isCumulative = $derived(prefilledSources.length > 1)
 
+  /**
+   * Pricing-relevant projection of the line items — everything that moves the
+   * totals, and nothing else: editing a description or reordering rows leaves the
+   * schedule perfectly valid, so neither should trigger a regeneration.
+   */
+  function itemsPricingSignature(lines: QuotationLineItem[] | undefined): string {
+    return JSON.stringify(
+      (lines ?? [])
+        // Only priced rows move the totals, and only complete ones reach the form
+        // value at all (the editor drops incomplete rows on commit) — comparing
+        // anything else would flag a change that never happened, e.g. the
+        // descriptive reference headers the prefill inserts between groups.
+        .filter(line => line.type !== 'descriptive' && !!line.vat_code_id && (Number(line.quantity) || 0) > 0)
+        .map(line => ({
+          type: line.type,
+          quantity: Number(line.quantity) || 0,
+          unit_price: Number(line.unit_price) || 0,
+          discount_percent: Number(line.discount_percent ?? 0),
+          vat_code_id: line.vat_code_id ?? '',
+          subject_to_withholding: line.subject_to_withholding !== false,
+        })),
+    )
+  }
+
   /** Normalize a saved row to its input shape so it compares with the form's. */
   function cassaRowSignature(rows: CassaContribution[] | undefined): string {
     return JSON.stringify(
@@ -1230,6 +1262,24 @@
     return JSON.stringify((rows ?? []).map(r => ({ type: r.type, rate: Number(r.rate) || 0, reason: r.reason })))
   }
 
+  // The lines the current schedule was sized against: the saved invoice's in edit
+  // mode, the prefilled ones in create mode. `null` on a manual create — there is
+  // no baseline, so nothing can be stale.
+  const scheduleBaselineItemsSignature = $derived<string | null>(
+    record ? itemsPricingSignature(mapItemsToEditorShape(record.items)) : prefillItemsSignature,
+  )
+
+  // True once a price, quantity, discount, VAT code or line count differs from that
+  // baseline — the totals have moved, so the existing scadenze no longer add up.
+  const itemsPricingChanged = $derived.by<boolean>(() => {
+    if (!formApi || scheduleBaselineItemsSignature == null) return false
+    return (
+      itemsPricingSignature(formApi.values.items as QuotationLineItem[] | undefined) !== scheduleBaselineItemsSignature
+    )
+  })
+
+  const hasPaymentTerm = $derived(!!((formApi?.values.payment_term_id as string) || ''))
+
   // True once the cassa / ritenuta differ from what the loaded invoice carries
   // (in create mode: from nothing). Both move `total_payable`, which is what the
   // schedule is billed against, so the existing rows are stale the moment either
@@ -1246,9 +1296,16 @@
   // The schedule is server-managed (editor hidden, POST empty `due_dates[]`, backend
   // regenerates) when the term diverges from the baseline, when the invoice is
   // cumulative — the merged DDTs share one term and the schedule is sized on the
-  // combined total, which only the backend can compute — or when a cassa / ritenuta
-  // moved the payable out from under the current rows.
-  const dueDatesServerManaged = $derived(paymentTermMismatch || isCumulative || cassaWithholdingChanged)
+  // combined total, which only the backend can compute — or when a cassa, a ritenuta
+  // or a line price moved the payable out from under the current rows.
+  //
+  // A line edit only regenerates when there IS a term to regenerate from: without
+  // one, an empty `due_dates[]` saves the invoice with no scadenze at all, and
+  // hiding the editor would take away the only way to fix them by hand. In that
+  // case the rows stay editable and the running-total indicator flags the gap.
+  const dueDatesServerManaged = $derived(
+    paymentTermMismatch || isCumulative || cassaWithholdingChanged || (itemsPricingChanged && hasPaymentTerm),
+  )
 
   // Sending an empty `due_dates[]` only regenerates when a payment term is set;
   // without one the invoice saves with NO schedule at all, which is not neutral:
@@ -1300,6 +1357,7 @@
     legalEntityBankSnapshotImport.reset()
     commercialTermsVatCode = undefined
     prefillTotals = null
+    prefillItemsSignature = null
     prefillVatSummary = []
     prefillDueDates = []
     prefillPaymentTermId = null
@@ -1702,8 +1760,8 @@
               <Alert.Root class="max-w-md lg:max-w-none">
                 <AlertCircleIcon />
                 <Alert.Description>
-                  {cassaWithholdingChanged
-                    ? m.invoice_cassa_withholding_schedule_notice()
+                  {cassaWithholdingChanged || itemsPricingChanged
+                    ? m.invoice_schedule_recalculated_notice()
                     : m.invoice_due_dates_term_changed_notice()}
                 </Alert.Description>
               </Alert.Root>

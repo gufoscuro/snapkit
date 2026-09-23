@@ -702,7 +702,7 @@
   "withholding_type": "Withholding type",
   "withholding_rate": "Withholding rate",
   "withholding_reason": "Payment reason",
-  "invoice_cassa_withholding_schedule_notice": "The welfare fund or withholding changed: the system will regenerate the schedule on save, against the net payable.",
+  "invoice_schedule_recalculated_notice": "The totals changed: the system will regenerate the schedule on save, against the net payable.",
   "invoice_no_due_dates_warning": "Without a payment term the invoice is saved WITH NO schedule: no payment data in the XML, no payments can be recorded, and the downstream gates (DDT carry, next slice, balance) treat it as already settled. Set a payment term or enter the schedule manually.",
   "validation_percentage_range": "{field} must be between 0 and 100.",
   "validation_max_two_decimals": "{field} allows at most two decimals (SDI prints the rate with two).",

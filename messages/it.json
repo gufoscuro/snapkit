@@ -704,7 +704,7 @@
   "withholding_type": "Tipo ritenuta",
   "withholding_rate": "Aliquota ritenuta",
   "withholding_reason": "Causale pagamento",
-  "invoice_cassa_withholding_schedule_notice": "Cassa o ritenuta sono cambiate: le scadenze verranno rigenerate dal sistema al salvataggio, sul netto a pagare.",
+  "invoice_schedule_recalculated_notice": "I totali sono cambiati: le scadenze verranno rigenerate dal sistema al salvataggio, sul netto a pagare.",
   "invoice_no_due_dates_warning": "Senza termine di pagamento la fattura viene salvata SENZA scadenze: nessun dato di pagamento nell'XML, nessun incasso registrabile e i controlli a valle (DDT, slice successiva, saldo) la considerano già saldata. Imposta un termine di pagamento o inserisci le scadenze a mano.",
   "validation_percentage_range": "{field} deve essere compreso tra 0 e 100.",
   "validation_max_two_decimals": "{field} ammette al massimo due decimali (lo SdI stampa l'aliquota con due).",
