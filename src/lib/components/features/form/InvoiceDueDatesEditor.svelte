@@ -270,7 +270,7 @@
           value={item.amount}
           placeholder={m.amount()}
           rightLabel={currency}
-          class="{FormFieldClass.TableCell} pr-12"
+          class={FormFieldClass.TableCell}
           showLabel={false}
           showErrorMessage={false}
           width="w-full"

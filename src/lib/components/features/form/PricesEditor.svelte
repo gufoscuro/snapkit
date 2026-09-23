@@ -237,7 +237,7 @@
 					value={item.min_quantity}
 					rightLabel={uomSymbol}
 					placeholder={m.min_quantity()}
-					class="{FormFieldClass.TableCell} pr-12"
+					class={FormFieldClass.TableCell}
 					showLabel={false}
 					showErrorMessage={false}
 					width="w-full"
@@ -277,7 +277,6 @@
 				min={0}
 				max={100}
 				step={0.01}
-				class="pr-8"
 				{disabled}
 				oninput={handleVATChange} />
 		</div>

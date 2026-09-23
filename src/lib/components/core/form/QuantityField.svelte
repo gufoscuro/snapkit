@@ -66,12 +66,20 @@
   const effectiveRightLabel = $derived(rightLabel ?? (uom ? getUOMDisplayedSymbol(uom) : undefined))
 
   const classes = $derived(
-    joinClassnames(
-      className,
-      width,
-      getUserMessagingClasses(error, warning),
-      effectiveRightLabel ? 'pr-4 text-left' : 'text-right',
-    ),
+    joinClassnames(getUserMessagingClasses(error, warning), effectiveRightLabel ? 'text-left' : 'text-right'),
+  )
+
+  // `width` / `className` size the WRAPPER, not the input: the right label is
+  // positioned against the wrapper, so sizing the input instead left the label
+  // pinned to the column's right edge, detached from a narrower field. The input
+  // is `w-full` by default, so it still fills whatever the wrapper allows.
+  const fieldBoxClasses = $derived(joinClassnames(width, className))
+
+  // Reserve room for the suffix instead of a blanket `pr-4`, which a long value
+  // runs straight into. `ch` tracks the label's own character count, plus its
+  // 0.625rem margin and a small gap.
+  const rightLabelStyle = $derived(
+    effectiveRightLabel ? `padding-right: calc(${effectiveRightLabel.length}ch + 1.25rem)` : undefined,
   )
 
   const labelAria = $derived({
@@ -147,7 +155,7 @@
     <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
       {#snippet children({ aria })}
-        <div class="relative">
+        <div class="relative {fieldBoxClasses}">
           <Input
             {id}
             {name}
@@ -163,6 +171,7 @@
             {...labelAria}
             {...aria}
             class={classes}
+            style={rightLabelStyle}
             oninput={handleInput}
             {onfocus}
             onblur={handleBlur} />

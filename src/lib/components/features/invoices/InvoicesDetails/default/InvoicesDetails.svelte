@@ -39,8 +39,10 @@
   import FormErrorMessage from '$components/core/form/FormErrorMessage.svelte'
   import FormUtil from '$components/core/form/FormUtil.svelte'
   import { createImportedSnapshot } from '$components/core/form/imported-snapshot.svelte'
+  import NumberField from '$components/core/form/NumberField.svelte'
   import RichEditorField from '$components/core/form/RichEditorField.svelte'
   import SelectField from '$components/core/form/SelectField.svelte'
+  import SwitchField from '$components/core/form/SwitchField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v, type FieldValidator } from '$components/core/form/validation'
   import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
@@ -52,12 +54,10 @@
   } from '$components/features/form/InvoiceDueDatesEditor.svelte'
   import InvoiceItemsListEditor from '$components/features/form/InvoiceItemsListEditor.svelte'
   import LegalEntityBankSelector from '$components/features/form/LegalEntityBankSelector.svelte'
-  import NumberField from '$components/core/form/NumberField.svelte'
-  import SwitchField from '$components/core/form/SwitchField.svelte'
-  import VatCodeSelector from '$components/features/form/VatCodeSelector.svelte'
   import PaymentTermSelector from '$components/features/form/PaymentTermSelector.svelte'
   import type { QuotationLineItem } from '$components/features/form/QuotationItemsEditor.svelte'
   import type { VatCodeSummary } from '$components/features/form/VatCodeSelector.svelte'
+  import VatCodeSelector from '$components/features/form/VatCodeSelector.svelte'
   import GroupTitle from '$components/features/globals/GroupTitle.svelte'
   import {
     createInvoiceActions,
@@ -81,10 +81,10 @@
     CustomerCommercialTerms,
     CustomerSummary,
     Invoice,
-    InvoiceAmountsPreview,
-    InvoiceAmountsPreviewRequest,
     InvoiceableDocument,
     InvoiceableDocumentType,
+    InvoiceAmountsPreview,
+    InvoiceAmountsPreviewRequest,
     InvoiceDocumentType,
     InvoiceItem,
     InvoiceItemInput,
@@ -1555,23 +1555,19 @@
                 items={cassaTypeItems}
                 class={FormFieldClass.MaxWidth} />
 
-              <NumberField
-                name="cassa_rate"
-                label={m.cassa_rate()}
-                rightLabel="%"
-                step="0.01"
-                min="0"
-                max="100"
-                class={FormFieldClass.MaxWidth} />
+              <div class={FormFieldClass.MaxWidth}>
+                <NumberField name="cassa_rate" label={m.cassa_rate()} rightLabel="%" step="0.01" min="0" max="100" />
+              </div>
 
-              <NumberField
-                name="cassa_taxable_percentage"
-                label={m.cassa_taxable_percentage()}
-                rightLabel="%"
-                step="0.01"
-                min="0"
-                max="100"
-                class={FormFieldClass.MaxWidth} />
+              <div class={FormFieldClass.MaxWidth}>
+                <NumberField
+                  name="cassa_taxable_percentage"
+                  label={m.cassa_taxable_percentage()}
+                  rightLabel="%"
+                  step="0.01"
+                  min="0"
+                  max="100" />
+              </div>
 
               <VatCodeSelector
                 name="cassa_vat_code_id"
@@ -1592,26 +1588,23 @@
             <SwitchField name="withholding_enabled" label={m.invoice_withholding_enable()} />
 
             {#if formAPI.values.withholding_enabled}
-              <SelectField
-                name="withholding_type"
-                label={m.withholding_type()}
-                items={withholdingTypeItems}
-                class={FormFieldClass.MaxWidth} />
+              <div class={FormFieldClass.MaxWidth}>
+                <SelectField name="withholding_type" label={m.withholding_type()} items={withholdingTypeItems} />
+              </div>
 
-              <NumberField
-                name="withholding_rate"
-                label={m.withholding_rate()}
-                rightLabel="%"
-                step="0.01"
-                min="0"
-                max="100"
-                class={FormFieldClass.MaxWidth} />
+              <div class={FormFieldClass.MaxWidth}>
+                <NumberField
+                  name="withholding_rate"
+                  label={m.withholding_rate()}
+                  rightLabel="%"
+                  step="0.01"
+                  min="0"
+                  max="100" />
+              </div>
 
-              <SelectField
-                name="withholding_reason"
-                label={m.withholding_reason()}
-                items={withholdingReasonItems}
-                class={FormFieldClass.MaxWidth} />
+              <div class={FormFieldClass.MaxWidth}>
+                <SelectField name="withholding_reason" label={m.withholding_reason()} items={withholdingReasonItems} />
+              </div>
             {/if}
           {/snippet}
         </GroupTitle>

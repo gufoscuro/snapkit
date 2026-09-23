@@ -76,20 +76,22 @@
   $effect(() => {
     if (!isFocused) {
       displayValue =
-        numericValue !== undefined && numericValue !== null
-          ? floatToPriceString(numericValue, currency, decimals)
-          : ''
+        numericValue !== undefined && numericValue !== null ? floatToPriceString(numericValue, currency, decimals) : ''
     }
   })
 
-  const classes = $derived(
-    joinClassnames(
-      className,
-      width,
-      getUserMessagingClasses(error, warning),
-      'pr-12 text-right' // Space for currency symbol
-    )
-  )
+  const classes = $derived(joinClassnames(getUserMessagingClasses(error, warning), 'text-right'))
+
+  // `width` / `className` size the WRAPPER, not the input: the currency symbol is
+  // positioned against the wrapper, so sizing the input instead left the symbol
+  // pinned to the column's right edge, detached from a narrower field. The input
+  // is `w-full` by default, so it still fills whatever the wrapper allows.
+  const fieldBoxClasses = $derived(joinClassnames(width, className))
+
+  // Reserve room for the symbol rather than a fixed `pr-12`: right-aligned amounts
+  // run into it otherwise, and symbols are 1-3 characters ("€" vs "CHF"). `ch`
+  // tracks the symbol itself, plus its 0.625rem padding and a small gap.
+  const symbolStyle = $derived(`padding-right: calc(${currencySymbol.length}ch + 1.25rem)`)
 
   const labelAria = $derived({
     'aria-labelledby': `label-${id}`,
@@ -160,7 +162,7 @@
     <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
       {#snippet children({ aria })}
-        <div class="relative">
+        <div class="relative {fieldBoxClasses}">
           <Input
             {id}
             {name}
@@ -174,16 +176,15 @@
             {...labelAria}
             {...aria}
             class={classes}
+            style={symbolStyle}
             oninput={handleInput}
             onfocus={handleFocus}
-            onblur={handleBlur}
-          />
+            onblur={handleBlur} />
 
           <div
-            class="pointer-events-none absolute right-0 top-0 flex h-full max-w-16 items-center px-2.5 text-sm text-muted-foreground/60 {rounded
+            class="pointer-events-none absolute top-0 right-0 flex h-full max-w-16 items-center px-2.5 text-sm text-muted-foreground/60 {rounded
               ? 'rounded-r-md'
-              : ''}"
-          >
+              : ''}">
             {currencySymbol}
           </div>
         </div>

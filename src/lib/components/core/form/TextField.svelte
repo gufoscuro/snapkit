@@ -58,14 +58,22 @@
   const isDisabled = $derived(disabled || locked)
 
   const classes = $derived(
-    joinClassnames(
-      className,
-      width,
-      getUserMessagingClasses(error, warning),
-      rightLabel && textAlign === 'left' ? 'pr-4' : '',
-      rightLabel && textAlign === 'right' ? 'pl-4' : '',
-      textAlign === 'right' ? 'text-right' : ''
-    )
+    joinClassnames(getUserMessagingClasses(error, warning), textAlign === 'right' ? 'text-right' : ''),
+  )
+
+  // `width` / `className` size the WRAPPER, not the input: the right label is
+  // positioned against the wrapper, so sizing the input instead left the label
+  // pinned to the column's right edge, detached from a narrower field. The input
+  // is `w-full` by default, so it still fills whatever the wrapper allows.
+  const fieldBoxClasses = $derived(joinClassnames(width, className))
+
+  // Reserve room for the suffix on whichever side it sits, instead of a blanket
+  // `pr-4` / `pl-4` that a long value runs into. `ch` tracks the label's own
+  // character count, plus its 0.625rem margin and a small gap.
+  const rightLabelStyle = $derived(
+    rightLabel
+      ? `padding-${textAlign === 'left' ? 'right' : 'left'}: calc(${rightLabel.length}ch + 1.25rem)`
+      : undefined,
   )
 
   const labelAria = $derived({
@@ -106,7 +114,7 @@
     <Label for={name} id="label-{id}" class={showLabel ? FormLabelClass : 'sr-only'}>{label}</Label>
     <FormFieldMessages {id} {error} {warning} {showErrorMessage} {errorPosition} {warningPosition}>
       {#snippet children({ aria })}
-        <div class="relative">
+        <div class="relative {fieldBoxClasses}">
           <Input
             {id}
             {name}
@@ -119,11 +127,11 @@
             {...labelAria}
             {...aria}
             class={classes}
+            style={rightLabelStyle}
             oninput={handleInput}
-            onfocus={onfocus}
+            {onfocus}
             onblur={handleBlur}
-            onkeyup={onkeyup}
-          />
+            {onkeyup} />
 
           {#if right}
             {@render right()}
@@ -132,8 +140,7 @@
               class="pointer-events-none absolute top-0 flex h-full max-w-16 items-center text-sm text-muted-foreground/60 {textAlign ===
               'left'
                 ? 'right-0 mr-2.5'
-                : 'left-0 ml-2.5'}"
-            >
+                : 'left-0 ml-2.5'}">
               {rightLabel}
             </div>
           {/if}
