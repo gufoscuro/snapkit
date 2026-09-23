@@ -7,6 +7,7 @@ import type {
   AnnualRevenueRange,
   AtecoCode,
   BinLocationType,
+  CassaType,
   CompanySize,
   ConversionStatus,
   Currency,
@@ -58,6 +59,8 @@ import type {
   WarehouseType,
   WarehouseZone,
   WeightUnit,
+  WithholdingReason,
+  WithholdingType,
   ZoneType,
 } from '$lib/types/api-types'
 
@@ -716,6 +719,87 @@ export const invoicePaymentStatusVariantConfig: Record<InvoicePaymentStatus, Sta
 
 export function getInvoicePaymentStatusVariant(status: InvoicePaymentStatus): StatusVariant {
   return invoicePaymentStatusVariantConfig[status] ?? 'neutral'
+}
+
+// Cassa Previdenziale Labels (FatturaPA TipoCassa — welfare fund on an invoice)
+export const cassaTypeLabels: EnumLabelMap<CassaType> = {
+  TC01: m.enum_cassa_type_tc01,
+  TC02: m.enum_cassa_type_tc02,
+  TC03: m.enum_cassa_type_tc03,
+  TC04: m.enum_cassa_type_tc04,
+  TC05: m.enum_cassa_type_tc05,
+  TC06: m.enum_cassa_type_tc06,
+  TC07: m.enum_cassa_type_tc07,
+  TC08: m.enum_cassa_type_tc08,
+  TC09: m.enum_cassa_type_tc09,
+  TC10: m.enum_cassa_type_tc10,
+  TC11: m.enum_cassa_type_tc11,
+  TC12: m.enum_cassa_type_tc12,
+  TC13: m.enum_cassa_type_tc13,
+  TC14: m.enum_cassa_type_tc14,
+  TC15: m.enum_cassa_type_tc15,
+  TC16: m.enum_cassa_type_tc16,
+  TC17: m.enum_cassa_type_tc17,
+  TC18: m.enum_cassa_type_tc18,
+  TC19: m.enum_cassa_type_tc19,
+  TC20: m.enum_cassa_type_tc20,
+  TC21: m.enum_cassa_type_tc21,
+  TC22: m.enum_cassa_type_tc22,
+}
+
+export function getCassaTypeLabel(type: CassaType): string {
+  return cassaTypeLabels[type]?.() ?? type
+}
+
+// Withholding Type Labels (FatturaPA TipoRitenuta)
+export const withholdingTypeLabels: EnumLabelMap<WithholdingType> = {
+  RT01: m.enum_withholding_type_rt01,
+  RT02: m.enum_withholding_type_rt02,
+  RT03: m.enum_withholding_type_rt03,
+  RT04: m.enum_withholding_type_rt04,
+  RT05: m.enum_withholding_type_rt05,
+  RT06: m.enum_withholding_type_rt06,
+}
+
+export function getWithholdingTypeLabel(type: WithholdingType): string {
+  return withholdingTypeLabels[type]?.() ?? type
+}
+
+// Withholding Reason Labels (FatturaPA CausalePagamento — modello 770 codes)
+export const withholdingReasonLabels: EnumLabelMap<WithholdingReason> = {
+  A: m.enum_withholding_reason_a,
+  B: m.enum_withholding_reason_b,
+  C: m.enum_withholding_reason_c,
+  D: m.enum_withholding_reason_d,
+  E: m.enum_withholding_reason_e,
+  G: m.enum_withholding_reason_g,
+  H: m.enum_withholding_reason_h,
+  I: m.enum_withholding_reason_i,
+  L: m.enum_withholding_reason_l,
+  L1: m.enum_withholding_reason_l1,
+  M: m.enum_withholding_reason_m,
+  M1: m.enum_withholding_reason_m1,
+  M2: m.enum_withholding_reason_m2,
+  N: m.enum_withholding_reason_n,
+  O: m.enum_withholding_reason_o,
+  O1: m.enum_withholding_reason_o1,
+  P: m.enum_withholding_reason_p,
+  Q: m.enum_withholding_reason_q,
+  R: m.enum_withholding_reason_r,
+  S: m.enum_withholding_reason_s,
+  T: m.enum_withholding_reason_t,
+  U: m.enum_withholding_reason_u,
+  V: m.enum_withholding_reason_v,
+  V1: m.enum_withholding_reason_v1,
+  V2: m.enum_withholding_reason_v2,
+  W: m.enum_withholding_reason_w,
+  X: m.enum_withholding_reason_x,
+  Y: m.enum_withholding_reason_y,
+  ZO: m.enum_withholding_reason_zo,
+}
+
+export function getWithholdingReasonLabel(reason: WithholdingReason): string {
+  return withholdingReasonLabels[reason]?.() ?? reason
 }
 
 // Transport Document Type Labels

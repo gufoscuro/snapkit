@@ -13,6 +13,8 @@
     code: string
     description: string
     rate: number
+    /** SDI `Natura` code; empty on ordinary taxable codes. */
+    nature: string
     type: string
     direction: string
     applies_to: string

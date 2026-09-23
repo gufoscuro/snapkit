@@ -1725,6 +1725,187 @@ export type PaymentMethod =
   | 'MP23'
 
 /**
+ * FatturaPA `TipoCassa` codes — the welfare fund a `DatiCassaPrevidenziale`
+ * block is paid to. Stable enum defined by SDI; labels in `enum-labels.ts`.
+ */
+export type CassaType =
+  | 'TC01'
+  | 'TC02'
+  | 'TC03'
+  | 'TC04'
+  | 'TC05'
+  | 'TC06'
+  | 'TC07'
+  | 'TC08'
+  | 'TC09'
+  | 'TC10'
+  | 'TC11'
+  | 'TC12'
+  | 'TC13'
+  | 'TC14'
+  | 'TC15'
+  | 'TC16'
+  | 'TC17'
+  | 'TC18'
+  | 'TC19'
+  | 'TC20'
+  | 'TC21'
+  | 'TC22'
+
+/**
+ * FatturaPA `TipoRitenuta` codes — the kind of withholding a `DatiRitenuta`
+ * block declares. Stable enum defined by SDI; labels in `enum-labels.ts`.
+ */
+export type WithholdingType = 'RT01' | 'RT02' | 'RT03' | 'RT04' | 'RT05' | 'RT06'
+
+/**
+ * FatturaPA `CausalePagamento` codes — the reason code from the modello 770,
+ * required on every `DatiRitenuta` block. Stable enum defined by SDI.
+ */
+export type WithholdingReason =
+  | 'A'
+  | 'B'
+  | 'C'
+  | 'D'
+  | 'E'
+  | 'G'
+  | 'H'
+  | 'I'
+  | 'L'
+  | 'L1'
+  | 'M'
+  | 'M1'
+  | 'M2'
+  | 'N'
+  | 'O'
+  | 'O1'
+  | 'P'
+  | 'Q'
+  | 'R'
+  | 'S'
+  | 'T'
+  | 'U'
+  | 'V'
+  | 'V1'
+  | 'V2'
+  | 'W'
+  | 'X'
+  | 'Y'
+  | 'ZO'
+
+/**
+ * Input shape of one `cassa_contributions[]` row on POST/PUT /invoices.
+ *
+ * Only these keys are read. The derived amounts are *unlisted* rather than
+ * `prohibited`, so a row echoed back from a read is ignored and recomputed
+ * instead of rejected — a fetch-edit-save round trip needs no stripping.
+ * `rate` and `taxable_percentage` are validated `0..100` with at most two
+ * decimals: FatturaPA prints `AlCassa` with exactly two and SDI re-derives the
+ * amount from it, so a third decimal drifts.
+ */
+export type CassaContributionInput = {
+  type: CassaType
+  /** Contribution rate as a percentage (e.g. 4 for 4%). */
+  rate: number
+  /** Share of the taxable the rate applies to, as a percentage (usually 100). */
+  taxable_percentage: number
+  /** Sale-direction VAT code applied to the contribution (`direction=vendita`). */
+  vat_code_id: string
+  /**
+   * Whether the contribution is part of the withholding base. Defaults to
+   * `true`, which is right for the INPS rivalsa (TC22) but WRONG for a
+   * `contributo integrativo` (TC01, TC02 and most professional funds), which is
+   * not subject to the withholding — so the form always asks explicitly.
+   */
+  subject_to_withholding?: boolean
+}
+
+/**
+ * Input shape of one `withholdings[]` row on POST/PUT /invoices. The amount is
+ * derived server-side from the flagged lines and cassa rows.
+ *
+ * Every row is charged on the SAME base, so two 20% rows are one 40% withholding
+ * rather than two distinct ones; a withholding on a different base (ENASARCO on
+ * commissions + RT01 on the fee) is not expressible yet.
+ */
+export type WithholdingInput = {
+  type: WithholdingType
+  /** Withholding rate as a percentage (e.g. 20 for 20%). `0..100`, max 2 decimals. */
+  rate: number
+  /** `CausalePagamento` from the modello 770. */
+  reason: WithholdingReason
+}
+
+/** A saved `cassa_contributions[]` row: the inputs plus the server-derived amounts. */
+export type CassaContribution = CassaContributionInput & {
+  subject_to_withholding: boolean
+  /** The share of the taxable the rate was applied to. */
+  taxable_amount: number
+  /** The contribution itself. */
+  amount: number
+  /** VAT charged on the contribution. */
+  tax_amount: number
+  /** VAT code frozen at save time — not the code's current rate. */
+  vat_code_snapshot: Record<string, unknown>
+}
+
+/** A saved `withholdings[]` row: the inputs plus the server-derived amounts. */
+export type Withholding = WithholdingInput & {
+  /** Base the rate was applied to (flagged priced lines + flagged cassa rows). */
+  taxable_amount: number
+  amount: number
+}
+
+/**
+ * Request body of `POST /legal-entities/{legalEntity}/invoices/preview-amounts`.
+ * A lean projection of the draft — lines carry only what pricing needs (no
+ * `item_id`, no description). Validated more loosely than create, so a
+ * half-filled draft still previews.
+ */
+export type InvoiceAmountsPreviewRequest = {
+  document_date: string
+  payment_term_id?: string
+  cassa_contributions?: CassaContributionInput[]
+  withholdings?: WithholdingInput[]
+  items: {
+    type: InvoiceItemType
+    quantity?: number
+    unit_price?: number
+    discount_percentage?: number
+    vat_code_id?: string
+    subject_to_withholding?: boolean
+  }[]
+}
+
+/**
+ * Response of `POST /invoices/preview-amounts` — totals, computed cassa and
+ * withholding rows, and the schedule the server *would* generate, without
+ * persisting anything. It runs the same calculation code as the save, so the
+ * previewed figures match the saved ones exactly.
+ *
+ * This is how the form knows `payable` before the first write. The client must
+ * never compute these itself.
+ */
+export type InvoiceAmountsPreview = {
+  totals: {
+    /** Priced lines only. */
+    net: number
+    cassa: number
+    /** VAT base: net + cassa. */
+    taxable: number
+    tax: number
+    /** `ImportoTotaleDocumento`. */
+    amount: number
+    withholding: number
+    /** `amount - withholding` — what the customer transfers. */
+    payable: number
+  }
+  cassa_contributions: CassaContribution[]
+  withholdings: Withholding[]
+  due_dates: InvoicePrefillDueDate[]
+}
+
+/**
  * Payment status of a single scadenza (or the invoice as a whole). Derived
  * server-side from recorded payments vs the row's `amount`. `null` at the
  * invoice level means the invoice has no payment schedule (e.g. TD04 credit
@@ -1819,6 +2000,13 @@ export type InvoiceItem = {
   vat_code_id: string
   vat_code_snapshot: Record<string, unknown>[]
   tax_amount: number
+  /**
+   * Whether this line is part of the withholding base (FatturaPA line-level
+   * `Ritenuta: SI`). Defaults to `true` server-side — only an excluded line
+   * (typically an art. 15 expense refund) carries `false`. Only priced lines
+   * count: a descriptive line never reaches `DettaglioLinee`.
+   */
+  subject_to_withholding: boolean
   sales_order_item_id: string
   transport_document_item_id: string
 }
@@ -1853,9 +2041,27 @@ export type Invoice = {
   legal_entity_bank_id: string
   legal_entity_bank_snapshot: Record<string, unknown>[]
   currency: Currency
+  /** Priced lines only — the cassa is NOT included here. */
   total_net: number
+  cassa_contributions?: CassaContribution[]
+  /**
+   * Sum of the cassa contributions, `0` when there are none. Serialized as a
+   * decimal string by the API (like `due_dates[].amount`) — coerce before use.
+   */
+  total_cassa: number | string
+  /** VAT on lines + cassa (the cassa raises the taxable). */
   total_tax: number
+  /** `ImportoTotaleDocumento`: net + cassa + VAT. NOT what the customer transfers. */
   total_amount: number
+  withholdings?: Withholding[]
+  /** Sum of the withholdings, `0` when there are none. Decimal string, like `total_cassa`. */
+  total_withholding: number | string
+  /**
+   * `total_amount - total_withholding` — what the customer actually transfers,
+   * and what the server bills a regenerated due-date schedule against. Use this,
+   * not `total_amount`, wherever a "netto a pagare" is shown.
+   */
+  total_payable: number
   state: InvoiceState
   /**
    * Tri-state payment status derived from the scadenze. `null` when the invoice
@@ -1885,6 +2091,11 @@ export type Invoice = {
  */
 export type InvoiceItemInput = {
   type: 'item' | 'charge' | 'descriptive'
+  /**
+   * Withholding base flag, echoed back unchanged on update so a line excluded
+   * elsewhere isn't silently reset to the server-side default (`true`).
+   */
+  subject_to_withholding?: boolean
   item_id?: string
   /** Article catalog code, shipped flat by the prefill (used to render locked lines). */
   code?: string
