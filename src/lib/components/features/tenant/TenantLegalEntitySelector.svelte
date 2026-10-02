@@ -1,7 +1,8 @@
 <!--
   @component TenantLegalEntitySelector
   @description Superadmin picker listing every tenant's legal entities, grouped by tenant.
-  Choosing an entity in another tenant hands off to that tenant's vanity origin.
+  Never moves to another tenant's vanity origin: the choice is handed to the caller,
+  which decides how to address that tenant from the current host.
   @keywords tenant, legal entity, selector, superadmin, shadow, impersonation
   @uses Popover, Command, Button
   @api GET /api/tenants -> Tenant[]
@@ -14,7 +15,6 @@
   import type { LegalEntity, Tenant } from '$lib/types/api-types'
   import type { PaginatedResponse } from '$lib/utils/filters'
   import { apiRequest } from '$lib/utils/request'
-  import { buildTenantHandoffUrl } from '$lib/utils/tenant'
   import { cn } from '$lib/utils.js'
   import BuildingIcon from '@lucide/svelte/icons/building'
   import CheckIcon from '@lucide/svelte/icons/check'
@@ -25,20 +25,14 @@
     selected?: LegalEntity | null
     /** Tenant uuid owning the current origin — decides same-tenant vs cross-tenant. */
     originTenantId?: string | null
-    /** Path to land on after a cross-tenant jump. Defaults to the current one. */
-    targetPath?: string
     class?: string
     /** Called when picking an entity inside the current tenant (no origin change). */
     onChooseLocal?: (entity: LegalEntity) => void
+    /** Called when picking an entity in another tenant (no origin change either). */
+    onChooseRemote?: (tenant: Tenant, entity: LegalEntity) => void
   }
 
-  let {
-    selected = null,
-    originTenantId = null,
-    targetPath = undefined,
-    class: className = '',
-    onChooseLocal,
-  }: Props = $props()
+  let { selected = null, originTenantId = null, class: className = '', onChooseLocal, onChooseRemote }: Props = $props()
 
   let open = $state(false)
   let tenants = $state<Tenant[]>([])
@@ -71,17 +65,9 @@
       return
     }
 
-    // Another tenant: its cookies live on its own origin and we can't write them
-    // from here, so the ids travel in the URL and the destination stores them.
-    window.location.href = buildTenantHandoffUrl(
-      {
-        vanity: tenant.vanity,
-        tenantId: tenant.id,
-        legalEntityId: entity.id as string,
-        path: targetPath ?? window.location.pathname,
-      },
-      window.location,
-    )
+    // Another tenant: vanity origins aren't reachable, so the caller addresses it
+    // from here (e.g. the admin page's explicit target).
+    onChooseRemote?.(tenant, entity)
   }
 </script>
 
@@ -115,10 +101,10 @@
                     onSelect={() => choose(tenant, entity)}>
                     <BuildingIcon class="size-3.5 shrink-0 text-muted-foreground" />
                     <span class="truncate">{entity.name}</span>
-                    {#if tenant.id !== originTenantId}
-                      <span class="ml-auto shrink-0 text-xs text-muted-foreground">{tenant.vanity}</span>
-                    {:else if entity.id === selected?.id}
+                    {#if entity.id === selected?.id}
                       <CheckIcon class="ml-auto size-4 shrink-0" />
+                    {:else if tenant.id !== originTenantId}
+                      <span class="ml-auto shrink-0 text-xs text-muted-foreground">{tenant.vanity}</span>
                     {/if}
                   </Command.Item>
                 {/each}

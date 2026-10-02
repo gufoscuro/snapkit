@@ -67,6 +67,10 @@ export type ExtendedFetchOptions = RequestInit & {
   redirectOnUnauthorized?: boolean
   /** Force a fresh request, removing the cached entry for this URL if present. Only applies to GET requests. */
   invalidateCache?: boolean
+  /** Send no `X-Tenant` at all, letting the API resolve the tenant on its own
+   * (from the session or the resource). Used by the admin page when it edits
+   * another tenant than the origin's. Default: false */
+  omitTenant?: boolean
 }
 
 const MAX_CACHE_SIZE = 20
@@ -130,9 +134,9 @@ function getXsrfToken(): string | null {
  * superadmin on another vanity sends that one (the API gates it). Absent cookie →
  * header omitted → the API falls back to resolving the tenant from the session.
  */
-function buildBaseHeaders(): Record<string, string> {
+function buildBaseHeaders({ omitTenant = false }: { omitTenant?: boolean } = {}): Record<string, string> {
   const xsrfToken = getXsrfToken()
-  const tenantId = getTenantCookie()
+  const tenantId = omitTenant ? null : getTenantCookie()
 
   return {
     'Accept-Language': getLocale(),
@@ -148,7 +152,7 @@ function buildBaseHeaders(): Record<string, string> {
  * @param options - Request options (url should be the API path, e.g., 'sales/order')
  */
 export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
-  const { redirectOnUnauthorized = true, invalidateCache = false, ...rest } = options
+  const { redirectOnUnauthorized = true, invalidateCache = false, omitTenant = false, ...rest } = options
 
   let url = `${API_GATEWAY}/api${options.url}`
   let data: any = null
@@ -164,8 +168,10 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
   // The same URL yields different data per tenant — the tenant travels in a header,
   // not the path — so it belongs in the cache key. Cross-origin reloads make this
   // largely defensive today, but keying on the URL alone would silently serve one
-  // tenant's answer to another the moment that stops being true.
-  const cacheKey = `${getTenantCookie() ?? '-'}|${url}`
+  // tenant's answer to another the moment that stops being true. A request sent
+  // without the header gets its own slot, apart from the origin's.
+  const tenantForKey = omitTenant ? '!' : (getTenantCookie() ?? '-')
+  const cacheKey = `${tenantForKey}|${url}`
 
   const isGet = !rest.method || rest.method.toUpperCase() === 'GET'
 
@@ -186,7 +192,7 @@ export async function apiRequest<T>(options: ExtendedFetchOptions): Promise<T> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    ...buildBaseHeaders(),
+    ...buildBaseHeaders({ omitTenant }),
     ...(options.headers || {}),
   }
 

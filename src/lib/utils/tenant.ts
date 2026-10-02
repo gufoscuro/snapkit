@@ -1,4 +1,10 @@
-import { LEGAL_ENTITY_HANDOFF_PARAM, TENANT_COOKIE_NAME, TENANT_HANDOFF_PARAM } from '$lib/fixtures/constants'
+import {
+  ADMIN_TARGET_LEGAL_ENTITY_PARAM,
+  ADMIN_TARGET_TENANT_PARAM,
+  LEGAL_ENTITY_HANDOFF_PARAM,
+  TENANT_COOKIE_NAME,
+  TENANT_HANDOFF_PARAM,
+} from '$lib/fixtures/constants'
 
 /**
  * Tenant resolution.
@@ -146,4 +152,46 @@ export function readTenantHandoff(url: URL): { tenantId: string; legalEntityId: 
   const legalEntityId = url.searchParams.get(LEGAL_ENTITY_HANDOFF_PARAM)
   if (!tenantId || !legalEntityId) return null
   return { tenantId, legalEntityId }
+}
+
+export type AdminTarget = {
+  tenantId: string
+  legalEntityId: string
+}
+
+/**
+ * The tenant/legal entity the admin page was asked to edit, if any.
+ *
+ * This is the one place another tenant is reached *without* moving to its vanity
+ * origin — for when that origin isn't reachable (no DNS, local dev). It stays
+ * honest to the rule above because it's not a mode: the target is named in the
+ * admin URL, applied only to the admin page's own requests via
+ * {@link tenantRequestOptions}, and never written to a cookie. Leave `/admin` and it's gone.
+ */
+export function readAdminTarget(url: URL): AdminTarget | null {
+  const tenantId = url.searchParams.get(ADMIN_TARGET_TENANT_PARAM)
+  const legalEntityId = url.searchParams.get(ADMIN_TARGET_LEGAL_ENTITY_PARAM)
+  if (!tenantId || !legalEntityId) return null
+  return { tenantId, legalEntityId }
+}
+
+/** Query string (with leading `?`) that points the admin page at a target. */
+export function buildAdminTargetSearch(target: AdminTarget): string {
+  const params = new URLSearchParams({
+    [ADMIN_TARGET_TENANT_PARAM]: target.tenantId,
+    [ADMIN_TARGET_LEGAL_ENTITY_PARAM]: target.legalEntityId,
+  })
+  return `?${params.toString()}`
+}
+
+/**
+ * Request options for a call addressed to another tenant than the origin's.
+ * Empty when there's no override, so callers can spread it unconditionally.
+ *
+ * The other tenant is reached by sending **no** `X-Tenant` — neither the origin's
+ * (wrong tenant) nor the target's — and letting the API resolve it from the
+ * legal entity in the path. `tenantId` is only the signal that an override applies.
+ */
+export function tenantRequestOptions(tenantId: string | null | undefined): { omitTenant?: boolean } {
+  return tenantId ? { omitTenant: true } : {}
 }

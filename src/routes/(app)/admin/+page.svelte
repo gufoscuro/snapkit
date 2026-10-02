@@ -19,7 +19,10 @@
 <div class="flex min-h-0 flex-1">
   <div class="relative flex flex-1 flex-col">
     <div class="flex-1 overflow-auto">
-      <DashboardOverridesPanel config={props.data.legalEntityConfig} legalEntityId={props.data.legalEntity?.id} />
+      <DashboardOverridesPanel
+        config={props.data.legalEntityConfig}
+        legalEntityId={props.data.legalEntity?.id}
+        tenantId={props.data.targetTenantId} />
       <LegalEntityConfigEditor minHeight="" config={props.data.legalEntityConfig} />
     </div>
 
@@ -27,6 +30,6 @@
   </div>
 
   <div class="flex w-1/3 shrink-0 overflow-hidden border-l">
-    <AdminChat {onAgentMessage} />
+    <AdminChat tenantId={props.data.targetTenantId} {onAgentMessage} />
   </div>
 </div>

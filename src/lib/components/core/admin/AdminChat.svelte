@@ -9,6 +9,7 @@
   import { cn } from '$lib/utils.js'
   import { renderMarkdown } from '$utils/markdown'
   import { apiRequest } from '$utils/request'
+  import { tenantRequestOptions } from '$lib/utils/tenant'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import { getUserInitials } from '$utils/strings'
   import SendIcon from '@lucide/svelte/icons/send'
@@ -17,9 +18,11 @@
 
   type AdminChatProps = {
     onAgentMessage?: (message: string) => void
+    /** Tenant owning the legal entity, when it isn't the origin's. */
+    tenantId?: string | null
   }
 
-  const { onAgentMessage }: AdminChatProps = $props()
+  const { onAgentMessage, tenantId = null }: AdminChatProps = $props()
 
   const currentLocale = getLocale()
   const getSnippetProps = getContext<SnippetPropsGetter>(SNIPPET_PROPS_CONTEXT_KEY)
@@ -61,6 +64,7 @@
       const response = await apiRequest<ChatResponse>({
         url: `/legal-entities/${entityId}/config/chat`,
         method: 'POST',
+        ...tenantRequestOptions(tenantId),
         data: { message: currentLocale === 'it' ? 'Ciao' : 'Hi' },
       })
 
@@ -113,6 +117,7 @@
       const response = await apiRequest<ChatResponse>({
         url: `/legal-entities/${legalEntityId}/config/chat`,
         method: 'POST',
+        ...tenantRequestOptions(tenantId),
         data: {
           message: userMessage,
           ...(conversationId ? { conversation_id: conversationId } : {}),

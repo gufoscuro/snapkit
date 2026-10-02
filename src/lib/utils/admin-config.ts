@@ -10,6 +10,7 @@ import * as m from '$lib/paraglide/messages'
 import { invalidateGlobalsCache } from '$lib/stores/globals-cache'
 import type { LegalEntityConfigResponse } from '$lib/stores/tenant-config/types'
 import { apiRequest } from '$lib/utils/request'
+import { tenantRequestOptions } from '$lib/utils/tenant'
 import { toast } from 'svelte-sonner'
 
 /**
@@ -1092,9 +1093,13 @@ export async function refreshAdminConfig() {
   await invalidateAll()
 }
 
-function fetchCurrentConfig(legalEntityId: string): Promise<LegalEntityConfigResponse | null> {
+function fetchCurrentConfig(
+  legalEntityId: string,
+  tenantId?: string | null,
+): Promise<LegalEntityConfigResponse | null> {
   return apiRequest<LegalEntityConfigResponse>({
     url: `/legal-entities/${legalEntityId}/config`,
+    ...tenantRequestOptions(tenantId),
     invalidateCache: true,
   }).catch(() => null)
 }
@@ -1112,10 +1117,15 @@ function fetchCurrentConfig(legalEntityId: string): Promise<LegalEntityConfigRes
  *
  * Returns the overrides whose target is gone from the scaffold instead of
  * silently dropping them — the caller must surface them.
+ *
+ * `tenantId` addresses another tenant than the origin's (see `readAdminTarget`).
  */
-export async function pushScaffoldConfig(legalEntityId: string): Promise<UnresolvedOverride[]> {
+export async function pushScaffoldConfig(
+  legalEntityId: string,
+  tenantId?: string | null,
+): Promise<UnresolvedOverride[]> {
   const config = scaffoldDashboardStructure()
-  const current = await fetchCurrentConfig(legalEntityId)
+  const current = await fetchCurrentConfig(legalEntityId, tenantId)
 
   if (current) {
     config.resources = current.resources ?? config.resources
@@ -1130,6 +1140,7 @@ export async function pushScaffoldConfig(legalEntityId: string): Promise<Unresol
   await apiRequest({
     url: `/legal-entities/${legalEntityId}/config`,
     method: 'PUT',
+    ...tenantRequestOptions(tenantId),
     data: config,
   })
 
@@ -1152,13 +1163,18 @@ export function notifyUnresolvedOverrides(unresolved: UnresolvedOverride[]) {
  * Saves the dashboard overrides of a legal entity without touching anything else.
  * They take effect on the next `pushScaffoldConfig`.
  */
-export async function saveDashboardOverrides(legalEntityId: string, overrides: DashboardOverride[]) {
-  const current = await fetchCurrentConfig(legalEntityId)
+export async function saveDashboardOverrides(
+  legalEntityId: string,
+  overrides: DashboardOverride[],
+  tenantId?: string | null,
+) {
+  const current = await fetchCurrentConfig(legalEntityId, tenantId)
   if (!current) throw new Error('Legal entity config not found')
 
   await apiRequest({
     url: `/legal-entities/${legalEntityId}/config`,
     method: 'PUT',
+    ...tenantRequestOptions(tenantId),
     data: { ...current, dashboard: { ...current.dashboard, overrides } },
   })
 
