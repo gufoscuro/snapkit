@@ -806,6 +806,8 @@
   "import_completed_with_skipped": "{added} righe importate, {skipped} saltate (già presenti)",
   "import_failed": "Importazione fallita",
   "import_load_error": "Impossibile caricare gli elementi da importare",
+  "table_select_row": "Seleziona riga",
+  "table_select_all": "Seleziona tutte le righe",
   "add_item_line": "Aggiungi articolo",
   "add_description_line": "Aggiungi descrizione",
   "download_pdf": "Scarica PDF",

@@ -29,6 +29,7 @@ type TestRow = {
 
 const mockActionHelpers: ActionHelpers<TestRow> = {
   removeRow: vi.fn(),
+  removeRows: vi.fn(),
   updateRow: vi.fn(),
   refresh: vi.fn(),
 }

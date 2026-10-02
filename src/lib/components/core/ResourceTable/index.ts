@@ -16,6 +16,7 @@ export { createCurrencyRenderer } from './renderers/currency-renderer'
 export { createActionsRenderer } from './renderers/actions-renderer'
 export { createComponentRenderer } from './renderers/component-renderer'
 export { createCustomRenderer } from './renderers/custom-renderer'
+export { createSelectColumn, SELECT_COLUMN_ID } from './renderers/select-renderer'
 
 // Utilities
 export { resolveColumns } from './utils/column-resolver'

@@ -5,6 +5,7 @@
   import * as StorageUtil from '$lib/utils/storage'
   import ColumnCustomizer from './ColumnCustomizer.svelte'
   import ColumnSettingsHeader from './ColumnSettingsHeader.svelte'
+  import { createSelectColumn } from './renderers/select-renderer'
   import type { PaginationMeta } from '$lib/utils/filters'
   import type { ResourceTableProps } from './types'
   import { applyPreferences, type ColumnPreference } from './utils/column-preferences'
@@ -23,6 +24,7 @@
     columnsStorageId,
     groupBy,
     groupHeader,
+    selection,
   }: ResourceTableProps<T> = $props()
 
   // --- State Management ---
@@ -103,11 +105,27 @@
     removeRow: (id: string) => {
       data = data.filter(row => (row as any).id !== id)
     },
+    removeRows: (ids: string[]) => {
+      const removed = new Set(ids)
+      data = data.filter(row => !removed.has((row as { id?: string }).id ?? ''))
+    },
     updateRow: (id: string, updates: Partial<T>) => {
       data = data.map(row => ((row as any).id === id ? { ...row, ...updates } : row))
     },
     refresh: loadInitial,
   }
+
+  // --- Selection ---
+  // The store is the single source of truth for row selection; the table only
+  // feeds it. `setPool` also prunes ids that left the table, so a filter change,
+  // a reload or an optimistic removal cannot leave a stale selection behind.
+  $effect(() => {
+    selection?.setPool(data)
+  })
+
+  $effect(() => {
+    selection?.setHelpers(actionHelpers)
+  })
 
   // --- Column Resolution ---
   const effectiveColumns = $derived(columnsStorageId ? applyPreferences(columns, columnPreferences) : columns)
@@ -128,7 +146,9 @@
           }),
       } as (typeof resolved)[number]
     }
-    return resolved
+    // Prepended after the settings-header injection and outside `applyPreferences`,
+    // so the checkbox column can be neither hidden, reordered nor wrapped.
+    return selection ? [createSelectColumn<T>(selection), ...resolved] : resolved
   })
 
   // --- Reactive Reload on Filter Change ---
