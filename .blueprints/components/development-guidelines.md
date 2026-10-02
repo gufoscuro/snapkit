@@ -611,3 +611,46 @@ npm test
 
 - `size="sm" | "md" | "lg"` → Use a prop (simple styling change)
 - `SalesOrdersListCompact.svelte` → Use a variant (different column layout, omits details section)
+
+## Per-tenant behavior toggles: snippet config props
+
+When one tenant needs a feature component to behave differently (e.g. the DDT import opening a
+line-selection dialog), prefer an **opt-in prop set from the page config** over a tenant-specific
+variant. A variant duplicates the whole component and has to be pointed at through a per-tenant
+`componentKey`; a prop keeps one implementation and one place to fix bugs.
+
+**Rules:**
+
+- Declare the prop on top of `SnippetProps`, default it to the current behavior, and document it
+  in the `@component` block so it shows up in the registry description:
+  ```svelte
+  type Props = SnippetProps & {
+    /** Opt-in, set per tenant through the snippet's `props` in the page config: … */
+    importLineSelection?: boolean
+  }
+  let { pageDetails, entityConfig, importLineSelection = false }: Props = $props()
+  ```
+- At runtime the value comes from the stored dashboard page config, on the snippet definition:
+  ```typescript
+  { componentKey: 'transport-documents.transportdocumentdetails.default.TransportDocumentDetails',
+    enabled: true,
+    props: { importLineSelection: true } }
+  ```
+- `SnippetResolver` spreads `snippet.props` **before** the runtime `SnippetProps`, so config props
+  can tune behavior but can never shadow `pageDetails`, `entityConfig`, `legalEntity`, `user`.
+- Props must be JSON-serializable (they live in the legal entity config): booleans, strings,
+  numbers, plain objects. No callbacks or snippets.
+
+**Snippet props vs legal entity policies:** snippet props are *frontend presentation/flow*
+choices scoped to one component on one page. Policies (`getPolicy`, see
+`legal-entity-policies.md`) are *business-logic settings* the backend also knows about and
+validates. If the backend doesn't care, it's a snippet prop.
+
+**Where to set it:** never in the scaffold (`$lib/utils/admin-config.ts`) — that turns it on for every
+tenant. Set it as a **dashboard override** of the legal entity (`dashboard.overrides` in its config, edited
+in the admin panel), which "push scaffold" re-applies on top of the scaffold so it survives re-scaffolding.
+See [`dashboard-overrides.md`](./dashboard-overrides.md).
+
+**Why it wasn't working before:** `SnippetDefinition.props` existed in the type since the start, but
+`SnippetResolver` never forwarded it (e.g. the scaffold's `highlight: true` on CustomersTable never
+reached the component). It is forwarded since the DDT import line-selection work.
