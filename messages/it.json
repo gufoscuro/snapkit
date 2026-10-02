@@ -91,6 +91,7 @@
   "confirm_action_default_description": "Sei sicuro di voler procedere? Questa azione non può essere annullata.",
   "datatable_no_data": "Nessun dato disponibile",
   "datatable_load_more": "Carica altri",
+  "datatable_load_more_remaining": "{count} da caricare",
   "language": "Lingua",
   "language_english": "Inglese",
   "language_italian": "Italiano",

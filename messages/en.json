@@ -91,6 +91,7 @@
   "confirm_action_default_description": "Are you sure you want to proceed? This action cannot be undone.",
   "datatable_no_data": "No data available",
   "datatable_load_more": "Load more",
+  "datatable_load_more_remaining": "{count} remaining",
   "language": "Language",
   "language_english": "English",
   "language_italian": "Italian",

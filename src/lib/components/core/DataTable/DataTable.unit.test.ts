@@ -6,6 +6,7 @@ import type { ColumnDef } from '@tanstack/table-core'
 vi.mock('$lib/paraglide/messages.js', () => ({
   datatable_no_data: () => 'No data available',
   datatable_load_more: () => 'Load more',
+  datatable_load_more_remaining: ({ count }: { count: string }) => `${count} remaining`,
 }))
 
 type TestRow = { id: string; name: string }
@@ -152,6 +153,46 @@ describe('DataTable', () => {
         },
       })
       expect(screen.getByRole('button', { name: /carica altri/i })).toBeInTheDocument()
+    })
+
+    it('shows the remaining count next to the label', () => {
+      render(DataTable, {
+        props: { data: testData, columns: testColumns, hasMore: true, onLoadMore: vi.fn(), remaining: 132 },
+      })
+      expect(screen.getByRole('button', { name: /load more \(132 remaining\)/i })).toBeInTheDocument()
+    })
+
+    it('groups thousands in the remaining count', () => {
+      render(DataTable, {
+        props: { data: testData, columns: testColumns, hasMore: true, onLoadMore: vi.fn(), remaining: 1234 },
+      })
+      expect(screen.getByRole('button', { name: /1\.234 remaining/i })).toBeInTheDocument()
+    })
+
+    it('appends the count to a custom label too', () => {
+      render(DataTable, {
+        props: {
+          data: testData,
+          columns: testColumns,
+          hasMore: true,
+          onLoadMore: vi.fn(),
+          loadMoreLabel: 'Carica altri',
+          remaining: 7,
+        },
+      })
+      expect(screen.getByRole('button', { name: /carica altri \(7 remaining\)/i })).toBeInTheDocument()
+    })
+
+    it.each([
+      ['omitted', undefined],
+      ['zero', 0],
+      ['negative', -3],
+    ])('renders the bare label when remaining is %s', (_case, remaining) => {
+      render(DataTable, {
+        props: { data: testData, columns: testColumns, hasMore: true, onLoadMore: vi.fn(), remaining },
+      })
+      expect(screen.getByRole('button', { name: 'Load more' })).toBeInTheDocument()
+      expect(screen.queryByText(/remaining/i)).not.toBeInTheDocument()
     })
   })
 

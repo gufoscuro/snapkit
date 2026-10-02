@@ -5,6 +5,7 @@
   import * as StorageUtil from '$lib/utils/storage'
   import ColumnCustomizer from './ColumnCustomizer.svelte'
   import ColumnSettingsHeader from './ColumnSettingsHeader.svelte'
+  import type { PaginationMeta } from '$lib/utils/filters'
   import type { ResourceTableProps } from './types'
   import { applyPreferences, type ColumnPreference } from './utils/column-preferences'
   import { resolveColumns } from './utils/column-resolver'
@@ -17,6 +18,8 @@
     emptyState,
     loadMoreLabel,
     stickyHeader = true,
+    variant,
+    rowClassName,
     columnsStorageId,
     groupBy,
     groupHeader,
@@ -28,6 +31,7 @@
   let loadingMore = $state(false)
   let hasMore = $state(true)
   let currentPage = $state(1)
+  let remaining = $state<number | undefined>(undefined)
 
   // --- Column Customization ---
   let columnPreferences = $state<ColumnPreference[] | null>(null)
@@ -44,6 +48,20 @@
     columnPreferences = preferences
   }
 
+  /**
+   * How many rows the server still holds beyond the ones already fetched.
+   *
+   * Derived from the server's own cursor (`total - to`) rather than from
+   * `data.length`, because an optimistic row removal shrinks the local array
+   * without the server knowing — which would inflate the count. The OpenAPI
+   * contract types both fields as required integers, but Laravel sends `to: null`
+   * for an empty page, so this still guards before subtracting.
+   */
+  function readRemaining(meta: PaginationMeta): number | undefined {
+    if (typeof meta?.total !== 'number' || typeof meta?.to !== 'number') return undefined
+    return Math.max(0, meta.total - meta.to)
+  }
+
   // --- Fetch Logic ---
   async function loadInitial() {
     loading = true
@@ -52,10 +70,12 @@
       data = response.data
       currentPage = 1
       hasMore = !!response.links.next
+      remaining = readRemaining(response.meta)
     } catch (err) {
       console.error('ResourceTable: Failed to load data:', err)
       data = []
       hasMore = false
+      remaining = undefined
     } finally {
       loading = false
     }
@@ -70,6 +90,7 @@
       data = [...data, ...response.data]
       currentPage = response.meta.current_page
       hasMore = !!response.links.next
+      remaining = readRemaining(response.meta)
     } catch (err) {
       console.error('ResourceTable: Failed to load more:', err)
     } finally {
@@ -130,7 +151,10 @@
   onLoadMore={handleLoadMore}
   {emptyState}
   {loadMoreLabel}
+  {remaining}
   {stickyHeader}
+  {variant}
+  {rowClassName}
   getGroupKey={groupBy}
   groupHeader={groupBy ? groupHeaderRow : undefined}
   class={className} />

@@ -51,6 +51,21 @@ export type ResourceTableProps<T extends Record<string, any>> = {
   stickyHeader?: boolean
 
   /**
+   * `card` (default) frames the table as a standalone surface; `plain` keeps only
+   * top and bottom rules, for tables that already sit inside a card, sheet or panel.
+   */
+  variant?: 'card' | 'plain'
+
+  /**
+   * Extra classes for a single body row, derived from its item.
+   *
+   * Column `meta.cellClassName` styles one cell across every row; this styles
+   * every cell of one row — for when a row's *state*, not its content, changes
+   * how it should read.
+   */
+  rowClassName?: (item: T) => string
+
+  /**
    * Storage ID for column customization persistence.
    * When provided, enables column reorder/visibility UI.
    * Preferences are persisted per-user in localStorage under this key.
