@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from '$app/navigation'
+  import { resolve } from '$app/paths'
   import ActionButton from '$components/core/ActionButton.svelte'
   import LegalEntitySelector from '$components/features/form/LegalEntitySelector.svelte'
   import TenantLegalEntitySelector from '$components/features/tenant/TenantLegalEntitySelector.svelte'
@@ -7,22 +9,39 @@
   import { confirmArchive } from '$lib/components/ui/confirm-archive-dialog'
   import * as Tooltip from '$lib/components/ui/tooltip'
   import * as m from '$lib/paraglide/messages'
-  import type { LegalEntity } from '$lib/types/api-types'
+  import type { LegalEntity, Tenant } from '$lib/types/api-types'
   import { notifyUnresolvedOverrides, pushScaffoldConfig } from '$lib/utils/admin-config'
   import { switchLegalEntity } from '$lib/utils/legal-entity'
-  import { buildVanityOrigin } from '$lib/utils/tenant'
+  import { buildAdminTargetSearch, buildVanityOrigin } from '$lib/utils/tenant'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
   import Database from '@tabler/icons-svelte/icons/database'
   import { setContext } from 'svelte'
-  import type { LayoutProps } from '../$types'
+  import type { LayoutProps } from './$types'
 
   let { data, children }: LayoutProps = $props()
-  let { entityConfig, legalEntity, user, shadowing, originTenantId } = $derived(data)
+  let { entityConfig, legalEntity, user, shadowing, originTenantId, targetTenantId } = $derived(data)
 
   const isSuperadmin = $derived(user?.is_superadmin ?? false)
+  // Editing another tenant's config from this origin (see `readAdminTarget`).
+  const targeting = $derived(targetTenantId !== null)
 
   async function onLegalEntityChoose(entity: LegalEntity) {
     await switchLegalEntity(entity.id)
+    // Picking an entity of our own tenant also drops any other-tenant target.
+    if (targeting) await exitTarget()
+  }
+
+  // Another tenant's entity: point the admin page at it instead of jumping to that
+  // tenant's vanity origin, which may not be reachable from here.
+  async function onLegalEntityChooseRemote(tenant: Tenant, entity: LegalEntity) {
+    const search = buildAdminTargetSearch({ tenantId: tenant.id, legalEntityId: entity.id as string })
+    // The path is resolved; the rule just can't see through the appended query string.
+    // eslint-disable-next-line svelte/no-navigation-without-resolve
+    await goto(`${resolve('/admin')}${search}`)
+  }
+
+  async function exitTarget() {
+    await goto(resolve('/admin'))
   }
 
   // Leaving shadow mode is a plain origin change: the tenant lives in the host, so
@@ -45,7 +64,7 @@
       cancelText: m.common_cancel(),
       loadingText: m.scaffold_config_loading_text(),
       onArchive: async () => {
-        notifyUnresolvedOverrides(await pushScaffoldConfig(entityId))
+        notifyUnresolvedOverrides(await pushScaffoldConfig(entityId, targetTenantId))
       },
       successMessage: m.scaffold_config_success(),
       errorMessage: m.scaffold_config_error(),
@@ -70,7 +89,23 @@
              It also becomes the way back — click to return to the home tenant, with a
              tooltip spelling that out since the affordance isn't obvious on its own. -->
         <div class="flex items-center gap-2">
-          {#if shadowing && user?.tenant}
+          {#if targeting}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                {#snippet child({ props })}
+                  <button
+                    {...props}
+                    type="button"
+                    onclick={exitTarget}
+                    aria-label={m.admin_target_return()}
+                    class="flex items-center rounded-sm transition-opacity outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring">
+                    <Logo class="size-5 text-amber-500" />
+                  </button>
+                {/snippet}
+              </Tooltip.Trigger>
+              <Tooltip.Content>{m.admin_target_return()}</Tooltip.Content>
+            </Tooltip.Root>
+          {:else if shadowing && user?.tenant}
             {@const homeName = user.tenant.name}
             <Tooltip.Root>
               <Tooltip.Trigger>
@@ -80,7 +115,7 @@
                     type="button"
                     onclick={exitShadow}
                     aria-label={m.shadow_mode_return({ home: homeName })}
-                    class="flex items-center rounded-sm outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring">
+                    class="flex items-center rounded-sm transition-opacity outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring">
                     <Logo class="size-5 text-amber-500" />
                   </button>
                 {/snippet}
@@ -118,7 +153,8 @@
             selected={legalEntity}
             {originTenantId}
             class="w-64"
-            onChooseLocal={onLegalEntityChoose} />
+            onChooseLocal={onLegalEntityChoose}
+            onChooseRemote={onLegalEntityChooseRemote} />
         {:else}
           <LegalEntitySelector
             attr={legalEntity || undefined}

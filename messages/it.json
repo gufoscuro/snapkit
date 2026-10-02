@@ -403,6 +403,7 @@
   "chat_error": "Si è verificato un errore. Riprova.",
   "configuration_updated": "Configurazione aggiornata",
   "shadow_mode_return": "Stai operando su un altro tenant — clicca per tornare a {home}",
+  "admin_target_return": "Stai modificando la configurazione di un altro tenant — clicca per tornare al tenant corrente",
   "tenant_selector_search": "Cerca tenant o legal entity...",
   "tenant_selector_loading": "Caricamento tenant...",
   "tenant_selector_error": "Impossibile caricare i tenant",

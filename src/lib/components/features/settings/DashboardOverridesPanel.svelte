@@ -35,7 +35,16 @@
   import { json } from '@codemirror/lang-json'
   import { toast } from 'svelte-sonner'
 
-  let { config, legalEntityId }: { config: LegalEntityConfigResponse | null; legalEntityId?: string } = $props()
+  let {
+    config,
+    legalEntityId,
+    tenantId = null,
+  }: {
+    config: LegalEntityConfigResponse | null
+    legalEntityId?: string
+    /** Tenant owning the entity, when it isn't the origin's. */
+    tenantId?: string | null
+  } = $props()
 
   const reasonLabels: Record<UnresolvedReason, () => string> = {
     [UnresolvedReason.PageNotFound]: m.dashboard_overrides_reason_page_not_found,
@@ -80,7 +89,7 @@
 
     saving = true
     try {
-      await saveDashboardOverrides(legalEntityId, parsed.overrides)
+      await saveDashboardOverrides(legalEntityId, parsed.overrides, tenantId)
     } catch {
       toast.error(m.dashboard_overrides_save_error())
       return
@@ -102,7 +111,7 @@
       cancelText: m.common_cancel(),
       loadingText: m.scaffold_config_loading_text(),
       onArchive: async () => {
-        notifyUnresolvedOverrides(await pushScaffoldConfig(entityId))
+        notifyUnresolvedOverrides(await pushScaffoldConfig(entityId, tenantId))
       },
       successMessage: m.scaffold_config_success(),
       errorMessage: m.scaffold_config_error(),
