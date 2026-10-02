@@ -1,3 +1,4 @@
+import type { DashboardOverride } from '$lib/config/dashboard-overrides/types'
 import type { PageConfig } from '$lib/utils/page-registry'
 import type { LegalEntityPolicies } from './policies'
 
@@ -116,6 +117,12 @@ export interface DashboardConfigData {
     main: MenuConfigData
     [key: string]: MenuConfigData
   }
+  /**
+   * Per-legal-entity customizations re-applied on top of the scaffold by "push scaffold".
+   * Kept inside `dashboard` because the config PUT only accepts `dashboard`, `resources`
+   * and `policies`. Ignored at runtime: `pages`/`menus` already have them applied.
+   */
+  overrides?: DashboardOverride[]
 }
 
 /**

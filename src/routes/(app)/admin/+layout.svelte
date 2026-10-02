@@ -8,7 +8,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip'
   import * as m from '$lib/paraglide/messages'
   import type { LegalEntity } from '$lib/types/api-types'
-  import { pushScaffoldConfig } from '$lib/utils/admin-config'
+  import { notifyUnresolvedOverrides, pushScaffoldConfig } from '$lib/utils/admin-config'
   import { switchLegalEntity } from '$lib/utils/legal-entity'
   import { buildVanityOrigin } from '$lib/utils/tenant'
   import { SNIPPET_PROPS_CONTEXT_KEY, type SnippetPropsGetter } from '$utils/runtime'
@@ -45,7 +45,7 @@
       cancelText: m.common_cancel(),
       loadingText: m.scaffold_config_loading_text(),
       onArchive: async () => {
-        await pushScaffoldConfig(entityId)
+        notifyUnresolvedOverrides(await pushScaffoldConfig(entityId))
       },
       successMessage: m.scaffold_config_success(),
       errorMessage: m.scaffold_config_error(),

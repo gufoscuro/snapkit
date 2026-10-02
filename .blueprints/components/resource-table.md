@@ -1016,6 +1016,98 @@ const columns = [
 
 ---
 
+## Row Selection (checkbox column)
+
+Row selection is **opt-in** and lives in a store, not in the table: create it with
+`createTableSelection<T>()` and hand it to whatever renders the rows. A table without a store
+renders exactly as before.
+
+**Files:**
+
+| File | Purpose |
+| --- | --- |
+| `core/common/table-selection.svelte.ts` | `createTableSelection<T>()` store (+ `table-selection.unit.test.ts`) |
+| `core/ResourceTable/renderers/select-renderer.ts` | `createSelectColumn(selection)`, `SELECT_COLUMN_ID = '__select'` |
+| `core/ResourceTable/renderers/SelectCell.svelte` / `SelectAllCell.svelte` | Row / header checkbox (header is indeterminate on partial selection) |
+
+**Store API** — reactive getters `ids`, `rows` (in on-screen order), `count`, `allSelected`,
+`someSelected`; methods `has`, `toggle`, `toggleAll`, `selectAll`, `toggleMany(ids)`,
+`stateOf(ids) → { all, some }`, `clear`; and `setPool` / `setHelpers`, which are fed by the table.
+`toggleMany` / `stateOf` drive group-level checkboxes (e.g. in a DataTable `groupHeader`).
+
+**With ResourceTable** — pass the store as `selection`:
+
+```svelte
+<script lang="ts">
+  import { createTableSelection } from '$components/core/common/table-selection.svelte'
+  const selection = createTableSelection<Customer>()
+</script>
+
+<ResourceTable {fetchFunction} {columns} {filters} {selection} />
+<!-- selection.rows / selection.count are readable anywhere in this component -->
+```
+
+ResourceTable prepends the checkbox column (after column preferences and the settings-header
+injection, so it can't be hidden, reordered or wrapped), calls `setPool(data)` on every data change
+and publishes its `ActionHelpers` (now including `removeRows(ids)`) via `setHelpers`.
+
+**With a plain DataTable** (data already in memory) — prepend the column yourself and feed the pool:
+
+```typescript
+const selection = createTableSelection<Row>()
+const columns = $derived([createSelectColumn<Row>(selection), ...resolveColumns(configs, helpers)])
+$effect(() => {
+  const next = rows
+  untrack(() => selection.setPool(next)) // see "untrack" rule below
+})
+```
+
+`ImportLinesDialog` (`import-menu.md`) is the reference DataTable usage, including group checkboxes.
+
+**Rules:**
+
+- A row's identity is its **`id` string field**; rows without one are not selectable.
+- Only rows **loaded in memory** can be selected — there is no "select all N matching the filter".
+  Rows appended by "load more" are not auto-selected.
+- `setPool` **prunes** ids no longer in the pool (filter change, reload, optimistic removal), so the
+  selection can never point at rows that left the table.
+- When calling `setPool` + `selectAll` (or any other store method) from your own `$effect`, wrap
+  them in `untrack`: they read and write the store's own state, which must not become a dependency.
+- The pool is `$state.raw` — rows are replaced wholesale, never mutated in place.
+
+**Why a store and not TanStack's `rowSelection`:** `createSvelteTable` wraps its state in a
+`mergeObjects` Proxy that breaks Svelte 5 fine-grained tracking; TanStack keys rows by index unless
+`getRowId` is set, so a selection would shift after a removal or "load more"; and the selection must be
+readable from outside the table. `SelectCell` receives the whole store (not a `checked` boolean)
+because `renderComponent` snapshots props at creation time — reactivity has to come from reading the
+store inside the cell.
+
+### Not ported yet: bulk actions bar
+
+The store comes from diaphora (`webapp`, commit `0e14f8f`, docs in its
+`.blueprints/resource-table.md` → "Row Selection & Bulk Actions"), where it also feeds a
+**`BulkActions`** bar (`{count} selected` badge, one button per `BulkAction<T>`, clear button) shown
+inside the page-level `TableFilters`, which hides filters/search while rows are selected. That part was
+**deliberately left out** because snapkit has no page-level `TableFilters`: filters and tables are
+separate runtime snippets connected through page-state contracts.
+
+When a listing needs bulk actions, the intended design is:
+
+1. The table component creates the store and publishes it on a new page-state channel
+   (`provides: { selection: Type.Unsafe<TableSelectionState<any>>(Type.Any()) }`), through a
+   `useTableSelection` helper modeled on `useTableExport` (`$lib/utils/table-export.svelte.ts`).
+2. `GenericFilters` consumes it optionally (`hasBinding('consumes', 'selection')`, same as
+   `exportHandler`), renders `<BulkActions>` and hides `FilterDropdown` + search while `count > 0`.
+3. Bulk actions are defined by the **table** (it knows the entity), as `BulkAction<T>` =
+   `{ label, icon?, variant?, onClick(rows, helpers), disabled?(rows) }`; handlers use
+   `Promise.allSettled`, report partial failures, and rely on `helpers.removeRows` + pool pruning
+   instead of clearing the selection.
+4. Port `BulkActions.svelte` from diaphora replacing `toastApiError` with `svelte-sonner`'s `toast.error`,
+   and add the `table_selection_count` / `table_selection_clear` / `table_bulk_partial_failure` messages
+   (en + it).
+
+---
+
 ## Future Enhancements
 
 ### Short-term

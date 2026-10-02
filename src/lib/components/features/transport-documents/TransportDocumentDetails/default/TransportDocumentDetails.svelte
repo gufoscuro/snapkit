@@ -2,8 +2,9 @@
   @component TransportDocumentDetails
   @description Fetches and displays transport document (DDT) details for create/edit.
   Provides DDT data to page state so other snippets on the same page (e.g. sidebar)
-  can consume it without a second request.
-  @keywords transport-document, ddt, details, form, shipping
+  can consume it without a second request. With the `importLineSelection` prop (page-config
+  snippet props), importing from orders opens a dialog to pick a subset of the source lines.
+  @keywords transport-document, ddt, details, form, shipping, import, line selection
   @api GET /api/legal-entities/{legalEntity}/transport-documents/{transportDocument}
   @api POST /api/legal-entities/{legalEntity}/transport-documents
   @api PUT /api/legal-entities/{legalEntity}/transport-documents/{transportDocument}
@@ -18,9 +19,15 @@
   import { goto, replaceState } from '$app/navigation'
   import { page } from '$app/state'
   import ActionButton from '$components/core/ActionButton.svelte'
-  import { ImportMenu, ImportRecordPreview } from '$components/core/common/import-menu'
+  import {
+    ImportLinesDialog,
+    type ImportLinesGroup,
+    ImportMenu,
+    ImportRecordPreview,
+  } from '$components/core/common/import-menu'
   import RequestPlaceholder from '$components/core/common/RequestPlaceholder.svelte'
   import DownloadActionButton from '$components/core/DownloadActionButton.svelte'
+  import type { ColumnConfig } from '$components/core/ResourceTable/types'
   import BottomBar from '$components/core/form/BottomBar.svelte'
   import BusyButton from '$components/core/form/BusyButton.svelte'
   import DateField from '$components/core/form/DateField.svelte'
@@ -36,6 +43,7 @@
   import StackedAmountValues from '$components/core/StackedAmountValues.svelte'
   import CarrierSelector, { type CarrierSummary } from '$components/features/form/CarrierSelector.svelte'
   import CustomerAddressSelector from '$components/features/form/CustomerAddressSelector.svelte'
+  import QuantityCell from '$components/features/common/QuantityCell.svelte'
   import CustomerSelector from '$components/features/form/CustomerSelector.svelte'
   import type { TransportDocumentLineItem } from '$components/features/form/TransportDocumentItemsListEditor.svelte'
   import TransportDocumentItemsListEditor from '$components/features/form/TransportDocumentItemsListEditor.svelte'
@@ -73,7 +81,15 @@
   import { SvelteSet } from 'svelte/reactivity'
   import { TransportDocumentDetailsContract } from './TransportDocumentDetails.contract.js'
 
-  let { pageDetails, legalEntity, entityConfig }: SnippetProps = $props()
+  type Props = SnippetProps & {
+    /**
+     * Opt-in, set per tenant through the snippet's `props` in the page config: after picking
+     * source orders in an ImportMenu, open ImportLinesDialog to keep only a subset of lines.
+     */
+    importLineSelection?: boolean
+  }
+
+  let { pageDetails, legalEntity, entityConfig, importLineSelection = false }: Props = $props()
 
   const resourceConfig = $derived(entityConfig?.resources?.['transport-documents'])
   const uuid = $derived(pageDetails.params.uuid)
@@ -345,18 +361,150 @@
     if (o.customer_id) fetchCustomerCommercialTerms(o.customer_id)
   }
 
+  /** A source line offered for import, keyed by its source item id. */
+  type ImportCandidate = { id: string; line: TransportDocumentLineItem }
+
+  /** One picked source record, mapped and deduplicated, not yet written to the editor. */
+  type ImportGroup = {
+    source: SalesOrderForImport | WarehouseOrderForImport
+    /** Lines prepended when at least one candidate is kept (e.g. the "Rif. ordine" header). */
+    prefix: TransportDocumentLineItem[]
+    candidates: ImportCandidate[]
+  }
+
+  type ImportPlan = {
+    groups: ImportGroup[]
+    /** Source lines already linked to a row of this document */
+    skipped: number
+    /** Header pre-fill from the first source, deferred so a cancelled line selection changes nothing */
+    applyHeader?: () => void
+  }
+
+  type ImportResult = { added: number; skipped: number }
+
+  /**
+   * Writes a plan into the items editor. `keptIds` narrows each group to the candidates the
+   * user kept in the line-selection dialog; without it every candidate is imported.
+   */
+  function commitImportPlan(plan: ImportPlan, keptIds?: SvelteSet<string>): ImportResult {
+    plan.applyHeader?.()
+    let added = 0
+    for (const group of plan.groups) {
+      const kept = group.candidates.filter(c => !keptIds || keptIds.has(c.id)).map(c => c.line)
+      const itemCount = kept.filter(l => l.type === 'item').length
+      // A group reduced to descriptive lines carries no goods: drop it, prefix included.
+      if (itemCount === 0) continue
+      itemsEditorRef!.addItems([...group.prefix, ...kept], { groupId: generateId() })
+      added += itemCount
+    }
+    return { added, skipped: plan.skipped }
+  }
+
+  function importSummary(res: ImportResult): string {
+    return res.skipped > 0
+      ? m.import_completed_with_skipped({ added: res.added, skipped: res.skipped })
+      : m.import_completed({ count: res.added })
+  }
+
+  // Line-selection step, opted into per tenant via the `importLineSelection` snippet prop.
+  let pendingImport = $state<ImportPlan | null>(null)
+  let lineSelectionOpen = $state(false)
+
+  /**
+   * Shared tail of both import flows: imports straight away, or — with `importLineSelection` —
+   * opens ImportLinesDialog on the plan's candidates and imports only the confirmed lines.
+   */
+  async function runImport(buildPlan: () => Promise<ImportPlan>) {
+    if (!importLineSelection) {
+      toast.promise(
+        buildPlan().then(plan => commitImportPlan(plan)),
+        { loading: m.import_in_progress(), success: importSummary, error: () => m.import_failed() },
+      )
+      return
+    }
+
+    const toastId = toast.loading(m.import_in_progress())
+    let plan: ImportPlan
+    try {
+      plan = await buildPlan()
+    } catch {
+      toast.error(m.import_failed(), { id: toastId })
+      return
+    }
+    // Nothing left to choose (e.g. every line already imported): report it instead of opening an empty dialog.
+    if (plan.groups.every(g => g.candidates.length === 0)) {
+      toast.success(importSummary(commitImportPlan(plan)), { id: toastId })
+      return
+    }
+    toast.dismiss(toastId)
+    pendingImport = plan
+    lineSelectionOpen = true
+  }
+
+  function confirmLineSelection(rows: ImportCandidate[]) {
+    if (!pendingImport) return
+    const res = commitImportPlan(pendingImport, new SvelteSet(rows.map(r => r.id)))
+    pendingImport = null
+    toast.success(importSummary(res))
+  }
+
+  const lineSelectionGroups = $derived<ImportLinesGroup<ImportCandidate>[]>(
+    (pendingImport?.groups ?? [])
+      .filter(g => g.candidates.length > 0)
+      .map(g => ({
+        id: g.source.id,
+        label: g.source.document_number,
+        description: [
+          new Date(g.source.document_date).toLocaleDateString(),
+          extractSnapshotString(g.source.customer_snapshot, 'name'),
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        rows: g.candidates,
+      })),
+  )
+
+  // Same columns and renderers as DeliveryScheduleTable, the other table listing order lines.
+  const lineSelectionColumns: ColumnConfig<ImportCandidate>[] = [
+    {
+      header: m.item_code(),
+      renderer: 'text',
+      rendererConfig: { valueAccessor: ({ line }) => line.item_snapshot?.code as string | undefined },
+    },
+    {
+      header: m.description(),
+      renderer: 'long-text',
+      rendererConfig: { valueAccessor: ({ line }) => line.description, lines: 2 },
+    },
+    {
+      header: m.quantity(),
+      renderer: 'component',
+      rendererConfig: {
+        component: QuantityCell,
+        propsMapper: ({ line }: ImportCandidate) => ({
+          quantity: line.type === 'item' ? line.quantity : undefined,
+          uom: line.uom,
+        }),
+      },
+    },
+  ]
+
+  // Descriptive lines carry no goods: set them apart so the item lines read first.
+  const lineSelectionRowClass = ({ line }: ImportCandidate) =>
+    line.type === 'descriptive' ? 'text-muted-foreground italic' : ''
+
   /**
    * SO → DDT import. Maps SO line items (with their unit_price/vat_code) to TD line items,
    * using `importable_into_transport_document_quantity` as `quantity`.
    */
-  async function handleImportSalesOrders(
+  function handleImportSalesOrders(
     formAPI: { updateField: FormFieldUpdater; values: Record<string, unknown> },
     selected: SalesOrderForImport[],
   ) {
     if (!itemsEditorRef || selected.length === 0) return
     const isFormEmpty = !formAPI.values.customer_id
 
-    const job = (async () => {
+    runImport(async () => {
       const fullOrders = await Promise.all(selected.map(s => fetchSingleSalesOrder(s.id)))
       const existingLinkIds = new SvelteSet(
         itemsEditorRef!
@@ -365,13 +513,11 @@
           .map(it => it.sales_order_item_id as string),
       )
 
-      let added = 0
       let skipped = 0
+      const groups: ImportGroup[] = []
 
-      for (const [idx, o] of fullOrders.entries()) {
-        if (idx === 0 && isFormEmpty) applyHeaderFromSource(formAPI, o, o.notes_external)
-
-        const productItems: TransportDocumentLineItem[] = []
+      for (const o of fullOrders) {
+        const candidates: ImportCandidate[] = []
         for (const item of o.items ?? []) {
           // Source descriptive lines are dropped; we prepend our own "Rif. ordine vendita…" header instead.
           if (item.type !== 'item') continue
@@ -382,42 +528,39 @@
             continue
           }
           existingLinkIds.add(item.id)
-          productItems.push({
-            type: 'item',
-            sales_order_item_id: item.id,
-            item_id: item.item_id,
-            item_snapshot: item.item_snapshot,
-            description: item.description,
-            quantity: importableQty,
-            uom: item.uom,
-            unit_price: item.unit_price ?? 0,
-            vat_code_id: item.vat_code_id,
-            vat_code_snapshot: item.vat_code_snapshot,
-            weight_gross: 0,
-            weight_net: 0,
+          candidates.push({
+            id: item.id,
+            line: {
+              type: 'item',
+              sales_order_item_id: item.id,
+              item_id: item.item_id,
+              item_snapshot: item.item_snapshot,
+              description: item.description,
+              quantity: importableQty,
+              uom: item.uom,
+              unit_price: item.unit_price ?? 0,
+              vat_code_id: item.vat_code_id,
+              vat_code_snapshot: item.vat_code_snapshot,
+              weight_gross: 0,
+              weight_net: 0,
+            },
           })
         }
-
-        if (productItems.length === 0) continue
         // Prepend a descriptive "Rif. ordine vendita…" header per source SO.
-        const referenceLine: TransportDocumentLineItem = {
-          type: 'descriptive',
-          description: salesOrderReferenceText(o),
-        }
-        itemsEditorRef!.addItems([referenceLine, ...productItems], { groupId: generateId() })
-        added += productItems.length
+        groups.push({
+          source: o,
+          prefix: [{ type: 'descriptive', description: salesOrderReferenceText(o) }],
+          candidates,
+        })
       }
 
-      return { added, skipped }
-    })()
-
-    toast.promise(job, {
-      loading: m.import_in_progress(),
-      success: res =>
-        res.skipped > 0
-          ? m.import_completed_with_skipped({ added: res.added, skipped: res.skipped })
-          : m.import_completed({ count: res.added }),
-      error: () => m.import_failed(),
+      const first = fullOrders[0]
+      return {
+        groups,
+        skipped,
+        applyHeader:
+          isFormEmpty && first ? () => applyHeaderFromSource(formAPI, first, first.notes_external) : undefined,
+      }
     })
   }
 
@@ -427,14 +570,14 @@
    * Source descriptive lines are PRESERVED with a `warehouse_order_item_id` FK link
    * so the chain (e.g. an upstream "Rif. ordine vendita…" line) is kept intact.
    */
-  async function handleImportWarehouseOrders(
+  function handleImportWarehouseOrders(
     formAPI: { updateField: FormFieldUpdater; values: Record<string, unknown> },
     selected: WarehouseOrderForImport[],
   ) {
     if (!itemsEditorRef || selected.length === 0) return
     const isFormEmpty = !formAPI.values.customer_id
 
-    const job = (async () => {
+    runImport(async () => {
       const fullOrders = await Promise.all(selected.map(s => fetchSingleWarehouseOrder(s.id)))
       const existingLinkIds = new SvelteSet(
         itemsEditorRef!
@@ -443,13 +586,11 @@
           .map(it => it.warehouse_order_item_id as string),
       )
 
-      let added = 0
       let skipped = 0
+      const groups: ImportGroup[] = []
 
-      for (const [idx, o] of fullOrders.entries()) {
-        if (idx === 0 && isFormEmpty) applyHeaderFromSource(formAPI, o)
-
-        const lines: TransportDocumentLineItem[] = []
+      for (const o of fullOrders) {
+        const candidates: ImportCandidate[] = []
         for (const item of o.items ?? []) {
           if (existingLinkIds.has(item.id)) {
             skipped++
@@ -458,48 +599,42 @@
           if (item.type === 'descriptive') {
             // Preserve descriptive lines as-is, with FK link for chain traceability.
             existingLinkIds.add(item.id)
-            lines.push({
-              type: 'descriptive',
-              warehouse_order_item_id: item.id,
-              description: item.description,
+            candidates.push({
+              id: item.id,
+              line: { type: 'descriptive', warehouse_order_item_id: item.id, description: item.description },
             })
             continue
           }
           const importableQty = item.importable_into_transport_document_quantity ?? 0
           if (importableQty <= 0) continue
           existingLinkIds.add(item.id)
-          lines.push({
-            type: 'item',
-            warehouse_order_item_id: item.id,
-            item_id: item.item_id,
-            item_snapshot: item.item_snapshot,
-            description: item.description,
-            quantity: importableQty,
-            uom: item.uom,
-            unit_price: 0,
-            vat_code_id: commercialTermsVatCode?.id,
-            vat_code_snapshot: commercialTermsVatCode as unknown as Record<string, unknown> | undefined,
-            weight_gross: 0,
-            weight_net: 0,
+          candidates.push({
+            id: item.id,
+            line: {
+              type: 'item',
+              warehouse_order_item_id: item.id,
+              item_id: item.item_id,
+              item_snapshot: item.item_snapshot,
+              description: item.description,
+              quantity: importableQty,
+              uom: item.uom,
+              unit_price: 0,
+              vat_code_id: commercialTermsVatCode?.id,
+              vat_code_snapshot: commercialTermsVatCode as unknown as Record<string, unknown> | undefined,
+              weight_gross: 0,
+              weight_net: 0,
+            },
           })
         }
-
-        const itemLineCount = lines.filter(l => l.type === 'item').length
-        if (itemLineCount === 0) continue
-        itemsEditorRef!.addItems(lines, { groupId: generateId() })
-        added += itemLineCount
+        groups.push({ source: o, prefix: [], candidates })
       }
 
-      return { added, skipped }
-    })()
-
-    toast.promise(job, {
-      loading: m.import_in_progress(),
-      success: res =>
-        res.skipped > 0
-          ? m.import_completed_with_skipped({ added: res.added, skipped: res.skipped })
-          : m.import_completed({ count: res.added }),
-      error: () => m.import_failed(),
+      const first = fullOrders[0]
+      return {
+        groups,
+        skipped,
+        applyHeader: isFormEmpty && first ? () => applyHeaderFromSource(formAPI, first) : undefined,
+      }
     })
   }
 
@@ -911,5 +1046,14 @@
         </BottomBar>
       {/snippet}
     </FormUtil>
+
+    {#if importLineSelection}
+      <ImportLinesDialog
+        bind:open={lineSelectionOpen}
+        groups={lineSelectionGroups}
+        columns={lineSelectionColumns}
+        rowClassName={lineSelectionRowClass}
+        onconfirm={confirmLineSelection} />
+    {/if}
   {/snippet}
 </RequestPlaceholder>

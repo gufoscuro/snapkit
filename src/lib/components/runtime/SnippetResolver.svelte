@@ -93,6 +93,10 @@
   }
 
   $effect(() => updateSnippet(snippet))
+
+  // Static props from the page config come first, so they can tune a component's
+  // behavior but never shadow the runtime SnippetProps (pageDetails, entityConfig…).
+  const configProps = $derived(snippet?.props ?? {})
 </script>
 
 {#if loading}
@@ -106,11 +110,11 @@
 {:else if loaded?.contract}
   {#key loaded.contract.$id}
     <SnippetBindingsProvider contract={loaded.contract} bindings={snippet.bindings}>
-      <loaded.Component {...snippetProps} {...props} />
+      <loaded.Component {...configProps} {...snippetProps} {...props} />
     </SnippetBindingsProvider>
   {/key}
 {:else if loaded}
-  <loaded.Component {...snippetProps} {...props} />
+  <loaded.Component {...configProps} {...snippetProps} {...props} />
 {:else if fallback}
   {@render fallback?.(snippetProps)}
 {/if}

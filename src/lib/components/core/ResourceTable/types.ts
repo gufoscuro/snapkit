@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { TableSelectionState } from '$components/core/common/table-selection.svelte'
 import type { BadgeVariant } from '$lib/components/ui/badge'
 import type { ButtonVariant } from '$lib/components/ui/button'
 import type { FilterQuery, PaginatedResponse } from '$lib/utils/filters'
@@ -51,6 +52,21 @@ export type ResourceTableProps<T extends Record<string, any>> = {
   stickyHeader?: boolean
 
   /**
+   * `card` (default) frames the table as a standalone surface; `plain` keeps only
+   * top and bottom rules, for tables that already sit inside a card, sheet or panel.
+   */
+  variant?: 'card' | 'plain'
+
+  /**
+   * Extra classes for a single body row, derived from its item.
+   *
+   * Column `meta.cellClassName` styles one cell across every row; this styles
+   * every cell of one row — for when a row's *state*, not its content, changes
+   * how it should read.
+   */
+  rowClassName?: (item: T) => string
+
+  /**
    * Storage ID for column customization persistence.
    * When provided, enables column reorder/visibility UI.
    * Preferences are persisted per-user in localStorage under this key.
@@ -78,6 +94,14 @@ export type ResourceTableProps<T extends Record<string, any>> = {
    * duplicated on each child row. Requires `groupBy`.
    */
   groupHeader?: Snippet<[T[], ActionHelpers<T>]>
+
+  /**
+   * Row-selection store created with `createTableSelection()`. When provided,
+   * the table prepends a checkbox column and keeps the store's row pool and
+   * action helpers in sync. Omit it and the table behaves exactly as before.
+   * Rows are identified by their `id` string field.
+   */
+  selection?: TableSelectionState<T>
 }
 
 /**
@@ -428,6 +452,12 @@ export type ActionHelpers<T = any> = {
    * Optimistically remove row from table
    */
   removeRow: (id: string) => void
+
+  /**
+   * Optimistically remove several rows in one mutation — the bulk counterpart
+   * of `removeRow`, so a multi-row action doesn't re-render the table N times.
+   */
+  removeRows: (ids: string[]) => void
 
   /**
    * Optimistically update row data

@@ -1,7 +1,16 @@
 import { invalidate, invalidateAll } from '$app/navigation'
+import {
+  applyOverrides,
+  type DashboardOverride,
+  describeOverride,
+  getStoredOverrides,
+  type UnresolvedOverride,
+} from '$lib/config/dashboard-overrides'
+import * as m from '$lib/paraglide/messages'
 import { invalidateGlobalsCache } from '$lib/stores/globals-cache'
 import type { LegalEntityConfigResponse } from '$lib/stores/tenant-config/types'
 import { apiRequest } from '$lib/utils/request'
+import { toast } from 'svelte-sonner'
 
 /**
  * Returns the default scaffold configuration for a legal entity dashboard.
@@ -1083,32 +1092,74 @@ export async function refreshAdminConfig() {
   await invalidateAll()
 }
 
+function fetchCurrentConfig(legalEntityId: string): Promise<LegalEntityConfigResponse | null> {
+  return apiRequest<LegalEntityConfigResponse>({
+    url: `/legal-entities/${legalEntityId}/config`,
+    invalidateCache: true,
+  }).catch(() => null)
+}
+
 /**
  * PUTs the scaffold dashboard config to the API for the given legal entity,
  * then refreshes all admin data.
  *
  * Only the `dashboard` part is scaffolded: `resources` (field visibility and
- * custom fields) and `policies` are read back from the current config and
- * carried over, so re-scaffolding the dashboard never wipes them. If no config
- * exists yet, the scaffold defaults (empty objects) are used.
+ * custom fields), `policies` and the dashboard `overrides` are read back from the
+ * current config and carried over, so re-scaffolding never wipes them. The
+ * overrides are then applied on top of the scaffold, so per-legal-entity
+ * customizations survive a re-scaffold. If no config exists yet, the scaffold
+ * defaults are used.
+ *
+ * Returns the overrides whose target is gone from the scaffold instead of
+ * silently dropping them — the caller must surface them.
  */
-export async function pushScaffoldConfig(legalEntityId: string) {
+export async function pushScaffoldConfig(legalEntityId: string): Promise<UnresolvedOverride[]> {
   const config = scaffoldDashboardStructure()
-
-  const current = await apiRequest<LegalEntityConfigResponse>({
-    url: `/legal-entities/${legalEntityId}/config`,
-    invalidateCache: true,
-  }).catch(() => null)
+  const current = await fetchCurrentConfig(legalEntityId)
 
   if (current) {
     config.resources = current.resources ?? config.resources
     config.policies = current.policies ?? config.policies
   }
 
+  const overrides = getStoredOverrides(current)
+  const { dashboard, unresolved } = applyOverrides(config.dashboard, overrides)
+  // Unresolved overrides are kept too: they may apply again after a scaffold fix.
+  config.dashboard = { ...dashboard, overrides }
+
   await apiRequest({
     url: `/legal-entities/${legalEntityId}/config`,
     method: 'PUT',
     data: config,
+  })
+
+  await refreshAdminConfig()
+  return unresolved
+}
+
+/**
+ * Warns about overrides a push could not apply. The push itself succeeded; this flags
+ * customizations the current scaffold no longer has a place for.
+ */
+export function notifyUnresolvedOverrides(unresolved: UnresolvedOverride[]) {
+  if (unresolved.length === 0) return
+  toast.warning(m.scaffold_overrides_unresolved({ count: unresolved.length }), {
+    description: unresolved.map(u => describeOverride(u.override)).join(', '),
+  })
+}
+
+/**
+ * Saves the dashboard overrides of a legal entity without touching anything else.
+ * They take effect on the next `pushScaffoldConfig`.
+ */
+export async function saveDashboardOverrides(legalEntityId: string, overrides: DashboardOverride[]) {
+  const current = await fetchCurrentConfig(legalEntityId)
+  if (!current) throw new Error('Legal entity config not found')
+
+  await apiRequest({
+    url: `/legal-entities/${legalEntityId}/config`,
+    method: 'PUT',
+    data: { ...current, dashboard: { ...current.dashboard, overrides } },
   })
 
   await refreshAdminConfig()
