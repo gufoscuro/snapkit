@@ -12,7 +12,7 @@
   import { getInvoiceStateLabel } from '$lib/utils/enum-labels'
   import IconAlertCircle from '@tabler/icons-svelte/icons/alert-circle'
   import IconArchive from '@tabler/icons-svelte/icons/archive'
-  import IconCircleCheck from '@tabler/icons-svelte/icons/circle-check'
+  import IconCircleCheckFilled from '@tabler/icons-svelte/icons/circle-check-filled'
   import IconCircleDashed from '@tabler/icons-svelte/icons/circle-dashed'
   import IconCircleX from '@tabler/icons-svelte/icons/circle-x'
 
@@ -21,7 +21,7 @@
 
 <Badge variant="outline" class="px-1.5">
   {#if state === 'accepted' || state === 'delivered'}
-    <IconCircleCheck class="size-3 text-green-500 dark:text-green-400" />
+    <IconCircleCheckFilled class="size-3 fill-green-500 dark:fill-green-400" />
   {:else if state === 'rejected'}
     <IconCircleX class="size-3 text-red-500 dark:text-red-400" />
   {:else if state === 'error'}

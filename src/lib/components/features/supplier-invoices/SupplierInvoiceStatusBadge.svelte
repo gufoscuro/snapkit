@@ -9,7 +9,7 @@
   import Badge from '$components/ui/badge/badge.svelte'
   import type { SupplierInvoiceStatus } from '$lib/types/api-types'
   import { getSupplierInvoiceStatusLabel } from '$lib/utils/enum-labels'
-  import IconCircleCheck from '@tabler/icons-svelte/icons/circle-check'
+  import IconCircleCheckFilled from '@tabler/icons-svelte/icons/circle-check-filled'
   import IconLinkOff from '@tabler/icons-svelte/icons/link-off'
   import IconPointFilled from '@tabler/icons-svelte/icons/point-filled'
 
@@ -23,7 +23,7 @@
     {:else if status === 'new'}
       <IconPointFilled class="size-3 text-brand" />
     {:else}
-      <IconCircleCheck class="size-3 text-muted-foreground" />
+      <IconCircleCheckFilled class="size-3 fill-muted-foreground" />
     {/if}
     {getSupplierInvoiceStatusLabel(status)}
   </Badge>

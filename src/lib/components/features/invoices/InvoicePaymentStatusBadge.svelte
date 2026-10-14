@@ -12,7 +12,7 @@
   import Badge from '$components/ui/badge/badge.svelte'
   import type { InvoicePaymentStatus } from '$lib/types/api-types'
   import { getInvoicePaymentStatusLabel, getSupplierPaymentStatusLabel } from '$lib/utils/enum-labels'
-  import IconCircleCheck from '@tabler/icons-svelte/icons/circle-check'
+  import IconCircleCheckFilled from '@tabler/icons-svelte/icons/circle-check-filled'
   import IconCircleDashed from '@tabler/icons-svelte/icons/circle-dashed'
   import IconProgress from '@tabler/icons-svelte/icons/progress'
 
@@ -26,7 +26,7 @@
 {#if status}
   <Badge variant="outline" class="px-1.5">
     {#if status === 'paid'}
-      <IconCircleCheck class="size-3 text-green-500 dark:text-green-400" />
+      <IconCircleCheckFilled class="size-3 fill-green-500 dark:fill-green-400" />
     {:else if status === 'partially_paid'}
       <IconProgress class="size-3 text-amber-500 dark:text-amber-400" />
     {:else}
