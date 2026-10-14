@@ -6,7 +6,9 @@
   residual` client-side; the backend's residual/state 422s surface as inline
   field errors via FormUtil. Decoupled so both the "to collect" table and the
   invoice payments subpage can mount it. Two-way bind `open` to control it.
-  @keywords payment, record, dialog, modal, scadenza, invoice, form, collect
+  Defaults to the issued-invoice endpoint; pass `onRecord` to post elsewhere
+  (e.g. supplier-invoice scadenze on the payables side).
+  @keywords payment, record, dialog, modal, scadenza, invoice, form, collect, pay, supplier
   @api POST /api/legal-entities/{legalEntity}/invoice-due-dates/{invoiceDueDate}/payments
 -->
 <script lang="ts">
@@ -17,25 +19,34 @@
   import SelectField from '$components/core/form/SelectField.svelte'
   import TextField from '$components/core/form/TextField.svelte'
   import { v } from '$components/core/form/validation'
-  import { recordPayment } from '$components/features/invoices/invoice-payment-actions'
+  import { recordPayment, type RecordPaymentInput } from '$components/features/invoices/invoice-payment-actions'
   import { Button } from '$components/ui/button'
   import * as Dialog from '$components/ui/dialog'
   import * as m from '$lib/paraglide/messages'
-  import type { Currency, InvoiceDueDate, InvoicePayment, PaymentMethod } from '$lib/types/api-types'
+  import type { Currency, PaymentMethod } from '$lib/types/api-types'
   import { paymentMethodLabels, toSelectItems } from '$lib/utils/enum-labels'
   import { todayLocalISO } from '$lib/utils/date'
   import { floatToPriceString } from '$lib/utils/prices'
   import { toast } from 'svelte-sonner'
 
+  /** The scadenza fields the dialog needs — satisfied by issued and received due dates. */
+  type PayableDueDate = {
+    id: string
+    residual_amount: number | string
+    payment_method: PaymentMethod | null
+  }
+
   type Props = {
     open: boolean
     legalEntityId: string
-    dueDate: InvoiceDueDate
+    dueDate: PayableDueDate
     currency?: Currency | string | null
-    onSaved?: (payment: InvoicePayment) => void
+    /** Posts the payment. Defaults to `POST /invoice-due-dates/{id}/payments`. */
+    onRecord?: (dueDateId: string, input: RecordPaymentInput) => Promise<unknown>
+    onSaved?: (payment: unknown) => void
   }
 
-  let { open = $bindable(false), legalEntityId, dueDate, currency, onSaved }: Props = $props()
+  let { open = $bindable(false), legalEntityId, dueDate, currency, onRecord, onSaved }: Props = $props()
 
   type FormValues = {
     payment_date: string
@@ -66,17 +77,18 @@
 
   const paymentMethodItems = toSelectItems(paymentMethodLabels)
 
-  function handleSubmit(values: FormValues): Promise<InvoicePayment> {
-    return recordPayment(legalEntityId, dueDate.id, {
+  function handleSubmit(values: FormValues): Promise<unknown> {
+    const input: RecordPaymentInput = {
       payment_date: values.payment_date,
       amount: Number(values.amount),
       payment_method: values.payment_method || undefined,
-    })
+    }
+    return onRecord ? onRecord(dueDate.id, input) : recordPayment(legalEntityId, dueDate.id, input)
   }
 
   function handleSuccess({ result }: SuccessPayload<FormValues>) {
     toast.success(m.payment_recorded_successfully())
-    onSaved?.(result as unknown as InvoicePayment)
+    onSaved?.(result)
     open = false
   }
 </script>

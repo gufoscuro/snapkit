@@ -4,18 +4,23 @@
   or a single scadenza (unpaid / partially paid / paid) with a matching icon.
   Renders nothing when `status` is null/undefined (schedule-less invoices, e.g.
   TD04 credit notes), so callers can pass the value straight through. Reads its
-  label from `enum-labels`.
+  label from `enum-labels`; `payable` switches to the supplier-side wording
+  (Pagata instead of Incassato).
   @keywords invoice, payment, status, badge, paid, unpaid, receivable, scadenza
 -->
 <script lang="ts">
   import Badge from '$components/ui/badge/badge.svelte'
   import type { InvoicePaymentStatus } from '$lib/types/api-types'
-  import { getInvoicePaymentStatusLabel } from '$lib/utils/enum-labels'
+  import { getInvoicePaymentStatusLabel, getSupplierPaymentStatusLabel } from '$lib/utils/enum-labels'
   import IconCircleCheck from '@tabler/icons-svelte/icons/circle-check'
   import IconCircleDashed from '@tabler/icons-svelte/icons/circle-dashed'
   import IconProgress from '@tabler/icons-svelte/icons/progress'
 
-  let { status }: { status: InvoicePaymentStatus | null | undefined } = $props()
+  let { status, payable = false }: { status: InvoicePaymentStatus | null | undefined; payable?: boolean } = $props()
+
+  const label = $derived(
+    status ? (payable ? getSupplierPaymentStatusLabel(status) : getInvoicePaymentStatusLabel(status)) : '',
+  )
 </script>
 
 {#if status}
@@ -27,6 +32,6 @@
     {:else}
       <IconCircleDashed class="size-3 text-muted-foreground" />
     {/if}
-    {getInvoicePaymentStatusLabel(status)}
+    {label}
   </Badge>
 {/if}

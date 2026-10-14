@@ -8,63 +8,10 @@
   import { createRoute } from '$utils/route-builder'
   import type { SnippetProps } from '$utils/runtime'
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right'
-  // Tabler icon (used where Lucide has no close equivalent, e.g. receivables)
-  import IconMoneybagMoveBack from '@tabler/icons-svelte/icons/moneybag-move-back'
-  import type { Component } from 'svelte'
-  // Supported menu icons — import individually to avoid bundling the entire lucide library
-  import BarChartIcon from '@lucide/svelte/icons/bar-chart'
-  import BuildingIcon from '@lucide/svelte/icons/building'
-  import CalendarIcon from '@lucide/svelte/icons/calendar'
-  import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
-  import ContactIcon from '@lucide/svelte/icons/contact'
-  import CreditCardIcon from '@lucide/svelte/icons/credit-card'
-  import FileClockIcon from '@lucide/svelte/icons/file-clock'
-  import FileTextIcon from '@lucide/svelte/icons/file-text'
-  import FolderIcon from '@lucide/svelte/icons/folder'
-  import GlobeIcon from '@lucide/svelte/icons/globe'
-  import HouseIcon from '@lucide/svelte/icons/house'
-  import LayersIcon from '@lucide/svelte/icons/layers'
-  import MailIcon from '@lucide/svelte/icons/mail'
-  import PackageIcon from '@lucide/svelte/icons/package'
-  import PackageOpen from '@lucide/svelte/icons/package-open'
-  import ReceiptIcon from '@lucide/svelte/icons/receipt'
-  import SettingsIcon from '@lucide/svelte/icons/settings'
-  import ShoppingCartIcon from '@lucide/svelte/icons/shopping-cart'
-  import TagIcon from '@lucide/svelte/icons/tag'
-  import TruckIcon from '@lucide/svelte/icons/truck'
-  import UsersIcon from '@lucide/svelte/icons/users'
-  import WarehouseIcon from '@lucide/svelte/icons/warehouse'
+  import { getMenuIcon } from './menu-icons'
 
   const { entityConfig }: SnippetProps = $props()
   const mainMenu = $derived(entityConfig?.dashboard.menus.main || { name: 'Unnamed Menu', items: [] })
-
-  const SUPPORTED_ICONS: Record<string, Component> = {
-    House: HouseIcon,
-    Users: UsersIcon,
-    Contact: ContactIcon,
-    Package: PackageIcon,
-    FileText: FileTextIcon,
-    Settings: SettingsIcon,
-    ShoppingCart: ShoppingCartIcon,
-    Warehouse: WarehouseIcon,
-    Truck: TruckIcon,
-    Receipt: ReceiptIcon,
-    CreditCard: CreditCardIcon,
-    FileClock: FileClockIcon,
-    BarChart: BarChartIcon,
-    Calendar: CalendarIcon,
-    Folder: FolderIcon,
-    Tag: TagIcon,
-    ClipboardList: ClipboardListIcon,
-    Building: BuildingIcon,
-    Mail: MailIcon,
-    Globe: GlobeIcon,
-    Layers: LayersIcon,
-    PackageOpen: PackageOpen,
-    // Tabler icons carry a slightly different component signature than Lucide's;
-    // the cast keeps the map uniformly typed (renders fine at runtime).
-    MoneybagMoveBack: IconMoneybagMoveBack as unknown as Component,
-  }
 
   const STORAGE_KEY = 'left-sidebar-menu-open'
 
@@ -83,11 +30,6 @@
     if (!browser) return
     localStorage.setItem(STORAGE_KEY, JSON.stringify($state.snapshot(openState)))
   })
-
-  function getIcon(name?: string): Component | null {
-    if (!name) return null
-    return SUPPORTED_ICONS[name] ?? null
-  }
 
   function getHref(item: MenuItem): string {
     if (!item.pageId) return '#'
@@ -151,7 +93,7 @@
               isActive={page.url.pathname === getHref(subItem)}
               tooltipContent={getI18nLabel(subItem.label)}>
               {#snippet child({ props })}
-                {@const Icon = getIcon(subItem.icon)}
+                {@const Icon = getMenuIcon(subItem.icon)}
                 <a href={getHref(subItem)} {...props}>
                   {#if Icon}
                     <Icon />
@@ -177,7 +119,7 @@
                 isActive={page.url.pathname === getHref(item)}
                 tooltipContent={getI18nLabel(item.label)}>
                 {#snippet child({ props })}
-                  {@const Icon = getIcon(item.icon)}
+                  {@const Icon = getMenuIcon(item.icon)}
                   <a href={getHref(item)} {...props}>
                     {#if Icon}
                       <Icon />
@@ -199,7 +141,7 @@
                 <Sidebar.MenuItem {...props}>
                   <Collapsible.Trigger>
                     {#snippet child({ props })}
-                      {@const Icon = getIcon(item.icon)}
+                      {@const Icon = getMenuIcon(item.icon)}
                       <Sidebar.MenuButton {...props} tooltipContent={getI18nLabel(item.label)}>
                         {#if Icon}
                           <Icon />
@@ -216,7 +158,7 @@
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton isActive={page.url.pathname === getHref(subItem)}>
                             {#snippet child({ props })}
-                              {@const Icon = getIcon(subItem.icon)}
+                              {@const Icon = getMenuIcon(subItem.icon)}
                               <a href={getHref(subItem)} {...props}>
                                 {#if Icon}
                                   <Icon />

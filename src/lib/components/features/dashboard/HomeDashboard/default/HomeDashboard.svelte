@@ -1,7 +1,8 @@
 <!--
   @component HomeDashboard
   @description The "given" home dashboard: a responsive grid of config-driven
-  KPI widgets (revenue, to-ship, to-invoice, to-collect) above a full-width
+  KPI widgets (revenue, to-ship, to-invoice, to-collect, to-pay, received
+  invoices to handle) above a full-width
   monthly-revenue bar chart. Each KPI is a generic `KpiWidget` cabled by a
   `WidgetConfig` (see `_shared/example-configs`); this container only lays them
   out and forwards SnippetProps. The configs currently live in code — the end
@@ -14,8 +15,10 @@
   import {
     monthlyRevenueWidgetConfig,
     revenueWidgetConfig,
+    supplierInvoicesToHandleWidgetConfig,
     toCollectWidgetConfig,
     toInvoiceWidgetConfig,
+    toPayWidgetConfig,
     toShipWidgetConfig,
   } from '../../_shared/example-configs'
   import ChartWidget from '../../ChartWidget/default/ChartWidget.svelte'
@@ -30,11 +33,13 @@
     <p class="text-sm text-muted-foreground">{m.dashboard_subtitle()}</p>
   </div>
 
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
     <KpiWidget config={revenueWidgetConfig} {...snippetProps} />
     <KpiWidget config={toShipWidgetConfig} {...snippetProps} />
     <KpiWidget config={toInvoiceWidgetConfig} {...snippetProps} />
     <KpiWidget config={toCollectWidgetConfig} {...snippetProps} />
+    <KpiWidget config={toPayWidgetConfig} {...snippetProps} />
+    <KpiWidget config={supplierInvoicesToHandleWidgetConfig} {...snippetProps} />
   </div>
 
   <ChartWidget config={monthlyRevenueWidgetConfig} {...snippetProps} />

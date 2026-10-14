@@ -697,11 +697,13 @@ export type Permission =
   | 'create-invoices'
   | 'edit-invoices'
   | 'delete-invoices'
+  | 'view-supplier-invoices'
+  | 'edit-supplier-invoices'
 
 export type CustomerType = 'company' | 'individual' | 'public_entity' | 'consortium' | 'association'
 export type CustomerCommercialStatus = 'active' | 'prospect'
 export type CustomerTag = 'suspended' | 'ceased'
-export type SupplierType = 'courier'
+export type SupplierType = 'courier' | 'vendor'
 export type SupplierTag = 'suspended' | 'ceased'
 export type AtecoCode =
   | 'A'
@@ -2293,4 +2295,162 @@ export type ItemPriceHistoryAggregates = {
   summary: ItemPriceHistorySummary | null
   mixed_uom: boolean
   mixed_currency: boolean
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Supplier invoices (fatture ricevute) — passive cycle, ingested from SDI/A-Cube
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * `to_link` until the invoice is matched to a supplier (automatic match on the
+ * cedente P.IVA/CF, or manual link/create); then `new` until someone opens it
+ * (`POST /supplier-invoices/{id}/view`), then `viewed`.
+ */
+export type SupplierInvoiceStatus = 'to_link' | 'new' | 'viewed'
+
+/** FatturaPA TipoDocumento as received — wider than what the tenant emits. */
+export type SupplierInvoiceDocumentType =
+  | 'TD01'
+  | 'TD02'
+  | 'TD03'
+  | 'TD04'
+  | 'TD05'
+  | 'TD06'
+  | 'TD16'
+  | 'TD17'
+  | 'TD18'
+  | 'TD19'
+  | 'TD20'
+  | 'TD21'
+  | 'TD22'
+  | 'TD23'
+  | 'TD24'
+  | 'TD25'
+  | 'TD26'
+  | 'TD27'
+  | 'TD28'
+  | 'TD29'
+
+/** Outcome of the automatic supplier match (`POST …/relink`), when it failed. */
+export type SupplierInvoiceMatchOutcome = 'no_candidate' | 'multiple_candidates' | 'contradiction'
+
+/**
+ * Cedente/prestatore as it appears in the XML. Every part is optional in
+ * practice: a company carries `name`, a natural person `first_name`/`last_name`;
+ * `address`, `rea` and `contacts` are free-form objects mirroring FatturaPA.
+ */
+export type SupplierInvoiceCedenteSnapshot = {
+  name?: string | null
+  first_name?: string | null
+  last_name?: string | null
+  address?: Record<string, unknown> | null
+  tax_regime?: string | null
+  rea?: Record<string, unknown> | null
+  contacts?: Record<string, unknown> | null
+}
+
+export type SupplierInvoiceLine = {
+  id: string
+  line_number: number | string
+  description: string
+  item_codes: Record<string, unknown>[]
+  quantity: string | number | null
+  unit_of_measure: string | null
+  unit_price: string | number
+  discounts: Record<string, unknown>[]
+  total_price: string | number
+  vat_rate: string | number
+  vat_nature: string | null
+  subject_to_withholding: boolean | string | null
+}
+
+export type SupplierInvoicePayment = {
+  id: string
+  supplier_invoice_due_date_id: string
+  payment_date: string
+  amount: string
+  payment_method: PaymentMethod | null
+}
+
+/**
+ * One scadenza of a received invoice. Unlike the emitted side the schedule is
+ * editable (`PUT …/due-dates`) until a payment is recorded on it.
+ */
+export type SupplierInvoiceDueDate = {
+  id: string
+  position: number
+  due_date: string
+  amount: string | number
+  paid_amount: string
+  residual_amount: number
+  payment_status: InvoicePaymentStatus
+  payment_method: PaymentMethod | null
+  payments?: SupplierInvoicePayment[]
+  /** Parent summary, eager-loaded ONLY on the cross-invoice `GET /supplier-invoice-due-dates`. */
+  supplier_invoice?: {
+    id: string
+    document_number: string
+    document_date: string
+    document_type: SupplierInvoiceDocumentType
+    status: SupplierInvoiceStatus
+    currency: string
+    cedente_name: string | null
+    supplier_id: string | null
+    supplier_name: string | null
+  }
+}
+
+/** File embedded in the FatturaPA XML (`Allegati`), downloadable by index. */
+export type SupplierInvoiceAttachment = {
+  index: number
+  name: string
+  format: string | null
+  description: string | null
+}
+
+export type SupplierInvoice = {
+  id: string
+  status: SupplierInvoiceStatus
+  document_type: SupplierInvoiceDocumentType
+  document_number: string
+  document_date: string
+  currency: string
+  cedente_vat_number: string | null
+  cedente_tax_id: string | null
+  cedente_snapshot: SupplierInvoiceCedenteSnapshot | null
+  /** `null` while `status === 'to_link'`. */
+  supplier_id: string | null
+  supplier?: { id: string; name: string; vat_number?: string | null; tax_id?: string | null } | null
+  total_taxable: string
+  total_tax: string
+  total_amount: string
+  total_withholding: string
+  total_split_payment_tax: string
+  net_payable: string
+  scheduled_total: number
+  /** Σ due dates ≠ net payable. A warning, never a block. */
+  due_dates_mismatch: boolean
+  /** The schedule was generated automatically and should be checked. */
+  due_dates_need_review: boolean
+  payment_status: InvoicePaymentStatus | null
+  is_quarantined: boolean
+  is_possible_duplicate: boolean
+  acube_invoice_uuid: string | null
+  acube_marking: string | null
+  /** Free-text anomaly reported by A-Cube. */
+  acube_notice: string | null
+  sdi_file_name: string | null
+  sdi_file_id: string | null
+  order_references: Record<string, unknown>[]
+  transport_document_references: Record<string, unknown>[]
+  viewed_at: string | null
+  viewed_by: string | null
+  version: number
+  created_at: string
+  updated_at: string
+  /** Outcome of the last automatic match attempt (present after `relink`). */
+  match?: SupplierInvoiceMatchOutcome | string | null
+  lines?: SupplierInvoiceLine[]
+  due_dates?: SupplierInvoiceDueDate[]
+  attachments?: SupplierInvoiceAttachment[]
 }

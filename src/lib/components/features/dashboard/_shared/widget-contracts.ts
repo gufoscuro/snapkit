@@ -30,11 +30,7 @@ import * as m from '$lib/paraglide/messages'
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** How a numeric value should be rendered. `currency` pairs with a sibling ISO-4217 `currency` code. */
-export const ValueFormatSchema = Type.Union([
-  Type.Literal('currency'),
-  Type.Literal('number'),
-  Type.Literal('percent'),
-])
+export const ValueFormatSchema = Type.Union([Type.Literal('currency'), Type.Literal('number'), Type.Literal('percent')])
 export type ValueFormat = Static<typeof ValueFormatSchema>
 
 export const TrendSchema = Type.Object({
@@ -126,10 +122,7 @@ export type ChartPayload = Static<typeof ChartPayloadSchema>
  * custom widgets. The widget always receives the *already-resolved* string
  * (see `resolveLabel`).
  */
-export const LabelSourceSchema = Type.Union([
-  Type.Object({ key: Type.String() }),
-  Type.Object({ raw: Type.String() }),
-])
+export const LabelSourceSchema = Type.Union([Type.Object({ key: Type.String() }), Type.Object({ raw: Type.String() })])
 export type LabelSource = Static<typeof LabelSourceSchema>
 
 /**
@@ -148,11 +141,12 @@ export type WidgetAction = Static<typeof WidgetActionSchema>
  * how it links/looks.
  */
 export const AdditionalKpiConfigSchema = Type.Object({
-  /** Label, interpolated with `{ value }` / `{ count }` = the figure's number. */
+  /**
+   * Label, interpolated with `{ value }` / `{ count }` = the figure's raw number and
+   * `{ formatted }` = the same figure rendered per its `format` (e.g. a currency).
+   */
   label: LabelSourceSchema,
-  emphasis: Type.Optional(
-    Type.Union([Type.Literal('default'), Type.Literal('warning'), Type.Literal('danger')]),
-  ),
+  emphasis: Type.Optional(Type.Union([Type.Literal('default'), Type.Literal('warning'), Type.Literal('danger')])),
   /** When set, this figure is a link (query = the figure's own `filters`). */
   action: Type.Optional(WidgetActionSchema),
   /** Hide the row entirely when the figure is 0. Defaults false. */
@@ -184,9 +178,7 @@ export const WidgetConfigSchema = Type.Object(
     }),
     display: Type.Optional(
       Type.Object({
-        chartType: Type.Optional(
-          Type.Union([Type.Literal('bar'), Type.Literal('line'), Type.Literal('area')]),
-        ),
+        chartType: Type.Optional(Type.Union([Type.Literal('bar'), Type.Literal('line'), Type.Literal('area')])),
         /** Muted footer line under the value (KPI). */
         subtext: Type.Optional(LabelSourceSchema),
         /** Replaces `subtext` when the payload has no `trend` (e.g. no prior period to compare). */

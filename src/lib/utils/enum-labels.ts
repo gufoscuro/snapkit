@@ -43,6 +43,9 @@ import type {
   Supplier,
   SupplierAddress,
   SupplierContact,
+  SupplierInvoiceDocumentType,
+  SupplierInvoiceMatchOutcome,
+  SupplierInvoiceStatus,
   SupplyOrderSummary,
   TransportDocument,
   TransportDocumentInvoicingStatus,
@@ -357,6 +360,7 @@ export function getBinLocationTypeLabel(type: WarehouseBin['location_type']): st
 // Supplier Type
 export const supplierTypeConfig: Record<Supplier['type'], EnumDisplayConfig> = {
   courier: { label: m.enum_supplier_type_courier, variant: 'default' },
+  vendor: { label: m.enum_supplier_type_vendor, variant: 'default' },
 }
 
 export function getSupplierTypeLabel(type: Supplier['type']): string {
@@ -709,6 +713,64 @@ export const invoicePaymentStatusLabels: EnumLabelMap<InvoicePaymentStatus> = {
 
 export function getInvoicePaymentStatusLabel(status: InvoicePaymentStatus): string {
   return invoicePaymentStatusLabels[status]?.() ?? status
+}
+
+// Supplier-side payment status: same tri-state, worded as a payable ("Pagata"
+// instead of the receivable "Incassato").
+export const supplierPaymentStatusLabels: EnumLabelMap<InvoicePaymentStatus> = {
+  unpaid: m.enum_supplier_payment_status_unpaid,
+  partially_paid: m.enum_supplier_payment_status_partially_paid,
+  paid: m.enum_supplier_payment_status_paid,
+}
+
+export function getSupplierPaymentStatusLabel(status: InvoicePaymentStatus): string {
+  return supplierPaymentStatusLabels[status]?.() ?? status
+}
+
+// Supplier Invoice Status (aggancio + first view)
+export const supplierInvoiceStatusLabels: EnumLabelMap<SupplierInvoiceStatus> = {
+  to_link: m.enum_supplier_invoice_status_to_link,
+  new: m.enum_supplier_invoice_status_new,
+  viewed: m.enum_supplier_invoice_status_viewed,
+}
+
+export function getSupplierInvoiceStatusLabel(status: SupplierInvoiceStatus): string {
+  return supplierInvoiceStatusLabels[status]?.() ?? status
+}
+
+// Supplier Invoice Document Type (FatturaPA TipoDocumento, received side)
+export const supplierInvoiceDocumentTypeLabels: EnumLabelMap<SupplierInvoiceDocumentType> = {
+  TD01: m.enum_supplier_invoice_document_type_td01,
+  TD02: m.enum_supplier_invoice_document_type_td02,
+  TD03: m.enum_supplier_invoice_document_type_td03,
+  TD04: m.enum_supplier_invoice_document_type_td04,
+  TD05: m.enum_supplier_invoice_document_type_td05,
+  TD06: m.enum_supplier_invoice_document_type_td06,
+  TD16: m.enum_supplier_invoice_document_type_td16,
+  TD17: m.enum_supplier_invoice_document_type_td17,
+  TD18: m.enum_supplier_invoice_document_type_td18,
+  TD19: m.enum_supplier_invoice_document_type_td19,
+  TD20: m.enum_supplier_invoice_document_type_td20,
+  TD21: m.enum_supplier_invoice_document_type_td21,
+  TD22: m.enum_supplier_invoice_document_type_td22,
+  TD23: m.enum_supplier_invoice_document_type_td23,
+  TD24: m.enum_supplier_invoice_document_type_td24,
+  TD25: m.enum_supplier_invoice_document_type_td25,
+  TD26: m.enum_supplier_invoice_document_type_td26,
+  TD27: m.enum_supplier_invoice_document_type_td27,
+  TD28: m.enum_supplier_invoice_document_type_td28,
+  TD29: m.enum_supplier_invoice_document_type_td29,
+}
+
+export function getSupplierInvoiceDocumentTypeLabel(type: SupplierInvoiceDocumentType): string {
+  return supplierInvoiceDocumentTypeLabels[type]?.() ?? type
+}
+
+// Automatic supplier match outcome (relink)
+export const supplierInvoiceMatchOutcomeLabels: EnumLabelMap<SupplierInvoiceMatchOutcome> = {
+  no_candidate: m.supplier_invoice_match_no_candidate,
+  multiple_candidates: m.supplier_invoice_match_multiple_candidates,
+  contradiction: m.supplier_invoice_match_contradiction,
 }
 
 export const invoicePaymentStatusVariantConfig: Record<InvoicePaymentStatus, StatusVariant> = {
