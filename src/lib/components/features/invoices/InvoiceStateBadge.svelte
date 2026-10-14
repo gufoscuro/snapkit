@@ -20,7 +20,7 @@
 </script>
 
 <Badge variant="outline" class="px-1.5">
-  {#if state === 'accepted'}
+  {#if state === 'accepted' || state === 'delivered'}
     <IconCircleCheck class="size-3 text-green-500 dark:text-green-400" />
   {:else if state === 'rejected'}
     <IconCircleX class="size-3 text-red-500 dark:text-red-400" />

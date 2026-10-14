@@ -693,7 +693,7 @@ export const invoiceStateVariantConfig: Record<InvoiceState, StatusVariant> = {
   draft: 'neutral',
   submitted: 'in-progress',
   sent: 'in-progress',
-  delivered: 'in-progress',
+  delivered: 'active',
   accepted: 'active',
   rejected: 'blocked',
   archived: 'paused',
