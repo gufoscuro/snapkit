@@ -1,10 +1,11 @@
 <!--
   @component InvoicesTable
   @description Displays a paginated table of invoices (FatturaPA) with load more.
-  Shows state and payment status badges, document number (linked to details), customer, document type,
-  total amount and document date. Consumes filter state from page context.
+  Shows state and payment status badges, document number (linked to details) with the
+  customer underneath, document type, total amount and document date. Consumes filter
+  state from page context.
   @keywords invoices, table, list, pagination, load-more, fatturapa, billing
-  @uses ResourceTable, InvoiceStateBadge, InvoicePaymentStatusBadge
+  @uses ResourceTable, RecordCustomerCell, InvoiceStateBadge, InvoicePaymentStatusBadge
   @api GET /api/legal-entities/{legalEntity}/invoices -> Invoice[]
   @api DELETE /api/legal-entities/{legalEntity}/invoices/{invoice}
   @route invoice-details
@@ -17,6 +18,7 @@
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import RecordCustomerCell from '$lib/components/features/common/RecordCustomerCell.svelte'
   import InvoicePaymentStatusBadge from '$lib/components/features/invoices/InvoicePaymentStatusBadge.svelte'
   import InvoiceStateBadge from '$lib/components/features/invoices/InvoiceStateBadge.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
@@ -24,6 +26,7 @@
   import type { Invoice, InvoiceState } from '$lib/types/api-types'
   import { getInvoiceDocumentTypeLabel } from '$lib/utils/enum-labels'
   import type { FilterQuery } from '$lib/utils/filters'
+  import { extractSnapshotString, type SnapshotShape } from '$lib/utils/snapshots'
   import { createArchiveAction } from '$lib/utils/table-actions'
   import { createApiFetcher } from '$lib/utils/table-fetchers'
   import { createRoute } from '$utils/route-builder.js'
@@ -38,28 +41,18 @@
 
   const columns: ColumnConfig<Invoice>[] = [
     {
+      // Document number (linked) + customer stacked into one identity column,
+      // same layout as the received invoices list.
       accessorKey: 'document_number',
       header: m.document_number(),
-      renderer: 'link',
+      renderer: 'component',
       rendererConfig: {
-        urlBuilder: (row: Invoice) => createRoute({ $id: 'invoice-details', params: { uuid: row.id } }),
-      },
-    },
-    {
-      accessorKey: 'customer_snapshot',
-      header: m.customer(),
-      renderer: 'custom',
-      rendererConfig: {
-        cellRenderer: (row: Invoice) => {
-          const snapshot = row.customer_snapshot as unknown
-          if (Array.isArray(snapshot) && snapshot.length > 0) {
-            return ((snapshot[0] as Record<string, unknown>)?.name as string) ?? '-'
-          }
-          if (snapshot && typeof snapshot === 'object') {
-            return ((snapshot as Record<string, unknown>).name as string) ?? '-'
-          }
-          return '-'
-        },
+        component: RecordCustomerCell,
+        propsMapper: (row: Invoice) => ({
+          code: row.document_number,
+          customerName: extractSnapshotString(row.customer_snapshot as unknown as SnapshotShape | undefined, 'name'),
+          href: createRoute({ $id: 'invoice-details', params: { uuid: row.id } }),
+        }),
       },
     },
     {
