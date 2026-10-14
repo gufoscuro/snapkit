@@ -131,13 +131,14 @@ Set `label: ''` (empty string) on a `simple` submenu to render the group **witho
   children: [
     { type: 'link', label: 'Home',        pageId: 'home',       icon: 'House' },
     { type: 'link', label: 'to_ship',     pageId: 'to-ship',    icon: 'Truck' },
-    { type: 'link', label: 'to_collect',  pageId: 'payments',   icon: 'CreditCard' },
-    { type: 'link', label: 'to_invoice',  pageId: 'to-invoice', icon: 'FileClock' }
+    { type: 'link', label: 'to_collect',  pageId: 'payments',   icon: 'MoneybagMoveBack' },
+    { type: 'link', label: 'to_invoice',  pageId: 'to-invoice', icon: 'FileClock' },
+    { type: 'link', label: 'to_pay',      pageId: 'to-pay',     icon: 'HandCoins' }
   ]
 }
 ```
 
-**Why:** this is how the scaffold's first group (`scaffoldDashboardStructure()` in `src/lib/utils/admin-config.ts`) renders the **actionables** — the cross-cutting "things to do" (Da spedire / Da incassare / Da fatturare) sit label-less at the very top, above the labelled `master_data` / `sales` / `invoicing` sections. Prefer this over a labelled group when the items are the primary landing actions and a header would be noise.
+**Why:** this is how the scaffold's first group (`scaffoldDashboardStructure()` in `src/lib/utils/admin-config.ts`) renders the **actionables** — the cross-cutting "things to do" (Da spedire / Da incassare / Da fatturare / Da pagare) sit label-less at the very top, above the labelled `master_data` / `sales` / `invoicing` sections. Prefer this over a labelled group when the items are the primary landing actions and a header would be noise.
 
 ### 2. Collapsible Style (`'collapsible'`)
 
@@ -300,7 +301,11 @@ The `LeftSidebarMenu` component handles:
 
 ## Icons
 
-Icons use the **PascalCase** Lucide icon names registered in `LeftSidebarMenu`'s `SUPPORTED_ICONS` map. Add new entries to that map (with an individual import) before referencing them from config — referencing an unknown name renders no icon.
+Icons use the **PascalCase** names registered in `MENU_ICONS` (`src/lib/components/features/globals/menu-icons.ts`), resolved with `getMenuIcon(name)`. **Rule:** to use a new icon in a menu config, add it to that map — with an individual import, never the whole library. An unknown name renders no icon, silently.
+
+**Why one shared map:** the same `MenuItem[]` is rendered by two components — `LeftSidebarMenu` (sidebar) and `MainMenuDropdown` (the grid-icon dropdown). Each used to carry its own copy of the map, "kept in sync intentionally". They drifted: the *Da pagare* / *Fatture ricevute* icons showed in the sidebar but not in the dropdown. Both now import `getMenuIcon`, so there is nothing to keep in sync.
+
+Tabler icons can join the map with a cast (`as unknown as Component`): their component signature differs slightly from Lucide's, and they render fine (e.g. `MoneybagMoveBack`, used where Lucide has no close equivalent). Dashboard KPI widgets have a **separate** map, `WIDGET_ICONS` in `dashboard/_shared/widget-icons.ts`, for a different set of names.
 
 | Icon Name       | Use Case                |
 | --------------- | ----------------------- |
@@ -325,6 +330,10 @@ Icons use the **PascalCase** Lucide icon names registered in `LeftSidebarMenu`'s
 | `FileText`      | Documents, Quotations   |
 | `Settings`      | Configuration           |
 | `Warehouse`     | Warehouse               |
+| `FileClock`     | To invoice (actionable) |
+| `FileInput`     | Received invoices       |
+| `HandCoins`     | To pay (actionable)     |
+| `MoneybagMoveBack` | To collect (Tabler)  |
 
 See [Lucide Icons](https://lucide.dev/) for the full library.
 
