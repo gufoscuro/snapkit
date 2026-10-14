@@ -1,10 +1,10 @@
 <!--
   @component InvoicesTable
   @description Displays a paginated table of invoices (FatturaPA) with load more.
-  Shows state badge, document number (linked to details), customer, document type,
+  Shows state and payment status badges, document number (linked to details), customer, document type,
   total amount and document date. Consumes filter state from page context.
   @keywords invoices, table, list, pagination, load-more, fatturapa, billing
-  @uses ResourceTable
+  @uses ResourceTable, InvoiceStateBadge, InvoicePaymentStatusBadge
   @api GET /api/legal-entities/{legalEntity}/invoices -> Invoice[]
   @api DELETE /api/legal-entities/{legalEntity}/invoices/{invoice}
   @route invoice-details
@@ -17,6 +17,7 @@
 <script lang="ts">
   import { ResourceTable } from '$lib/components/core/ResourceTable'
   import type { ColumnConfig } from '$lib/components/core/ResourceTable/types'
+  import InvoicePaymentStatusBadge from '$lib/components/features/invoices/InvoicePaymentStatusBadge.svelte'
   import InvoiceStateBadge from '$lib/components/features/invoices/InvoiceStateBadge.svelte'
   import { useConsumes } from '$lib/contexts/page-state'
   import * as m from '$lib/paraglide/messages.js'
@@ -82,6 +83,15 @@
       rendererConfig: {
         component: InvoiceStateBadge,
         propsMapper: (row: Invoice) => ({ state: row.state as InvoiceState }),
+      },
+    },
+    {
+      accessorKey: 'payment_status',
+      header: m.payment_status(),
+      renderer: 'component',
+      rendererConfig: {
+        component: InvoicePaymentStatusBadge,
+        propsMapper: (row: Invoice) => ({ status: row.payment_status }),
       },
     },
     {

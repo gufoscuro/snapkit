@@ -43,6 +43,21 @@ export const DemoFilterContract = {
 
 The contract describes the **shape** of the data, not **where** it lives.
 
+#### Typing a provided API resource without restating it (`Type.Unsafe`)
+
+**Rule:** to pass a whole API record through page state (detail → sidebar), use `Type.Unsafe<T>(…)` over a minimal runtime object. Don't hand-write a TypeBox mirror of the record. Put the schema in one shared module, imported by every contract that provides or consumes it.
+
+```ts
+// supplier-invoices/supplier-invoice-schema.ts
+export const SupplierInvoiceDataSchema = Type.Unsafe<SupplierInvoice>(
+  Type.Object({ id: Type.String() }, { additionalProperties: true }),
+)
+```
+
+**Why:** page state only uses the schema's **static** type (`Static<>` in `useProvides` / `useConsumes`). Runtime validation is not wired yet (see *Validation (Future)*). A hand-written mirror is long and drifts. `SupplierSidebar.contract.ts` keeps its own private copy of the supplier schema, which lacks `tags` / `suspended_at` / `ceased_at` — a standing `svelte-check` error in `SupplierSidebar.svelte`. `Type.Unsafe` keeps the type in one place, `api-types.ts`. If validation ever lands, it checks only the minimal object, so keep it minimal on purpose.
+
+**Where:** `supplier-invoice-schema.ts`, consumed by the `SupplierInvoiceDetails` / `SupplierInvoicePayments` / `SupplierInvoiceDocumentsTable` contracts and `SupplierInvoiceSidebar.contract.ts`.
+
 ### Binding
 
 A **binding** maps logical names from the contract to actual namespaces in the page state.

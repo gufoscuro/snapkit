@@ -92,6 +92,30 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
           },
         },
         {
+          $id: 'to-pay',
+          title: 'to_pay',
+          description: 'List of open supplier invoice due dates to be paid',
+          route: '/invoicing/to-pay',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.SupplierPaymentsFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'supplier-invoices.supplierpaymentstable.default.SupplierPaymentsTable',
+              enabled: true,
+            },
+          },
+        },
+        {
           $id: 'customers',
           title: 'customers',
           description: 'List of all customers',
@@ -916,6 +940,97 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
           ],
         },
         {
+          $id: 'supplier-invoices',
+          title: 'supplier_invoices',
+          description: 'List of all invoices received from suppliers (passive invoices from SDI)',
+          route: '/invoicing/supplier-invoices',
+          layout: {
+            componentKey: 'layouts.LeftSidebar',
+            enabled: true,
+          },
+          snippets: {
+            sidebar: {
+              componentKey: 'globals.sidebars.IndexSidebar',
+              enabled: true,
+            },
+            filters: {
+              componentKey: 'common.filters.SupplierInvoicesFilters',
+              enabled: true,
+            },
+            content: {
+              componentKey: 'supplier-invoices.supplierinvoicestable.default.SupplierInvoicesTable',
+              enabled: true,
+            },
+          },
+          subpages: [
+            {
+              $id: 'supplier-invoice-details',
+              title: 'supplier_invoice',
+              description:
+                'Read-only view of a single received invoice: supplier link, anomalies, cedente, totals, lines and references',
+              route: '/invoicing/supplier-invoices/view/:uuid',
+              layout: {
+                componentKey: 'layouts.LeftSidebar',
+                enabled: true,
+              },
+              snippets: {
+                sidebar: {
+                  componentKey: 'globals.sidebars.SupplierInvoiceSidebar',
+                  enabled: true,
+                },
+                content: {
+                  componentKey: 'supplier-invoices.supplierinvoicedetails.default.SupplierInvoiceDetails',
+                  enabled: true,
+                },
+              },
+              subpages: [
+                {
+                  $id: 'supplier-invoice-payments',
+                  title: 'due_dates_and_payments',
+                  description:
+                    'Payment schedule (editable) and payments of a single received invoice, grouped by scadenza',
+                  route: '/invoicing/supplier-invoices/view/:uuid/payments',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.SupplierInvoiceSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey: 'supplier-invoices.supplierinvoicepayments.default.SupplierInvoicePayments',
+                      enabled: true,
+                    },
+                  },
+                },
+                {
+                  $id: 'supplier-invoice-documents',
+                  title: 'documents',
+                  description: 'Documents uploaded by users for a single received invoice',
+                  route: '/invoicing/supplier-invoices/view/:uuid/documents',
+                  layout: {
+                    componentKey: 'layouts.LeftSidebar',
+                    enabled: true,
+                  },
+                  snippets: {
+                    sidebar: {
+                      componentKey: 'globals.sidebars.SupplierInvoiceSidebar',
+                      enabled: true,
+                    },
+                    content: {
+                      componentKey:
+                        'supplier-invoices.supplierinvoicedocumentstable.default.SupplierInvoiceDocumentsTable',
+                      enabled: true,
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        {
           $id: 'transport-documents',
           title: 'transport_documents',
           description: 'List of all transport documents',
@@ -999,6 +1114,12 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
                   icon: 'FileClock',
                   type: 'link',
                 },
+                {
+                  label: 'to_pay',
+                  pageId: 'to-pay',
+                  icon: 'HandCoins',
+                  type: 'link',
+                },
               ],
             },
             {
@@ -1066,9 +1187,15 @@ export function scaffoldDashboardStructure(): LegalEntityConfigResponse {
               submenuStyle: 'simple',
               children: [
                 {
-                  label: 'invoices',
+                  label: 'issued_invoices',
                   pageId: 'invoices',
                   icon: 'Receipt',
+                  type: 'link',
+                },
+                {
+                  label: 'supplier_invoices',
+                  pageId: 'supplier-invoices',
+                  icon: 'FileInput',
                   type: 'link',
                 },
               ],

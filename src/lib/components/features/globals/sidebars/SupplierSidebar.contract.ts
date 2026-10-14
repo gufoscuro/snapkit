@@ -72,9 +72,7 @@ const CurrencySchema = Type.Union([
 
 const SupplierDataSchema = Type.Object({
   id: Type.String(),
-  type: Type.Union([
-    Type.Literal('courier'),
-  ]),
+  type: Type.Union([Type.Literal('courier'), Type.Literal('vendor')]),
   status: Type.Union([
     Type.Literal('active'),
     Type.Literal('suspended'),

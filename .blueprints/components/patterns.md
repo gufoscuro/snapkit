@@ -504,6 +504,33 @@ When a resource exposes a state machine via a `/transition` endpoint, the backen
 - Labels, confirmation texts, and success messages must use Paraglide (`m.xxx()`)
 - For destructive operations (suspend, cease), use `confirmationVariant: { set: 'destructive' }`
 
+## Permission-Gated UI (`hasPermission`)
+
+**Rule:** to show or hide an action by permission, read it from the `user` snippet prop with `hasPermission(user, 'permission-name')` from `$lib/utils/permissions`. Don't inline `user.all_permissions.includes(...)`.
+
+```svelte
+<script lang="ts">
+  import { hasPermission } from '$lib/utils/permissions'
+  let { user }: SnippetProps = $props()
+
+  const canEdit = $derived(hasPermission(user, 'edit-supplier-invoices'))
+  // An action behind two backend permissions needs both:
+  const canCreateSupplier = $derived(canEdit && hasPermission(user, 'create-suppliers'))
+</script>
+
+{#if canEdit}<Button …>{m.register_payment()}</Button>{/if}
+```
+
+In a table, put the check in the action's `visible` (e.g. `visible: row => canEdit && isPayable(row)`).
+
+**Why:**
+- **Superadmin.** It also grants everything to `user.is_superadmin`, which the backend does through `Gate::before`. A bare `all_permissions` check would hide actions from superadmins that the API would accept.
+- **Visibility only.** It doesn't replace the backend: a 403 can still happen (stale session, a token with fewer abilities), so error handling stays.
+- **Mirror the route.** Gate on the same permissions the endpoint's middleware lists. When an endpoint needs two, check both.
+- **Typed names.** `Permission` in `api-types.ts` lists the names. Add new backend permissions there.
+
+**Where:** `src/lib/utils/permissions.ts`. First users: `SupplierInvoiceDetails`, `SupplierInvoicePayments`, `SupplierPaymentsTable`. Older code (`ItemPriceHistory`, `BrandingSettings`) still inlines the same check and can migrate.
+
 ## Download Actions
 
 For downloading a record's exported files (PDF, XML, …) in the bottom bar. Both

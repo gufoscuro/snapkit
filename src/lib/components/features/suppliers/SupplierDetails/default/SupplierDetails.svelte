@@ -98,7 +98,7 @@
   })
 
   const initialValues = $derived.by(() => ({
-    type: 'courier' as const,
+    type: 'vendor' as Supplier['type'],
     name: '',
     trade_name: '',
     ateco_code: null,
@@ -165,12 +165,7 @@
           {/snippet}
 
           {#snippet content()}
-            <SelectField
-              name="type"
-              label={m.type()}
-              items={typeItems}
-              class={FormFieldClass.MinWidth}
-              disabled={!!record} />
+            <SelectField name="type" label={m.type()} items={typeItems} class={FormFieldClass.MinWidth} />
 
             <TextField name="name" label={m.name()} class={FormFieldClass.MaxWidth} focus={!record} />
             <TextField name="trade_name" label={m.trade_name()} class={FormFieldClass.MaxWidth} />

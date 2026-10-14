@@ -1,7 +1,7 @@
 <!--
   @component CarrierSelector
   @description A single-select dropdown for choosing carriers.
-  Carriers are stored as suppliers (today every supplier is `type: 'courier'`).
+  Carriers are the suppliers with `type: 'courier'` (vendors are filtered out).
   Fetches from GET /api/legal-entities/{legalEntity}/suppliers endpoint.
   Displays the supplier name.
   @keywords carrier, courier, supplier, selector, picker, dropdown
@@ -21,6 +21,7 @@
     id: string
     name: string
     trade_name?: string
+    type?: string
   }
 
   type Props = EntitySelectorProps & {
@@ -74,11 +75,12 @@
   async function defaultFetchFunction(query: Partial<FilterQuery>): Promise<CarrierSummary[]> {
     const params = createQueryRequestObject(query)
 
-    return (
-      await api.get<PaginatedResponse<CarrierSummary>>(`/legal-entities/${legalEntityId}/suppliers`, {
-        queryParams: params,
-      })
-    ).data
+    const res = await api.get<PaginatedResponse<CarrierSummary>>(`/legal-entities/${legalEntityId}/suppliers`, {
+      queryParams: params,
+    })
+    // GET /suppliers has no `type` filter, so vendors are dropped client-side.
+    // Filtering one page can under-fill the dropdown; search narrows it back.
+    return res.data.filter(s => !s.type || s.type === 'courier')
   }
 
   async function fetchFunction(query: Partial<FilterQuery>): Promise<CarrierSummary[]> {

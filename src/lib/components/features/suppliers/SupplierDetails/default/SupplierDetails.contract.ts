@@ -70,16 +70,11 @@ const CurrencySchema = Type.Union([
   Type.Literal('SAR'),
 ])
 
-const SupplierTagSchema = Type.Union([
-  Type.Literal('suspended'),
-  Type.Literal('ceased'),
-])
+const SupplierTagSchema = Type.Union([Type.Literal('suspended'), Type.Literal('ceased')])
 
 export const SupplierDataSchema = Type.Object({
   id: Type.String(),
-  type: Type.Union([
-    Type.Literal('courier'),
-  ]),
+  type: Type.Union([Type.Literal('courier'), Type.Literal('vendor')]),
   tags: Type.Array(SupplierTagSchema),
   name: Type.String(),
   trade_name: Type.String(),

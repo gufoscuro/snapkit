@@ -592,6 +592,28 @@ const rightLabelStyle = $derived(
 
 **Don't** add `pr-8` / `pr-12` at the call site: four editors used to, as a workaround for both problems, and those were removed when the fields started reserving the space themselves.
 
+## 422 errors on keys the form doesn't render
+
+**Rule:** if a form posts to an endpoint whose 422s can be keyed on something the form doesn't render, catch in `onSubmit`, toast those messages, then **rethrow** so `FormUtil` still maps the keys it can. Typical keys:
+- a business rule on the resource (`supplier_invoice`);
+- a nested path the editor shows only at the top level (`due_dates.0.amount` vs `due_dates`);
+- a control without an error slot (a `SwitchField`).
+
+```ts
+async function handleSubmit(values: FormValues) {
+  try {
+    return await linkSupplierInvoice(legalEntityId, invoice.id, payload(values))
+  } catch (err) {
+    toastUnmappedValidationErrors(err, ['supplier_id']) // the keys this form renders
+    throw err
+  }
+}
+```
+
+**Why:** `FormUtil` writes every 422 key into `errors`, but only the fields on screen display them. For any other key the user sees just the generic "validation error" banner and never learns the actual reason (e.g. "P.IVA già di un altro fornitore", "elimina prima i pagamenti"). The helper toasts the first message of each unrendered key. If there is no `errors` map, it toasts the response `message` instead. Rethrowing keeps the inline field errors and the busy/failure flow intact.
+
+**Where:** `toastUnmappedValidationErrors` currently lives in `supplier-invoices/supplier-invoice-actions.ts` (users: `LinkSupplierDialog`, `SupplierInvoicePayments`). Promote it to `$lib/utils` when a second feature needs it. Compare the issued-invoice form, which instead renders its `totals` 422 inline by reading `formApi.errors.totals` ([invoices.md](../domain-logic/invoices.md)) — prefer that when the error has a natural place on screen.
+
 ## Best Practices
 
 1. **Always use autowired field components** - Every field should be a component that calls `getFormContext()` internally. This keeps forms simple and in a single file.

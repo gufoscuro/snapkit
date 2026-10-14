@@ -1,10 +1,11 @@
 # Actionables — Frontend Special Cases
 
-The **actionables** are the cross-cutting "things to do" surfaced label-less at the top of the sidebar (see [menu-system.md](../routing/menu-system.md) → *Label-less group*): **Da spedire** (to ship), **Da incassare** (to collect), **Da fatturare** (to invoice). Views on these endpoints:
+The **actionables** are the cross-cutting "things to do" surfaced label-less at the top of the sidebar (see [menu-system.md](../routing/menu-system.md) → *Label-less group*): **Da spedire** (to ship), **Da incassare** (to collect), **Da fatturare** (to invoice), **Da pagare** (to pay). Views on these endpoints:
 
 - **Da spedire** (sidebar) → `DeliveryScheduleTable` + `DeliveryScheduleFilters`, `GET /delivery-schedule?outstanding=true`
 - **Order delivery recap** (subpage under `sales-order-details`) → `SalesOrderDeliveryScheduleTable`, `GET /delivery-schedule?sales_order_id={id}`
 - **Da incassare** → `PaymentsTable` + `PaymentsFilters`, `GET /invoice-due-dates`
+- **Da pagare** → `SupplierPaymentsTable` + `SupplierPaymentsFilters`, `GET /supplier-invoice-due-dates` (payables twin of *Da incassare*; received-invoice detail quirks live in [supplier-invoices.md](./supplier-invoices.md))
 
 The list views follow the aggregate-list recipe in [resource-table.md](../components/resource-table.md) (no own CRUD detail/archive; rows link to the source entity; baked query param). *Da incassare* is no longer strictly read-only — its rows carry inline **record-payment** / **mark-as-paid** actions (see below) — but it still owns no detail form. *Da fatturare* (`InvoiceableDocumentsTable`) predates this set and its quirks live in the invoices surface — see [invoices.md](./invoices.md). Sales-order specifics (import flow, fulfillment badge) live in [sales-orders.md](./sales-orders.md).
 
@@ -49,6 +50,27 @@ The list views follow the aggregate-list recipe in [resource-table.md](../compon
 **Why:** `invoice` is eager-loaded **only** on this list; an invoice's own `due_dates` omit it (the parent already carries those fields), so the type marks `invoice?` optional — hence the guarded accessors. *Confirmed against a real response* (2026-07): the runtime shape is nested, matching the OpenAPI surface; the earlier flattened repo type (`document_number`/`state`/`invoice_id` at top level) was wrong and has been corrected. If a column ever renders blank, first check whether the endpoint actually eager-loaded `invoice`.
 
 **Where:** `PaymentsTable.svelte` (nested accessors + guarded urlBuilder), `api-types.ts` → `InvoiceDueDate.invoice`.
+
+## Da pagare — the supplier scadenzario, open-only by default
+
+**What:** `SupplierPaymentsTable` (page `to-pay`) lists the scadenze of **all received invoices**. Its columns:
+- identity: `supplier_invoice.document_number` → the invoice's **`supplier-invoice-payments`** subpage, over `supplier_name || cedente_name`;
+- `due_date`;
+- `PaymentProgressCell` in the **invoice currency** with `paidLabel` "Pagato";
+- `payment_method`;
+- `InvoicePaymentStatusBadge payable`;
+- the invoice status (`SupplierInvoiceStatusBadge`).
+
+Rows expose **Registra pagamento** (`RecordPaymentDialog` with `onRecord = recordSupplierPayment`) and **Segna come pagato**. Both are visible with `edit-supplier-invoices` and `isSupplierDueDatePayable` (residual > 0, not TD04 — **no invoice-state gate**). Filters: supplier, payment status, **currency**, due-date range.
+
+**Why:**
+- This *is* what the backend calls the *scadenzario fornitori*. Without `payment_status` the endpoint returns only open scadenze — the "to pay" identity — and choosing "Pagata" in the filter turns it into history. That's why nothing is baked into the fetcher, unlike `outstanding=true` on *Da spedire*.
+- Unlike *Da incassare*, each row carries `supplier_invoice.currency`, so amounts format with the real currency.
+- `currency` and `due_date_to` are filters because the homepage *Da pagare* KPI deep-links with them (EUR total; overdue = `due_date_to` yesterday). See [supplier-invoices.md](./supplier-invoices.md#homepage-kpis).
+- Payable rules and the shared-component switches are documented in [supplier-invoices.md](./supplier-invoices.md#payments-per-scadenza-no-state-gate).
+- The refresh-after-dialog wiring is the same as *Da incassare* (stashed `helpers.refresh`).
+
+**Where:** `supplier-invoices/SupplierPaymentsTable/default/SupplierPaymentsTable.svelte`, `common/Filters/SupplierPaymentsFilters.svelte`; scaffold page `to-pay` (`/invoicing/to-pay`) + menu item (icon `HandCoins`) in `admin-config.ts`.
 
 ---
 

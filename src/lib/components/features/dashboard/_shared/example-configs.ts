@@ -74,6 +74,49 @@ export const toCollectWidgetConfig: WidgetConfig = {
   },
 }
 
+/**
+ * Payables: open supplier scadenze in EUR. The payload's `filters` (currency)
+ * deep-link to "Da pagare"; the overdue figure carries its own filters.
+ */
+export const toPayWidgetConfig: WidgetConfig = {
+  id: 'to-pay',
+  type: 'kpi',
+  title: { key: 'dashboard_to_pay_title' },
+  icon: 'HandCoins',
+  source: { endpoint: 'to-pay' },
+  action: { pageId: 'to-pay' },
+  display: {
+    subtext: { key: 'dashboard_to_pay_subtext' },
+    zeroIsPositive: true,
+    zeroLabel: { key: 'dashboard_all_clear' },
+    zeroSubtext: { key: 'dashboard_to_pay_zero' },
+  },
+  additionalKpis: [
+    {
+      label: { key: 'dashboard_to_pay_overdue' },
+      emphasis: 'danger',
+      hideWhenZero: true,
+      action: { pageId: 'to-pay' },
+    },
+  ],
+}
+
+/** Received invoices needing attention: still to link + never opened (status=to_link,new). */
+export const supplierInvoicesToHandleWidgetConfig: WidgetConfig = {
+  id: 'supplier-invoices-to-handle',
+  type: 'kpi',
+  title: { key: 'dashboard_supplier_invoices_to_handle_title' },
+  icon: 'FileInput',
+  source: { endpoint: 'supplier-invoices-to-handle' },
+  action: { pageId: 'supplier-invoices' },
+  display: {
+    subtext: { key: 'dashboard_supplier_invoices_to_handle_subtext' },
+    zeroIsPositive: true,
+    zeroLabel: { key: 'dashboard_all_clear' },
+    zeroSubtext: { key: 'dashboard_supplier_invoices_to_handle_zero' },
+  },
+}
+
 export const monthlyRevenueWidgetConfig: WidgetConfig = {
   id: 'monthly-revenue',
   type: 'chart',

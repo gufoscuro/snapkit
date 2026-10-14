@@ -38,13 +38,9 @@
   // Swap to the no-trend variant when the payload carries no comparison (e.g. no
   // prior period): "this month" instead of "this month vs last".
   const subtext = $derived(
-    kpi && !kpi.trend && config.display?.noTrendSubtext
-      ? resolveLabel(config.display.noTrendSubtext)
-      : baseSubtext
+    kpi && !kpi.trend && config.display?.noTrendSubtext ? resolveLabel(config.display.noTrendSubtext) : baseSubtext,
   )
-  const zeroSubtext = $derived(
-    config.display?.zeroSubtext ? resolveLabel(config.display.zeroSubtext) : baseSubtext
-  )
+  const zeroSubtext = $derived(config.display?.zeroSubtext ? resolveLabel(config.display.zeroSubtext) : baseSubtext)
 
   const isZero = $derived(kpi?.value === 0)
 
@@ -53,7 +49,7 @@
   const trend = $derived(
     kpi?.trend
       ? { direction: kpi.trend.direction, label: formatTrend(kpi.trend), sentiment: trendSentiment(kpi.trend) }
-      : undefined
+      : undefined,
   )
 
   const href = $derived.by(() => {
@@ -69,15 +65,13 @@
       .map((item, i) => ({ item, cfg: config.additionalKpis?.[i] }))
       .filter(
         (row): row is { item: (typeof row)['item']; cfg: AdditionalKpiConfig } =>
-          !!row.cfg && !(row.cfg.hideWhenZero && row.item.value === 0)
-      )
+          !!row.cfg && !(row.cfg.hideWhenZero && row.item.value === 0),
+      ),
   )
 
   // "All clear" only when the headline is 0 AND there's no secondary row to show —
   // e.g. 0 to ship but 1 overdue is NOT all clear, so the overdue row must surface.
-  const zeroPositive = $derived(
-    !!config.display?.zeroIsPositive && isZero && additionalRows.length === 0
-  )
+  const zeroPositive = $derived(!!config.display?.zeroIsPositive && isZero && additionalRows.length === 0)
 
   function trendSentiment(t: Trend): StatCardSentiment {
     if (t.direction === 'flat') return 'neutral'
@@ -113,7 +107,11 @@
       {#if zeroSubtext}<div class="text-muted-foreground">{zeroSubtext}</div>{/if}
     {:else}
       {#each additionalRows as { item, cfg }, i (i)}
-        {@const label = resolveLabel(cfg.label, { value: item.value, count: item.value })}
+        {@const label = resolveLabel(cfg.label, {
+          value: item.value,
+          count: item.value,
+          formatted: formatValue(item.value, item.format, item.currency ?? kpi?.currency),
+        })}
         {#if cfg.action}
           <a
             href={createRoute({ $id: cfg.action.pageId, query: filtersToQuery(item.filters) })}

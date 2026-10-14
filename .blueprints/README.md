@@ -29,9 +29,10 @@ snapkit-content/
 │   └── fixed-pages.md            # Fixed pages (settings, admin) vs configurable pages
 ├── domain-logic/         # Frontend-specific special cases per feature/view
 │   ├── invoices.md       # Invoice form/import/validation frontend quirks (the WHY behind special cases)
+│   ├── supplier-invoices.md # Received invoices (fatture ricevute): aggancio, schedule, payments, KPIs, vendor type
 │   ├── quotations.md     # Quotation form/state/validation frontend quirks (import source)
 │   ├── sales-orders.md   # Sales order frontend quirks, incl. quotation-import flow
-│   └── actionables.md    # "Da spedire" / "Da incassare" list-view quirks (payment recording & status, baked filters)
+│   └── actionables.md    # "Da spedire" / "Da incassare" / "Da pagare" list-view quirks (payment recording & status, baked filters)
 ├── testing/              # Testing strategy and patterns
 │   └── strategy.md       # Test projects, mocking, what/how to test
 ├── api/                  # API integration guidelines
@@ -50,9 +51,9 @@ snapkit-content/
 
 - **development-guidelines.md**: Rules for creating, organizing, and documenting components. Covers file locations, composition patterns, the decision flow for new components, variants vs props, and **per-tenant behavior toggles via snippet config props (vs policies)**
 - **date-handling.md**: Date serialization rules for forms/payloads. Calendar-day fields (`document_date`, `valid_from/to`, delivery/due dates) must serialize from local components, never `toISOString()` (which day-shifts near midnight in CET/CEST). Specifies the shared `$lib/utils/date.ts` helper (`toLocalISOString`, `todayLocalISO`), its unit tests, and the migration checklist to extract it. **Contains a pending-implementation spec** (the util doesn't exist yet).
-- **patterns.md**: Specific patterns: record actions (RecordActionMenu, flag toggles, confirmAction), selector components, **controlled selectors (`attr` displays, `onChoose` writes — why a selector that preselects on its own must announce it)**, enum translations
-- **state-sharing.md**: Architecture for sharing state between sibling components using contracts and bindings. Covers PageState, useProvides/useConsumes hooks, and database-driven configuration
-- **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, scaffolding examples, field width inside narrow dialogs, and **fields with a suffix (`rightLabel` / currency symbol): width on the wrapper, styling on the input (`fieldBoxSizingClasses`), padding reserved from the suffix length**
+- **patterns.md**: Specific patterns: **permission-gated UI (`hasPermission`)**, record actions (RecordActionMenu, flag toggles, confirmAction), selector components, **controlled selectors (`attr` displays, `onChoose` writes — why a selector that preselects on its own must announce it)**, enum translations
+- **state-sharing.md**: Architecture for sharing state between sibling components using contracts and bindings. Covers PageState, useProvides/useConsumes hooks, database-driven configuration, and **typing a provided API record with `Type.Unsafe<T>` instead of a hand-written mirror**
+- **forms.md**: Form system architecture with FormUtil, context API for field components, validation builder, scaffolding examples, field width inside narrow dialogs, and **fields with a suffix (`rightLabel` / currency symbol): width on the wrapper, styling on the input (`fieldBoxSizingClasses`), padding reserved from the suffix length**, and **422 errors on keys the form doesn't render (toast + rethrow)**
 - **detail-record-form.md**: Step-by-step guide for creating create/update detail form components using `useDetailRecord`. Covers the full workflow: entity type discovery, contract, `useDetailRecord` setup, validation schemas, resource config, page state sharing, and the component checklist
 - **resource-table.md**: Generic ResourceTable component for data tables. Covers declarative column configuration, 11 built-in renderers, utilities (createApiFetcher, createArchiveAction), column customization (`columnsStorageId` per-user persistence, reorder/hide, opt-in columns via `defaultVisible: false`), **row selection (`createTableSelection` store + checkbox column, and the not-yet-ported bulk actions bar design)**, table variants, and best practices
 - **editable-table-field.md**: EditableTableField pattern for editing arrays as table rows. Covers auto-empty-row management, row snippet API, form context isolation, styling constants, and existing editors
@@ -76,7 +77,18 @@ This is a per-feature pattern: one file per view/feature that accumulates non-ob
 - **invoices.md**: editability gating by state, cumulative-invoice merging, URL-driven prefill flow, payment-term/due-date schedule sync (and every trigger that makes it server-managed), line-item locking, SDI validation UX, status badges, filter quirks, chat-filter-tool gotchas, payment recording & schedule freeze (rows *and* figures), the payments subpage, and **cassa previdenziale / ritenuta d'acconto: the panel, server-computed totals via `preview-amounts`, `total_amount` vs `total_payable`, and why a schedule-less invoice is dangerous rather than neutral**.
 - **quotations.md**: the import *source*. Editability gating by `open` state, create-vs-edit validation, sales-transaction-type filtering, customer-driven defaults, composition remount, snapshot dual-shape (array/object), actions/badges, page-state lifecycle.
 - **sales-orders.md**: shares most of quotations' surface (cross-referenced, not duplicated); the sales-order-specific focus is the **quotation-import flow** (eligibility, composition-signature compatibility locking, header-from-first-record, importable-quantity clamping), fulfillment badge, and confirmation date.
-- **actionables.md**: the aggregate list views surfaced label-less at the top of the sidebar — **Da spedire** (`DeliveryScheduleTable`, `GET /delivery-schedule`) and **Da incassare** (`PaymentsTable`, `GET /invoice-due-dates`). Covers collection progress / payment status / recording (manual payment tracking, superseding the old issued-as-paid proxy), the forward-only + credit-note-excluded + zero-due-dates-valid shapes, EUR-default amount, the nested `invoice` object on due-date rows (with guarded accessors), and the delivery schedule's `outstanding`-baked/line-granular/`payment_pending` quirks plus the opt-in customer-PO (ODA) column. Points at the moddo-api `deferred` business-doc for the backend rationale.
+- **supplier-invoices.md**: received invoices (passive cycle from SDI). Covers:
+  - derived status and "Nuova → Vista" on open;
+  - cedente fallback while to link;
+  - the four aggancio actions, permission-gated: create-supplier 422 → link dialog, relink outcome, change supplier;
+  - the link dialog's own supplier fetch and the update-identifiers switch;
+  - toasting 422s on unrendered keys;
+  - the read-only overview: free-form XML data flattened, totals with withholding/split payment, embedded attachments vs documents, downloads via A-Cube;
+  - the versioned schedule editor: 409 reload, `{#key version}`, freeze by payments, need-review/mismatch warnings;
+  - payments with no state gate and the payable wording switches on shared components;
+  - list filters, the two homepage KPIs (deep-link keys must exist in the filter config, `{formatted}`, `normalizeKpiNumbers`);
+  - the `vendor` supplier type with the temporary client-side carrier filter, and the "Fatture emesse" menu relabel.
+- **actionables.md**: the aggregate list views surfaced label-less at the top of the sidebar — **Da pagare** (`SupplierPaymentsTable`, `GET /supplier-invoice-due-dates`: the supplier scadenzario, open-only by default, real per-row currency), **Da spedire** (`DeliveryScheduleTable`, `GET /delivery-schedule`) and **Da incassare** (`PaymentsTable`, `GET /invoice-due-dates`). Covers collection progress / payment status / recording (manual payment tracking, superseding the old issued-as-paid proxy), the forward-only + credit-note-excluded + zero-due-dates-valid shapes, EUR-default amount, the nested `invoice` object on due-date rows (with guarded accessors), and the delivery schedule's `outstanding`-baked/line-granular/`payment_pending` quirks plus the opt-in customer-PO (ODA) column. Points at the moddo-api `deferred` business-doc for the backend rationale.
 
 ### Testing
 
@@ -227,4 +239,24 @@ When updating guidelines:
 - "Why can't I change the totals of an invoice that has payments?" → `domain-logic/invoices.md`
 - "Why are cassa rates limited to two decimals?" → `domain-logic/invoices.md`
 - "How to render a sidebar group without a label?" → `routing/menu-system.md`
-- "Where do the actionables (Da spedire / Da incassare / Da fatturare) live in the menu?" → `routing/menu-system.md`
+- "Where do the actionables (Da spedire / Da incassare / Da fatturare / Da pagare) live in the menu?" → `routing/menu-system.md`
+- "How does the supplier invoice list / detail work (fatture ricevute)?" → `domain-logic/supplier-invoices.md`
+- "Why is a received invoice marked as viewed only from the overview?" → `domain-logic/supplier-invoices.md`
+- "How does linking a received invoice to a supplier (aggancio) work?" → `domain-logic/supplier-invoices.md`
+- "What happens when Crea fornitore returns 422?" → `domain-logic/supplier-invoices.md`
+- "How is the relink outcome (no_candidate / multiple_candidates / contradiction) shown?" → `domain-logic/supplier-invoices.md`
+- "When can the supplier invoice schedule be edited / why is it locked?" → `domain-logic/supplier-invoices.md`
+- "What happens on a 409 when saving supplier invoice due dates?" → `domain-logic/supplier-invoices.md`
+- "Why can a supplier invoice still to link take payments?" → `domain-logic/supplier-invoices.md`
+- "How do the shared payment components switch to payable wording (Pagato vs Incassato)?" → `domain-logic/supplier-invoices.md`
+- "Why doesn't my KPI deep link filter the destination list?" → `domain-logic/supplier-invoices.md`
+- "Why does the carrier selector filter out vendors / what is the vendor supplier type?" → `domain-logic/supplier-invoices.md`
+- "How do I seed local received invoices for testing?" → `domain-logic/supplier-invoices.md`
+- "What is the Da pagare view / where is the supplier scadenzario?" → `domain-logic/actionables.md`
+- "How do I show or hide an action based on user permissions?" → `components/patterns.md`
+- "What is hasPermission?" → `components/patterns.md`
+- "Why does a 422 only show the generic validation banner?" → `components/forms.md`
+- "How to surface backend errors keyed on fields the form doesn't render?" → `components/forms.md`
+- "How to type an API record in a page-state contract without duplicating it?" → `components/state-sharing.md`
+- "Why doesn't my new menu icon show up in the main menu dropdown?" → `routing/menu-system.md`
+- "Where do I register a menu icon / what is menu-icons.ts?" → `routing/menu-system.md`

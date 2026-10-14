@@ -3,7 +3,9 @@ import BarChartIcon from '@lucide/svelte/icons/bar-chart'
 import ChartColumnIcon from '@lucide/svelte/icons/chart-column'
 import CreditCardIcon from '@lucide/svelte/icons/credit-card'
 import EuroIcon from '@lucide/svelte/icons/euro'
+import FileInputIcon from '@lucide/svelte/icons/file-input'
 import FileTextIcon from '@lucide/svelte/icons/file-text'
+import HandCoinsIcon from '@lucide/svelte/icons/hand-coins'
 import PackageIcon from '@lucide/svelte/icons/package'
 import ReceiptIcon from '@lucide/svelte/icons/receipt'
 import TruckIcon from '@lucide/svelte/icons/truck'
@@ -22,6 +24,8 @@ export const WIDGET_ICONS: Record<string, Component> = {
   Banknote: BanknoteIcon,
   CreditCard: CreditCardIcon,
   FileText: FileTextIcon,
+  FileInput: FileInputIcon,
+  HandCoins: HandCoinsIcon,
   Package: PackageIcon,
   BarChart: BarChartIcon,
   ChartColumn: ChartColumnIcon,
